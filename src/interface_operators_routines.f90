@@ -118,7 +118,9 @@ CONTAINS
     INTEGER(INTG) :: dataPointIdx,localElementNumber,matrixElementIdx
     INTEGER(INTG) :: matrixCoefficients(2),interfaceelementnumber
 
+#if DEBUG
     CALL ENTERS("FieldContinuity_FiniteElementCalculate",err,error,*999)
+#endif
 
     IF(.NOT.ASSOCIATED(interfaceCondition)) CALL FLAG_error("Interface condition is not associated.",err,error,*999)
     IF(.NOT.ASSOCIATED(interfaceCondition%INTERFACE_EQUATIONS)) CALL FLAG_error("Interface equations is not associated." &
@@ -501,10 +503,14 @@ CONTAINS
       CALL FLAG_error(localError,err,error,*999)
     END SELECT
 
+#if DEBUG
     CALL EXITS("FieldContinuity_FiniteElementCalculate")
+#endif
     RETURN
 999 CALL ERRORS("FieldContinuity_FiniteElementCalculate",err,error)
+#if DEBUG
     CALL EXITS("FieldContinuity_FiniteElementCalculate")
+#endif
     RETURN 1
     
   END SUBROUTINE FieldContinuity_FiniteElementCalculate
@@ -549,7 +555,9 @@ CONTAINS
     
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("FrictionlessContact_FiniteElementCalculate",err,error,*999)
+#endif
     
     IF(ASSOCIATED(interfaceCondition)) THEN
       interfaceEquations=>interfaceCondition%INTERFACE_EQUATIONS
@@ -832,10 +840,14 @@ CONTAINS
       CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("FrictionlessContact_FiniteElementCalculate")
+#endif
     RETURN
 999 CALL ERRORS("FrictionlessContact_FiniteElementCalculate",err,error)
+#if DEBUG
     CALL EXITS("FrictionlessContact_FiniteElementCalculate")
+#endif
     RETURN 1
     
   END SUBROUTINE FrictionlessContact_FiniteElementCalculate
@@ -895,7 +907,9 @@ CONTAINS
     INTEGER(INTG) :: dataPointIdx,localElementNumber,localFaceLineNumber,matrixElementIdx
     INTEGER(INTG) :: matrixCoefficients(2),interfaceelementnumber
 
+#if DEBUG
     CALL ENTERS("SolidFluidOperator_FiniteElementCalculate",err,error,*999)
+#endif
 
     IF(.NOT.ASSOCIATED(interfaceCondition)) CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
     IF(.NOT.ASSOCIATED(interfaceCondition%INTERFACE_EQUATIONS)) CALL FLAG_ERROR("Interface equations is not associated." &
@@ -1173,10 +1187,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END SELECT
 
+#if DEBUG
     CALL EXITS("SolidFluidOperator_FiniteElementCalculate")
+#endif
     RETURN
 999 CALL ERRORS("SolidFluidOperator_FiniteElementCalculate",err,error)
+#if DEBUG
     CALL EXITS("SolidFluidOperator_FiniteElementCalculate")
+#endif
     RETURN 1
   
   END SUBROUTINE SolidFluidOperator_FiniteElementCalculate
@@ -1198,7 +1216,9 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: rowParameterIdx
 
+#if DEBUG
     CALL ENTERS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM",err,error,*999)
+#endif
     
     INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM=0.0_DP
     DO rowParameterIdx = 1,interfaceConnectivityBasis%NUMBER_OF_ELEMENT_PARAMETERS
@@ -1208,10 +1228,14 @@ CONTAINS
         & elementConnectivity%XI(:,1,rowParameterIdx)
     ENDDO
      
+#if DEBUG
     CALL EXITS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM")
+#endif
     RETURN
 999 CALL ERRORS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM",err,error)
+#if DEBUG
     CALL EXITS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM")
+#endif
     RETURN
     
   END FUNCTION INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM

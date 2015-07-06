@@ -7269,7 +7269,9 @@ CONTAINS
     TYPE(C_PTR), POINTER :: BasesCPtrs(:)
     TYPE(CMISSBasisType), POINTER :: Basis
 
+#if DEBUG
     CALL ENTERS("CMISSBasisTypesCopy",err,error,*999)
+#endif
 
     IF(C_ASSOCIATED(basesPtr)) THEN
       CALL C_F_POINTER(basesPtr,BasesCPtrs,[basesSize])
@@ -7289,10 +7291,14 @@ CONTAINS
       CALL FLAG_ERROR("bases C pointer is not associated.",ERR,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasisTypesCopy")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasisTypesCopy",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasisTypesCopy")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7310,14 +7316,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSBasis%BASIS)) CALL BASIS_DESTROY(CMISSBasis%BASIS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7335,14 +7347,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSBasis%BASIS)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7360,15 +7378,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSBoundaryConditions%BOUNDARY_CONDITIONS))  &
       & CALL BOUNDARY_CONDITIONS_DESTROY(CMISSBoundaryConditions%BOUNDARY_CONDITIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7385,14 +7409,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSBoundaryConditions%BOUNDARY_CONDITIONS)
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7410,15 +7440,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSCellML%CELLML))  &
       & CALL CELLML_DESTROY(CMISSCellML%CELLML,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7435,14 +7471,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSCellML%CELLML)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7460,15 +7502,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellMLEquations_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSCellMLEquations%CELLML_EQUATIONS))  &
       & CALL CELLML_EQUATIONS_DESTROY(CMISSCellMLEquations%CELLML_EQUATIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellMLEquations_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellMLEquations_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellMLEquations_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7486,14 +7534,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSComputationalWorkGroup_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSComputationalWorkGroup%COMPUTATIONAL_WORK_GROUP)
 
+#if DEBUG
     CALL EXITS("CMISSComputationalWorkGroup_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSComputationalWorkGroup_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSComputationalWorkGroup_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7511,14 +7565,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellMLEquations_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSCellMLEquations%CELLML_EQUATIONS)
 
+#if DEBUG
     CALL EXITS("CMISSCellMLEquations_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellMLEquations_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellMLEquations_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7536,15 +7596,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSControlLoop%CONTROL_LOOP))  &
       & CALL CONTROL_LOOP_DESTROY(CMISSControlLoop%CONTROL_LOOP,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7561,14 +7627,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSControlLoop%CONTROL_LOOP)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7586,15 +7658,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSCoordinateSystem%COORDINATE_SYSTEM))  &
       & CALL COORDINATE_SYSTEM_DESTROY(CMISSCoordinateSystem%COORDINATE_SYSTEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7612,14 +7690,20 @@ CONTAINS
     !Local variables
 
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSCoordinateSystem%COORDINATE_SYSTEM)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7637,15 +7721,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSDataPoints%DATA_POINTS))  &
       & CALL DATA_POINTS_DESTROY(CMISSDataPoints%DATA_POINTS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7663,14 +7753,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSDataPoints%DATA_POINTS)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7688,15 +7784,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSDataProjection%DATA_PROJECTION))  &
       & CALL DATA_PROJECTION_DESTROY(CMISSDataProjection%DATA_PROJECTION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7714,14 +7816,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSDataProjection%DATA_PROJECTION)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7739,15 +7847,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSDecomposition%DECOMPOSITION))  &
       & CALL DECOMPOSITION_DESTROY(CMISSDecomposition%DECOMPOSITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7765,14 +7879,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSDecomposition%DECOMPOSITION)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7790,15 +7910,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSEquations%EQUATIONS))  &
       & CALL EQUATIONS_DESTROY(CMISSEquations%EQUATIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquations_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7816,14 +7942,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSEquations%EQUATIONS)
 
+#if DEBUG
     CALL EXITS("CMISSEquations_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7841,15 +7973,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSEquationsSet%EQUATIONS_SET))  &
       & CALL EQUATIONS_SET_DESTROY(CMISSEquationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7867,14 +8005,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSEquationsSet%EQUATIONS_SET)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7892,15 +8036,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSField%FIELD))  &
       & CALL FIELD_DESTROY(CMISSField%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7918,14 +8068,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSField%FIELD)
 
+#if DEBUG
     CALL EXITS("CMISSField_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7944,7 +8100,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSFields_CreateInterface",err,error,*999)
+#endif
 
     IF(ASSOCIATED(interface%INTERFACE)) THEN
       IF(ASSOCIATED(fields%FIELDS)) THEN
@@ -7956,10 +8114,14 @@ CONTAINS
       CALL FLAG_ERROR("The interface is not associated.",ERR,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSFields_CreateInterface")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFields_CreateInterface",err,error)
+#if DEBUG
     CALL EXITS("CMISSFields_CreateInterface")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -7978,7 +8140,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSFields_CreateRegion",err,error,*999)
+#endif
 
     IF(ASSOCIATED(region%REGION)) THEN
       IF(ASSOCIATED(fields%FIELDS)) THEN
@@ -7990,10 +8154,14 @@ CONTAINS
       CALL FLAG_ERROR("The region is not associated.",ERR,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSFields_CreateRegion")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFields_CreateRegion",err,error)
+#if DEBUG
     CALL EXITS("CMISSFields_CreateRegion")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8011,7 +8179,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSFields_Finalise",err,error,*999)
+#endif
 
     NULLIFY(CMISSFields%FIELDS)
 
@@ -8019,10 +8189,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Fields Type')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFields_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFields_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSFields_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8040,7 +8214,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSFields_Initialise",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Fields Type')
@@ -8048,10 +8224,14 @@ CONTAINS
 
     NULLIFY(CMISSFields%FIELDS)
 
+#if DEBUG
     CALL EXITS("CMISSFields_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFields_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSFields_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8069,15 +8249,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSGeneratedMesh%GENERATED_MESH))  &
       & CALL GENERATED_MESH_DESTROY(CMISSGeneratedMesh%GENERATED_MESH,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8095,14 +8281,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSGeneratedMesh%GENERATED_MESH)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8120,15 +8312,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSInterface%INTERFACE))  &
       & CALL INTERFACE_DESTROY(CMISSInterface%INTERFACE,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8146,14 +8344,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSInterface%Interface)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8171,15 +8375,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSInterfaceCondition%INTERFACE_CONDITION))  &
       & CALL INTERFACE_CONDITION_DESTROY(CMISSInterfaceCondition%INTERFACE_CONDITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceTypeConditionFinalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceTypeConditionFinalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8197,14 +8407,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSInterfaceCondition%INTERFACE_CONDITION)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8222,15 +8438,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceEquations_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSInterfaceEquations%INTERFACE_EQUATIONS))  &
       & CALL INTERFACE_EQUATIONS_DESTROY(CMISSInterfaceEquations%INTERFACE_EQUATIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceEquations_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8248,14 +8470,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceEquations_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSInterfaceEquations%INTERFACE_EQUATIONS)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceEquations_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8273,16 +8501,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_Finalise",Err,ERROR,*999)
+#endif
     
     IF(ASSOCIATED(CMISSInterfacePointsConnectivity%pointsConnectivity)) THEN
       CALL InterfacePointsConnectivity_Destroy(CMISSInterfacePointsConnectivity%pointsConnectivity,err,ERROR,*999)
     ENDIF
  
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_Finalise",Err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_Finalise")    
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
      
@@ -8300,14 +8534,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_Initialise",Err,ERROR,*999)
+#endif
     
     NULLIFY(CMISSInterfacePointsConnectivity%pointsConnectivity)
  
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_Initialise",Err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_Initialise")    
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
      
@@ -8325,15 +8565,21 @@ CONTAINS
      INTEGER(INTG), INTENT(OUT) :: err !<The error code.
      !Local variables
 
+#if DEBUG
      CALL ENTERS("CMISSInterfaceMeshConnectivity_Finalise",err,error,*999)
+#endif
 
      IF(ASSOCIATED(CMISSInterfaceMeshConnectivity%MESH_CONNECTIVITY)) &
        & CALL INTERFACE_MESH_CONNECTIVITY_DESTROY(CMISSInterfaceMeshConnectivity%MESH_CONNECTIVITY,err,error,*999)
 
+#if DEBUG
      CALL EXITS("CMISSInterfaceMeshConnectivity_Finalise")
+#endif
      RETURN
  999 CALL ERRORS("CMISSInterfaceMeshConnectivity_Finalise",err,error)
+#if DEBUG
      CALL EXITS("CMISSInterfaceMeshConnectivity_Finalise")
+#endif
      CALL CMISS_HANDLE_ERROR(err,error)
      RETURN
 
@@ -8351,14 +8597,20 @@ CONTAINS
      INTEGER(INTG), INTENT(OUT) :: err !<The error code.
      !Local variables
 
+#if DEBUG
      CALL ENTERS("CMISSInterfaceMeshConnectivity_Initialise",err,error,*999)
+#endif
 
      NULLIFY(CMISSInterfaceMeshConnectivity%MESH_CONNECTIVITY)
 
+#if DEBUG
      CALL EXITS("CMISSInterfaceMeshConnectivity_Initialise")
+#endif
      RETURN
  999 CALL ERRORS("CMISSInterfaceMeshConnectivity_Initialise",err,error)
+#if DEBUG
      CALL EXITS("CMISSInterfaceMeshConnectivity_Initialise")
+#endif
      CALL CMISS_HANDLE_ERROR(err,error)
      RETURN
 
@@ -8376,15 +8628,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSHistory_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSHistory%HISTORY))  &
       & CALL HISTORY_DESTROY(CMISSHistory%HISTORY,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSHistory_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSHistory_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSHistory_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8402,14 +8660,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSHistory_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSHistory%HISTORY)
 
+#if DEBUG
     CALL EXITS("CMISSHistory_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSHistory_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSHistory_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8427,14 +8691,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDistributedMatrix_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSDistributedMatrix%distributedMatrix)
 
+#if DEBUG
     CALL EXITS("CMISSDistributedMatrix_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDistributedMatrix_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSDistributedMatrix_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8452,14 +8722,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDistributedVector_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSDistributedVector%distributedVector)
 
+#if DEBUG
     CALL EXITS("CMISSDistributedVector_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDistributedVector_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSDistributedVector_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8477,15 +8753,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSMesh%MESH))  &
       & CALL MESH_DESTROY(CMISSMesh%MESH,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8503,14 +8785,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSMesh%MESH)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8528,15 +8816,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSMeshElements%MESH_ELEMENTS))  &
       & CALL MESH_TOPOLOGY_ELEMENTS_DESTROY(CMISSMeshElements%MESH_ELEMENTS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8554,14 +8848,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSMeshElements%MESH_ELEMENTS)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8630,15 +8930,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSNodes%NODES))  &
       & CALL NODES_DESTROY(CMISSNodes%NODES,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8656,14 +8962,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSNodes%NODES)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8681,15 +8993,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSProblem%PROBLEM))  &
       & CALL PROBLEM_DESTROY(CMISSProblem%PROBLEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8707,14 +9025,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSProblem%PROBLEM)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8732,15 +9056,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSQuadrature_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSQuadrature%QUADRATURE))  &
       & CALL BASIS_QUADRATURE_DESTROY(CMISSQuadrature%QUADRATURE,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSQuadrature_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSQuadrature_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSQuadrature_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8758,14 +9088,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSQuadrature_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSQuadrature%QUADRATURE)
 
+#if DEBUG
     CALL EXITS("CMISSQuadrature_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSQuadrature_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSQuadrature_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8783,15 +9119,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSRegion%REGION))  &
       & CALL REGION_DESTROY(CMISSRegion%REGION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8809,14 +9151,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSRegion%REGION)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8834,15 +9182,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSSolver%SOLVER))  &
       & CALL SOLVER_DESTROY(CMISSSolver%SOLVER,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8860,14 +9214,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSSolver%SOLVER)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8885,15 +9245,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_Finalise",err,error,*999)
+#endif
 
     IF(ASSOCIATED(CMISSSolverEquations%SOLVER_EQUATIONS))  &
       & CALL SOLVER_EQUATIONS_DESTROY(CMISSSolverEquations%SOLVER_EQUATIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8911,14 +9277,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_Initialise",err,error,*999)
+#endif
 
     NULLIFY(CMISSSolverEquations%SOLVER_EQUATIONS)
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8943,7 +9315,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisOutputNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -8962,10 +9336,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisOutputNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisOutputNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisOutputNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -8984,14 +9362,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisOutputObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_OUTPUT(field%FIELD,fileName,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisOutputObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisOutputObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisOutputObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9020,7 +9404,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9040,10 +9426,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9068,16 +9458,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_NODE(field%FIELD,variableType,versionNumber,derivativeNumber,nodeNumber, &
       & componentNumber,value,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetNodeObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9106,7 +9502,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisPercentageErrorGetNodeNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9126,10 +9524,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetNodeNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisPercentageErrorGetNodeNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetNodeNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9154,16 +9556,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisPercentageErrorGetNodeObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_NODE(field%FIELD,variableType,versionNumber,derivativeNumber,nodeNumber, &
       & componentNumber,value,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetNodeObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisPercentageErrorGetNodeObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetNodeObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9193,7 +9601,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisRelativeErrorGetNodeNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9213,10 +9623,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetNodeNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisRelativeErrorGetNodeNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetNodeNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9241,16 +9655,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisRelativeErrorGetNodeObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_NODE(field%FIELD,variableType,versionNumber,derivativeNumber,nodeNumber, &
       & componentNumber,value,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetNodeObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisRelativeErrorGetNodeObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetNodeObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9277,7 +9697,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetElementNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9296,10 +9718,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetElementNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisAbsoluteErrorGetElementNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetElementNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9321,15 +9747,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetElementObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_ELEMENT(field%FIELD,variableType,elementNumber,componentNumber,value,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetElementObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisAbsoluteErrorGetElementObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetElementObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9356,7 +9788,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisPercentageErrorGetElementNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9375,10 +9809,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetElementNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisPercentageErrorGetElementNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetElementNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9400,15 +9838,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisPercentageErrorGetElementObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_ELEMENT(field%FIELD,variableType,elementNumber,componentNumber,value,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetElementObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisPercentageErrorGetElementObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetElementObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9436,7 +9880,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisRelativeErrorGetElementNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9455,10 +9901,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetElementNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisRelativeErrorGetElementNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetElementNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9480,15 +9930,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisRelativeErrorGetElementObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_ELEMENT(field%FIELD,variableType,elementNumber,componentNumber,value,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetElementObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisRelativeErrorGetElementObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetElementObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9514,7 +9970,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetConstantNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9533,10 +9991,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetConstantNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisAbsoluteErrorGetConstantNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetElementNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9557,15 +10019,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisAbsoluteErrorGetConstantObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_ABSOLUTE_ERROR_GET_CONSTANT(field%FIELD,variableType,componentNumber,value,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetConstantObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisAbsoluteErrorGetConstantObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisAbsoluteErrorGetConstantObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9591,7 +10059,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisPercentageErrorGetConstantNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9610,10 +10080,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetConstantNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisPercentageErrorGetConstantNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetConstantNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9634,15 +10108,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisPercentageErrorGetConstantObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_PERCENTAGE_ERROR_GET_CONSTANT(field%FIELD,variableType,componentNumber,value,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetConstantObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisPercentageErrorGetConstantObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisPercentageErrorGetConstantObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9669,7 +10149,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisRelativeErrorGetConstantNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9688,10 +10170,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetConstantNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisRelativeErrorGetConstantNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetConstantNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9712,15 +10198,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisRelativeErrorGetConstantObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_RELATIVE_ERROR_GET_CONSTANT(field%FIELD,variableType,componentNumber,value,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetConstantObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisRelativeErrorGetConstantObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRelativeErrorGetConstantObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9749,7 +10241,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisRmsErrorGetNodeNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9769,10 +10263,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetNodeNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisRmsErrorGetNodeNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetNodeNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9797,16 +10295,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisRmsErrorGetNodeObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_RMS_ERROR_GET_NODE(field%FIELD,variableType,componentNumber,errorType,localValue,localGhostValue, &
       & globalValue,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetNodeObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisRmsErrorGetNodeObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetNodeObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9835,7 +10339,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisRmsErrorGetElementNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9855,10 +10361,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetElementNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisRmsErrorGetElementNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetElementNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9883,16 +10393,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisRmsErrorGetNodeObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_RMS_ERROR_GET_ELEMENT(field%FIELD,variableType,componentNumber,errorType,localValue,localGhostValue, &
       & globalValue,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetElementObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisRmsErrorGetElementObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisRmsErrorGetElementObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9919,7 +10435,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -9939,10 +10457,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -9965,16 +10487,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_INTEGRAL_NUMERICAL_VALUE_GET(field%FIELD,variableType,componentNumber,integralValue,ghostIntegralValue, &
           & ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNumericalValueGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10001,7 +10529,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -10021,10 +10551,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10047,16 +10581,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_INTEGRAL_ANALYTIC_VALUE_GET(field%FIELD,variableType,componentNumber,integralValue,ghostIntegralValue, &
           & ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralAnalyticValueGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10083,7 +10623,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -10103,10 +10645,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10129,16 +10675,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_INTEGRAL_PERCENTAGE_ERROR_GET(field%FIELD,variableType,componentNumber,integralValue, &
       & ghostIntegralValue,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralPercentageErrorGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10165,7 +10717,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -10185,10 +10739,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10211,16 +10769,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_INTEGRAL_ABSOLUTE_ERROR_GET(field%FIELD,variableType,componentNumber,integralValue,ghostIntegralValue, &
           & ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralAbsoluteErrorGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10247,7 +10811,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -10267,10 +10833,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10293,16 +10863,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_INTEGRAL_RELATIVE_ERROR_GET(field%FIELD,variableType,componentNumber,integralValue,ghostIntegralValue, &
       & ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralRelativeErrorGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10329,7 +10905,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -10349,10 +10927,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10375,16 +10957,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_NUMERICAL_VALUE_GET(field%FIELD,variableType,componentNumber,integralValue, &
       & ghostIntegralValue,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNidNumericalValueGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10411,7 +10999,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -10431,10 +11021,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10456,16 +11050,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSAnalyticAnalysisIntegralNidErrorGetObj",err,error,*999)
+#endif
 
     CALL ANALYTIC_ANALYSIS_INTEGRAL_NID_ERROR_GET(field%FIELD,variableType,componentNumber,integralValue,ghostIntegralValue,ERR, &
       & error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetObj")
+#endif
 
     RETURN
 999 CALL ERRORS("CMISSAnalyticAnalysisIntegralNidErrorGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSAnalyticAnalysisIntegralNidErrorGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10487,14 +11087,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDiagnosticsSetOff",err,error,*999)
+#endif
 
     CALL DIAGNOSTICS_SET_OFF(err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDiagnosticsSetOff")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDiagnosticsSetOff",err,error)
+#if DEBUG
     CALL EXITS("CMISSDiagnosticsSetOff")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10515,14 +11121,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDiagnosticsSetOn",err,error,*999)
+#endif
 
     CALL DIAGNOSTICS_SET_ON(diagType,levelList,diagFilename,routineList,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDiagnosticsSetOn")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDiagnosticsSetOn",err,error)
+#if DEBUG
     CALL EXITS("CMISSDiagnosticsSetOn")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10539,14 +11151,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSOutputSetOff",err,error,*999)
+#endif
 
     CALL OUTPUT_SET_OFF(err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSOutputSetOff")
+#endif
     RETURN
 999 CALL ERRORS("CMISSOutputSetOff",err,error)
+#if DEBUG
     CALL EXITS("CMISSOutputSetOff")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10564,14 +11182,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSOutputSetOn",err,error,*999)
+#endif
 
     CALL OUTPUT_SET_ON(echoFilename,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSOutputSetOn")
+#endif
     RETURN
 999 CALL ERRORS("CMISSOutputSetOn",err,error)
+#if DEBUG
     CALL EXITS("CMISSOutputSetOn")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10588,14 +11212,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSTimingSetOff",ERR,error,*999)
+#endif
 
     CALL TIMING_SET_OFF(err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSTimingSetOff")
+#endif
     RETURN
 999 CALL ERRORS("CMISSTimingSetOff",err,error)
+#if DEBUG
     CALL EXITS("CMISSTimingSetOff")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10616,14 +11246,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSTimingSetOn",err,error,*999)
+#endif
 
     CALL TIMING_SET_ON(timingType,timingSummaryFlag,timingFilename,routineList,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSTimingSetOn")
+#endif
     RETURN
 999 CALL ERRORS("CMISSTimingSetOn",err,error)
+#if DEBUG
     CALL EXITS("CMISSTimingSetOn")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10640,14 +11276,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSTimingSummaryOutput",err,error,*999)
+#endif
 
     CALL TIMING_SUMMARY_OUTPUT(err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSTimingSummaryOutput")
+#endif
     RETURN
 999 CALL ERRORS("CMISSTimingSummaryOutput",err,error)
+#if DEBUG
     CALL EXITS("CMISSTimingSummaryOutput")
+#endif
     RETURN
 
   END SUBROUTINE CMISSTimingSummaryOutput
@@ -10669,7 +11311,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_CollapsedXiGetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -10680,10 +11324,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_CollapsedXiGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_CollapsedXiGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_CollapsedXiGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10702,14 +11350,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_CollapsedXiGetObj",err,error,*999)
+#endif
 
     CALL BASIS_COLLAPSED_XI_GET(basis%BASIS,collapsedXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_CollapsedXiGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_CollapsedXiGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_CollapsedXiGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10730,7 +11384,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_CollapsedXiSetNumber",ERR,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -10741,10 +11397,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_CollapsedXiSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_CollapsedXiSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_CollapsedXiSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10763,14 +11423,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_CollapsedXiSetObj",err,error,*999)
+#endif
 
     CALL BASIS_COLLAPSED_XI_SET(basis%BASIS,collapsedXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_CollapsedXiSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_CollapsedXiSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_CollapsedXiSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10790,7 +11456,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_CreateFinishNumber",ERR,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,err,error,*999)
@@ -10805,10 +11473,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Basis Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSBasis_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10826,7 +11498,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_CreateFinishObj",err,error,*999)
+#endif
 
     CALL BASIS_CREATE_FINISH(basis%BASIS,err,error,*999)
 
@@ -10834,10 +11508,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('basis Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSBasis_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10856,7 +11534,9 @@ CONTAINS
     !Local variables
     TYPE(BASIS_TYPE), POINTER :: BASIS
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_CreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Basis Create')
@@ -10865,10 +11545,14 @@ CONTAINS
     NULLIFY(BASIS)
     CALL BASIS_CREATE_START(userNumber,BASIS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10887,7 +11571,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_CreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('basis Create')
@@ -10895,10 +11581,14 @@ CONTAINS
 
     CALL BASIS_CREATE_START(userNumber,basis%BASIS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10918,7 +11608,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -10929,10 +11621,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10950,14 +11646,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_DestroyObj",err,error,*999)
+#endif
 
     CALL BASIS_DESTROY(basis%BASIS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -10978,7 +11680,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_InterpolationXiGetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -10989,10 +11693,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_InterpolationXiGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_InterpolationXiGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_InterpolationXiGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11011,15 +11719,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_InterpolationXiGetObj",err,error,*999)
+#endif
 
     CALL BASIS_INTERPOLATION_XI_GET(basis%BASIS,interpolationXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_InterpolationXiGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_InterpolationXiGetObj",err,error)
     CALL CMISS_HANDLE_ERROR(err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_InterpolationXiGetObj")
+#endif
     RETURN
 
   END SUBROUTINE CMISSBasis_InterpolationXiGetObj
@@ -11039,7 +11753,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_InterpolationXiSetNumber",ERR,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11050,10 +11766,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_InterpolationXiSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_InterpolationXiSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_InterpolationXiSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11072,14 +11792,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_InterpolationXiSetObj",err,error,*999)
+#endif
 
     CALL BASIS_INTERPOLATION_XI_SET(basis%BASIS,interpolationXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_InterpolationXiSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_InterpolationXiSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_InterpolationXiSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11100,7 +11826,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_NumberOfLocalNodesGetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11111,10 +11839,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfLocalNodesGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_NumberOfLocalNodesGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfLocalNodesGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11133,14 +11865,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_NumberOfLocalNodesGetObj",err,error,*999)
+#endif
 
     CALL BASIS_NUMBER_OF_LOCAL_NODES_GET(basis%BASIS,numberOfLocalNodes,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfLocalNodesGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_NumberOfLocalNodesGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfLocalNodesGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11161,7 +11899,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_NumberOfXiGetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11172,10 +11912,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfXiGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_NumberOfXiGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfXiGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11194,14 +11938,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_NumberOfXiGetObj",err,error,*999)
+#endif
 
     CALL BASIS_NUMBER_OF_XI_GET(basis%BASIS,numberOfXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfXiGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_NumberOfXiGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfXiGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11222,7 +11972,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_NumberOfXiSetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11233,10 +11985,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfXiSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_NumberOfXiSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfXiSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11255,14 +12011,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_NumberOfXiSetObj",err,error,*999)
+#endif
 
     CALL BASIS_NUMBER_OF_XI_SET(basis%BASIS,numberOfXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfXiSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_NumberOfXiSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_NumberOfXiSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11283,7 +12045,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureNumberOfGaussXiGetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11294,10 +12058,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureNumberOfGaussXiGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureNumberOfGaussXiGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureNumberOfGaussXiGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11316,14 +12084,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureNumberOfGaussXiGetObj",err,error,*999)
+#endif
 
     CALL BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_GET(basis%BASIS,numberOfGaussXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureNumberOfGaussXiGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureNumberOfGaussXiGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureNumberOfGaussXiGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11344,7 +12118,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureNumberOfGaussXiSetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11355,10 +12131,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureNumberOfGaussXiSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureNumberOfGaussXiSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureNumberOfGaussXiSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11377,14 +12157,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureNumberOfGaussXiSetObj",err,error,*999)
+#endif
 
     CALL BASIS_QUADRATURE_NUMBER_OF_GAUSS_XI_SET(basis%BASIS,numberOfGaussXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureNumberOfGaussXiSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureNumberOfGaussXiSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureNumberOfGaussXiSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11406,7 +12192,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureSingleGaussXiGetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11417,10 +12205,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureSingleGaussXiGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureSingleGaussXiGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureSingleGaussXiGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11441,14 +12233,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureSingleGaussXiGetObj",err,error,*999)
+#endif
 
     CALL BASIS_QUADRATURE_SINGLE_GAUSS_XI_GET(basis%BASIS,quadratureScheme,GaussPoint,GaussXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureSingleGaussXiGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureSingleGaussXiGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureSingleGaussXiGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11471,7 +12269,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureMultipleGaussXiGetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11482,10 +12282,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureMultipleGaussXiGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureMultipleGaussXiGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureMultipleGaussXiGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11506,14 +12310,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureMultipleGaussXiGetObj",err,error,*999)
+#endif
 
     CALL BASIS_QUADRATURE_MULTIPLE_GAUSS_XI_GET(basis%BASIS,quadratureScheme,GaussPoints,GaussXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureMultipleGaussXiGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureMultipleGaussXiGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureMultipleGaussXiGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11534,7 +12344,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureOrderGetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11545,10 +12357,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureOrderGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureOrderGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureOrderGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11567,14 +12383,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureOrderGetObj",err,error,*999)
+#endif
 
     CALL BASIS_QUADRATURE_ORDER_GET(basis%BASIS,quadratureOrder,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureOrderGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureOrderGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureOrderGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11596,7 +12418,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureOrderSetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11607,10 +12431,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureOrderSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureOrderSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureOrderSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11629,14 +12457,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureOrderSetObj",err,error,*999)
+#endif
 
     CALL BASIS_QUADRATURE_ORDER_SET(basis%BASIS,quadratureOrder,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureOrderSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureOrderSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureOrderSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11657,7 +12491,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11668,10 +12504,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11690,14 +12530,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureTypeGetObj",err,error,*999)
+#endif
 
     CALL BASIS_QUADRATURE_TYPE_GET(basis%BASIS,quadratureType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11718,7 +12564,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureTypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11729,10 +12577,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureTypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureTypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureTypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11751,14 +12603,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureTypeSetObj",err,error,*999)
+#endif
 
     CALL BASIS_QUADRATURE_TYPE_SET(basis%BASIS,quadratureType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11779,7 +12637,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureLocalFaceGaussEvaluateSetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11790,10 +12650,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureLocalFaceGaussEvaluateSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureLocalFaceGaussEvaluateSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureLocalFaceGaussEvaluateSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11811,14 +12675,20 @@ CONTAINS
     LOGICAL, INTENT(IN) :: faceGaussEvaluate !<The type of quadrature in the specified basis to set.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_QuadratureLocalFaceGaussEvaluateSetObj",err,error,*999)
+#endif
 
     CALL BASIS_QUADRATURE_LOCAL_FACE_GAUSS_EVALUATE_SET(basis%BASIS,faceGaussEvaluate,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureLocalFaceGaussEvaluateSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_QuadratureLocalFaceGaussEvaluateSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_QuadratureLocalFaceGaussEvaluateSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11839,7 +12709,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_TypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11850,10 +12722,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_TypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_TypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_TypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11872,14 +12748,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_TypeGetObj",err,error,*999)
+#endif
 
     CALL BASIS_TYPE_GET(basis%BASIS,basisType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_TypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_TypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_TypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11900,7 +12782,9 @@ CONTAINS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_TypeSetNumber",ERR,error,*999)
+#endif
 
     NULLIFY(BASIS)
     CALL BASIS_USER_NUMBER_FIND(userNumber,BASIS,ERR,error,*999)
@@ -11911,10 +12795,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBasis_TypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_TypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_TypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11933,14 +12821,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBasis_TypeSetObj",err,error,*999)
+#endif
 
     CALL BASIS_TYPE_SET(basis%BASIS,basisType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBasis_TypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBasis_TypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBasis_TypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -11967,7 +12861,9 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_DestroyNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER_EQUATIONS)
@@ -11992,10 +12888,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_DestroyNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_DestroyNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_DestroyNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12019,7 +12919,9 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_DestroyNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER_EQUATIONS)
@@ -12044,10 +12946,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_DestroyNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_DestroyNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_DestroyNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12065,14 +12971,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_DestroyObj",err,error,*999)
+#endif
 
     CALL BOUNDARY_CONDITIONS_DESTROY(boundaryConditions%BOUNDARY_CONDITIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12105,7 +13017,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_AddConstantNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(PROBLEM)
@@ -12144,10 +13058,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddConstantNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_AddConstantNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddConstantNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12170,15 +13088,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_AddConstantObj",err,error,*999)
+#endif
 
     CALL BOUNDARY_CONDITIONS_ADD_CONSTANT(boundaryConditions%BOUNDARY_CONDITIONS,field%FIELD,variableType,componentNumber, &
       & condition,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddConstantObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_AddConstantObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddConstantObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12212,7 +13136,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_SetConstantNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(PROBLEM)
@@ -12251,10 +13177,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetConstantNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_SetConstantNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetConstantNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12277,15 +13207,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_SetConstantObj",ERR,error,*999)
+#endif
 
     CALL BOUNDARY_CONDITIONS_SET_CONSTANT(boundaryConditions%BOUNDARY_CONDITIONS,field%FIELD,variableType,componentNumber, &
       & condition,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetConstantObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_SetConstantObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetConstantObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12319,7 +13255,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_AddElementNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(PROBLEM)
@@ -12358,10 +13296,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddElementNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_AddElementNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddElementNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12386,15 +13328,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_AddElementObj",err,error,*999)
+#endif
 
     CALL BOUNDARY_CONDITIONS_ADD_ELEMENT(boundaryConditions%BOUNDARY_CONDITIONS,field%FIELD,variableType,elementUserNumber, &
       & componentNumber,condition,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddElementObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_AddElementObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddElementObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12428,7 +13376,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_SetElementNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(PROBLEM)
@@ -12467,10 +13417,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetElementNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_SetElementNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetElementNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12495,15 +13449,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_SetElementObj",err,error,*999)
+#endif
 
     CALL BOUNDARY_CONDITIONS_SET_ELEMENT(boundaryConditions%BOUNDARY_CONDITIONS,field%FIELD,variableType,elementUserNumber, &
       & componentNumber,condition,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetElementObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_SetElementObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetElementObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12539,7 +13499,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_AddNodeNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(PROBLEM)
@@ -12578,10 +13540,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddNodeNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_AddNodeNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddNodeNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12608,15 +13574,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_AddNodeObj",err,error,*999)
+#endif
 
     CALL BOUNDARY_CONDITIONS_ADD_NODE(boundaryConditions%BOUNDARY_CONDITIONS,field%FIELD,variableType,versionNumber, &
       & derivativeNumber,nodeUserNumber,componentNumber,condition,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddNodeObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_AddNodeObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_AddNodeObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12652,7 +13624,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_SetNodeNumber0",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(PROBLEM)
@@ -12691,10 +13665,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetNodeNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_SetNodeNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetNodeNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12730,7 +13708,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_SetNodeNumber1",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(PROBLEM)
@@ -12769,10 +13749,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetNodeNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_SetNodeNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetNodeNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12799,15 +13783,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_SetNodeObj",err,error,*999)
+#endif
 
     CALL BOUNDARY_CONDITIONS_SET_NODE(boundaryConditions%BOUNDARY_CONDITIONS,field%FIELD,variableType,versionNumber, &
       & derivativeNumber,nodeUserNumber,componentNumber,condition,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetNodeObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_SetNodeObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_SetNodeObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12833,7 +13823,9 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solverEquations)
@@ -12858,10 +13850,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12887,7 +13883,9 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solverEquations)
@@ -12912,10 +13910,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -12934,14 +13936,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSBoundaryConditions_NeumannSparsityTypeSetObj",err,error,*999)
+#endif
 
     CALL BoundaryConditions_NeumannSparsityTypeSet(boundaryConditions%BOUNDARY_CONDITIONS,sparsityType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBoundaryConditions_NeumannSparsityTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSBoundaryConditions_NeumannSparsityTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13070,14 +14078,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSErrorHandlingModeGet",err,error,*999)
+#endif
 
     CALL CMISS_ERROR_HANDLING_MODE_GET(errorHandlingMode,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSErrorHandlingModeGet")
+#endif
     RETURN
 999 CALL ERRORS("CMISSErrorHandlingModeGet",err,error)
+#if DEBUG
     CALL EXITS("CMISSErrorHandlingModeGet")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13095,14 +14109,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSErrorHandlingModeSet",err,error,*999)
+#endif
 
     CALL CMISS_ERROR_HANDLING_MODE_SET(errorHandlingMode,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSErrorHandlingModeSet")
+#endif
     RETURN
 999 CALL ERRORS("CMISSErrorHandlingModeSet",err,error)
+#if DEBUG
     CALL EXITS("CMISSErrorHandlingModeSet")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13159,15 +14179,21 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: RandomSeeds(1)
 
+#if DEBUG
     CALL ENTERS("CMISSRandomSeedsGet0",err,error,*999)
+#endif
 
     CALL RANDOM_SEEDS_GET(RandomSeeds,err,error,*999)
     randomSeed=RandomSeeds(1)
 
+#if DEBUG
     CALL EXITS("CMISSRandomSeedsGet0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRandomSeedsGet0",err,error)
+#if DEBUG
     CALL EXITS("CMISSRandomSeedsGet0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13185,14 +14211,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRandomSeedsGet1",err,error,*999)
+#endif
 
     CALL RANDOM_SEEDS_GET(randomSeeds,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRandomSeedsGet1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRandomSeedsGet1",err,error)
+#if DEBUG
     CALL EXITS("CMISSRandomSeedsGet1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13210,14 +14242,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRandomSeedsSizeGet",err,error,*999)
+#endif
 
     CALL RANDOM_SEEDS_SIZE_GET(randomSeedsSize,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRandomSeedsSizeGet")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRandomSeedsSizeGet",err,error)
+#if DEBUG
     CALL EXITS("CMISSRandomSeedsSizeGet")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13235,14 +14273,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRandomSeedsSet0",err,error,*999)
+#endif
 
     CALL RANDOM_SEEDS_SET([randomSeed],err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRandomSeedsSet0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRandomSeedsSet0",err,error)
+#if DEBUG
     CALL EXITS("CMISSRandomSeedsSet0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13260,14 +14304,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRandomSeedsSet1",err,error,*999)
+#endif
 
     CALL RANDOM_SEEDS_SET(randomSeeds,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRandomSeedsSet1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRandomSeedsSet1",err,error)
+#if DEBUG
     CALL EXITS("CMISSRandomSeedsSet1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13293,7 +14343,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_VariableSetAsKnownNumberC",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -13313,10 +14365,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsKnownNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_VariableSetAsKnownNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsKnownNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13336,14 +14392,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_VariableSetAsKnownObjC",err,error,*999)
+#endif
 
     CALL CELLML_VARIABLE_SET_AS_KNOWN(CellML%CELLML,CellMLModelUserNumber,variableID,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsKnownObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_VariableSetAsKnownObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsKnownObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13367,7 +14429,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_VariableSetAsKnownNumberVS",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -13387,10 +14451,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsKnownNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_VariableSetAsKnownNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsKnownNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13410,14 +14478,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_VariableSetAsKnownObjVS",err,error,*999)
+#endif
 
     CALL CELLML_VARIABLE_SET_AS_KNOWN(CellML%CELLML,CellMLModelUserNumber,variableID,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsKnownObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_VariableSetAsKnownObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsKnownObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13441,7 +14515,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_VariableSetAsWantedNumberC",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -13461,10 +14537,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsWantedNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_VariableSetAsWantedNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsWantedNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13484,14 +14564,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_VariableSetAsWantedObjC",err,error,*999)
+#endif
 
     CALL CELLML_VARIABLE_SET_AS_WANTED(CellML%CELLML,CellMLModelUserNumber,variableID,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsWantedObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_VariableSetAsWantedObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsWantedObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13515,7 +14601,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_VariableSetAsWantedNumberVS",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -13535,10 +14623,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsWantedNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_VariableSetAsWantedNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsWantedNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13558,14 +14650,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_VariableSetAsWantedObjVS",err,error,*999)
+#endif
 
     CALL CELLML_VARIABLE_SET_AS_WANTED(CellML%CELLML,CellMLModelUserNumber,variableID,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsWantedObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_VariableSetAsWantedObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_VariableSetAsWantedObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13596,7 +14694,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateCellMLToFieldMapNumberC",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -13625,10 +14725,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateCellMLToFieldMapNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateCellMLToFieldMapNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateCellMLToFieldMapNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13654,15 +14758,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateCellMLToFieldMapObjC",err,error,*999)
+#endif
 
     CALL CELLML_CREATE_CELLML_TO_FIELD_MAP(CellML%CELLML,CellMLModelUserNumber,variableID,CellMLParameterSet, &
       & field%FIELD,variableType,componentNumber,fieldParameterSet,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateCellMLToFieldMapObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateCellMLToFieldMapObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateCellMLToFieldMapObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13693,7 +14803,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateCellMLToFieldMapNumberVS",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -13722,10 +14834,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateCellMLToFieldMapNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateCellMLToFieldMapNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateCellMLToFieldMapNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13751,15 +14867,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateCellMLToFieldMapNumberVS",err,error,*999)
+#endif
 
     CALL CELLML_CREATE_CELLML_TO_FIELD_MAP(CellML%CELLML,CellMLModelUserNumber,variableID,CellMLParameterSet, &
       & field%FIELD,variableType,componentNumber,fieldParameterSet,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateCellMLToFieldMapObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateCellMLToFieldMapObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateCellMLToFieldMapObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13790,7 +14912,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateFieldToCellMLMapNumberC",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -13819,10 +14943,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFieldToCellMLMapNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateFieldToCellMLMapNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFieldToCellMLMapNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13848,15 +14976,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateFieldToCellMLMapObjC",err,error,*999)
+#endif
 
     CALL CELLML_CREATE_FIELD_TO_CELLML_MAP(CellML%CELLML,field%FIELD,variableType,componentNumber,fieldParameterSet, &
       & CellMLModelUserNumber,variableID,CellMLParameterSet,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFieldToCellMLMapObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateFieldToCellMLMapObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFieldToCellMLMapObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13887,7 +15021,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateFieldToCellMLMapNumberVS",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -13916,10 +15052,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFieldToCellMLMapNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateFieldToCellMLMapNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFieldToCellMLMapNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13945,15 +15085,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateFieldToCellMLMapNumberVS",err,error,*999)
+#endif
 
     CALL CELLML_CREATE_FIELD_TO_CELLML_MAP(CellML%CELLML,field%FIELD,variableType,componentNumber,fieldParameterSet, &
       & CellMLModelUserNumber,variableID,CellMLParameterSet,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFieldToCellMLMapObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateFieldToCellMLMapObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFieldToCellMLMapObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -13975,7 +15121,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -13999,10 +15147,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_START('CellML Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14020,7 +15172,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateFinishObj",err,error,*999)
+#endif
 
     CALL CELLML_CREATE_FINISH(CellML%CELLML,err,error,*999)
 
@@ -14028,10 +15182,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_START('CellML Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14053,7 +15211,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('CellML Create')
@@ -14070,10 +15230,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14093,7 +15257,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_CreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('CellML Create')
@@ -14101,10 +15267,14 @@ CONTAINS
 
     CALL CELLML_CREATE_START(CellMLUserNumber,region%REGION,CellML%CELLML,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14126,7 +15296,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -14146,10 +15318,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14167,14 +15343,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_DestroyObj",err,error,*999)
+#endif
 
     CALL CELLML_DESTROY(CellML%CELLML,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14196,7 +15378,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_FieldMapsCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -14220,10 +15404,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_START('CellML Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldMapsCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_FieldMapsCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldMapsCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14241,14 +15429,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_FieldMapsCreateFinishObj",err,error,*999)
+#endif
 
     CALL CELLML_FIELD_MAPS_CREATE_FINISH(CellML%CELLML,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldMapsCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_FieldMapsCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldMapsCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14270,7 +15464,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_FieldMapsCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -14290,10 +15486,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellMLFieldCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellMLFieldCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellMLFieldCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14311,14 +15511,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_FieldMapsCreateStartObj",err,error,*999)
+#endif
 
     CALL CELLML_FIELD_MAPS_CREATE_START(CellML%CELLML,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldMapsCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_FieldMapsCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldMapsCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14342,7 +15548,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ModelImportNumberC",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -14362,10 +15570,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelImportNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ModelImportNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelImportNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14385,14 +15597,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ModelImportObjC",err,error,*999)
+#endif
 
     CALL CELLML_MODEL_IMPORT(CellML%CELLML,URI,modelIndex,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelImportObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ModelImportObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelImportObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14416,7 +15634,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ModelImportNumberVS",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -14436,10 +15656,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelImportNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ModelImportNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelImportNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14459,14 +15683,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ModelImportObjVS",err,error,*999)
+#endif
 
     CALL CELLML_MODEL_IMPORT(CellML%CELLML,URI,modelIndex,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelImportObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ModelImportObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelImportObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14488,7 +15718,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ModelsFieldCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -14508,10 +15740,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ModelsFieldCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14529,14 +15765,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ModelsFieldCreateFinishObj",err,error,*999)
+#endif
 
     CALL CELLML_MODELS_FIELD_CREATE_FINISH(CellML%CELLML,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ModelsFieldCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14560,7 +15802,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ModelsFieldCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -14581,10 +15825,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ModelsFieldCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14604,14 +15852,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ModelsFieldCreateStartObj",err,error,*999)
+#endif
 
     CALL CELLML_MODELS_FIELD_CREATE_START(CellMLModelsFieldUserNumber,CellML%CELLML,field%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ModelsFieldCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14635,7 +15889,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ModelsFieldGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -14657,10 +15913,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ModelsFieldGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14679,14 +15939,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ModelsFieldGetObj",err,error,*999)
+#endif
 
     CALL CELLML_MODELS_FIELD_GET(CellML%CELLML,field%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ModelsFieldGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ModelsFieldGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14708,7 +15974,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_StateFieldCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -14728,10 +15996,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_StateFieldCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14749,14 +16021,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_StateFieldCreateFinishObj",err,error,*999)
+#endif
 
     CALL CELLML_STATE_FIELD_CREATE_FINISH(CellML%CELLML,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_StateFieldCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14780,7 +16058,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_StateFieldCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -14801,10 +16081,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_StateFieldCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14824,14 +16108,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_StateFieldCreateStartObj",err,error,*999)
+#endif
 
     CALL CELLML_STATE_FIELD_CREATE_START(CellMLStateFieldUserNumber,CellML%CELLML,field%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_StateFieldCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14855,7 +16145,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_StateFieldGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -14877,10 +16169,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_StateFieldGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14899,14 +16195,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_StateFieldGetObj",err,error,*999)
+#endif
 
     CALL CELLML_STATE_FIELD_GET(CellML%CELLML,field%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_StateFieldGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_StateFieldGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -14933,7 +16235,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_FieldComponentGetNumberC",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -14953,10 +16257,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldComponentGetNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_FieldComponentGetNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldComponentGetNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
 
     RETURN
@@ -14979,14 +16287,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_FieldComponentGetObjC",err,error,*999)
+#endif
 
     CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLModelUserNumber,CellMLFieldType,variableID,fieldComponent,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldComponentGetObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_FieldComponentGetObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldComponentGetObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15013,7 +16327,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_FieldComponentGetNumberVS",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -15033,10 +16349,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldComponentGetNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_FieldComponentGetNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldComponentGetNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15058,14 +16378,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_FieldComponentGetObjVS",err,error,*999)
+#endif
 
     CALL CELLML_FIELD_COMPONENT_GET(CellML%CELLML,CellMLModelUserNumber,CellMLFieldType,variableID,fieldComponent,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldComponentGetObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_FieldComponentGetObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_FieldComponentGetObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15087,7 +16413,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_IntermediateFieldCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -15107,10 +16435,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_IntermediateFieldCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15128,14 +16460,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_IntermediateFieldCreateFinishObj",err,error,*999)
+#endif
 
     CALL CELLML_INTERMEDIATE_FIELD_CREATE_FINISH(CellML%CELLML,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_IntermediateFieldCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15159,7 +16497,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_IntermediateFieldCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -15180,10 +16520,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_IntermediateFieldCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15203,14 +16547,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_IntermediateFieldCreateStartObj",err,error,*999)
+#endif
 
     CALL CELLML_INTERMEDIATE_FIELD_CREATE_START(CellMLIntermediateFieldUserNumber,CellML%CELLML,field%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_IntermediateFieldCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15234,7 +16584,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_IntermediateFieldGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -15256,10 +16608,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_IntermediateFieldGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15278,14 +16634,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_IntermediateFieldGetObj",err,error,*999)
+#endif
 
     CALL CELLML_INTERMEDIATE_FIELD_GET(CellML%CELLML,field%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_IntermediateFieldGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_IntermediateFieldGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15307,7 +16669,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ParametersFieldCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -15327,10 +16691,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ParametersFieldCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15348,14 +16716,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ParametersFieldCreateFinishObj",err,error,*999)
+#endif
 
     CALL CELLML_PARAMETERS_FIELD_CREATE_FINISH(CellML%CELLML,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ParametersFieldCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15379,7 +16753,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ParametersFieldCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -15400,10 +16776,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ParametersFieldCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15423,14 +16803,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ParametersFieldCreateStartObj",err,error,*999)
+#endif
 
     CALL CELLML_PARAMETERS_FIELD_CREATE_START(CellMLParametersFieldUserNumber,CellML%CELLML,field%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ParametersFieldCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15454,7 +16840,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ParametersFieldGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -15476,10 +16864,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ParametersFieldGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15498,14 +16890,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_ParametersFieldGetObj",err,error,*999)
+#endif
 
     CALL CELLML_PARAMETERS_FIELD_GET(CellML%CELLML,field%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_ParametersFieldGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_ParametersFieldGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15527,7 +16925,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_GenerateNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(CELLML)
@@ -15547,10 +16947,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellML_GenerateNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_GenerateNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_GenerateNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15568,14 +16972,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellML_GenerateObj",err,error,*999)
+#endif
 
     CALL CELLML_GENERATE(CellML%CELLML,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellML_GenerateObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellML_GenerateObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellML_GenerateObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15596,14 +17006,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSComputationalNodeNumberGet",ERR,error,*999)
+#endif
 
     nodeNumber = COMPUTATIONAL_NODE_NUMBER_GET(err,error)
 
+#if DEBUG
     CALL EXITS("CMISSComputationalNodeNumberGet")
+#endif
     RETURN
 999 CALL ERRORS("CMISSComputationalNodeNumberGet",err,error)
+#if DEBUG
     CALL EXITS("CMISSComputationalNodeNumberGet")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15621,14 +17037,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSComputationalNumberOfNodesGet",ERR,error,*999)
+#endif
 
     numberOfNodes = COMPUTATIONAL_NODES_NUMBER_GET(err,error)
 
+#if DEBUG
     CALL EXITS("CMISSComputationalNumberOfNodesGet")
+#endif
     RETURN
 999 CALL ERRORS("CMISSComputationalNumberOfNodesGet",err,error)
+#if DEBUG
     CALL EXITS("CMISSComputationalNumberOfNodesGet")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15645,15 +17067,21 @@ CONTAINS
     INTEGER(INTG),INTENT(IN) :: numberComputationalNodes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
+#if DEBUG
     CALL ENTERS("CMISSComputationalWorkGroup_CreateStart",ERR,error,*999)
+#endif
 
     CALL COMPUTATIONAL_WORK_GROUP_CREATE_START(worldWorkGroup%COMPUTATIONAL_WORK_GROUP,numberComputationalNodes, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSComputationalWorkGroup_CreateStart")
+#endif
     RETURN
 999 CALL ERRORS("CMISSComputationalWorkGroup_CreateStart",err,error)
+#if DEBUG
     CALL EXITS("CMISSComputationalWorkGroup_CreateStart")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15669,14 +17097,20 @@ CONTAINS
     TYPE(CMISSComputationalWorkGroupType), INTENT(INOUT) :: worldWorkGroup
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
+#if DEBUG
     CALL ENTERS("CMISSComputationalWorkGroup_CreateFinish",ERR,error,*999)
+#endif
 
     CALL COMPUTATIONAL_WORK_GROUP_CREATE_FINISH(worldWorkGroup%COMPUTATIONAL_WORK_GROUP, err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSComputationalWorkGroup_CreateFinish")
+#endif
     RETURN
 999 CALL ERRORS("CMISSComputationalWorkGroup_CreateFinish",err,error)
+#if DEBUG
     CALL EXITS("CMISSComputationalWorkGroup_CreateFinish")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15694,15 +17128,21 @@ CONTAINS
     INTEGER(INTG),INTENT(IN) :: numberComputationalNodes
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
+#if DEBUG
     CALL ENTERS("CMISSComputationalWorkGroup_SubgroupAdd",ERR,error,*999)
+#endif
 
     CALL COMPUTATIONAL_WORK_GROUP_SUBGROUP_ADD(parentWorkGroup%COMPUTATIONAL_WORK_GROUP,numberComputationalNodes, &
     & addedWorkGroup%COMPUTATIONAL_WORK_GROUP, err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSComputationalWorkGroup_SubgroupAdd")
+#endif
     RETURN
 999 CALL ERRORS("CMISSComputationalWorkGroup_SubgroupAdd",err,error)
+#if DEBUG
     CALL EXITS("CMISSComputationalWorkGroup_SubgroupAdd")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15717,15 +17157,21 @@ CONTAINS
     TYPE(CMISSComputationalWorkGroupType),INTENT(IN) :: worldWorkGroup
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_WorldWorkGroupSet",err,error,*999)
+#endif
 
     ! todo
     CALL FLAG_ERROR('not implemented yet', err,error, *999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_WorldWorkGroupSet")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_WorldWorkGroupSet",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_WorldWorkGroupSet")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15751,7 +17197,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_CurrentTimesGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -15764,10 +17212,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_CurrentTimesGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_CurrentTimesGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_CurrentTimesGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15791,7 +17243,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_CurrentTimesGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -15804,10 +17258,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_CurrentTimesGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_CurrentTimesGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_CurrentTimesGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15827,14 +17285,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_CurrentTimesGetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_CURRENT_TIMES_GET(controlLoop%CONTROL_LOOP,currentTime,timeIncrement,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_CurrentTimesGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_CurrentTimesGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_CurrentTimesGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15856,7 +17320,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_DestroyNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -15869,10 +17335,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_DestroyNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_DestroyNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_DestroyNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15894,7 +17364,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_DestroyNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -15907,10 +17379,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_DestroyNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_DestroyNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_DestroyNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15928,14 +17404,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_DestroyObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_DESTROY(controlLoop%CONTROL_LOOP,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -15960,7 +17442,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_ControlLoopGetNumber00",err,error,*999)
+#endif
 
     NULLIFY(ROOT_CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -15973,10 +17457,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetNumber00")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_ControlLoopGetNumber00",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetNumber00")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16001,7 +17489,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_ControlLoopGetNumber10",err,error,*999)
+#endif
 
     NULLIFY(ROOT_CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16014,10 +17504,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetNumber10")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_ControlLoopGetNumber10",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetNumber10")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16042,7 +17536,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_ControlLoopGetNumber01",err,error,*999)
+#endif
 
     NULLIFY(ROOT_CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16055,10 +17551,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetNumber01")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_ControlLoopGetNumber01",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetNumber01")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16083,7 +17583,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_ControlLoopGetNumber11",err,error,*999)
+#endif
 
     NULLIFY(ROOT_CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16096,10 +17598,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetNumber11")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_ControlLoopGetNumber11",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetNumber11")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16119,14 +17625,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_ControlLoopGetObj0",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_GET(controlLoopRoot%CONTROL_LOOP,controlLoopIdentifier,controlLoop%CONTROL_LOOP,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetObj0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_ControlLoopGetObj0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetObj0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16146,14 +17658,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_ControlLoopGetObj1",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_GET(controlLoopRoot%CONTROL_LOOP,controlLoopIdentifiers,controlLoop%CONTROL_LOOP,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetObj1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_ControlLoopGetObj1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_ControlLoopGetObj1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16179,7 +17697,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_IterationsSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16192,10 +17712,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_IterationsSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_IterationsSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_IterationsSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16221,7 +17745,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_IterationsSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16234,10 +17760,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_IterationsSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_IterationsSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_IterationsSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16257,14 +17787,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_IterationsSetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_ITERATIONS_SET(controlLoop%CONTROL_LOOP,startIteration,stopIteration,iterationIncrement,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_IterationsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_IterationsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_IterationsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16287,7 +17823,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelGetCNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16300,10 +17838,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetCNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelGetCNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetCNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16326,7 +17868,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelGetCNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16339,10 +17883,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetCNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelGetCNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetCNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16361,14 +17909,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelGetCObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_LABEL_GET(controlLoop%CONTROL_LOOP,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelGetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16391,7 +17945,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelGetVSNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16404,10 +17960,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetVSNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelGetVSNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetVSNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16430,7 +17990,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelGetVSNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16443,10 +18005,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetVSNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelGetVSNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetVSNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16465,14 +18031,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelGetVSObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_LABEL_GET(controlLoop%CONTROL_LOOP,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelGetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelGetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16495,7 +18067,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelSetCNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16508,10 +18082,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelSetCNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelSetCNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelSetCNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16534,7 +18112,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelSetCNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16547,10 +18127,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelSetCNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelSetCNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelSetCNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16569,14 +18153,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelSetCObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_LABEL_SET(controlLoop%CONTROL_LOOP,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelSetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelSetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelSetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16599,7 +18189,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelSetVSNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16612,10 +18204,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoopLabelStVSNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelSetVSNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLabelSetVSNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16638,7 +18234,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelSetVSNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16651,10 +18249,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoopLabelStVSNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelSetVSNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLabelSetVSNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16673,14 +18275,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LabelSetVSObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_LABEL_SET(controlLoop%CONTROL_LOOP,CHAR(label),err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelSetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LabelSetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LabelSetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16703,7 +18311,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_MaximumIterationsSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16716,10 +18326,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_MaximumIterationsSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_MaximumIterationsSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_MaximumIterationsSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16742,7 +18356,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_MaximumIterationsSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16755,10 +18371,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_MaximumIterationsSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_MaximumIterationsSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_MaximumIterationsSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16777,14 +18397,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_MaximumIterationsSetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(controlLoop%CONTROL_LOOP,maximumIterations,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_MaximumIterationsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_MaximumIterationsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_MaximumIterationsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16803,14 +18429,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_LoadOutputSet",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_LOAD_OUTPUT_SET(controlLoop%CONTROL_LOOP,outputFrequency,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LoadOutputSet")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_LoadOutputSet",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_LoadOutputSet")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16833,7 +18465,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_NumberOfSubLoopsGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16846,10 +18480,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_NumberOfSubLoopsGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16872,7 +18510,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_NumberOfSubLoopsGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16885,10 +18525,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_NumberOfSubLoopsGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16907,14 +18551,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_NumberOfSubLoopsGetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET(controlLoop%CONTROL_LOOP,numberOfSubLoops,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_NumberOfSubLoopsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16937,7 +18587,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoopNumberOfSubLoopsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16950,10 +18602,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_NumberOfSubLoopsSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -16976,7 +18632,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_NumberOfSubLoopsSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -16989,10 +18647,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_NumberOfSubLoopsSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17011,14 +18673,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_NumberOfSubLoopsSetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET(controlLoop%CONTROL_LOOP,numberOfSubLoops,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_NumberOfSubLoopsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_NumberOfSubLoopsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17041,7 +18709,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_OutputTypeGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17054,10 +18724,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_OutputTypeGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17080,7 +18754,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_OutputTypeGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17093,10 +18769,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_OutputTypeGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17115,14 +18795,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_OutputTypeGetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_OUTPUT_TYPE_GET(controlLoop%CONTROL_LOOP,outputType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_OutputTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17145,7 +18831,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_OutputTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17158,10 +18846,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_OutputTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17184,7 +18876,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_OutputTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17197,10 +18891,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_OutputTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17219,14 +18917,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_OutputTypeSetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_OUTPUT_TYPE_SET(controlLoop%CONTROL_LOOP,outputType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_OutputTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_OutputTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17249,7 +18953,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimeOutputSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17262,10 +18968,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimeOutputSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimeOutputSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimeOutputSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17288,7 +18998,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimeOutputSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17301,10 +19013,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimeOutputSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimeOutputSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimeOutputSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17323,14 +19039,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimeOutputSetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_TIME_OUTPUT_SET(controlLoop%CONTROL_LOOP,outputFrequency,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimeOutputSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimeOutputSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoopTimeOuputSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17353,7 +19075,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimeInputSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17366,10 +19090,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimeInputSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimeInputSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimeInputSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17392,7 +19120,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimeInputSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17405,10 +19135,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimeInputSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimeInputSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimeInputSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17427,14 +19161,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimeInputSetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_TIME_INPUT_SET(controlLoop%CONTROL_LOOP,inputOption,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimeInputSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimeInputSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimeInputSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17462,7 +19202,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimesGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17475,10 +19217,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimesGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17505,7 +19251,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimesGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17518,10 +19266,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimesGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17543,14 +19295,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimesGetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_TIMES_GET(controlLoop%CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimesGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17575,7 +19333,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimesSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17588,10 +19348,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimesSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17616,7 +19380,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimesSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17629,10 +19395,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimesSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17653,14 +19423,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TimesSetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_TIMES_SET(controlLoop%CONTROL_LOOP,startTime,stopTime,timeIncrement,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TimesSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TimesSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17683,7 +19459,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17696,10 +19474,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17722,7 +19504,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(PROBLEM)
@@ -17735,10 +19519,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17757,14 +19545,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSControlLoop_TypeSetObj",err,error,*999)
+#endif
 
     CALL CONTROL_LOOP_TYPE_SET(controlLoop%CONTROL_LOOP,loopType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSControlLoop_TypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLoop_TypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17786,7 +19580,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -17802,10 +19598,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Coordinate System Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17823,7 +19623,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_CreateFinishObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_CREATE_FINISH(coordinateSystem%COORDINATE_SYSTEM,err,error,*999)
 
@@ -17831,10 +19633,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Coordinate System Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17853,7 +19659,9 @@ CONTAINS
     !Local variables
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_CreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Coordinate System Create')
@@ -17862,10 +19670,14 @@ CONTAINS
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_CREATE_START(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17884,7 +19696,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_CreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Coordinate System Create')
@@ -17892,10 +19706,14 @@ CONTAINS
 
     CALL COORDINATE_SYSTEM_CREATE_START(coordinateSystemUserNumber,coordinateSystem%COORDINATE_SYSTEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17915,7 +19733,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -17927,10 +19747,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17948,14 +19772,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSysteDestroyObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_DESTROY(coordinateSystem%COORDINATE_SYSTEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -17976,7 +19806,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_DimensionGetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -17988,10 +19820,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DimensionGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_DimensionGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DimensionGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18010,14 +19846,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_DimensionGetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_DIMENSION_GET(coordinateSystem%COORDINATE_SYSTEM,coordinateSystemDimension,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DimensionGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_DimensionGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DimensionGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18038,7 +19880,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_DimensionSetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -18050,10 +19894,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DimensionSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_DimensionSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DimensionSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18072,14 +19920,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_DimensionSetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_DIMENSION_SET(coordinateSystem%COORDINATE_SYSTEM,coordinateSystemDimension,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DimensionSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_DimensionSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_DimensionSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18100,7 +19954,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_FocusGetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -18112,10 +19968,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_FocusGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_FocusGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_FocusGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18134,14 +19994,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_FocusGetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_FOCUS_GET(coordinateSystem%COORDINATE_SYSTEM,focus,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_FocusGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_FocusGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_FocusGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18162,7 +20028,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_FocusSetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -18174,10 +20042,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_FocusSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_FocusSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_FocusSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18196,14 +20068,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_FocusSetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_FOCUS_SET(coordinateSystem%COORDINATE_SYSTEM,focus,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_FocusSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_FocusSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_FocusSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18224,7 +20102,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_RadialInterpolationGetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -18236,10 +20116,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_RadialInterpolationGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_RadialInterpolationGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_RadialInterpolationGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18258,14 +20142,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_RadialInterpolationGetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_GET(coordinateSystem%COORDINATE_SYSTEM,radialInterpolationType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_RadialInterpolationGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_RadialInterpolationGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_RadialInterpolationGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18286,7 +20176,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_RadialInterpolationSetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -18298,10 +20190,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_RadialInterpolationSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_RadialInterpolationSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_RadialInterpolationSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18320,14 +20216,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_RadialInterpolationSetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_RADIAL_INTERPOLATION_TYPE_SET(coordinateSystem%COORDINATE_SYSTEM,radialInterpolationType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_RadialInterpolationSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_RadialInterpolationSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_RadialInterpolationSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18348,7 +20250,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_TypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -18360,10 +20264,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_TypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_TypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_TypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18382,14 +20290,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_TypeGetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_TYPE_GET(coordinateSystem%COORDINATE_SYSTEM,coordinateSystemType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_TypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_TypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_TypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18410,7 +20324,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_TypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -18422,10 +20338,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_TypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_TypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_TypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18444,14 +20364,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_TypeSetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_TYPE_SET(coordinateSystem%COORDINATE_SYSTEM,coordinateSystemType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_TypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_TypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_TypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18472,7 +20398,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_OriginGetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -18484,10 +20412,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OriginGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_OriginGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OriginGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18506,14 +20438,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_OriginGetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_ORIGIN_GET(coordinateSystem%COORDINATE_SYSTEM,origin,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OriginGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_OriginGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OriginGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18534,7 +20472,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_OriginSetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -18546,10 +20486,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OriginSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_OriginSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OriginSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18568,14 +20512,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_OriginSetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_ORIGIN_SET(coordinateSystem%COORDINATE_SYSTEM,origin,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OriginSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_OriginSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OriginSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18596,7 +20546,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_OrientationGetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -18608,10 +20560,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OrientationGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_OrientationGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OrientationGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18630,14 +20586,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_OrientationGetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_ORIENTATION_GET(coordinateSystem%COORDINATE_SYSTEM,orientation,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OrientationGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_OrientationGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OrientationGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18658,7 +20620,9 @@ CONTAINS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_OrientationSetNumber",err,error,*999)
+#endif
 
     NULLIFY(COORDINATE_SYSTEM)
     CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(coordinateSystemUserNumber,COORDINATE_SYSTEM,err,error,*999)
@@ -18670,10 +20634,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OrientationSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_OrientationSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OrientationSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18692,14 +20660,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCoordinateSystem_OrientationSetObj",err,error,*999)
+#endif
 
     CALL COORDINATE_SYSTEM_ORIENTATION_SET(coordinateSystem%COORDINATE_SYSTEM,orientation,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OrientationSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCoordinateSystem_OrientationSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCoordinateSystem_OrientationSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18722,7 +20696,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18736,10 +20712,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18757,14 +20737,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_CreateFinishObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_CREATE_FINISH(dataPoints%DATA_POINTS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18786,7 +20772,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_CreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18799,10 +20787,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18822,14 +20814,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_CreateStartObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_CREATE_START(region%REGION,numberOfDataPoints,dataPoints%DATA_POINTS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18849,7 +20847,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_CreateStartInterfaceObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('dataPoints Create')
@@ -18857,10 +20857,14 @@ CONTAINS
 
     CALL DATA_POINTS_CREATE_START(interface%INTERFACE,numberOfDataPoints,dataPoints%DATA_POINTS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_CreateStartInterfaceObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_CreateStartInterfaceObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_CreateStartInterfaceObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18882,7 +20886,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18896,10 +20902,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18917,14 +20927,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_DestroyObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_DESTROY(dataPoints%DATA_POINTS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18946,7 +20962,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_NumberOfDataPointsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -18960,10 +20978,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_NumberOfDataPointsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_NumberOfDataPointsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_NumberOfDataPointsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -18982,14 +21004,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_NumberOfDataPointsGetObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_NUMBER_OF_DATA_POINTS_GET(dataPoints%DATA_POINTS,numberOfDataPoints,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_NumberOfDataPointsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_NumberOfDataPointsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_NumberOfDataPointsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19013,7 +21041,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_LabelGetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19027,10 +21057,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelGetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_LabelGetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelGetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19050,14 +21084,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_LabelGetCObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_LABEL_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelGetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_LabelGetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelGetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19080,7 +21120,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_LabelGetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19094,10 +21136,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelGetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_LabelGetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelGetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19117,14 +21163,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_LabelGetVSObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_LABEL_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelGetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_LabelGetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelGetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19147,7 +21199,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_LabelSetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19161,10 +21215,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelSetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_LabelSetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelSetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19184,14 +21242,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_LabelSetCObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_LABEL_SET(dataPoints%DATA_POINTS,dataPointGlobalNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelSetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_LabelSetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelSetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19214,7 +21278,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_LabelSetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19228,10 +21294,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelSetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_LabelSetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelSetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19251,14 +21321,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_LabelSetVSObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_LABEL_SET(dataPoints%DATA_POINTS,dataPointGlobalNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelSetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_LabelSetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_LabelSetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19281,7 +21357,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_UserNumberGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19295,10 +21373,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_UserNumberGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_UserNumberGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_UserNumberGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19318,14 +21400,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_UserNumberGetObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_USER_NUMBER_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointUserNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_UserNumberGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_UserNumberGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_UserNumberGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19348,7 +21436,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_UserNumberSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19362,10 +21452,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_UserNumberSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_UserNumberSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_UserNumberSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19385,14 +21479,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_UserNumberSetObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_USER_NUMBER_SET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointUserNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_UserNumberSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_UserNumberSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_UserNumberSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19415,7 +21515,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_ValuesGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19429,10 +21531,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_ValuesGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_ValuesGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_ValuesGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19452,14 +21558,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_ValuesGetObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_VALUES_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointValues,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_ValuesGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_ValuesGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_ValuesGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19482,7 +21594,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_ValuesSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19496,10 +21610,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_ValuesSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_ValuesSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_ValuesSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19519,14 +21637,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_ValuesSetObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_VALUES_SET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointValues,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_ValuesSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_ValuesSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_ValuesSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19549,7 +21673,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_WeightsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19563,10 +21689,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_WeightsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_WeightsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_WeightsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19586,14 +21716,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_WeightsGetObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_WEIGHTS_GET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointWeights,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_WeightsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_WeightsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_WeightsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19616,7 +21752,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_WeightsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19630,10 +21768,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_WeightsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_WeightsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_WeightsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19653,14 +21795,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataPoints_WeightsSetObj",err,error,*999)
+#endif
 
     CALL DATA_POINTS_WEIGHTS_SET(dataPoints%DATA_POINTS,dataPointGlobalNumber,dataPointWeights,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataPoints_WeightsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataPoints_WeightsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataPoints_WeightsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19687,7 +21835,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_AbsoluteToleranceGetNumber",ERR,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19704,10 +21854,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_AbsoluteToleranceGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_AbsoluteToleranceGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_AbsoluteToleranceGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19726,14 +21880,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_AbsoluteToleranceGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_ABSOLUTE_TOLERANCE_GET(dataProjection%DATA_PROJECTION,absoluteTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_AbsoluteToleranceGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_AbsoluteToleranceGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_AbsoluteToleranceGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19758,7 +21918,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_AbsoluteToleranceSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19775,10 +21937,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_AbsoluteToleranceSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_AbsoluteToleranceSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_AbsoluteToleranceSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19797,14 +21963,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_AbsoluteToleranceSetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_ABSOLUTE_TOLERANCE_SET(dataProjection%DATA_PROJECTION,absoluteTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_AbsoluteToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_AbsoluteToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_AbsoluteToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19828,7 +22000,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -19845,10 +22019,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19866,14 +22044,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_CreateFinishObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_CREATE_FINISH(dataProjection%DATA_PROJECTION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19901,7 +22085,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: MESH_REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR    
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_CreateStartNumber",err,ERROR,*999)
+#endif
 
     NULLIFY(DATA_PROJECTION)
     NULLIFY(DATA_POINTS) 
@@ -19933,10 +22119,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,ERROR,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_CreateStartNumber",err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,ERROR)
     RETURN
     
@@ -19957,15 +22147,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_CreateStartObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_CREATE_START_DATA_POINTS(dataProjectionUserNumber,dataPoints%DATA_POINTS,mesh%MESH, &
       & dataProjection%DATA_PROJECTION,err,ERROR,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -19989,7 +22185,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -20006,10 +22204,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20027,14 +22229,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_DestroyObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_DESTROY(dataProjection%DATA_PROJECTION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20062,7 +22270,9 @@ CONTAINS
     INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
     TYPE(VARYING_STRING) :: localError      
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber",err,error,*999)
+#endif
     
     NULLIFY(dataProjection)
     NULLIFY(dataPoints) 
@@ -20088,10 +22298,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateRegionNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20121,7 +22335,9 @@ CONTAINS
     INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
     TYPE(VARYING_STRING) :: localError      
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber",err,error,*999)
+#endif
     
     NULLIFY(dataProjection)
     NULLIFY(dataPoints) 
@@ -20155,10 +22371,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,Err,ERROR,*999)
     ENDIF
     
+#if DEBUG
     CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateInterfaceNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20178,14 +22398,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables 
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_DataPointsPositionEvaluateObj",err,error,*999)
+#endif
     
     CALL DataProjection_DataPointsPositionEvaluate(dataProjection%DATA_PROJECTION,field%FIELD,fieldVariableType,err,error,*999)
     
+#if DEBUG
     CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_DataPointsPositionEvaluateObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_DataPointsPositionEvaluateObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20212,7 +22438,9 @@ CONTAINS
     INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
     TYPE(VARYING_STRING) :: localError      
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber",err,error,*999)
+#endif
     
     NULLIFY(dataProjection)
     NULLIFY(dataPoints) 
@@ -20230,10 +22458,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetRegionNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20262,7 +22494,9 @@ CONTAINS
     INTEGER(INTG) :: dataProjectionGlobalNumber !<The data projection global number.
     TYPE(VARYING_STRING) :: localError      
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber",err,error,*999)
+#endif
     
     NULLIFY(dataProjection)
     NULLIFY(dataPoints)  
@@ -20288,10 +22522,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,Err,ERROR,*999)
     ENDIF
     
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetInterfaceNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20311,15 +22549,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables 
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ProjectionCandidatesSetObj",err,error,*999)
+#endif
     
     CALL DataProjection_ProjectionCandidatesSet(dataProjection%DATA_PROJECTION,candidateElements,localFaceLineNumbers, &
       & err,error,*999)
     
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ProjectionCandidatesSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionCandidatesSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20348,7 +22592,9 @@ CONTAINS
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
     TYPE(VARYING_STRING) :: LOCAL_ERROR      
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ProjectionEvaluateNumber",err,error,*999)
+#endif
     
     NULLIFY(DATA_PROJECTION)
     NULLIFY(DATA_POINTS) 
@@ -20381,10 +22627,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionEvaluateNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ProjectionEvaluateNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionEvaluateNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20404,14 +22654,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ProjectionEvaluateObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_DATA_POINTS_PROJECTION_EVALUATE(dataProjection%DATA_PROJECTION,projectionField%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionEvaluateObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ProjectionEvaluateObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionEvaluateObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20437,7 +22693,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -20454,10 +22712,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumIterationUpdateGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_MaximumIterationUpdateGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumIterationUpdateGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20476,14 +22738,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_GET(dataProjection%DATA_PROJECTION,maximumIterationUpdate,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumIterationUpdateGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_MaximumIterationUpdateGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumIterationUpdateGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20509,7 +22777,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -20526,10 +22796,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumIterationUpdateSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_MaximumIterationUpdateSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumIterationUpdateSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20548,14 +22822,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_MaximumIterationUpdateSetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_MAXIMUM_ITERATION_UPDATE_SET(dataProjection%DATA_PROJECTION,maximumIterationUpdate,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumIterationUpdateSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_MaximumIterationUpdateSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumIterationUpdateSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20581,7 +22861,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -20598,10 +22880,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumNumberOfIterationsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_MaximumNumberOfIterationsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumNumberOfIterationsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20628,7 +22914,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR 
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultDistanceGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)    
@@ -20652,10 +22940,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultDistanceGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultDistanceGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultDistanceGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20676,15 +22968,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultDistanceGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_RESULT_DISTANCE_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber,ProjectionDistance, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultDistanceGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultDistanceGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultDistanceGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20711,7 +23009,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultElementNumberGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)    
@@ -20735,10 +23035,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF    
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementNumberGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultElementNumberGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementNumberGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20758,15 +23062,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultElementNumberGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_RESULT_ELEMENT_NUMBER_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber,ProjectionElementNumber, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementNumberGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultElementNumberGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementNumberGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20793,7 +23103,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultElementFaceNumberGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)    
@@ -20818,10 +23130,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF    
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementFaceNumberGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultElementFaceNumberGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementFaceNumberGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20842,15 +23158,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultElementFaceNumberGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_RESULT_ELEMENT_FACE_NUMBER_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber, &
       & ProjectionElementFaceNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementFaceNumberGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultElementFaceNumberGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementFaceNumberGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20877,7 +23199,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultElementLineNumberGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)    
@@ -20902,10 +23226,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF    
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementLineNumberGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultElementLineNumberGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementLineNumberGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20926,15 +23254,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultElementLineNumberGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_RESULT_ELEMENT_LINE_NUMBER_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber, &
       & ProjectionElementLineNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementLineNumberGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultElementLineNumberGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultElementLineNumberGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -20961,7 +23295,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultExitTagGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)    
@@ -20985,10 +23321,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF    
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultExitTagGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultExitTagGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultExitTagGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21008,15 +23348,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultExitTagGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_RESULT_EXIT_TAG_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber,ProjectionExitTag, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultExitTagGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultExitTagGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultExitTagGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21042,7 +23388,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultXiGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)    
@@ -21066,10 +23414,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultXiGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultXiGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultXiGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21089,14 +23441,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultXiGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_RESULT_XI_GET(dataProjection%DATA_PROJECTION,dataPointUserNumber,ProjectionXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultXiGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultXiGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultXiGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21122,7 +23480,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultXiSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)    
@@ -21146,10 +23506,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultXiSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultXiSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultXiSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21169,14 +23533,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ResultXiSetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_RESULT_XI_SET(dataProjection%DATA_PROJECTION,dataPointUserNumber,ProjectionXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultXiSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ResultXiSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ResultXiSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21195,14 +23565,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_GET(dataProjection%DATA_PROJECTION,maximumNumberOfIterations,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumNumberOfIterationsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_MaximumNumberOfIterationsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumNumberOfIterationsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21228,7 +23604,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -21245,10 +23623,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumNumberOfIterationsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_MaximumNumberOfIterationsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumNumberOfIterationsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21267,14 +23649,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_MaximumNumberOfIterationsSetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_MAXIMUM_NUMBER_OF_ITERATIONS_SET(dataProjection%DATA_PROJECTION,maximumNumberOfIterations,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumNumberOfIterationsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_MaximumNumberOfIterationsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_MaximumNumberOfIterationsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21300,7 +23688,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -21317,10 +23707,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_NumberOfClosestElementsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_NumberOfClosestElementsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_NumberOfClosestElementsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21339,14 +23733,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_GET(dataProjection%DATA_PROJECTION,numberOfClosestElements,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_NumberOfClosestElementsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_NumberOfClosestElementsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_NumberOfClosestElementsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21372,7 +23772,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -21389,10 +23791,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_NumberOfClosestElementsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_NumberOfClosestElementsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_NumberOfClosestElementsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21411,14 +23817,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_NumberOfClosestElementsSetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_NUMBER_OF_CLOSEST_ELEMENTS_SET(dataProjection%DATA_PROJECTION,numberOfClosestElements,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_NumberOfClosestElementsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_NumberOfClosestElementsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_NumberOfClosestElementsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21443,7 +23855,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ProjectionTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -21460,10 +23874,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ProjectionTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21482,14 +23900,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ProjectionTypeGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_PROJECTION_TYPE_GET(dataProjection%DATA_PROJECTION,projectionType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ProjectionTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21514,7 +23938,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ProjectionTypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -21531,10 +23957,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionTypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ProjectionTypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionTypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21553,14 +23983,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ProjectionTypeSetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_PROJECTION_TYPE_SET(dataProjection%DATA_PROJECTION,projectionType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ProjectionTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ProjectionTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21585,7 +24021,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_RelativeToleranceGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -21602,10 +24040,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_RelativeToleranceGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_RelativeToleranceGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_RelativeToleranceGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21624,14 +24066,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_RelativeToleranceGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_RELATIVE_TOLERANCE_GET(dataProjection%DATA_PROJECTION,relativeTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_RelativeToleranceGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_RelativeToleranceGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_RelativeToleranceGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21656,7 +24104,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_RelativeToleranceSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -21673,10 +24123,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_RelativeToleranceSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_RelativeToleranceSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_RelativeToleranceSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21695,14 +24149,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_RelativeToleranceSetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_RELATIVE_TOLERANCE_SET(dataProjection%DATA_PROJECTION,relativeTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_RelativeToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_RelativeToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_RelativeToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21727,7 +24187,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<The data projection global number.
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_StartingXiGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -21744,10 +24206,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_StartingXiGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_StartingXiGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_StartingXiGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21767,14 +24233,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_StartingXiGetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_STARTING_XI_GET(dataProjection%DATA_PROJECTION,startingXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_StartingXiGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_StartingXiGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_StartingXiGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21799,7 +24271,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_StartingXiSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -21816,10 +24290,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_StartingXiSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_StartingXiSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_StartingXiSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21838,14 +24316,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_StartingXiSetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_STARTING_XI_SET(dataProjection%DATA_PROJECTION,startingXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_StartingXiSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_StartingXiSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_StartingXiSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21874,7 +24358,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ElementSetInterfaceNumber",ERR,error,*999)
+#endif
 
     NULLIFY(PARENT_REGION)
     NULLIFY(INTERFACE)
@@ -21899,10 +24385,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ElementSetInterfaceNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ElementSetInterfaceNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ElementSetInterfaceNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21928,7 +24418,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: GLOBAL_NUMBER !<data projection global number
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ElementSetRegionNumber",ERR,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_POINTS)
@@ -21945,10 +24437,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ElementSetRegionNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ElementSetRegionNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ElementSetRegionNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -21968,14 +24464,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_ElementSetObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_ELEMENT_SET(dataProjection%DATA_PROJECTION,dataPointNumber,elementNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ElementSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_ElementSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_ElementSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22001,7 +24503,9 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelGetCInterfaceNumber",ERR,error,*999)
+#endif
 
     NULLIFY(PARENT_REGION)
     NULLIFY(INTERFACE)
@@ -22022,10 +24526,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetCInterfaceNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelGetCInterfaceNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetCInterfaceNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22051,7 +24559,9 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelGetVSInterfaceNumber",ERR,error,*999)
+#endif
 
     NULLIFY(PARENT_REGION)
     NULLIFY(INTERFACE)
@@ -22072,10 +24582,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetVSInterfaceNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelGetVSInterfaceNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetVSInterfaceNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22098,7 +24612,9 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelGetCRegionNumber",ERR,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_PROJECTION)
@@ -22111,10 +24627,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetRegionNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelGetCRegionNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetCRegionNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22137,7 +24657,9 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelGetVSRegionNumber",ERR,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_PROJECTION)
@@ -22150,10 +24672,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetVSRegionNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelGetVSRegionNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetVSRegionNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22172,14 +24698,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelGetCObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_LABEL_GET(dataProjection%DATA_PROJECTION,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelGetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22198,14 +24730,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelGetVSObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_LABEL_GET(dataProjection%DATA_PROJECTION,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelGetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelGetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22231,7 +24769,9 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelSetCInterfaceNumber",ERR,error,*999)
+#endif
 
     NULLIFY(PARENT_REGION)
     NULLIFY(INTERFACE)
@@ -22252,10 +24792,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetCInterfaceNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelSetCInterfaceNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetCInterfaceNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22281,7 +24825,9 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelSetVSInterfaceNumber",ERR,error,*999)
+#endif
 
     NULLIFY(PARENT_REGION)
     NULLIFY(INTERFACE)
@@ -22302,10 +24848,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetVSInterfaceNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelSetVSInterfaceNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetVSInterfaceNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22328,7 +24878,9 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelSetCRegionNumber",ERR,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_PROJECTION)
@@ -22341,10 +24893,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetRegionNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelSetCRegionNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetCRegionNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22367,7 +24923,9 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: DATA_PROJECTION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelSetVSRegionNumber",ERR,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(DATA_PROJECTION)
@@ -22380,10 +24938,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetVSRegionNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelSetVSRegionNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetVSRegionNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22402,14 +24964,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelSetCObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_LABEL_SET(dataProjection%DATA_PROJECTION,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelSetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22428,14 +24996,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDataProjection_LabelSetVSObj",err,error,*999)
+#endif
 
     CALL DATA_PROJECTION_LABEL_SET(dataProjection%DATA_PROJECTION,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDataProjection_LabelSetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDataProjection_LabelSetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22460,7 +25034,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -22481,10 +25057,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquations_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22502,14 +25082,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_DestroyObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_DESTROY(equations%EQUATIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquations_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22533,7 +25119,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_LinearityTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -22554,10 +25142,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquations_LinearityTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_LinearityTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_LinearityTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22576,14 +25168,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_LinearityTypeGetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_LINEARITY_TYPE_GET(equations%EQUATIONS,linearityType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquations_LinearityTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_LinearityTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_LinearityTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22607,7 +25205,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_LumpingTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -22628,10 +25228,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquations_LumpingTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_LumpingTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_LumpingTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22650,14 +25254,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_LumpingTypeGetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_LUMPING_TYPE_GET(equations%EQUATIONS,lumpingType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquations_LumpingTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_LumpingTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_LumpingTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22681,7 +25291,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_LumpingTypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -22702,10 +25314,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquations_LumpingTypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_LumpingTypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_LumpingTypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22724,14 +25340,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_LumpingTypeSetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_LUMPING_TYPE_SET(equations%EQUATIONS,lumpingType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquations_LumpingTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_LumpingTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_LumpingTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22755,7 +25377,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_OutputTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -22776,10 +25400,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquations_OutputTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_OutputTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_OutputTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22798,14 +25426,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_OutputTypeGetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_OUTPUT_TYPE_GET(equations%EQUATIONS,outputType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquations_OutputTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_OutputTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_OutputTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22829,7 +25463,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_OutputTypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -22850,10 +25486,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquations_OutputTypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_OutputTypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_OutputTypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22872,14 +25512,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_OutputTypeSetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_OUTPUT_TYPE_SET(equations%EQUATIONS,outputType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquations_OutputTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_OutputTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_OutputTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22903,7 +25549,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_SparsityTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -22924,10 +25572,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquations_SparsityTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_SparsityTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_SparsityTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22946,14 +25598,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_SparsityTypeGetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SPARSITY_TYPE_GET(equations%EQUATIONS,sparsityType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquations_SparsityTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_SparsityTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_SparsityTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -22977,7 +25635,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_SparsityTypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -22998,10 +25658,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquations_SparsityTypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_SparsityTypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_SparsityTypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23020,14 +25684,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_SparsityTypeSetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SPARSITY_TYPE_SET(equations%EQUATIONS,sparsityType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquations_SparsityTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_SparsityTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_SparsityTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23051,7 +25721,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_TimeDependenceTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -23072,10 +25744,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquations_TimeDependenceTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_TimeDependenceTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_TimeDependenceTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23094,14 +25770,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquations_TimeDependenceTypeGetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_TIME_DEPENDENCE_TYPE_GET(equations%EQUATIONS,timeDependenceType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquations_TimeDependenceTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquations_TimeDependenceTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquations_TimeDependenceTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23224,7 +25906,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DerivedCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(equationsSet)
@@ -23243,10 +25927,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DerivedCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23264,14 +25952,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DerivedCreateFinishObj",err,error,*999)
+#endif
 
     CALL EquationsSet_DerivedCreateFinish(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DerivedCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23295,7 +25989,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DerivedCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(equationsSet)
@@ -23316,10 +26012,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DerivedCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23339,15 +26039,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DerivedCreateStartObj",err,error,*999)
+#endif
 
     CALL EquationsSet_DerivedCreateStart(equationsSet%EQUATIONS_SET,derivedFieldUserNumber,derivedField%FIELD, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DerivedCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23369,7 +26075,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DerivedDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(equationsSet)
@@ -23388,10 +26096,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DerivedDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23409,14 +26121,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DerivedDestroyObj",err,error,*999)
+#endif
 
     CALL EquationsSet_DerivedDestroy(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DerivedDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23439,7 +26157,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DerivedVariableCalculateNumber",err,error,*999)
+#endif
 
     NULLIFY(equationsSet)
     NULLIFY(region)
@@ -23459,10 +26179,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedVariableCalculateNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DerivedVariableCalculateNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedVariableCalculateNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
   END SUBROUTINE CMISSEquationsSet_DerivedVariableCalculateNumber
 
@@ -23478,14 +26202,20 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: derivedType !<The derived field type to calculate. \see OPENCMISS_EquationsSetDerivedTypes.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DerivedVariableCalculateObj",err,error,*999)
+#endif
 
     CALL EquationsSet_DerivedVariableCalculate(equationsSet%EQUATIONS_SET,derivedType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedVariableCalculateObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DerivedVariableCalculateObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedVariableCalculateObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
   END SUBROUTINE CMISSEquationsSet_DerivedVariableCalculateObj
 
@@ -23507,7 +26237,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DerivedVariableSetNumber",err,error,*999)
+#endif
 
     NULLIFY(equationsSet)
     NULLIFY(region)
@@ -23527,10 +26259,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedVariableSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DerivedVariableSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedVariableSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
   END SUBROUTINE CMISSEquationsSet_DerivedVariableSetNumber
 
@@ -23547,14 +26283,20 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type to store the calculated values in.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DerivedVariableSetObj",err,error,*999)
+#endif
 
     CALL EquationsSet_DerivedVariableSet(equationsSet%EQUATIONS_SET,derivedType,fieldVariableType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedVariableSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DerivedVariableSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DerivedVariableSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
   END SUBROUTINE CMISSEquationsSet_DerivedVariableSetObj
 
@@ -23810,7 +26552,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -23829,10 +26573,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23850,14 +26598,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticCreateFinishObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_ANALYTIC_CREATE_FINISH(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23883,7 +26637,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -23905,10 +26661,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23929,15 +26689,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticCreateStartObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_ANALYTIC_CREATE_START(equationsSet%EQUATIONS_SET,analyticFunctionType,analyticFieldUserNumber, &
       & analyticField%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23959,7 +26725,9 @@ CONTAINS
      TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -23978,10 +26746,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -23999,14 +26771,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticDestroyObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_ANALYTIC_DESTROY(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24029,7 +26807,9 @@ CONTAINS
      TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticEvaluateNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24048,10 +26828,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticEvaluateNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticEvaluateNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticEvaluateNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24069,14 +26853,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticEvaluateObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_ANALYTIC_EVALUATE(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticEvaluateObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticEvaluateObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticEvaluateObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24099,7 +26889,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticTimeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24118,10 +26910,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticTimeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticTimeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticTimeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24140,14 +26936,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticTimeGetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_ANALYTIC_TIME_GET(equationsSet%EQUATIONS_SET,time,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticTimeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticTimeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticTimeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24170,7 +26972,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticTimeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24189,10 +26993,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticTimeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticTimeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticTimeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24211,14 +27019,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticTimeSetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_ANALYTIC_TIME_SET(equationsSet%EQUATIONS_SET,time,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticTimeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticTimeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticTimeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24242,7 +27056,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticUserParamSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24267,10 +27083,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticUserParamSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticUserParamSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticUserParamSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24289,14 +27109,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticUserParamSetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_ANALYTIC_USER_PARAM_SET(equationsSet%EQUATIONS_SET,paramIdx,param,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticUserParamSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticUserParamSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticUserParamSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24319,7 +27145,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticUserParamGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24344,10 +27172,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticUserParamGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticUserParamGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticUserParamGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24366,14 +27198,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_AnalyticUserParamGetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_ANALYTIC_USER_PARAM_GET(equationsSet%EQUATIONS_SET,paramIdx,param,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticUserParamGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_AnalyticUserParamGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_AnalyticUserParamGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24395,7 +27233,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24418,10 +27258,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Equations Set Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSetreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24439,7 +27283,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_CreateFinishObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_CREATE_FINISH(equationsSet%EQUATIONS_SET,err,error,*999)
 
@@ -24447,10 +27293,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Equations Set Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24480,7 +27330,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_CreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Equations Set Create')
@@ -24511,10 +27363,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24542,7 +27398,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_CreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Equations Set Create')
@@ -24553,10 +27411,14 @@ CONTAINS
       & equationsSetFieldUserNumber, equationsSetFieldField%FIELD, equationsSet%EQUATIONS_SET, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24578,7 +27440,9 @@ CONTAINS
      TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24597,10 +27461,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24618,14 +27486,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DestroyObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_DESTROY(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24647,7 +27521,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DependentCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24666,10 +27542,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DependentCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24687,14 +27567,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DependentCreateFinishObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_DEPENDENT_CREATE_FINISH(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DependentCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24718,7 +27604,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DependentCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24739,10 +27627,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DependentCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24762,15 +27654,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DependentCreateStartObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_DEPENDENT_CREATE_START(equationsSet%EQUATIONS_SET,dependentFieldUserNumber,dependentField%FIELD, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DependentCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24792,7 +27690,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DependentDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24811,10 +27711,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DependentDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24832,14 +27736,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DependentDestroyObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_DEPENDENT_DESTROY(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_DependentDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_DependentDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24861,7 +27771,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_EquationsCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24880,10 +27792,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_EquationsCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24901,14 +27817,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_EquationsCreateFinishObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_EQUATIONS_CREATE_FINISH(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_EquationsCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24931,7 +27853,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_EquationsCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -24951,10 +27875,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_EquationsCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -24973,14 +27901,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_EquationsCreateStartObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_EQUATIONS_CREATE_START(equationsSet%EQUATIONS_SET,equations%EQUATIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_EquationsCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25002,7 +27936,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_EquationsDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25021,10 +27957,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_EquationsDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25042,14 +27982,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_EquationsDestroyObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_EQUATIONS_DESTROY(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_EquationsDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_EquationsDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25071,7 +28017,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_IndependentCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25090,10 +28038,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_IndependentCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25111,14 +28063,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_IndependentCreateFinishObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_INDEPENDENT_CREATE_FINISH(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_IndependentCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25142,7 +28100,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_DependentCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25163,10 +28123,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_IndependentCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25186,15 +28150,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_IndependentCreateStartObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_INDEPENDENT_CREATE_START(equationsSet%EQUATIONS_SET,independentFieldUserNumber,independentField%FIELD, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_IndependentCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25216,7 +28186,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_IndependentDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25235,10 +28207,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_IndependentDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25256,14 +28232,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_IndependentDestroyObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_INDEPENDENT_DESTROY(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_IndependentDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_IndependentDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25289,7 +28271,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_MaterialsCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25308,10 +28292,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_MaterialsCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25329,14 +28317,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_MaterialsCreateFinishObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_MATERIALS_CREATE_FINISH(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_MaterialsCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25360,7 +28354,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_MaterialsCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25381,10 +28377,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_MaterialsCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25404,15 +28404,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_MaterialsCreateStartObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_MATERIALS_CREATE_START(equationsSet%EQUATIONS_SET,materialsFieldUserNumber,materialsField%FIELD, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_MaterialsCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25434,7 +28440,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_MaterialsDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25453,10 +28461,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_MaterialsDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25474,14 +28486,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_MaterialsDestroyObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_MATERIALS_DESTROY(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_MaterialsDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_MaterialsDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25504,7 +28522,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SolutionMethodGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25523,10 +28543,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SolutionMethodGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SolutionMethodGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SolutionMethodGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25545,14 +28569,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SolutionMethodGetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_SOLUTION_METHOD_GET(equationsSet%EQUATIONS_SET,solutionMethod,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SolutionMethodGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SolutionMethodGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SolutionMethodGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25575,7 +28605,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SolutionMethodSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25594,10 +28626,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SolutionMethodSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SolutionMethodSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SolutionMethodSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25616,14 +28652,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SolutionMethodSetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_SOLUTION_METHOD_SET(equationsSet%EQUATIONS_SET,solutionMethod,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SolutionMethodSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SolutionMethodSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SolutionMethodSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25645,7 +28687,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SourceCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25664,10 +28708,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SourceCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25685,14 +28733,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SourceCreateFinishObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_SOURCE_CREATE_FINISH(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SourceCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25716,7 +28770,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SourceCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25737,10 +28793,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SourceCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25760,14 +28820,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SourceCreateStartObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_SOURCE_CREATE_START(equationsSet%EQUATIONS_SET,sourceFieldUserNumber,sourceField%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SourceCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25789,7 +28855,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SourceDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25808,10 +28876,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SourceDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25829,14 +28901,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SourceDestroyObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_SOURCE_DESTROY(equationsSet%EQUATIONS_SET,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SourceDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SourceDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25862,7 +28940,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SpecificationGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25881,10 +28961,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SpecificationGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SpecificationGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SpecificationGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25905,15 +28989,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SpecificationGetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_SPECIFICATION_GET(equationsSet%EQUATIONS_SET,equationsSetClass,equationsSetType,equationsSetSubtype, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SpecificationGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SpecificationGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SpecificationGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25939,7 +29029,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SpecificationSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(EQUATIONS_SET)
@@ -25958,10 +29050,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SpecificationSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SpecificationSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SpecificationSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -25982,15 +29078,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSEquationsSet_SpecificationSetObj",err,error,*999)
+#endif
 
     CALL EQUATIONS_SET_SPECIFICATION_SET(equationsSet%EQUATIONS_SET,equationsSetClass,equationsSetType,equationsSetSubtype, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SpecificationSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSEquationsSet_SpecificationSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSEquationsSet_SpecificationSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26095,7 +29197,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentInterpolationGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26114,10 +29218,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentInterpolationGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentInterpolationGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentInterpolationGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26138,14 +29246,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentInterpolationGetObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_INTERPOLATION_GET(field%FIELD,variableType,componentNumber,interpolationType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentInterpolationGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentInterpolationGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentInterpolationGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26171,7 +29285,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentInterpolationSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26190,10 +29306,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentInterpolationSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentInterpolationSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentInterpolationSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26214,14 +29334,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentInterpolationSetObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_INTERPOLATION_SET(field%FIELD,variableType,componentNumber,interpolationType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentInterpolationSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentInterpolationSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentInterpolationSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26246,7 +29372,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentLabelGetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26265,10 +29393,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelGetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentLabelGetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelGetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26289,14 +29421,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentLabelGetCObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_LABEL_GET(field%FIELD,variableType,componentNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelGetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentLabelGetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelGetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26321,7 +29459,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentLabelGetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26340,10 +29480,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelGetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentLabelGetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelGetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26364,14 +29508,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentLabelGetVSObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_LABEL_GET(field%FIELD,variableType,componentNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelGetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentLabelGetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelGetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26396,7 +29546,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentLabelSetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26415,10 +29567,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelSetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentLabelSetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelSetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26439,14 +29595,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentLabelSetCObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_LABEL_SET(field%FIELD,variableType,componentNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelSetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentLabelSetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelSetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26471,7 +29633,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentLabelSetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26490,10 +29654,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelSetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentLabelSetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelSetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26514,14 +29682,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentLabelSetVSObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_LABEL_SET(field%FIELD,variableType,componentNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelSetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentLabelSetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentLabelSetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26547,7 +29721,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentMeshComponentGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26566,10 +29742,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentMeshComponentGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentMeshComponentGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentMeshComponentGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26590,14 +29770,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentMeshComponentGetObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_MESH_COMPONENT_GET(field%FIELD,variableType,componentNumber,meshComponent,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentMeshComponentGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentMeshComponentGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentMeshComponentGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26623,7 +29809,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentMeshComponentSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26642,10 +29830,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentMeshComponentSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentMeshComponentSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentMeshComponentSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26666,14 +29858,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentMeshComponentSetObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_MESH_COMPONENT_SET(field%FIELD,variableType,componentNumber,meshComponent,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentMeshComponentSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentMeshComponentSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentMeshComponentSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26700,7 +29898,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentValuesInitialiseIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26719,10 +29919,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentValuesInitialiseIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26744,14 +29948,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentValuesInitialiseIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_VALUES_INITIALISE(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentValuesInitialiseIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26777,7 +29987,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentValuesInitialiseSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26796,10 +30008,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentValuesInitialiseSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26821,14 +30037,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentValuesInitialiseSPObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_VALUES_INITIALISE(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentValuesInitialiseSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26854,7 +30076,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentValuesInitialiseDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26873,10 +30097,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentValuesInitialiseDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26898,14 +30126,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentValuesInitialiseDPObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_VALUES_INITIALISE(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentValuesInitialiseDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26931,7 +30165,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentValuesInitialiseLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -26950,10 +30186,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentValuesInitialiseLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -26975,14 +30215,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ComponentValuesInitialiseLObj",err,error,*999)
+#endif
 
     CALL FIELD_COMPONENT_VALUES_INITIALISE(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ComponentValuesInitialiseLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ComponentValuesInitialiseLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27006,7 +30252,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_DataTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27025,10 +30273,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_DataTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DataTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DataTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27048,14 +30300,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_DataTypeGetObj",err,error,*999)
+#endif
 
     CALL FIELD_DATA_TYPE_GET(field%FIELD,variableType,dataType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_DataTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DataTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DataTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27079,7 +30337,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_DataTypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27098,10 +30358,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_DataTypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DataTypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DataTypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27121,14 +30385,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_DataTypeSetObj",err,error,*999)
+#endif
 
     CALL FIELD_DATA_TYPE_SET(field%FIELD,variableType,dataType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_DataTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DataTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DataTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27152,7 +30422,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_DOFOrderTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27171,10 +30443,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_DOFOrderTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DOFOrderTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DOFOrderTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27194,14 +30470,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_DOFOrderTypeGetObj",err,error,*999)
+#endif
 
     CALL FIELD_DOF_ORDER_TYPE_GET(field%FIELD,variableType,DOFOrderType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_DOFOrderTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DOFOrderTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DOFOrderTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27225,7 +30507,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_DOFOrderTypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27244,10 +30528,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_DOFOrderTypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DOFOrderTypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DOFOrderTypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27267,14 +30555,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_DOFOrderTypeSetObj",err,error,*999)
+#endif
 
     CALL FIELD_DOF_ORDER_TYPE_SET(field%FIELD,variableType,DOFOrderType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_DOFOrderTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DOFOrderTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DOFOrderTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27296,7 +30590,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27319,10 +30615,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Field Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSField_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27340,7 +30640,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_CreateFinishObj",err,error,*999)
+#endif
 
     CALL FIELD_CREATE_FINISH(field%FIELD,err,error,*999)
 
@@ -27348,10 +30650,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('field Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSField_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27373,7 +30679,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_CreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Field Create')
@@ -27389,10 +30697,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27412,14 +30724,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_CreateStartInterfaceObj",err,error,*999)
+#endif
 
     CALL FIELD_CREATE_START(fieldUserNumber,interface%INTERFACE,field%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_CreateStartInterfaceObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_CreateStartInterfaceObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_CreateStartInterfaceObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27439,7 +30757,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_CreateStartRegionObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('field Create')
@@ -27447,10 +30767,14 @@ CONTAINS
 
     CALL FIELD_CREATE_START(fieldUserNumber,region%REGION,field%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_CreateStartRegionObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_CreateStartRegionObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_CreateStartRegionObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27473,7 +30797,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_DependentTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27492,10 +30818,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_DependentTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DependentTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DependentTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27514,14 +30844,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_DependentTypeGetObj",err,error,*999)
+#endif
 
     CALL FIELD_DEPENDENT_TYPE_GET(field%FIELD,dependentType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_DependentTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DependentTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DependentTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27544,7 +30880,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_DependentTypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27563,10 +30901,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_DependentTypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DependentTypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DependentTypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27585,14 +30927,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_DependentTypeSetObj",err,error,*999)
+#endif
 
     CALL FIELD_DEPENDENT_TYPE_SET(field%FIELD,dependentType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_DependentTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DependentTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DependentTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27614,7 +30962,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27633,10 +30983,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27654,14 +31008,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_DestroyObj",err,error,*999)
+#endif
 
     CALL FIELD_DESTROY(field%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27685,7 +31045,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_DimensionGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27704,10 +31066,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_DimensionGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DimensionGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DimensionGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27727,14 +31093,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_DimensionGetObj",err,error,*999)
+#endif
 
     CALL FIELD_DIMENSION_GET(field%FIELD,variableType,dimension,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_DimensionGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DimensionGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DimensionGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27758,7 +31130,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_DimensionSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27777,10 +31151,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_DimensionSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DimensionSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DimensionSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27800,14 +31178,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_DimensionSetObj",err,error,*999)
+#endif
 
     CALL FIELD_DIMENSION_SET(field%FIELD,variableType,DIMENSION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_DimensionSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DimensionSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DimensionSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27830,7 +31214,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_GeometricFieldGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27851,10 +31237,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_GeometricFieldGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_GeometricFieldGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_GeometricFieldGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27873,14 +31263,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_GeometricFieldGetObj",err,error,*999)
+#endif
 
     CALL FIELD_GEOMETRIC_FIELD_GET(field%FIELD,geometricField%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_GeometricFieldGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_GeometricFieldGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_GeometricFieldGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27903,7 +31299,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_GeometricFieldSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -27931,10 +31329,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_GeometricFieldSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_GeometricFieldSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_GeometricFieldSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27953,14 +31355,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_GeometricFieldSetObj",err,error,*999)
+#endif
 
     CALL FIELD_GEOMETRIC_FIELD_SET(field%FIELD,geometricField%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_GeometricFieldSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_GeometricFieldSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_GeometricFieldSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -27986,7 +31394,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_GeometricParametersElementLineLengthGetNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(geometricField)
@@ -28006,10 +31416,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_GeometricParametersElementLineLengthGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28030,15 +31444,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_GeometricParametersElementLineLengthGetObj",err,error,*999)
+#endif
 
     CALL Field_GeometricParametersElementLineLengthGet(geometricField%FIELD,elementNumber,elementLineNumber,lineLength, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_GeometricParametersElementLineLengthGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_GeometricParametersElementLineLengthGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28067,7 +31487,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: field
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorGetNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -28087,10 +31509,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28115,15 +31541,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorGetObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetNodeScaleFactorGet(field%FIELD,variableType,versionNumber, &
       & derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28150,7 +31582,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: field
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -28169,10 +31603,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28193,14 +31631,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsGetObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetNodeScaleFactorsGet(field%FIELD,variableType,meshComponentNumber,scaleFactors,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28225,7 +31669,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: field
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -28245,10 +31691,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28270,15 +31720,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetNodeNumberOfScaleFactorDofsGet(field%FIELD,variableType,meshComponentNumber,numberOfScaleFactorsDofs, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeNumberOfScaleFactorDofsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28307,7 +31763,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: field
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorSetNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -28327,10 +31785,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28355,15 +31817,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorSetObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetNodeScaleFactorSet(field%FIELD,variableType,versionNumber, &
       & derivativeNumber,nodeUserNumber,componentNumber,scaleFactor,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28389,7 +31857,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: field
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -28408,10 +31878,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28432,14 +31906,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetNodeScaleFactorsSetObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetNodeScaleFactorsSet(field%FIELD,variableType,meshComponentNumber,scaleFactors,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetNodeScaleFactorsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetNodeScaleFactorsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28462,7 +31942,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_LabelGetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -28481,10 +31963,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_LabelGetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_LabelGetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_LabelGetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28503,14 +31989,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_LabelGetCObj",err,error,*999)
+#endif
 
     CALL FIELD_LABEL_GET(field%FIELD,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_LabelGetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_LabelGetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_LabelGetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28533,7 +32025,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_LabelGetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -28552,10 +32046,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_LabelGetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_LabelGetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_LabelGetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28574,14 +32072,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_LabelGetVSObj",err,error,*999)
+#endif
 
     CALL FIELD_LABEL_GET(field%FIELD,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_LabelGetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_LabelGetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_LabelGetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28604,7 +32108,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_LabelSetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -28623,10 +32129,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_LabelSetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_LabelSetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_LabelSetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28645,14 +32155,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_LabelSetCObj",err,error,*999)
+#endif
 
     CALL FIELD_LABEL_SET(field%FIELD,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_LabelSetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_LabelSetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_LabelSetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28675,7 +32191,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_LabelSetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -28694,10 +32212,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_LabelSetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_LabelSetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_LabelSetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28716,14 +32238,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_LabelSetVSObj",err,error,*999)
+#endif
 
     CALL FIELD_LABEL_SET(field%FIELD,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_LabelSetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_LabelSetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_LabelSetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28750,7 +32278,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_PositionNormalTangentCalculateNodeNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -28770,10 +32300,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_PositionNormalTangentCalculateNodeNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_PositionNormalTangentCalculateNodeNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_PositionNormalTangentCalculateNodeNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28796,15 +32330,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_PositionNormalTangentCalculateNodeObj",err,error,*999)
+#endif
 
     CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_NODE(field%FIELD,variableType,componentNumber,localNodeNumber, &
     & position,normal,tangents,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_PositionNormalTangentCalculateNodeObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_PositionNormalTangentCalculateNodeObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_PositionNormalTangentCalculateNodeObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28830,7 +32370,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_MeshDecompositionGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -28851,10 +32393,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_MeshDecompositionGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_MeshDecompositionGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_MeshDecompositionGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28873,14 +32419,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_MeshDecompositionGetObj",err,error,*999)
+#endif
 
     CALL FIELD_MESH_DECOMPOSITION_GET(field%FIELD,meshDecomposition%DECOMPOSITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_MeshDecompositionGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_MeshDecompositionGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_MeshDecompositionGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28906,7 +32458,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_MeshDecompositionSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -28941,10 +32495,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_MeshDecompositionSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_MeshDecompositionSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_MeshDecompositionSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28963,14 +32521,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_MeshDecompositionSetObj",err,error,*999)
+#endif
 
     CALL FIELD_MESH_DECOMPOSITION_SET(field%FIELD,meshDecomposition%DECOMPOSITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_MeshDecompositionSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_MeshDecompositionSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_MeshDecompositionSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -28996,7 +32560,9 @@ CONTAINS
     INTEGER(INTG) :: DATA_PROJECTION_NUMBER
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_DataProjectionSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29031,10 +32597,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_DataProjectionSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DataProjectionSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DataProjectionSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29053,14 +32623,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_DataProjectionSetObj",err,error,*999)
+#endif
 
     CALL Field_DataProjectionSet(field%FIELD,dataProjection%DATA_PROJECTION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_DataProjectionSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_DataProjectionSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_DataProjectionSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29084,7 +32660,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_NumberOfComponentsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29103,10 +32681,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfComponentsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_NumberOfComponentsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfComponentsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29126,14 +32708,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_NumberOfComponentsGetObj",err,error,*999)
+#endif
 
     CALL FIELD_NUMBER_OF_COMPONENTS_GET(field%FIELD,variableType,numberOfComponents,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfComponentsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_NumberOfComponentsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfComponentsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29157,7 +32745,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_NumberOfComponentsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29176,10 +32766,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfComponentsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_NumberOfComponentsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfComponentsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29199,14 +32793,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_NumberOfComponentsSetObj",err,error,*999)
+#endif
 
     CALL FIELD_NUMBER_OF_COMPONENTS_SET(field%FIELD,variableType,numberOfComponents,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfComponentsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_NumberOfComponentsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfComponentsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29229,7 +32829,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_NumberOfVariablesGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29248,10 +32850,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfVariablesGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_NumberOfVariablesGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfVariablesGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29270,14 +32876,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_NumberOfVariablesGetObj",err,error,*999)
+#endif
 
     CALL FIELD_NUMBER_OF_VARIABLES_GET(field%FIELD,numberOfVariables,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfVariablesGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_NumberOfVariablesGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfVariablesGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29300,7 +32912,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_NumberOfVariablesSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29319,10 +32933,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfVariablesSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_NumberOfVariablesSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfVariablesSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29341,14 +32959,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_NumberOfVariablesSetObj",err,error,*999)
+#endif
 
     CALL FIELD_NUMBER_OF_VARIABLES_SET(field%FIELD,numberOfVariables,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfVariablesSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_NumberOfVariablesSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_NumberOfVariablesSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29375,7 +32999,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddConstantIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29394,10 +33020,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddConstantIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29419,14 +33049,20 @@ CONTAINS
      INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddConstantIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddConstantIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29453,7 +33089,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddConstantSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29472,10 +33110,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddConstantSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29497,14 +33139,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddConstantSPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddConstantSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29531,7 +33179,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddConstantDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29550,10 +33200,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddConstantDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29575,14 +33229,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddConstantDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddConstantDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29609,7 +33269,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddConstantLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29628,10 +33290,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddConstantLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29653,14 +33319,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddConstantLObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSFieldParameterSetAddConstantLbj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddConstantLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddConstantLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29688,7 +33360,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddElementIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29707,10 +33381,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddElementIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29733,15 +33411,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddElementIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_ELEMENT(field%FIELD,variableType,fieldSetType,UserElementNumber,componentNumber,value, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddElementIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29769,7 +33453,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddElementSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29788,10 +33474,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddElementSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29814,15 +33504,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddElementSPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_ELEMENT(field%FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddElementSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29850,7 +33546,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddElementDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29869,10 +33567,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddElementDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29895,15 +33597,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddElementDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_ELEMENT(field%FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddElementDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29931,7 +33639,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddElementLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -29950,10 +33660,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddElementLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -29976,15 +33690,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddElementLObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_ELEMENT(field%FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddElementLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddElementLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30014,7 +33734,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddNodeIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30034,10 +33756,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddNodeIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30063,15 +33789,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddNodeIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber,userNodeNumber, &
       & componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddNodeIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30101,7 +33833,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddNodeSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30121,10 +33855,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddNodeSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30150,15 +33888,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddNodeSPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber,userNodeNumber, &
       & componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddNodeSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30188,7 +33932,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddNodeDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30208,10 +33954,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddNodeDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30237,15 +33987,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddNodeDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber,userNodeNumber, &
       & componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddNodeDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30275,7 +34031,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddNodeLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30295,10 +34053,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddNodeLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30324,15 +34086,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetAddNodeLObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_ADD_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber,userNodeNumber, &
       & componentNumber, value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetAddNodeLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetAddNodeLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30356,7 +34124,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetCreateNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30375,10 +34145,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetCreateNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetCreateNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetCreateNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30398,14 +34172,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetCreateObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_CREATE(field%FIELD,variableType,fieldSetType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetCreateObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetCreateObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetCreateObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30429,7 +34209,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30448,10 +34230,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30471,14 +34257,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDestroyObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_DESTROY(field%FIELD,variableType,fieldSetType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30503,7 +34295,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataGetIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30522,10 +34316,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataGetIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30546,14 +34344,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataGetIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_DATA_GET(field%FIELD,variableType,fieldSetType,parameters,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataGetIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30578,7 +34382,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataGetSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30597,10 +34403,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataGetSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30621,14 +34431,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataGetSPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_DATA_GET(field%FIELD,variableType,fieldSetType,parameters,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataGetSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30653,7 +34469,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataGetDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30672,10 +34490,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataGetDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30696,14 +34518,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataGetDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_DATA_GET(field%FIELD,variableType,fieldSetType,parameters,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataGetDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30728,7 +34556,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataGetLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30747,10 +34577,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataGetLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30771,14 +34605,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataGetLObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_DATA_GET(field%FIELD,variableType,fieldSetType,parameters,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataGetLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataGetLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30803,7 +34643,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataRestoreIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30822,10 +34664,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataRestoreIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30846,14 +34692,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataRestoreIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(field%FIELD,variableType,fieldSetType,parameters,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataRestoreIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30878,7 +34730,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataRestoreSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30897,10 +34751,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataRestoreSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30921,14 +34779,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataRestoreSPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(field%FIELD,variableType,fieldSetType,parameters,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataRestoreSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30953,7 +34817,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataRestoreDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -30972,10 +34838,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataRestoreDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -30996,14 +34866,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataRestoreDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(field%FIELD,variableType,fieldSetType,parameters,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataRestoreDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31028,7 +34904,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataRestoreLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -31047,10 +34925,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataRestoreLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31071,14 +34953,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetDataRestoreLObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(field%FIELD,variableType,fieldSetType,parameters,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetDataRestoreLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetDataRestoreLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31105,7 +34993,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetConstantIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -31124,10 +35014,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetConstantIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31149,14 +35043,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetConstantIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetConstantIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31183,7 +35083,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetConstantSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -31202,10 +35104,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetConstantSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31227,14 +35133,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetConstantSPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetConstantSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31261,7 +35173,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetConstantDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -31280,10 +35194,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetConstantDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31305,14 +35223,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetConstantDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetConstantDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31339,7 +35263,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetConstantLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -31358,10 +35284,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetConstantLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31383,14 +35313,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetConstantLObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetConstantLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetConstantLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31420,7 +35356,9 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: interface
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointIntgNumberI",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -31449,10 +35387,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberI")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointIntgNumberI",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberI")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31480,7 +35422,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointIntgNumberR",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -31500,10 +35444,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberR")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointIntgNumberR",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointIntgNumberR")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31527,15 +35475,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointIntgObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
       & value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31565,7 +35519,9 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: interface
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointSPNumberI",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -31594,10 +35550,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberI")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointSPNumberI",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberI")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31625,7 +35585,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointSPNumberR",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -31645,10 +35607,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberR")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointSPNumberR",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointSPNumberR")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31671,15 +35637,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointSPObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
       & value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31709,7 +35681,9 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: interface
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointDPNumberI",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -31738,10 +35712,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberI")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointDPNumberI",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberI")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31769,7 +35747,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointDPNumberR",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -31789,10 +35769,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberR")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointDPNumberR",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointDPNumberR")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31815,15 +35799,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointDPObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
       & value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31853,7 +35843,9 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: interface
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointLNumberI",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -31882,10 +35874,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberI")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointLNumberI",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberI")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31913,7 +35909,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointLNumberR",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -31933,10 +35931,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberR")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointLNumberR",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointLNumberR")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31959,15 +35961,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetDataPointLObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetGetDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
       & value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetDataPointLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetDataPointLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -31995,7 +36003,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetElementIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32014,10 +36024,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetElementIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32040,15 +36054,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetElementIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_ELEMENT(field%FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetElementIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32076,7 +36096,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetElementSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32095,10 +36117,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetElementSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32121,15 +36147,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetElementSPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_ELEMENT(field%FIELD,variableType,fieldSetType,userElementNumber,componentNumber,VALUE, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetElementSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32157,7 +36189,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetElementDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32176,10 +36210,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetElementDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32202,15 +36240,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetElementDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_ELEMENT(field%FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetElementDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32238,7 +36282,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetElementLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32257,10 +36303,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetElementLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32283,15 +36333,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetElementLObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_ELEMENT(field%FIELD,variableType,fieldSetType,userElementNumber,componentNumber,VALUE, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetElementLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetElementLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32321,7 +36377,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetNodeIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32341,10 +36399,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetNodeIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32370,15 +36432,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetNodeIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber,userNodeNumber, &
       & componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetNodeIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32408,7 +36476,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetNodeSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32428,10 +36498,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetNodeSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32457,15 +36531,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetNodeSPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber,userNodeNumber, &
       & componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetNodeSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32495,7 +36575,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetNodeDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32515,10 +36597,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetNodeDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32544,15 +36630,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetNodeDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber,userNodeNumber, &
       & componentNumber, value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetNodeDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32582,7 +36674,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetNodeLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32602,10 +36696,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetNodeLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32631,15 +36729,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetNodeLObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber,userNodeNumber, &
       & componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetNodeLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetNodeLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32664,15 +36768,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetGaussPointDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(field%FIELD,variableType,fieldSetType,userElementNumber,gaussPointNumber,&
     & componentNumber,value, err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetGaussPointDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetGetGaussPointDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetGaussPointDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32699,7 +36809,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateConstantIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32718,10 +36830,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateConstantIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32743,14 +36859,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateConstantIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateConstantIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32777,7 +36899,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateConstantSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32796,10 +36920,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateConstantSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32821,14 +36949,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateConstantSPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,Value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateConstantSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32855,7 +36989,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateConstantDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32874,10 +37010,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateConstantDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32899,14 +37039,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateConstantDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateConstantDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32933,7 +37079,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateConstantLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -32952,10 +37100,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateConstantLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -32977,14 +37129,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateConstantLObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(field%FIELD,variableType,fieldSetType,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateConstantLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateConstantLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33014,7 +37172,9 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: interface
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointIntgNumberI",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -33043,10 +37203,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberI")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointIntgNumberI",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberI")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33074,7 +37238,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointIntgNumberR",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -33094,10 +37260,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberR")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointIntgNumberR",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgNumberR")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33121,15 +37291,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointIntgObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
       & value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33159,7 +37335,9 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: interface
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointSPNumberI",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -33188,10 +37366,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberI")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointSPNumberI",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberI")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33219,7 +37401,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointSPNumberR",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -33239,10 +37423,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberR")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointSPNumberR",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPNumberR")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33266,15 +37454,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointSPObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
       & value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33304,7 +37498,9 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: interface
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointDPNumberI",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -33333,10 +37529,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberI")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointDPNumberI",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberI")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33364,7 +37564,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointDPNumberR",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -33384,10 +37586,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberR")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointDPNumberR",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPNumberR")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33411,15 +37617,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointDPObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
       & value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33449,7 +37661,9 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: interface
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointLNumberI",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -33478,10 +37692,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberI")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointLNumberI",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberI")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33509,7 +37727,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointLNumberR",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(field)
@@ -33529,10 +37749,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberR")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointLNumberR",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointLNumberR")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33556,15 +37780,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateDataPointLObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetUpdateDataPoint(field%FIELD,variableType,fieldSetType,userDataPointNumber,componentNumber, &
       & value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateDataPointLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateDataPointLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33592,7 +37822,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateElementIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -33612,10 +37844,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateElementIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33639,15 +37875,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateElementIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(field%FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateElementIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33675,7 +37917,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateElementSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -33695,10 +37939,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateElementSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33722,15 +37970,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateElementSPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(field%FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateElementSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33758,7 +38012,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateElementDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -33778,10 +38034,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateElementDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33805,15 +38065,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateElementDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(field%FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateElementDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33841,7 +38107,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateElementLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -33861,10 +38129,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateElementLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33888,15 +38160,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateElementLObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_ELEMENT(field%FIELD,variableType,fieldSetType,userElementNumber,componentNumber,value, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateElementLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33921,15 +38199,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateElementDataPointDPObj",err,error,*999)
+#endif
 
     CALL Field_ParameterSetUpdateElementDataPoint(field%FIELD,variableType,fieldSetType,elementNumber,&
     & dataPointIndex,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementDataPointDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateElementDataPointDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateElementDataPointDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33953,7 +38237,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -33972,10 +38258,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -33995,14 +38285,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateFinishObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_FINISH(field%FIELD,variableType,fieldSetType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34032,7 +38328,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateNodeIntgNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -34052,10 +38350,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeIntgNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateNodeIntgNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeIntgNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34082,15 +38384,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateNodeIntgObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber, &
       & userNodeNumber,componentNumber, value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeIntgObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateNodeIntgObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeIntgObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34120,7 +38428,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateNodeSPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -34140,10 +38450,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeSPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateNodeSPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeSPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34170,15 +38484,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateNodeSPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber, &
       & userNodeNumber,componentNumber, value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeSPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateNodeSPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeSPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34208,7 +38528,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateNodeDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -34228,10 +38550,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateNodeDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34258,15 +38584,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateNodeDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber, &
       & userNodeNumber,componentNumber,value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateNodeDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34296,7 +38628,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateNodeLNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -34316,10 +38650,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeLNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateNodeLNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeLNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34346,15 +38684,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateNodeLObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_NODE(field%FIELD,variableType,fieldSetType,versionNumber,derivativeNumber, &
       & userNodeNumber,componentNumber, value,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeLObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateNodeLObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateNodeLObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34375,14 +38719,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateLocalDofsDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOFS(field%FIELD,variableType,fieldSetType,values,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateLocalDofsDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateLocalDofsDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateLocalDofsDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34759,7 +39109,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetInterpolateSingleXiDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -34779,10 +39131,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateSingleXiDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetInterpolateSingleXiDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateSingleXiDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34807,15 +39163,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetInterpolateSingleXiDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_INTERPOLATE_SINGLE_XI(field%FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber,xi, &
       & values,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateSingleXiDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetInterpolateSingleXiDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateSingleXiDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34844,7 +39206,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetInterpolateMultipleXiDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -34864,10 +39228,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateMultipleXiDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetInterpolateMultipleXiDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateMultipleXiDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34892,15 +39260,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetInterpolateMultipleXiDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_INTERPOLATE_MULTIPLE_XI(field%FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber,xi, &
       & values,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateMultipleXiDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetInterpolateMultipleXiDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateMultipleXiDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34930,7 +39304,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetInterpolateSingleGaussDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -34950,10 +39326,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateSingleGaussDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetInterpolateSingleGaussDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateSingleGaussDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34979,15 +39359,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetInterpolateSingleGaussDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_INTERPOLATE_SINGLE_GAUSS(field%FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber, &
       & quadratureScheme,GaussPoint,values,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateSingleGaussDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetInterpolateSingleGaussDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateSingleGaussDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35017,7 +39403,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetInterpolateMultipleGaussDPNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35037,10 +39425,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateMultipleGaussDPNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetInterpolateMultipleGaussDPNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateMultipleGaussDPNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35066,15 +39458,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetInterpolateMultipleGaussDPObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_INTERPOLATE_MULTIPLE_GAUSS(field%FIELD,variableType,fieldSetType,derivativeNumber,userElementNumber, &
       & quadratureScheme,GaussPoints,values,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateMultipleGaussDPObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetInterpolateMultipleGaussDPObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetInterpolateMultipleGaussDPObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35098,7 +39496,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35117,10 +39517,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35140,14 +39544,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetUpdateStartObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_UPDATE_START(field%FIELD,variableType,fieldSetType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ParameterSetUpdateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetUpdateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35182,7 +39592,9 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: TO_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParametersToFieldParametersComponentCopyNumber",err,error,*999)
+#endif
 
     NULLIFY(FROM_REGION)
     NULLIFY(FROM_FIELD)
@@ -35221,7 +39633,9 @@ CONTAINS
 
     RETURN
 999 CALL ERRORS("CMISSField_ParametersToFieldParametersComponentCopyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParametersToFieldParametersComponentCopyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35248,14 +39662,18 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParametersToFieldParametersComponentCopyObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(fromField%FIELD,fromVariableType,fromParameterSetType, &
       & fromComponentNumber,toField%FIELD,toVariableType,toParameterSetType,toComponentNumber,err,error,*999)
 
     RETURN
 999 CALL ERRORS("CMISSField_ParametersToFieldParametersComponentCopyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ParametersToFieldParametersComponentCopyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35278,7 +39696,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ScalingTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35297,10 +39717,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ScalingTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ScalingTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ScalingTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35319,14 +39743,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ScalingTypeGetObj",err,error,*999)
+#endif
 
     CALL FIELD_SCALING_TYPE_GET(field%FIELD,scalingType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ScalingTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ScalingTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ScalingTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35349,7 +39779,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_ScalingTypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35368,10 +39800,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_ScalingTypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ScalingTypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ScalingTypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35390,14 +39826,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ScalingTypeSetObj",err,error,*999)
+#endif
 
     CALL FIELD_SCALING_TYPE_SET(field%FIELD,scalingType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ScalingTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_ScalingTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_ScalingTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35420,7 +39862,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_TypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35439,10 +39883,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_TypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_TypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_TypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35461,14 +39909,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_TypeGetObj",err,error,*999)
+#endif
 
     CALL FIELD_TYPE_GET(field%FIELD,fieldType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_TypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_TypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_TypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35491,7 +39945,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_TypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35510,10 +39966,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_TypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_TypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_TypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35532,14 +39992,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_TypeSetObj",err,error,*999)
+#endif
 
     CALL FIELD_TYPE_SET(field%FIELD,fieldType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_TypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_TypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_TypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35563,7 +40029,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableLabelGetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35582,10 +40050,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelGetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableLabelGetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelGetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35605,14 +40077,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableLabelGetCObj",err,error,*999)
+#endif
 
     CALL FIELD_VARIABLE_LABEL_GET(field%FIELD,variableType,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelGetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableLabelGetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelGetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35636,7 +40114,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableLabelGetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35655,10 +40135,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelGetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableLabelGetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelGetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35678,14 +40162,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableLabelGetVSObj",err,error,*999)
+#endif
 
     CALL FIELD_VARIABLE_LABEL_GET(field%FIELD,variableType,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelGetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableLabelGetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelGetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35709,7 +40199,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableLabelSetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35728,10 +40220,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelSetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableLabelSetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelSetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35751,14 +40247,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableLabelSetCObj",err,error,*999)
+#endif
 
     CALL FIELD_VARIABLE_LABEL_SET(field%FIELD,variableType,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelSetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableLabelSetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelSetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35782,7 +40284,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableLabelSetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35801,10 +40305,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelSetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableLabelSetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelSetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35824,14 +40332,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableLabelSetVSObj",err,error,*999)
+#endif
 
     CALL FIELD_VARIABLE_LABEL_SET(field%FIELD,variableType,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelSetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableLabelSetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableLabelSetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35854,7 +40368,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableTypesGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35873,10 +40389,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableTypesGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableTypesGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableTypesGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35895,14 +40415,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableTypesGetObj",err,error,*999)
+#endif
 
     CALL FIELD_VARIABLE_TYPES_GET(field%FIELD,variableTypes,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableTypesGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableTypesGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableTypesGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35925,7 +40451,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableTypesSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -35944,10 +40472,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableTypesSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableTypesSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableTypesSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35966,14 +40498,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_VariableTypesSetObj",err,error,*999)
+#endif
 
     CALL FIELD_VARIABLE_TYPES_SET(field%FIELD,variableTypes,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_VariableTypesSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSField_VariableTypesSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSField_VariableTypesSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -35999,7 +40537,9 @@ CONTAINS
     INTEGER(INTG) :: FileNameLength
     INTEGER(INTG) :: MethodLength
 
+#if DEBUG
     CALL ENTERS("CMISSFields_ElementsExportCCObj",err,error,*999)
+#endif
 
     FileNameLength = LEN_TRIM(fileName)
     VFileName = fileName(1:FileNameLength)
@@ -36008,10 +40548,14 @@ CONTAINS
 
     CALL FIELD_IO_ELEMENTS_EXPORT(fields%FIELDS,VFileName,VMethod,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSFields_ElementsExportCCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFields_ElementsExportCCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSFields_ElementsExportCCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36034,17 +40578,23 @@ CONTAINS
     TYPE(VARYING_STRING) :: VMethod
     INTEGER(INTG) :: MethodLength
 
+#if DEBUG
     CALL ENTERS("CMISSFields_ElementsExportVSCObj",err,error,*999)
+#endif
 
     MethodLength = LEN_TRIM(method)
     VMethod = method(1:MethodLength)
 
     CALL FIELD_IO_ELEMENTS_EXPORT(fields%FIELDS,fileName,VMethod,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSFields_ElementsExportVSCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFields_ElementsExportVSCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSFields_ElementsExportVSCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36067,17 +40617,23 @@ CONTAINS
     TYPE(VARYING_STRING) :: VFileName
     INTEGER(INTG) :: FileNameLength
 
+#if DEBUG
     CALL ENTERS("CMISSFields_ElementsExportCVSObj",err,error,*999)
+#endif
 
     FileNameLength = LEN_TRIM(fileName)
     VFileName = fileName(1:FileNameLength)
 
     CALL FIELD_IO_ELEMENTS_EXPORT(fields%FIELDS,VFileName,method,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSFields_ElementsExportCVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFields_ElementsExportCVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSFields_ElementsExportCVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36097,14 +40653,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSFields_ElementsExportVSVSObj",err,error,*999)
+#endif
 
     CALL FIELD_IO_ELEMENTS_EXPORT(fields%FIELDS,fileName,method,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSFields_ElementsExportVSVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldIOElementsExportVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldIOElementsExportVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36128,7 +40690,9 @@ CONTAINS
     INTEGER(INTG) :: FileNameLength
     INTEGER(INTG) :: MethodLength
 
+#if DEBUG
     CALL ENTERS("CMISSFields_NodesExportCCObj",err,error,*999)
+#endif
 
     FileNameLength = LEN_TRIM(fileName)
     VFileName = fileName(1:FileNameLength)
@@ -36137,10 +40701,14 @@ CONTAINS
 
     CALL FIELD_IO_NODES_EXPORT(fields%FIELDS,VFileName,VMethod,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSFields_NodesExportCCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFields_NodesExportCCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSFields_NodesExportCCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36162,17 +40730,23 @@ CONTAINS
     TYPE(VARYING_STRING) :: VMethod
     INTEGER(INTG) :: MethodLength
 
+#if DEBUG
     CALL ENTERS("CMISSFields_NodesExportVSCObj",err,error,*999)
+#endif
 
     MethodLength = LEN_TRIM(method)
     VMethod = method(1:MethodLength)
 
     CALL FIELD_IO_NODES_EXPORT(fields%FIELDS,fileName,VMethod,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSFields_NodesExportVSCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFields_NodesExportVSCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSFields_NodesExportVSCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36194,17 +40768,23 @@ CONTAINS
     TYPE(VARYING_STRING) :: VFileName
     INTEGER(INTG) :: FileNameLength
 
+#if DEBUG
     CALL ENTERS("CMISSFields_NodesExportCVSObj",err,error,*999)
+#endif
 
     FileNameLength = LEN_TRIM(fileName)
     VFileName = fileName(1:FileNameLength)
 
     CALL FIELD_IO_NODES_EXPORT(fields%FIELDS,VFileName,method,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSFields_NodesExportCVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFields_NodesExportCVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSFields_NodesExportCVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36224,14 +40804,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSFields_NodesExportVSVSObj",err,error,*999)
+#endif
 
     CALL FIELD_IO_NODES_EXPORT(fields%FIELDS,fileName,method,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSFields_NodesExportVSVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFields_NodesExportVSVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSFields_NodesExportVSVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36258,7 +40844,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: basis_idx,NumBases
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_BasisGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -36304,10 +40892,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_BasisGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36329,7 +40921,9 @@ CONTAINS
     INTEGER(INTG) :: basis_idx,NumBases
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_BasisGetObj",err,error,*999)
+#endif
 
     NULLIFY(BASIS_PTRS)
 
@@ -36351,10 +40945,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_BasisGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36379,7 +40977,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_BasisSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -36411,10 +41011,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_BasisSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36440,7 +41044,9 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: basis_idx,NumBases
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_BasisSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -36477,10 +41083,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_BasisSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36499,14 +41109,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_BasisSetObj0",err,error,*999)
+#endif
 
     CALL CMISSGeneratedMesh_BasisSetObj1(generatedMesh,[basis],err)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisSetObj0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_BasisSetObj0",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisSetObj0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36528,7 +41144,9 @@ CONTAINS
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: BASIS_PTRS(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_BasisSetObj1",err,error,*999)
+#endif
 
     ALLOCATE(BASIS_PTRS(SIZE(bases,1)),STAT=err)
     IF(err/=0) CALL FLAG_ERROR("Could not allocate bases.",err,error,*999)
@@ -36543,10 +41161,14 @@ CONTAINS
 
     CALL GENERATED_MESH_BASIS_SET(generatedMesh%GENERATED_MESH,BASIS_PTRS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisSetObj1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_BasisSetObj1",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BasisSetObj1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36569,7 +41191,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_BaseVectorsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -36589,10 +41213,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BaseVectorsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_BaseVectorsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BaseVectorsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36611,14 +41239,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_BaseVectorsSetObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_BASE_VECTORS_SET(generatedMesh%GENERATED_MESH,baseVectors,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BaseVectorsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_BaseVectorsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_BaseVectorsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36642,7 +41276,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -36667,10 +41303,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Generated Mesh Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36690,7 +41330,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_CreateFinishObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_CREATE_FINISH(generatedMesh%GENERATED_MESH,meshUserNumber,mesh%MESH,err,error,*999)
 
@@ -36698,10 +41340,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Generated Mesh Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36723,7 +41369,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_CreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Generated Mesh Create')
@@ -36740,10 +41388,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36763,14 +41415,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_CreateStartInterfaceObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_CREATE_START(generatedMeshUserNumber,interface%interface,generatedMesh%GENERATED_MESH,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_CreateStartInterfaceObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_CreateStartInterfaceObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_CreateStartInterfaceObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36790,7 +41448,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_CreateStartRegionObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Generated Mesh Create')
@@ -36798,10 +41458,14 @@ CONTAINS
 
     CALL GENERATED_MESH_CREATE_START(generatedMeshUserNumber,REGION%region,generatedMesh%GENERATED_MESH,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_CreateStartRegionObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_CreateStartRegionObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_CreateStartRegionObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36823,7 +41487,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -36843,10 +41509,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36864,14 +41534,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_DestroyObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_DESTROY(generatedMesh%GENERATED_MESH,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36893,7 +41569,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_ExtentGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -36913,10 +41591,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_ExtentGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_ExtentGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_ExtentGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36935,14 +41617,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_ExtentGetObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_EXTENT_GET(generatedMesh%GENERATED_MESH,extent,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_ExtentGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_ExtentGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_ExtentGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -36965,7 +41653,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_ExtentSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -36985,10 +41675,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_ExtentSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_ExtentSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_ExtentSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37007,14 +41701,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_ExtentSetObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_EXTENT_SET(generatedMesh%GENERATED_MESH,extent,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_ExtentSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_ExtentSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_ExtentSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37037,7 +41737,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_NumberOfElementsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -37057,10 +41759,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_NumberOfElementsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_NumberOfElementsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_NumberOfElementsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37079,14 +41785,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_NumberOfElementsGetObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_NUMBER_OF_ELEMENTS_GET(generatedMesh%GENERATED_MESH,numberOfElements,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_NumberOfElementsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_NumberOfElementsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_NumberOfElementsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37109,7 +41821,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_NumberOfElementsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -37129,10 +41843,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_NumberOfElementsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_NumberOfElementsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_NumberOfElementsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37151,14 +41869,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_NumberOfElementsSetObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_NUMBER_OF_ELEMENTS_SET(generatedMesh%GENERATED_MESH,numberOfElements,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_NumberOfElementsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_NumberOfElementsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_NumberOfElementsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37181,7 +41905,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_OriginGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -37201,10 +41927,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_OriginGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_OriginGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_OriginGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37223,14 +41953,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_OriginGetObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_ORIGIN_GET(generatedMesh%GENERATED_MESH,origin,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_OriginGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_OriginGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_OriginGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37253,7 +41989,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_OriginSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -37273,10 +42011,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_OriginSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_OriginSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_OriginSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37295,14 +42037,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_OriginSetObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_ORIGIN_SET(generatedMesh%GENERATED_MESH,origin,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_OriginSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_OriginSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_OriginSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37325,7 +42073,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_TypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -37345,10 +42095,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_TypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_TypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_TypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37367,14 +42121,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_TypeGetObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_TYPE_GET(generatedMesh%GENERATED_MESH,generatedMeshType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_TypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_TypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_TypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37397,7 +42157,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_TypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -37417,10 +42179,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_TypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_TypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_TypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37439,14 +42205,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_TypeSetObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_TYPE_SET(generatedMesh%GENERATED_MESH,generatedMeshType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_TypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_TypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_TypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37471,7 +42243,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_GeometricParametersCalculateNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(FIELD)
@@ -37499,10 +42273,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_GeometricParametersCalculateNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_GeometricParametersCalculateNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_GeometricParametersCalculateNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37521,14 +42299,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_GeometricParametersCalculateObj",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_GEOMETRIC_PARAMETERS_CALCULATE(field%FIELD,generatedMesh%GENERATED_MESH,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_GeometricParametersCalculateObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_GeometricParametersCalculateObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_GeometricParametersCalculateObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37553,7 +42337,9 @@ CONTAINS
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_SurfaceGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -37574,10 +42360,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_SurfaceGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_SurfaceGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_SurfaceGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
   END SUBROUTINE CMISSGeneratedMesh_SurfaceGetNumber0
@@ -37603,7 +42393,9 @@ CONTAINS
     TYPE(GENERATED_MESH_TYPE), POINTER :: GENERATED_MESH
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_SurfaceGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(GENERATED_MESH)
@@ -37624,10 +42416,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_SurfaceGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_SurfaceGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_SurfaceGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
   END SUBROUTINE CMISSGeneratedMesh_SurfaceGetNumber1
@@ -37646,14 +42442,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: normalXi !<index of the xi direction that is normal to the surface.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_SurfaceGetObj0",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_SURFACE_GET(generatedMesh%GENERATED_MESH,1,surfaceType,surfaceNodes,normalXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_SurfaceGetObj0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_SurfaceGetObj0",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_SurfaceGetObj0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
   END SUBROUTINE CMISSGeneratedMesh_SurfaceGetObj0
@@ -37673,14 +42475,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: normalXi !<index of the xi direction that is normal to the surface.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSGeneratedMesh_SurfaceGetObj1",err,error,*999)
+#endif
 
     CALL GENERATED_MESH_SURFACE_GET(generatedMesh%GENERATED_MESH,meshComponent,surfaceType,surfaceNodes,normalXi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_SurfaceGetObj1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSGeneratedMesh_SurfaceGetObj1",err,error)
+#if DEBUG
     CALL EXITS("CMISSGeneratedMesh_SurfaceGetObj1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
   END SUBROUTINE CMISSGeneratedMesh_SurfaceGetObj1
@@ -37702,14 +42510,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshEmbedding_Initialise",err,error,*999)
+#endif
 
     NULLIFY(meshEmbedding%MESH_EMBEDDING)
 
+#if DEBUG
     CALL EXITS("CMISSMeshEmbedding_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshEmbedding_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshEmbedding_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37731,7 +42545,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
 
+#if DEBUG
     CALL ENTERS("CMISSMeshEmbedding_CreateNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION1)
     NULLIFY(REGION2)
@@ -37762,10 +42578,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshEmbedding_CreateNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshEmbedding_CreateNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshEmbedding_CreateNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37863,12 +42683,16 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err           !<The error code
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSField_ParameterSetGetGaussPointCoordObj",err,error,*999)
+#endif
 
     CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD(meshEmbedding%MESH_EMBEDDING,componentNumber, &
       & NumberofGaussPoints,COORDS,ERR,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSField_ParameterSetGetGaussPointCoordObj")
+#endif
 
 999 RETURN
 
@@ -37895,7 +42719,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -37915,10 +42741,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterface_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37936,14 +42766,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_CreateFinishObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CREATE_FINISH(interface%INTERFACE,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -37965,7 +42801,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_CreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -37978,10 +42816,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterface_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38001,14 +42843,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_CreateStartObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CREATE_START(interfaceUserNumber,region%REGION,interface%INTERFACE,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
     
@@ -38032,7 +42880,9 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
+#if DEBUG
     CALL ENTERS("CMISSInterface_CoordinateSystemSetNumber",err,error,*999)
+#endif
  
     NULLIFY(INTERFACE)
     NULLIFY(REGION)
@@ -38055,10 +42905,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterface_CoordinateSystemSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_CoordinateSystemSetNumber",err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSInterface_CoordinateSystemSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -38077,14 +42931,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
+#if DEBUG
     CALL ENTERS("CMISSInterface_CoordinateSystemSetObj",err,error,*999)
+#endif
  
     CALL INTERFACE_COORDINATE_SYSTEM_SET(interface%INTERFACE,coordinateSystem%COORDINATE_SYSTEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_CoordinateSystemSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_CoordinateSystemSetObj",err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSInterface_CoordinateSystemSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
   END SUBROUTINE CMISSInterface_CoordinateSystemSetObj
@@ -38107,7 +42967,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
+#if DEBUG
     CALL ENTERS("CMISSInterface_CoordinateSystemGetNumber",err,error,*999)
+#endif
  
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -38129,10 +42991,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterface_CoordinateSystemGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_CoordinateSystemGetNumber",err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSInterface_CoordinateSystemGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -38151,14 +43017,20 @@ CONTAINS
    INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
+#if DEBUG
     CALL ENTERS("CMISSInterface_CoordinateSystemGetObj",err,error,*999)
+#endif
  
     CALL INTERFACE_COORDINATE_SYSTEM_GET(Interface%INTERFACE,CoordinateSystem%COORDINATE_SYSTEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_CoordinateSystemGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_CoordinateSystemGetObj",err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSInterface_CoordinateSystemGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -38180,7 +43052,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSFInterfaceDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -38199,10 +43073,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterface_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38220,14 +43098,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_DestroyObj",err,error,*999)
+#endif
 
     CALL INTERFACE_DESTROY(interface%INTERFACE,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38250,7 +43134,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_LabelGetCNumber",err,error,*999)
+#endif
 
     NULLIFY(PARENT_REGION)
     NULLIFY(INTERFACE)
@@ -38271,10 +43157,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelGetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_LabelGetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelGetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38293,14 +43183,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_LabelGetCObj",err,error,*999)
+#endif
 
     CALL INTERFACE_LABEL_GET(interface%INTERFACE,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelGetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_LabelGetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelGetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38323,7 +43219,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_LabelGetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(PARENT_REGION)
     NULLIFY(INTERFACE)
@@ -38344,10 +43242,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelGetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_LabelGetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelGetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38366,14 +43268,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_LabelGetVSObj",err,error,*999)
+#endif
 
     CALL INTERFACE_LABEL_GET(interface%INTERFACE,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelGetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_LabelGetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelGetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38396,7 +43304,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_LabelSetCNumber",err,error,*999)
+#endif
 
     NULLIFY(PARENT_REGION)
     NULLIFY(INTERFACE)
@@ -38417,10 +43327,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelSetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_LabelSetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelSetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38439,14 +43353,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_LabelSetCObj",err,error,*999)
+#endif
 
     CALL INTERFACE_LABEL_SET(interface%INTERFACE,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelSetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_LabelSetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelSetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38469,7 +43389,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_LabelSetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(PARENT_REGION)
     NULLIFY(INTERFACE)
@@ -38490,10 +43412,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceLabelStVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_LabelSetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelSetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38512,14 +43438,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_LabelSetVSObj",err,error,*999)
+#endif
 
     CALL INTERFACE_LABEL_SET(interface%INTERFACE,CHAR(label),err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelSetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_LabelSetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_LabelSetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38538,14 +43470,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_NodesGetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_NODES_GET(interface%INTERFACE,nodes%NODES,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_NodesGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_NodesGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_NodesGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38572,7 +43510,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: MESH_REGION,PARENT_REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_MeshAddNumber",err,error,*999)
+#endif
 
     NULLIFY(PARENT_REGION)
     NULLIFY(INTERFACE)
@@ -38610,10 +43550,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterface_MeshAddNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_MeshAddNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_MeshAddNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38633,14 +43577,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterface_MeshAddObj",err,error,*999)
+#endif
 
     CALL INTERFACE_MESH_ADD(interface%INTERFACE,mesh%MESH,meshIndex,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterface_MeshAddObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterface_MeshAddObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterface_MeshAddObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38662,7 +43612,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -38682,10 +43634,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38703,14 +43659,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_CreateFinishObj",err,error,*999)
+#endif
 
     CALL INTERFACE_MESH_CONNECTIVITY_CREATE_FINISH(interfaceMeshConnectivity%MESH_CONNECTIVITY,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38735,7 +43697,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_CreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -38763,10 +43727,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38786,15 +43754,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_CreateStartObj",err,error,*999)
+#endif
 
     CALL INTERFACE_MESH_CONNECTIVITY_CREATE_START(interface%INTERFACE,interfaceMesh%MESH, &
       & interfaceMeshConnectivity%MESH_CONNECTIVITY,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38821,7 +43795,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -38842,10 +43818,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38867,15 +43847,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_NUMBER_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY, &
       & interfaceElementNumber,coupledMeshIndexNumber,coupledMeshElementNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38902,14 +43888,20 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber",err,error,*999)
+#endif
 
     CALL FLAG_ERROR("Not implemented yet.",err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementNumberSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38932,7 +43924,9 @@ CONTAINS
     !Local variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj",err,error,*999)
+#endif
     
     IF(SIZE(interfaceNodeNumbers(:))==SIZE(firstCoupledMeshNodeNumbers(:)) &
       & .AND.SIZE(interfaceNodeNumbers(:))==SIZE(secondCoupledMeshNodeNumbers(:))) THEN
@@ -38946,10 +43940,14 @@ CONTAINS
         CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_NodeNumberSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -38979,7 +43977,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementXiSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -39001,10 +44001,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementXiSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementXiSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementXiSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -39029,16 +44033,22 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_ElementXiSetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_MESH_CONNECTIVITY_ELEMENT_XI_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY,interfaceElementNumber, &
       & coupledMeshIndexNumber,coupledMeshElementNumber,interfaceMeshLocalNodeNumber,interfaceMeshComponentNodeNumber,xi, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementXiSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_ElementXiSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_ElementXiSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -39061,7 +44071,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_BasisSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -39088,10 +44100,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_BasisSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -39110,15 +44126,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_BasisSetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_MESH_CONNECTIVITY_BASIS_SET(interfaceMeshConnectivity%MESH_CONNECTIVITY,interfaceMappingBasis%BASIS, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_BasisSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_BasisSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -39140,7 +44162,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSFInterfaceMeshConnectivityDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -39159,10 +44183,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -39180,15 +44208,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMeshConnectivity_DestroyObj",err,error,*999)
+#endif
 
     IF(ASSOCIATED(interfaceMeshConnectivity%MESH_CONNECTIVITY)) &
       &  CALL INTERFACE_MESH_CONNECTIVITY_DESTROY(interfaceMeshConnectivity%MESH_CONNECTIVITY,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMeshConnectivity_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMeshConnectivity_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -39210,7 +44244,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
     
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_CreateFinishNumber",err,error,*999)
+#endif
  
     NULLIFY(region)
     NULLIFY(interface)
@@ -39230,10 +44266,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39251,14 +44291,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_CreateFinishObj",err,error,*999)
+#endif
  
     CALL InterfacePointsConnectivity_CreateFinish(interfacePointsConnectivity%pointsConnectivity,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39283,7 +44329,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
     
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_CreateStartNumber",err,error,*999)
+#endif
  
     NULLIFY(region)
     NULLIFY(interface)
@@ -39311,10 +44359,14 @@ CONTAINS
       CALL FLAG_error(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_CreateStartNumber")
+#endif
     RETURN
 999 CALL errorS("CMISSInterfacePointsConnectivity_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_error(Err,error)
     RETURN
     
@@ -39334,15 +44386,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_CreateStartObj",err,error,*999)
+#endif
 
     CALL InterfacePointsConnectivity_CreateStart(interface%INTERFACE,interfaceMesh%MESH, &
       & InterfacePointsConnectivity%pointsConnectivity,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_CreateStartObj")
+#endif
     RETURN
 999 CALL errorS("CMISSInterfacePointsConnectivity_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_error(err,error)
     RETURN
     
@@ -39364,7 +44422,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(interface)
@@ -39383,10 +44443,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -39404,14 +44468,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_DestroyObj",err,error,*999)
+#endif
 
     CALL InterfacePointsConnectivity_Destroy(interfacePointsConnectivity%pointsConnectivity,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -39438,7 +44508,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
     
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberGetNumber",err,error,*999)
+#endif
  
     NULLIFY(region)
     NULLIFY(interface)
@@ -39459,10 +44531,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39485,15 +44561,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
   
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberGetObj",err,error,*999)
+#endif
  
     CALL InterfacePointsConnectivity_ElementNumberGet(InterfacePointsConnectivity%pointsConnectivity, &
       & interfaceDataPointIndexNumber,coupledMeshIndexNumber,meshComponentNumber,coupledMeshElementNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39520,7 +44602,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
     
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber",err,error,*999)
+#endif
  
     NULLIFY(region)
     NULLIFY(interface)
@@ -39541,10 +44625,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39567,15 +44655,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
   
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_ElementNumberSetObj",err,error,*999)
+#endif
  
     CALL InterfacePointsConnectivity_ElementNumberSet(InterfacePointsConnectivity%pointsConnectivity, &
       & interfaceDataPointIndexNumber,coupledMeshIndexNumber,coupledMeshElementNumber,meshComponentNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_ElementNumberSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_ElementNumberSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39605,7 +44699,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
     
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiGetNumber",err,error,*999)
+#endif
  
     NULLIFY(region)
     NULLIFY(interface)
@@ -39626,10 +44722,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39651,15 +44751,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiGetObj",err,error,*999)
+#endif
  
     CALL InterfacePointsConnectivity_PointXiGet(InterfacePointsConnectivity%pointsConnectivity, &
       & interfaceDataPointIndexNumber,coupledMeshIndexNumber,xi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39685,7 +44791,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
     
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiSetNumber",err,error,*999)
+#endif
  
     NULLIFY(region)
     NULLIFY(interface)
@@ -39706,10 +44814,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39731,15 +44843,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_PointXiSetObj",err,error,*999)
+#endif
  
     CALL InterfacePointsConnectivity_PointXiSet(InterfacePointsConnectivity%pointsConnectivity, &
       & interfaceDataPointIndexNumber,coupledMeshIndexNumber,xi,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_PointXiSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_PointXiSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39768,7 +44886,9 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
     TYPE(VARYING_STRING) :: localError
     
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber",err,error,*999)
+#endif
  
     NULLIFY(ParentRegion)
     NULLIFY(dataPointsRegion)
@@ -39797,10 +44917,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionRNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39830,7 +44954,9 @@ CONTAINS
     TYPE(DATA_PROJECTION_TYPE), POINTER :: dataProjection
     TYPE(VARYING_STRING) :: localError
     
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber",err,error,*999)
+#endif
  
     NULLIFY(ParentRegion)
     NULLIFY(dataPointsRegion)
@@ -39861,10 +44987,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionINumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39885,15 +45015,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     
+#if DEBUG
     CALL ENTERS("CMISSInterfacePointsConnectivity_UpdateFromProjectionObj",err,error,*999)
+#endif
  
     CALL InterfacePointsConnectivity_UpdateFromProjection(pointsConnectivity%pointsConnectivity, &
       & dataProjection%DATA_PROJECTION,coupledMeshIndex,err,error,*999) 
 
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfacePointsConnectivity_UpdateFromProjectionObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfacePointsConnectivity_UpdateFromProjectionObj")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,error)
     RETURN
     
@@ -39919,7 +45055,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -39950,10 +45088,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -39971,14 +45113,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_CreateFinishObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_CREATE_FINISH(interfaceCondition%INTERFACE_CONDITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40005,7 +45153,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_CreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -40037,10 +45187,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40061,15 +45215,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_CreateStartObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_CREATE_START(interfaceConditionUserNumber,interface%INTERFACE,geometricField%FIELD, &
       & interfaceCondition%INTERFACE_CONDITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40099,7 +45259,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: EQUATIONS_SET_REGION,INTERFACE_REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_DependentVariableAddNumber",err,error,*999)
+#endif
 
     NULLIFY(INTERFACE_REGION)
     NULLIFY(INTERFACE)
@@ -40148,10 +45310,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_DependentVariableAddNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_DependentVariableAddNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_DependentVariableAddNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40172,15 +45338,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_DependentVariableAddObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_DEPENDENT_VARIABLE_ADD(interfaceCondition%INTERFACE_CONDITION,meshIndex,equationsSet%EQUATIONS_SET, &
       & variableType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_DependentVariableAddObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_DependentVariableAddObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_DependentVariableAddObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40204,7 +45376,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSFInterfaceConditionDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -40234,10 +45408,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40255,14 +45433,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_DestroyObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_DESTROY(interfaceCondition%INTERFACE_CONDITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40287,7 +45471,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_EquationsCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -40318,10 +45504,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_EquationsCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40339,14 +45529,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_EquationsCreateFinishObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_EQUATIONS_CREATE_FINISH(interfaceCondition%INTERFACE_CONDITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_EquationsCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40372,7 +45568,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_EquationsCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -40404,10 +45602,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_EquationsCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40426,15 +45628,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_EquationsCreateStartObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_EQUATIONS_CREATE_START(interfaceCondition%INTERFACE_CONDITION,interfaceEquations% &
       & INTERFACE_EQUATIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_EquationsCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40458,7 +45666,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSFInterfaceConditionEquationsDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -40488,10 +45698,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_EquationsDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40509,14 +45723,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_EquationsDestroyObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_EQUATIONS_DESTROY(interfaceCondition%INTERFACE_CONDITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_EquationsDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_EquationsDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40542,7 +45762,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_IntegrationTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(interface)
@@ -40572,10 +45794,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40594,15 +45820,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_IntegrationTypeGetObj",err,error,*999)
+#endif
 
     CALL InterfaceCondition_IntegrationTypeGet(interfaceCondition%INTERFACE_CONDITION,interfaceConditionIntegrationType, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_IntegrationTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40628,7 +45860,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_IntegrationTypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(interface)
@@ -40658,10 +45892,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40680,15 +45918,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_MethodSetObj",err,error,*999)
+#endif
 
     CALL InterfaceCondition_IntegrationTypeSet(interfaceCondition%INTERFACE_CONDITION,interfaceConditionIntegrationType, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_IntegrationTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_IntegrationTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40713,7 +45957,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_LagrangeFieldCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -40744,10 +45990,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_LagrangeFieldCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_LagrangeFieldCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_LagrangeFieldCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40765,14 +46015,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_LagrangeFieldCreateFinishObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_LAGRANGE_FIELD_CREATE_FINISH(interfaceCondition%INTERFACE_CONDITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_LagrangeFieldCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_LagrangeFieldCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_LagrangeFieldCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40799,7 +46055,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_LagrangeFieldCreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -40832,10 +46090,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_LagrangeFieldCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_LagrangeFieldCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_LagrangeFieldCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40855,15 +46117,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_LagrangeFieldCreateStartObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_LAGRANGE_FIELD_CREATE_START(interfaceCondition%INTERFACE_CONDITION,lagrangeFieldUserNumber, &
       & lagrangeField%FIELD,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_LagrangeFieldCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_LagrangeFieldCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_LagrangeFieldCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -40888,7 +46156,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_PenaltyFieldCreateFinishNumber",Err,ERROR,*999)
+#endif
  
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -40919,10 +46189,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_PenaltyFieldCreateFinishNumber",Err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -40940,14 +46214,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_PenaltyFieldCreateFinishObj",Err,ERROR,*999)
+#endif
  
     CALL INTERFACE_CONDITION_PENALTY_FIELD_CREATE_FINISH(InterfaceCondition%INTERFACE_CONDITION,Err,ERROR,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_PenaltyFieldCreateFinishObj",Err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -40974,7 +46254,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_PenaltyFieldCreateStartNumber",Err,ERROR,*999)
+#endif
  
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -41007,10 +46289,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_PenaltyFieldCreateStartNumber",Err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -41030,15 +46316,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_PenaltyFieldCreateStartObj",Err,ERROR,*999)
+#endif
  
     CALL INTERFACE_CONDITION_PENALTY_FIELD_CREATE_START(InterfaceCondition%INTERFACE_CONDITION,PenaltyFieldUserNumber, &
       & PenaltyField%FIELD,Err,ERROR,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_PenaltyFieldCreateStartObj",Err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_PenaltyFieldCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -41064,7 +46356,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_MethodGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -41094,10 +46388,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_MethodGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_MethodGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_MethodGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41116,14 +46414,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_MethodGetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_METHOD_GET(interfaceCondition%INTERFACE_CONDITION,interfaceConditionMethod,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_MethodGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_MethodGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_MethodGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41149,7 +46453,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_MethodSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -41179,10 +46485,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_MethodSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_MethodSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_MethodSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41201,14 +46511,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_MethodSetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_METHOD_SET(interfaceCondition%INTERFACE_CONDITION,interfaceConditionMethod,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_MethodSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_MethodSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_MethodSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41234,7 +46550,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_OperatorGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -41264,10 +46582,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_OperatorGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_OperatorGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_OperatorGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41286,15 +46608,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_OperatorGetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_OPERATOR_GET(interfaceCondition%INTERFACE_CONDITION,interfaceConditionOperator, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_OperatorGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_OperatorGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_OperatorGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41320,7 +46648,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_OperatorSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -41350,10 +46680,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_OperatorSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_OperatorSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_OperatorSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41372,15 +46706,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceCondition_OperatorSetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_CONDITION_OPERATOR_SET(interfaceCondition%INTERFACE_CONDITION,interfaceConditionOperator, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_OperatorSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceCondition_OperatorSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceCondition_OperatorSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41407,7 +46747,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceEquations_OutputTypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -41439,10 +46781,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_OutputTypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceEquations_OutputTypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_OutputTypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41461,14 +46807,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceEquations_OutputTypeGetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_EQUATIONS_OUTPUT_TYPE_GET(interfaceEquations%INTERFACE_EQUATIONS,outputType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_OutputTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceEquations_OutputTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_OutputTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41495,7 +46847,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceEquations_OutputTypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -41527,10 +46881,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_OutputTypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceEquations_OutputTypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_OutputTypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41549,14 +46907,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceEquations_OutputTypeSetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_EQUATIONS_OUTPUT_TYPE_SET(interfaceEquations%INTERFACE_EQUATIONS,outputType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_OutputTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceEquations_OutputTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_OutputTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41583,7 +46947,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceEquations_SparsityGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -41615,10 +46981,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_SparsityGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceEquations_SparsityGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_SparsityGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41637,14 +47007,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceEquations_SparsityGetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_EQUATIONS_SPARSITY_TYPE_GET(interfaceEquations%INTERFACE_EQUATIONS,sparsityType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_SparsityGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceEquations_SparsityGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_SparsityGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41671,7 +47047,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceEquations_SparsitySetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(INTERFACE)
@@ -41703,10 +47081,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_SparsitySetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceEquations_SparsitySetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_SparsitySetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41725,14 +47107,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSInterfaceEquations_SparsitySetObj",err,error,*999)
+#endif
 
     CALL INTERFACE_EQUATIONS_SPARSITY_TYPE_SET(interfaceEquations%INTERFACE_EQUATIONS,sparsityType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_SparsitySetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceEquations_SparsitySetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceEquations_SparsitySetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41758,7 +47146,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -41790,10 +47180,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Decomposition Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41811,7 +47205,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_CreateFinishObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_CREATE_FINISH(decomposition%DECOMPOSITION,err,error,*999)
 
@@ -41819,10 +47215,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('decomposition Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41840,7 +47240,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_TopologyDataProjectionCalculateObj",err,error,*999)
+#endif
 
     CALL DecompositionTopologyDataProjectionCalculate(decomposition%DECOMPOSITION%TOPOLOGY,err,error,*999)
 
@@ -41848,10 +47250,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyDataProjectionCalculateObj',err,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TopologyDataProjectionCalculateObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_TopologyDataProjectionCalculateObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TopologyDataProjectionCalculateObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41873,7 +47279,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj",err,error,*999)
+#endif
 
     CALL DecompositionTopologyElementDataPointLocalNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
      & dataPointLocalNumber,err,error,*999)
@@ -41882,10 +47290,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj',err,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TopologyElementDataPointLocalNumberGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41907,7 +47319,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj",err,error,*999)
+#endif
 
     CALL DecompositionTopologyElementDataPointUserNumberGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber,dataPointIndex, &
      & dataPointUserNumber,err,error,*999)
@@ -41916,10 +47330,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyElementDataPointUserNumberGetObj',err,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TopologyElementDataPointUserNumberGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41939,7 +47357,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj",err,error,*999)
+#endif
 
     CALL DecompositionTopologyNumberOfElementDataPointsGet(decomposition%DECOMPOSITION%TOPOLOGY,elementNumber, &
      & numberOfDataPoints,err,error,*999)
@@ -41948,10 +47368,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj',err,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TopologyNumberOfElementDataPointsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -41975,7 +47399,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_CreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Decomposition Create')
@@ -42000,10 +47426,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42023,7 +47453,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_CreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('decomposition Create')
@@ -42031,10 +47463,14 @@ CONTAINS
 
     CALL DECOMPOSITION_CREATE_START(decompositionUserNumber,mesh%MESH,decomposition%DECOMPOSITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42058,7 +47494,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42086,10 +47524,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42107,14 +47549,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_DestroyObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_DESTROY(decomposition%DECOMPOSITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42138,7 +47586,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_ElementDomainCalculateNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42166,10 +47616,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainCalculateNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_ElementDomainCalculateNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainCalculateNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42187,14 +47641,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_ElementDomainCalculateObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_ELEMENT_DOMAIN_CALCULATE(decomposition%DECOMPOSITION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainCalculateObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_ElementDomainCalculateObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainCalculateObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42221,7 +47681,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_ElementDomainGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42249,10 +47711,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_ElementDomainGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42272,14 +47738,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_ElementDomainGetObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_ELEMENT_DOMAIN_GET(decomposition%DECOMPOSITION,elementUserNumber,domain,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_ElementDomainGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42306,7 +47778,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_ElementDomainSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42334,10 +47808,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_ElementDomainSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42357,14 +47835,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_ElementDomainSetObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_ELEMENT_DOMAIN_SET(decomposition%DECOMPOSITION,elementUserNumber,domain,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_ElementDomainSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_ElementDomainSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42390,7 +47874,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_MeshComponentGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42418,10 +47904,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_MeshComponentGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_MeshComponentGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_MeshComponentGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42440,14 +47930,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_MeshComponentGetObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_MESH_COMPONENT_NUMBER_GET(decomposition%DECOMPOSITION,meshComponentNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_MeshComponentGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_MeshComponentGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_MeshComponentGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42473,7 +47969,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_MeshComponentSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42501,10 +47999,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_MeshComponentSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_MeshComponentSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_MeshComponentSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42523,14 +48025,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_MeshComponentSetObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_MESH_COMPONENT_NUMBER_SET(decomposition%DECOMPOSITION,meshComponentNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_MeshComponentSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_MeshComponentSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_MeshComponentSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42556,7 +48064,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_NumberOfDomainsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42584,10 +48094,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NumberOfDomainsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_NumberOfDomainsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NumberOfDomainsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42606,14 +48120,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_NumberOfDomainsGetObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_NUMBER_OF_DOMAINS_GET(decomposition%DECOMPOSITION,numberOfDomains,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NumberOfDomainsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_NumberOfDomainsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NumberOfDomainsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42639,7 +48159,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_NumberOfDomainsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42667,10 +48189,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NumberOfDomainsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_NumberOfDomainsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NumberOfDomainsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42689,14 +48215,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_NumberOfDomainsSetObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_NUMBER_OF_DOMAINS_SET(decomposition%DECOMPOSITION,numberOfDomains,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NumberOfDomainsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_NumberOfDomainsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NumberOfDomainsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42721,7 +48253,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_TypeGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42749,10 +48283,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TypeGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_TypeGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TypeGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42771,14 +48309,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_TypeGetObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_TYPE_GET(decomposition%DECOMPOSITION,decompositionType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_TypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42803,7 +48347,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_TypeSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42831,10 +48377,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TypeSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_TypeSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TypeSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42853,14 +48403,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_TypeSetObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_TYPE_SET(decomposition%DECOMPOSITION,decompositionType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_TypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_TypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42886,7 +48442,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_CalculateLinesSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42914,10 +48472,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CalculateLinesSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_CalculateLinesSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CalculateLinesSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42936,14 +48498,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_CalculateLinesSetObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_CALCULATE_LINES_SET(decomposition%DECOMPOSITION,calculateLinesFlag,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CalculateLinesSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_CalculateLinesSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CalculateLinesSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -42969,7 +48537,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_CalculateFacesSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -42997,10 +48567,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CalculateFacesSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_CalculateFacesSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CalculateFacesSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43019,14 +48593,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_CalculateFacesSetObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_CALCULATE_FACES_SET(decomposition%DECOMPOSITION,calculateFacesFlag,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CalculateFacesSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_CalculateFacesSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_CalculateFacesSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43054,7 +48634,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_NodeDomainGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -43082,10 +48664,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NodeDomainGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_NodeDomainGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NodeDomainGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43106,14 +48692,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSDecomposition_NodeDomainGetObj",err,error,*999)
+#endif
 
     CALL DECOMPOSITION_NODE_DOMAIN_GET(decomposition%DECOMPOSITION,nodeUserNumber,meshComponentNumber,domain,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NodeDomainGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSDecomposition_NodeDomainGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSDecomposition_NodeDomainGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43135,7 +48727,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -43159,10 +48753,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Mesh Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSMesh_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43180,7 +48778,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_CreateFinishObj",err,error,*999)
+#endif
 
     CALL MESH_CREATE_FINISH(mesh%MESH,err,error,*999)
 
@@ -43188,10 +48788,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('mesh Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSMesh_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43214,7 +48818,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_CreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Mesh Create')
@@ -43231,10 +48837,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43255,7 +48865,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_CreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('mesh Create')
@@ -43263,10 +48875,14 @@ CONTAINS
 
     CALL MESH_CREATE_START(meshUserNumber,region%REGION,numberOfDimensions,mesh%MESH,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43287,7 +48903,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_CreateStartInterfaceObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('mesh Create')
@@ -43295,10 +48913,14 @@ CONTAINS
 
     CALL MESH_CREATE_START(meshUserNumber,interface%INTERFACE,numberOfDimensions,mesh%MESH,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_CreateStartInterfaceObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_CreateStartInterfaceObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_CreateStartInterfaceObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43320,7 +48942,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -43340,10 +48964,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43361,14 +48989,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_DestroyObj",err,error,*999)
+#endif
 
     CALL MESH_DESTROY(mesh%MESH,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43391,7 +49025,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_NumberOfComponentsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -43411,10 +49047,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfComponentsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_NumberOfComponentsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfComponentsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43433,14 +49073,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_NumberOfComponentsGetObj",err,error,*999)
+#endif
 
     CALL MESH_NUMBER_OF_COMPONENTS_GET(mesh%MESH,numberOfComponents,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfComponentsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_NumberOfComponentsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfComponentsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43463,7 +49109,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_NumberOfComponentsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -43483,10 +49131,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfComponentsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_NumberOfComponentsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfComponentsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43505,14 +49157,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_NumberOfComponentsSetObj",err,error,*999)
+#endif
 
     CALL MESH_NUMBER_OF_COMPONENTS_SET(mesh%MESH,numberOfComponents,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfComponentsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_NumberOfComponentsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfComponentsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43535,7 +49193,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_SurroundingElementsCalculateSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -43555,10 +49215,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_SurroundingElementsCalculateSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_SurroundingElementsCalculateSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_SurroundingElementsCalculateSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43577,14 +49241,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_SurroundingElementsCalculateSetObj",err,error,*999)
+#endif
 
     CALL MESH_SURROUNDING_ELEMENTS_CALCULATE_SET(mesh%MESH,surroundingElementsCalculateFlag,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_SurroundingElementsCalculateSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_SurroundingElementsCalculateSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_SurroundingElementsCalculateSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43607,7 +49277,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_NumberOfElementsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -43627,10 +49299,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfElementsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_NumberOfElementsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfElementsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43649,14 +49325,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_NumberOfElementsGetObj",err,error,*999)
+#endif
 
     CALL MESH_NUMBER_OF_ELEMENTS_GET(mesh%MESH,numberOfElements,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfElementsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_NumberOfElementsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfElementsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43679,7 +49361,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_NumberOfElementsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -43699,10 +49383,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfElementsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_NumberOfElementsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfElementsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43721,14 +49409,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_NumberOfElementsSetObj",err,error,*999)
+#endif
 
     CALL MESH_NUMBER_OF_ELEMENTS_SET(mesh%MESH,numberOfElements,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfElementsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_NumberOfElementsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_NumberOfElementsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43752,7 +49446,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
+#if DEBUG
     CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber",Err,ERROR,*999)
+#endif
  
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -43772,10 +49468,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber",Err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionRegionNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -43800,7 +49500,9 @@ CONTAINS
     TYPE(INTERFACE_TYPE), POINTER :: INTERFACE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
+#if DEBUG
     CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber",Err,ERROR,*999)
+#endif
  
     NULLIFY(PARENT_REGION)
     NULLIFY(INTERFACE)
@@ -43829,10 +49531,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,Err,ERROR,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber",Err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionInterfaceNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -43851,14 +49557,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
     !Local variables
   
+#if DEBUG
     CALL ENTERS("CMISSMesh_TopologyDataPointsCalculateProjectionObj",Err,ERROR,*999)
+#endif
     
     CALL MeshTopologyDataPointsCalculateProjection(Mesh%MESH,DataProjection%DATA_PROJECTION,Err,ERROR,*999)
  
+#if DEBUG
     CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_TopologyDataPointsCalculateProjectionObj",Err,ERROR)
+#if DEBUG
     CALL EXITS("CMISSMesh_TopologyDataPointsCalculateProjectionObj")
+#endif
     CALL CMISS_HANDLE_ERROR(Err,ERROR)
     RETURN
     
@@ -43882,7 +49594,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -43904,10 +49618,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43925,14 +49643,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_CreateFinishObj",err,error,*999)
+#endif
 
     CALL MESH_TOPOLOGY_ELEMENTS_CREATE_FINISH(meshElements%MESH_ELEMENTS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -43958,7 +49682,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_CreateStartNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -43987,10 +49713,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44011,14 +49741,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_CreateStartObj",err,error,*999)
+#endif
 
     CALL MESH_TOPOLOGY_ELEMENTS_CREATE_START(mesh%MESH,meshComponentNumber,basis%BASIS,meshElements%MESH_ELEMENTS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44043,7 +49779,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_ElementsGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -44063,10 +49801,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_ElementsGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_ElementsGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_ElementsGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44089,14 +49831,20 @@ CONTAINS
 
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_ElementsGetObj",err,error,*999)
+#endif
 
     CALL MESH_TOPOLOGY_ELEMENTS_GET(mesh%MESH,meshComponentNumber,meshElements%MESH_ELEMENTS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_ElementsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_ElementsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_ElementsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44124,7 +49872,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_BasisGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -44157,10 +49907,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_BasisGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_BasisGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_BasisGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44180,14 +49934,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_BasisGetObj",err,error,*999)
+#endif
 
     CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_GET(globalElementNumber,meshElements%MESH_ELEMENTS,basis%BASIS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_BasisGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_BasisGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_BasisGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44215,7 +49975,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_BasisSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -44245,10 +50007,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_BasisSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_BasisSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_BasisSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44268,14 +50034,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_BasisSetObj",err,error,*999)
+#endif
 
     CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_BASIS_SET(globalElementNumber,meshElements%MESH_ELEMENTS,basis%BASIS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_BasisSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_BasisSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_BasisSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44303,7 +50075,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_AdjacentElementGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -44326,10 +50100,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_AdjacentElementGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_AdjacentElementGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_AdjacentElementGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44350,15 +50128,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_AdjacentElementGetObj",err,error,*999)
+#endif
 
     CALL MESH_TOPOLOGY_ELEMENTS_ADJACENT_ELEMENT_GET(globalElementNumber,meshElements%MESH_ELEMENTS,adjacentElementXi, &
       & adjacentElement,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_AdjacentElementGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_AdjacentElementGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_AdjacentElementGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44385,7 +50169,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_NodesGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -44407,10 +50193,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_NodesGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_NodesGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_NodesGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44430,14 +50220,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_NodesGetObj",err,error,*999)
+#endif
 
     CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_GET(globalElementNumber,meshElements%MESH_ELEMENTS,elementUserNodes,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_NodesGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_NodesGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_NodesGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44464,7 +50260,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_NodesSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -44486,10 +50284,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_NodesSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_NodesSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_NodesSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44509,14 +50311,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_NodesSetObj",err,error,*999)
+#endif
 
     CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODES_SET(globalElementNumber,meshElements%MESH_ELEMENTS,elementUserNodes,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_NodesSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_NodesSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_NodesSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44549,7 +50357,9 @@ CONTAINS
     INTEGER(INTG) :: localelementnode
     LOGICAL :: FOUND
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_UserNodeVersionSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -44585,10 +50395,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNodeVersionSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_UserNodeVersionSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNodeVersionSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44614,7 +50428,9 @@ CONTAINS
     INTEGER(INTG) :: localelementnode
     LOGICAL :: FOUND
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_UserNodeVersionSetObj",err,error,*999)
+#endif
 
     FOUND=.FALSE.
     DO localelementnode=1,meshElements%MESH_ELEMENTS%ELEMENTS(globalElementNumber)%BASIS%NUMBER_OF_NODES
@@ -44632,10 +50448,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNodeVersionSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_UserNodeVersionSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNodeVersionSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44665,7 +50485,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_LocalElementNodeVersionSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -44688,10 +50510,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_LocalElementNodeVersionSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_LocalElementNodeVersionSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_LocalElementNodeVersionSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44714,15 +50540,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_LocalElementNodeVersionSetObj",err,error,*999)
+#endif
 
     CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_NODE_VERSION_SET(globalElementNumber,meshElements%MESH_ELEMENTS,versionNumber, &
        & derivativeNumber,localElementNodeNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_LocalElementNodeVersionSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_LocalElementNodeVersionSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_LocalElementNodeVersionSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44753,7 +50585,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_UserNumberGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -44775,10 +50609,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNumberGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_UserNumberGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNumberGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44798,15 +50636,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_UserNumberGetObj",err,error,*999)
+#endif
 
     CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_GET(elementGlobalNumber,elementUserNumber,meshElements%MESH_ELEMENTS, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNumberGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_UserNumberGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNumberGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44833,7 +50677,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_UserNumberSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -44855,10 +50701,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNumberSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_UserNumberSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNumberSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44878,15 +50728,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_UserNumberSetObj",err,error,*999)
+#endif
 
     CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_SET(elementGlobalNumber,elementUserNumber,meshElements%MESH_ELEMENTS, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNumberSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_UserNumberSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNumberSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44912,7 +50768,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_UserNumbersAllSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(MESH)
@@ -44934,10 +50792,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNumbersAllSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_AllUserNumbersAllSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_AllUserNumbersAllSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44956,15 +50818,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSMeshElements_UserNumbersAllSetObj",err,error,*999)
+#endif
 
     CALL MeshTopologyElementsUserNumbersAllSet(meshElements%MESH_ELEMENTS,elementUserNumbers, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNumbersAllSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMeshElements_UserNumbersAllSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMeshElements_UserNumbersAllSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -44991,7 +50859,9 @@ CONTAINS
     INTEGER(INTG) :: meshNodeNumber
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_NodeExistsNumber",err,error,*999)
+#endif
 
     nodeExists = .FALSE.
 
@@ -45013,10 +50883,14 @@ CONTAINS
       CALL FLAG_ERROR(LocalError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_NodeExistsNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_NodeExistsNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_NodeExistsNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -45040,14 +50914,20 @@ CONTAINS
 
     nodeExists = .FALSE.
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_NodeExistsObj",err,error,*999)
+#endif
 
     CALL MeshTopologyNodeCheckExists(mesh%MESH,meshComponentNumber,nodeUserNumber,nodeExists,meshNodeNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_NodeExistsObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_NodeExistsObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_NodeExistsObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -45075,7 +50955,9 @@ CONTAINS
     INTEGER(INTG) :: meshElementNumber
     TYPE(VARYING_STRING) :: LocalError
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_ElementExistsNumber",err,error,*999)
+#endif
 
     elementExists = .FALSE.
 
@@ -45098,10 +50980,14 @@ CONTAINS
       CALL FLAG_ERROR(LocalError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSMesh_ElementExistsNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_ElementExistsNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_ElementExistsNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -45124,17 +51010,23 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: meshElementNumber
 
+#if DEBUG
     CALL ENTERS("CMISSMesh_ElementExistsObj",err,error,*999)
+#endif
 
     elementExists = .FALSE.
 
     CALL MeshTopologyElementCheckExists(mesh%MESH,meshComponentNumber,elementUserNumber,elementExists,meshElementNumber, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSMesh_ElementExistsObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSMesh_ElementExistsObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSMesh_ElementExistsObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46097,7 +51989,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(NODES)
@@ -46115,10 +52009,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Nodes Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSNodes_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46136,7 +52034,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_CreateFinishObj",err,error,*999)
+#endif
 
     CALL NODES_CREATE_FINISH(nodes%NODES,err,error,*999)
 
@@ -46144,10 +52044,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('nodes Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSNodes_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46169,7 +52073,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_CreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Nodes Create')
@@ -46186,10 +52092,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSNodes_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46209,7 +52119,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_CreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('nodes Create')
@@ -46217,10 +52129,14 @@ CONTAINS
 
     CALL NODES_CREATE_START(region%REGION,numberOfNodes,nodes%NODES,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46240,7 +52156,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_CreateStartInterfaceObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('nodes Create')
@@ -46248,10 +52166,14 @@ CONTAINS
 
     CALL NODES_CREATE_START(interface%INTERFACE,numberOfNodes,nodes%NODES,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_CreateStartInterfaceObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_CreateStartInterfaceObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_CreateStartInterfaceObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46272,7 +52194,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(NODES)
@@ -46286,10 +52210,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSNodes_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46307,14 +52235,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodeDestroyObj",err,error,*999)
+#endif
 
     CALL NODES_DESTROY(nodes%NODES,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46336,7 +52270,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_NumberOfNodesGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(NODES)
@@ -46350,10 +52286,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSNodes_NumberOfNodesGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_NumberOfNodesGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_NumberOfNodesGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46372,14 +52312,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_NumberOfNodesGetObj",err,error,*999)
+#endif
 
     CALL NODES_NUMBER_OF_NODES_GET(nodes%NODES,numberOfNodes,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_NumberOfNodesGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_NumberOfNodesGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_NumberOfNodesGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46402,7 +52348,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_LabelGetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(NODES)
@@ -46416,10 +52364,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelGetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_LabelGetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelGetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46439,14 +52391,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_LabelGetCObj",err,error,*999)
+#endif
 
     CALL NODES_LABEL_GET(nodes%NODES,nodeGlobalNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelGetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_LabelGetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelGetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46469,7 +52427,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_LabelGetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(NODES)
@@ -46483,10 +52443,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelGetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_LabelGetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelGetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46506,14 +52470,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_LabelGetVSObj",err,error,*999)
+#endif
 
     CALL NODES_LABEL_GET(nodes%NODES,nodeGlobalNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelGetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_LabelGetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelGetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46536,7 +52506,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_LabelSetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(NODES)
@@ -46550,10 +52522,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelSetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_LabelSetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelSetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46573,14 +52549,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_LabelSetCObj",err,error,*999)
+#endif
 
     CALL NODES_LABEL_SET(nodes%NODES,nodeGlobalNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelSetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_LabelSetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelSetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46603,7 +52585,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_LabelSetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(NODES)
@@ -46617,10 +52601,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelSetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_LabelSetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelSetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46640,14 +52628,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_LabelSetVSObj",err,error,*999)
+#endif
 
     CALL NODES_LABEL_SET(nodes%NODES,nodeGlobalNumber,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelSetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_LabelSetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_LabelSetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46670,7 +52664,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_UserNumberGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(NODES)
@@ -46684,10 +52680,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumberGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_UserNumberGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumberGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46707,14 +52707,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_UserNumberGetObj",err,error,*999)
+#endif
 
     CALL NODES_USER_NUMBER_GET(nodes%NODES,nodeGlobalNumber,nodeUserNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumberGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_UserNumberGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumberGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46737,7 +52743,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_UserNumberSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(NODES)
@@ -46751,10 +52759,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumberSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_UserNumberSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumberSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46774,14 +52786,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_UserNumberSetObj",err,error,*999)
+#endif
 
     CALL NODES_USER_NUMBER_SET(nodes%NODES,nodeGlobalNumber,nodeUserNumber,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumberSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_UserNumberSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumberSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46803,7 +52821,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_UserNumbersAllSetNumber",err,error,*999)
+#endif
 
     NULLIFY(region)
     NULLIFY(nodes)
@@ -46817,10 +52837,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumbersAllSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_UserNumbersAllSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumbersAllSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46839,14 +52863,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSNodes_UserNumbersAllSetObj",err,error,*999)
+#endif
 
     CALL NodesUserNumbersAllSet(nodes%NODES,nodeUserNumbers,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumbersAllSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSNodes_UserNumbersAllSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSNodes_UserNumbersAllSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46868,7 +52898,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CellMLEquationsCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -46884,10 +52916,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('CellML Equations Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CellMLEquationsCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46905,7 +52941,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CellMLEquationsCreateFinishObj",err,error,*999)
+#endif
 
     CALL PROBLEM_CELLML_EQUATIONS_CREATE_FINISH(problem%PROBLEM,err,error,*999)
 
@@ -46913,10 +52951,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('CellML Equations Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CellMLEquationsCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46936,7 +52978,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CellMLEquationsCreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('CellML Equations Create')
@@ -46952,10 +52996,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CellMLEquationsCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -46973,7 +53021,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CellMLEquationsCreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('CellML Equations Create')
@@ -46981,10 +53031,14 @@ CONTAINS
 
     CALL PROBLEM_CELLML_EQUATIONS_CREATE_START(problem%PROBLEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CellMLEquationsCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47007,7 +53061,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CellMLEquationsGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -47018,10 +53074,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CellMLEquationsGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47044,7 +53104,9 @@ CONTAINS
      TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CellMLEquationsGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -47055,10 +53117,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CellMLEquationsGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47079,15 +53145,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CellMLEquationsGetObj0",err,error,*999)
+#endif
 
     CALL PROBLEM_CELLML_EQUATIONS_GET(problem%PROBLEM,controlLoopIdentifier,solverIndex,CellMLEquations%CELLML_EQUATIONS, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsGetObj0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CellMLEquationsGetObj0",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsGetObj0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47108,15 +53180,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CellMLEquationsGetObj1",err,error,*999)
+#endif
 
     CALL PROBLEM_CELLML_EQUATIONS_GET(problem%PROBLEM,controlLoopIdentifiers,solverIndex,CellMLEquations%CELLML_EQUATIONS, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsGetObj1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CellMLEquationsGetObj1",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CellMLEquationsGetObj1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47136,7 +53214,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -47152,10 +53232,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Problem Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47173,7 +53257,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CreateFinishObj",err,error,*999)
+#endif
 
     CALL PROBLEM_CREATE_FINISH(problem%PROBLEM,err,error,*999)
 
@@ -47181,10 +53267,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('problem Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47203,7 +53293,9 @@ CONTAINS
     !Local variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Problem Create')
@@ -47212,10 +53304,14 @@ CONTAINS
     NULLIFY(PROBLEM)
     CALL PROBLEM_CREATE_START(problemUserNumber,PROBLEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47234,7 +53330,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_CreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('problem Create')
@@ -47242,10 +53340,14 @@ CONTAINS
 
     CALL PROBLEM_CREATE_START(problemUserNumber,problem%PROBLEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47265,7 +53367,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_ControlLoopCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -47281,10 +53385,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Problem Control Loop Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_ControlLoopCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47302,7 +53410,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_ControlLoopCreateFinishObj",err,error,*999)
+#endif
 
     CALL PROBLEM_CONTROL_LOOP_CREATE_FINISH(problem%PROBLEM,err,error,*999)
 
@@ -47310,10 +53420,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('problem Control Loop Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_ControlLoopCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47333,7 +53447,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_ControlLoopCreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Problem Control Loop Create')
@@ -47349,10 +53465,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_ControlLoopCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47370,7 +53490,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_ControlLoopCreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('problem Control Loop Create')
@@ -47378,10 +53500,14 @@ CONTAINS
 
     CALL PROBLEM_CONTROL_LOOP_CREATE_START(problem%PROBLEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_ControlLoopCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47401,7 +53527,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_ControlLoopDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -47413,10 +53541,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_ControlLoopDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47434,14 +53566,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_ControlLoopDestroyObj",err,error,*999)
+#endif
 
     CALL PROBLEM_CONTROL_LOOP_DESTROY(problem%PROBLEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_ControlLoopDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47463,7 +53601,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_ControlLoopGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -47474,10 +53614,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_ControlLoopGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47499,7 +53643,9 @@ CONTAINS
      TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_ControlLoopGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -47510,10 +53656,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_ControlLoopGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47533,14 +53683,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_ControlLoopGetObj0",err,error,*999)
+#endif
 
     CALL PROBLEM_CONTROL_LOOP_GET(problem%PROBLEM,controlLoopIdentifier,controlLoop%CONTROL_LOOP,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopGetObj0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_ControlLoopGetObj0",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopGetObj0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47560,14 +53716,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_ControlLoopGetObj1",err,error,*999)
+#endif
 
     CALL PROBLEM_CONTROL_LOOP_GET(problem%PROBLEM,controlLoopIdentifiers,controlLoop%CONTROL_LOOP,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopGetObj1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_ControlLoopGetObj1",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_ControlLoopGetObj1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47587,7 +53749,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -47599,10 +53763,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47620,14 +53788,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_DestroyObj",err,error,*999)
+#endif
 
     CALL PROBLEM_DESTROY(problem%PROBLEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47647,7 +53821,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolveNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Problem Solve')
@@ -47667,10 +53843,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Problem Solve')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolveNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolveNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolveNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47688,7 +53868,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolveObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('problem Solve')
@@ -47700,10 +53882,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('problem Solve')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolveObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolveObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolveObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47726,7 +53912,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -47737,10 +53925,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47763,7 +53955,9 @@ CONTAINS
      TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -47774,10 +53968,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47798,14 +53996,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverGetObj0",err,error,*999)
+#endif
 
     CALL PROBLEM_SOLVER_GET(problem%PROBLEM,controlLoopIdentifier,solverIndex,solver%SOLVER,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverGetObj0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverGetObj0",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverGetObj0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47826,14 +54030,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverGetObj1",err,error,*999)
+#endif
 
     CALL PROBLEM_SOLVER_GET(problem%PROBLEM,controlLoopIdentifiers,solverIndex,solver%SOLVER,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverGetObj1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverGetObj1",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverGetObj1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47857,7 +54067,9 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsAnalyticNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER_EQUATIONS)
@@ -47876,10 +54088,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsAnalyticNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsAnalyticNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsAnalyticNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47903,7 +54119,9 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsAnalyticNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER_EQUATIONS)
@@ -47922,10 +54140,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsAnalyticNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsAnalyticNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsAnalyticNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47942,14 +54164,20 @@ CONTAINS
     TYPE(CMISSSolverEquationsType), INTENT(IN) :: solverEquations !<The solver equations to get the boundary conditions for.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsAnalyticObj",err,error,*999)
+#endif
 
     CALL PROBLEM_SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC(solverEquations%SOLVER_EQUATIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsAnalyticObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsAnalyticObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsAnalyticObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -47969,7 +54197,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverEquationsCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -47985,10 +54215,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Solver Equations Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverEquationsCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48006,7 +54240,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverEquationsCreateFinishObj",err,error,*999)
+#endif
 
     CALL PROBLEM_SOLVER_EQUATIONS_CREATE_FINISH(problem%PROBLEM,err,error,*999)
 
@@ -48014,10 +54250,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Solver Equations Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverEquationsCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48037,7 +54277,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverEquationsCreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Solver Equations Create')
@@ -48053,10 +54295,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverEquationsCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48074,7 +54320,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverEquationsCreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Solver Equations Create')
@@ -48082,10 +54330,14 @@ CONTAINS
 
     CALL PROBLEM_SOLVER_EQUATIONS_CREATE_START(problem%PROBLEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverEquationsCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48105,7 +54357,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverEquationsDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -48117,10 +54371,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverEquationsDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48138,14 +54396,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverEquationsDestroyObj",err,error,*999)
+#endif
 
     CALL PROBLEM_SOLVER_EQUATIONS_DESTROY(problem%PROBLEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverEquationsDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48168,7 +54432,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverEquationsGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -48179,10 +54445,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverEquationsGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48205,7 +54475,9 @@ CONTAINS
      TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverEquationsGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -48216,10 +54488,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverEquationsGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48240,15 +54516,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverEquationsGetObj0",err,error,*999)
+#endif
 
     CALL PROBLEM_SOLVER_EQUATIONS_GET(problem%PROBLEM,controlLoopIdentifier,solverIndex,solverEquations%SOLVER_EQUATIONS, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsGetObj0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverEquationsGetObj0",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsGetObj0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48269,15 +54551,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolverEquationsGetObj1",err,error,*999)
+#endif
 
     CALL PROBLEM_SOLVER_EQUATIONS_GET(problem%PROBLEM,controlLoopIdentifiers,solverIndex,solverEquations%SOLVER_EQUATIONS, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsGetObj1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolverEquationsGetObj1",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolverEquationsGetObj1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48297,7 +54585,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolversCreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -48313,10 +54603,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Problem Solvers Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversCreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolversCreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversCreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48334,7 +54628,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolversCreateFinishObj",err,error,*999)
+#endif
 
     CALL PROBLEM_SOLVERS_CREATE_FINISH(problem%PROBLEM,err,error,*999)
 
@@ -48342,10 +54638,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('problem Solvers Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolversCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48365,7 +54665,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolversCreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Problem Solvers Create')
@@ -48381,10 +54683,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversCreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolversCreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversCreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48402,7 +54708,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolversCreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('problem Solvers Create')
@@ -48410,10 +54718,14 @@ CONTAINS
 
     CALL PROBLEM_SOLVERS_CREATE_START(problem%PROBLEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolversCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48433,7 +54745,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolversDestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -48445,10 +54759,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversDestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolversDestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversDestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48466,14 +54784,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SolversDestroyObj",err,error,*999)
+#endif
 
     CALL PROBLEM_SOLVERS_DESTROY(problem%PROBLEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversDestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SolversDestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SolversDestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48496,7 +54820,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SpecificationGetNumber",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -48508,10 +54834,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SpecificationGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SpecificationGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SpecificationGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48532,14 +54862,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SpecificationGetObj",err,error,*999)
+#endif
 
     CALL PROBLEM_SPECIFICATION_GET(problem%PROBLEM,problemClass,problemType,problemSubtype,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SpecificationGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SpecificationGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SpecificationGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48562,7 +54898,9 @@ CONTAINS
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SpecificationSetNumber",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
@@ -48574,10 +54912,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SpecificationSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SpecificationSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SpecificationSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48598,14 +54940,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSProblem_SpecificationSetObj",err,error,*999)
+#endif
 
     CALL PROBLEM_SPECIFICATION_SET(problem%PROBLEM,problemClass,problemType,problemSubtype,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSProblem_SpecificationSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSProblem_SpecificationSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSProblem_SpecificationSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48629,7 +54977,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_CoordinateSystemGetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(COORDINATE_SYSTEM)
@@ -48649,10 +54999,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSRegion_CoordinateSystemGetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_CoordinateSystemGetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_CoordinateSystemGetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48671,14 +55025,20 @@ CONTAINS
    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_CoordinateSystemGetObj",err,error,*999)
+#endif
 
     CALL REGION_COORDINATE_SYSTEM_GET(region%REGION,coordinateSystem%COORDINATE_SYSTEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_CoordinateSystemGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_CoordinateSystemGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_CoordinateSystemGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48700,7 +55060,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_CoordinateSystemSetNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     NULLIFY(COORDINATE_SYSTEM)
@@ -48720,10 +55082,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSRegion_CoordinateSystemSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_CoordinateSystemSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_CoordinateSystemSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48742,14 +55108,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_CoordinateSystemSetObj",err,error,*999)
+#endif
 
     CALL REGION_COORDINATE_SYSTEM_SET(region%REGION,coordinateSystem%COORDINATE_SYSTEM,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_CoordinateSystemSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_CoordinateSystemSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_CoordinateSystemSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48769,7 +55141,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_CreateFinishNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
@@ -48785,10 +55159,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('Region Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSRegion_CreateFinishNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_CreateFinishNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_CreateFinishNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48806,7 +55184,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_CreateFinishObj",err,error,*999)
+#endif
 
     CALL REGION_CREATE_FINISH(region%REGION,err,error,*999)
 
@@ -48814,10 +55194,14 @@ CONTAINS
     CALL TAU_STATIC_PHASE_STOP('region Create')
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSRegion_CreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_CreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_CreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48838,7 +55222,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: PARENT_REGION,REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_CreateStartNumber",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('Region Create')
@@ -48855,10 +55241,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSRegion_CreateStartNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_CreateStartNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_CreateStartNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48878,7 +55268,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_CreateStartObj",err,error,*999)
+#endif
 
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_START('region Create')
@@ -48886,10 +55278,14 @@ CONTAINS
 
     CALL REGION_CREATE_START(regionUserNumber,parentRegion%REGION,region%REGION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_CreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_CreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_CreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48909,7 +55305,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_DestroyNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
@@ -48921,10 +55319,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSRegion_DestroyNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_DestroyNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_DestroyNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48943,14 +55345,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_DataPointsGetObj",err,error,*999)
+#endif
 
     CALL REGION_DATA_POINTS_GET(region%REGION,dataPoints%DATA_POINTS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_DataPointsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_DataPointsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_DataPointsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48968,14 +55376,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_DestroyObj",err,error,*999)
+#endif
 
     CALL REGION_DESTROY(region%REGION,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_DestroyObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_DestroyObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_DestroyObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -48996,7 +55410,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_LabelGetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
@@ -49007,10 +55423,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelGetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_LabelGetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelGetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49029,14 +55449,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_LabelGetCObj",err,error,*999)
+#endif
 
     CALL REGION_LABEL_GET(region%REGION,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelGetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_LabelGetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelGetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49057,7 +55483,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_LabelGetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
@@ -49068,10 +55496,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelGetVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_LabelGetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelGetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49090,14 +55522,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_LabelGetVSObj",err,error,*999)
+#endif
 
     CALL REGION_LABEL_GET(region%REGION,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelGetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_LabelGetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelGetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49118,7 +55556,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_LabelSetCNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
@@ -49129,10 +55569,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelSetCNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_LabelSetCNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelSetCNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49151,14 +55595,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_LabelSetCObj",err,error,*999)
+#endif
 
     CALL REGION_LABEL_SET(region%REGION,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelSetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_LabelSetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelSetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49179,7 +55629,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: REGION
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_LabelSetVSNumber",err,error,*999)
+#endif
 
     NULLIFY(REGION)
     CALL REGION_USER_NUMBER_FIND(regionUserNumber,REGION,err,error,*999)
@@ -49190,10 +55642,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSRegionLabelStVSNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_LabelSetVSNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelSetVSNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49212,14 +55668,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_LabelSetVSObj",err,error,*999)
+#endif
 
     CALL REGION_LABEL_SET(region%REGION,CHAR(label),err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelSetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_LabelSetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_LabelSetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49238,14 +55700,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSRegion_NodesGetObj",err,error,*999)
+#endif
 
     CALL REGION_NODES_GET(region%REGION,nodes%NODES,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSRegion_NodesGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSRegion_NodesGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSRegion_NodesGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49281,7 +55749,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellMLEquations_CellMLAddNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49313,10 +55783,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellMLEquations_CellMLAddNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellMLEquations_CellMLAddNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellMLEquations_CellMLAddNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49346,7 +55820,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSCellMLEquations_CellMLAddNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49378,10 +55854,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSCellMLEquations_CellMLAddNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellMLEquations_CellMLAddNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellmlEquationsCellMLAddNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49401,14 +55881,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSCellMLEquations_CellMLAddObj",err,error,*999)
+#endif
 
     CALL CELLML_EQUATIONS_CELLML_ADD(CellMLEquations%CELLML_EQUATIONS,CellML%CELLML,CellMLIndex,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSCellMLEquations_CellMLAddObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSCellMLEquations_CellMLAddObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSCellMLEquations_CellMLAddObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49432,7 +55918,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_CellMLEquationsGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49446,10 +55934,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_CellMLEquationsGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_CellMLEquationsGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_CellMLEquationsGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49473,7 +55965,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_CellMLEquationsGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49487,10 +55981,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_CellMLEquationsGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_CellMLEquationsGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_CellMLEquationsGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49508,14 +56006,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_CellMLEquationsGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_CELLML_EQUATIONS_GET(solver%SOLVER,CellMLEquations%CELLML_EQUATIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_CellMLEquationsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_CellMLEquationsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_CellMLEquationsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49539,7 +56043,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAEEulerSolverTypeGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49553,10 +56059,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAEEulerSolverTypeGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49580,7 +56090,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAEEulerSolverTypeGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49594,10 +56106,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAEEulerSolverTypeGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49616,14 +56132,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAEEulerSolverTypeGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DAE_EULER_SOLVER_TYPE_GET(solver%SOLVER,DAEEulerSolverType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAEEulerSolverTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49647,7 +56169,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAEEulerSolverTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49661,10 +56185,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAEEulerSolverTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49688,7 +56216,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAEEulerSolverTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49702,10 +56232,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAEEulerSolverTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49724,14 +56258,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAEEulerSolverTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DAE_EULER_SOLVER_TYPE_SET(solver%SOLVER,DAEEulerSolverType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAEEulerSolverTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAEEulerSolverTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49755,7 +56295,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAESolverTypeGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49769,10 +56311,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAESolverTypeGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49796,7 +56342,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAESolverTypeGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49810,10 +56358,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAESolverTypeGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49832,14 +56384,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAESolverTypeGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DAE_SOLVER_TYPE_GET(solver%SOLVER,DAESolverType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAESolverTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49863,7 +56421,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAESolverTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49877,10 +56437,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAESolverTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49904,7 +56468,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAESolverTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49918,10 +56484,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAESolverTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49940,14 +56510,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAESolverTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DAE_SOLVER_TYPE_SET(solver%SOLVER,DAESolverType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAESolverTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAESolverTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -49972,7 +56548,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAETimesSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -49986,10 +56564,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimesSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAETimesSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimesSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50014,7 +56596,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAETimesSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50028,10 +56612,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimesSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAETimesSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimesSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50051,14 +56639,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAETimesSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DAE_TIMES_SET(solver%SOLVER,startTime,endTime,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimesSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAETimesSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimesSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50082,7 +56676,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAETimeStepSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50096,10 +56692,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimeStepSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAETimeStepSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimeStepSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50123,7 +56723,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAETimeStepSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50137,10 +56739,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimeStepSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAETimeStepSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimeStepSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50159,14 +56765,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DAETimeStepSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DAE_TIME_STEP_SET(solver%SOLVER,timeStep,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimeStepSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DAETimeStepSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DAETimeStepSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50190,7 +56802,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicDegreeGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50204,10 +56818,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicDegreeGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50231,7 +56849,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicDegreeGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50245,10 +56865,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicDegreeGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50267,14 +56891,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicDegreeGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DYNAMIC_DEGREE_GET(solver%SOLVER,degree,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicDegreeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50298,7 +56928,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicDegreeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50312,10 +56944,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicDegreeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50339,7 +56975,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicDegreeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50353,10 +56991,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicDegreeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50375,14 +57017,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicDegreeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DYNAMIC_DEGREE_SET(solver%SOLVER,degree,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicDegreeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicDegreeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50406,7 +57054,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicLinearityTypeGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50420,10 +57070,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearityTypeGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicLinearityTypeGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearityTypeGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50447,7 +57101,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicLinearityTypeGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50461,10 +57117,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearityTypeGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicLinearityTypeGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearityTypeGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50483,14 +57143,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicLinearityTypeGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DYNAMIC_LINEARITY_TYPE_GET(solver%SOLVER,linearityType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearityTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicLinearityTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearityTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50515,7 +57181,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,NONLINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicNonlinearSolverGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50533,10 +57201,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicNonlinearSolverGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicNonlinearSolverGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicNonlinearSolverGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50561,7 +57233,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,NONLINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicNonlinearSolverGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50579,10 +57253,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicNonlinearSolverGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicNonlinearSolverGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicNonlinearSolverGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50601,14 +57279,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicNonlinearSolverGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DYNAMIC_NONLINEAR_SOLVER_GET(solver%SOLVER,nonlinearSolver%SOLVER,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicNonlinearSolverGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicNonlinearSolverGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicNonlinearSolverGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50632,7 +57316,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,LINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicLinearSolverGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50650,10 +57336,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearSolverGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicLinearSolverGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearSolverGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50677,7 +57367,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,LINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicLinearSolverGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50695,10 +57387,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearSolverGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicLinearSolverGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearSolverGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50716,14 +57412,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicLinearSolverGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DYNAMIC_LINEAR_SOLVER_GET(solver%SOLVER,linearSolver%SOLVER,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearSolverGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicLinearSolverGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicLinearSolverGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50747,7 +57449,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicSchemeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50761,10 +57465,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicSchemeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicSchemeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicSchemeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50788,7 +57496,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicSchemeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50802,10 +57512,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicSchemeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicSchemeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicSchemeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50823,14 +57537,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicSchemeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DYNAMIC_SCHEME_SET(solver%SOLVER,scheme,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicSchemeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicSchemeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicSchemeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50854,7 +57574,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicThetaSetNumber00",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50868,10 +57590,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetNumber00")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicThetaSetNumber00",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetNumber00")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50895,7 +57621,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicThetaSetNumber01",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50909,10 +57637,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetNumber01")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicThetaSetNumber01",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetNumber01")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50936,7 +57668,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicThetaSetNumber10",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50950,10 +57684,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetNumber10")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicThetaSetNumber10",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetNumber10")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -50977,7 +57715,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicThetaSetNumber11",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -50991,10 +57731,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetNumber11")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicThetaSetNumber11",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetNumber11")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51013,14 +57757,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicThetaSetObj0",err,error,*999)
+#endif
 
     CALL SOLVER_DYNAMIC_THETA_SET(solver%SOLVER,theta,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetObj0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicThetaSetObj0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetObj0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51039,14 +57789,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicThetaSetObj1",err,error,*999)
+#endif
 
     CALL SOLVER_DYNAMIC_THETA_SET(solver%SOLVER,thetas,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetObj1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicThetaSetObj1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicThetaSetObj1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51071,7 +57827,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicTimesSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -51085,10 +57843,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicTimesSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicTimesSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicTimesSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51113,7 +57875,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverDynamicTimeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -51127,10 +57891,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicTimesSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicTimesSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicTimesSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51149,14 +57917,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_DynamicTimesSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_DYNAMIC_TIMES_SET(solver%SOLVER,currentTime,timeIncrement,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicTimesSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_DynamicTimesSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_DynamicTimesSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51181,7 +57955,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -51201,10 +57977,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51223,14 +58003,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationArbitraryPathSetObj",err,error,*999)
+#endif
     
     CALL Solver_GeometricTransformationArbitraryPathSet(solver%SOLVER,arbitraryPath,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationArbitraryPathSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationArbitraryPathSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51253,7 +58039,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationClearNumber",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -51273,10 +58061,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationClearNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationClearNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationClearNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51294,14 +58086,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationClearObj",err,error,*999)
+#endif
     
     CALL Solver_GeometricTransformationClear(solver%SOLVER,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationClearObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationClearObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationClearObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51330,7 +58128,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationFieldSetNumber",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -51366,10 +58166,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationFieldSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationFieldSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationFieldSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51389,14 +58193,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationFieldSetObj",err,error,*999)
+#endif
     
     CALL Solver_GeometricTransformationFieldSet(solver%SOLVER,field%FIELD,variableType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationFieldSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationFieldSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationFieldSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51421,7 +58231,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -51441,10 +58253,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51463,14 +58279,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetObj0",err,error,*999)
+#endif
     
     CALL Solver_GeometricTransformationMatrixSet(solver%SOLVER,matrix,1,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetObj0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51496,7 +58318,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -51516,10 +58340,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51539,14 +58367,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationMatrixSetObj1",err,error,*999)
+#endif
     
     CALL Solver_GeometricTransformationMatrixSet(solver%SOLVER,matrix,loadIncrementIdx,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationMatrixSetObj1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationMatrixSetObj1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51571,7 +58405,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -51591,10 +58427,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51613,14 +58453,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj",err,error,*999)
+#endif
     
     CALL Solver_GeometricTransformationNumberOfLoadIncrementsSet(solver%SOLVER,numberOfIncrements,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationNumberOfLoadIncrementsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51647,7 +58493,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -51667,10 +58515,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51691,14 +58543,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetObj0",err,error,*999)
+#endif
     
     CALL Solver_GeometricTransformationRotationSet(solver%SOLVER,pivotPoint,axis,angle,1,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetObj0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51726,7 +58584,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -51746,10 +58606,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationRotationSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51771,14 +58635,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationRotationSetObj1",err,error,*999)
+#endif
     
     CALL Solver_GeometricTransformationRotationSet(solver%SOLVER,pivotPoint,axis,angle,loadIncrementIdx,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationRotationSetObj1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationRotationSetObj1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51803,7 +58673,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationScalingsSetNumber",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -51823,10 +58695,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetNumber")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationScalingsSetNumber",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetNumber")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51845,14 +58721,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationScalingsSetObj",err,error,*999)
+#endif
     
     CALL Solver_GeometricTransformationScalingsSet(solver%SOLVER,scalings,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationScalingsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationScalingsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51877,7 +58759,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -51897,10 +58781,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51919,14 +58807,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetObj0",err,error,*999)
+#endif
     
     CALL Solver_GeometricTransformationTranslationSet(solver%SOLVER,translation,1,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetObj0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51952,7 +58846,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -51972,10 +58868,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -51995,14 +58895,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_GeometricTransformationTranslationSetObj1",err,error,*999)
+#endif
     
     CALL Solver_GeometricTransformationTranslationSet(solver%SOLVER,translation,loadIncrementIdx,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_GeometricTransformationTranslationSetObj1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_GeometricTransformationTranslationSetObj1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52026,7 +58932,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelGetCNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52039,10 +58947,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetCNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelGetCNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetCNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52066,7 +58978,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelGetCNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52079,10 +58993,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetCNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelGetCNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetCNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52101,14 +59019,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelGetCObj",err,error,*999)
+#endif
 
     CALL SOLVER_LABEL_GET(solver%SOLVER,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelGetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52132,7 +59056,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelGetVSNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52145,10 +59071,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetVSNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelGetVSNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetVSNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52172,7 +59102,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelGetVSNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52185,10 +59117,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetVSNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelGetVSNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetVSNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52207,14 +59143,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelGetVSObj",err,error,*999)
+#endif
 
     CALL SOLVER_LABEL_GET(solver%SOLVER,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelGetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelGetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52238,7 +59180,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelSetCNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52251,10 +59195,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelSetCNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelSetCNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelSetCNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52278,7 +59226,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelSetCNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52291,10 +59241,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelSetCNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelSetCNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelSetCNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52313,14 +59267,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelSetCObj",err,error,*999)
+#endif
 
     CALL SOLVER_LABEL_SET(solver%SOLVER,label,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelSetCObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelSetCObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelSetCObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52344,7 +59304,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelSetVSNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52357,10 +59319,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverLabelStVSNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelSetVSNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLabelSetVSNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52384,7 +59350,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelSetVSNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52397,10 +59365,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverLabelStVSNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelSetVSNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSControlLabelSetVSNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52419,14 +59391,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LabelSetVSObj",err,error,*999)
+#endif
 
     CALL SOLVER_LABEL_SET(solver%SOLVER,CHAR(label),err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelSetVSObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LabelSetVSObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LabelSetVSObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52450,7 +59428,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LibraryTypeGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52464,10 +59444,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LibraryTypeGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52491,7 +59475,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LibraryTypeGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52505,10 +59491,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LibraryTypeGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52526,14 +59516,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LibraryTypeGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_LIBRARY_TYPE_GET(solver%SOLVER,libraryType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LibraryTypeGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52557,7 +59553,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LibraryTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52571,10 +59569,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LibraryTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52598,7 +59600,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LibraryTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52612,10 +59616,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LibraryTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52633,14 +59641,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LibraryTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_LIBRARY_TYPE_SET(solver%SOLVER,libraryType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LibraryTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LibraryTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52664,7 +59678,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearDirectTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52678,10 +59694,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearDirectTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearDirectTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearDirectTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52705,7 +59725,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearDirectTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52719,10 +59741,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearDirectTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearDirectTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearDirectTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52740,14 +59766,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearDirectTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_LINEAR_DIRECT_TYPE_SET(solver%SOLVER,directSolverType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearDirectTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearDirectTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearDirectTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52767,14 +59799,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_MumpsSetIcntl",err,error,*999)
+#endif
 
     CALL Solver_MumpsSetIcntl(solver%SOLVER,icntl,ivalue,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_MumpsSetIcntl")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_MumpsSetIcntl",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_MumpsSetIcntl")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52794,14 +59832,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_MumpsSetCntl",err,error,*999)
+#endif
 
     CALL Solver_MumpsSetCntl(solver%SOLVER,icntl,val,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_MumpsSetCntl")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_MumpsSetCntl",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_MumpsSetCntl")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52826,7 +59870,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeAbsoluteToleranceSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52840,10 +59886,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeAbsoluteToleranceSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeAbsoluteToleranceSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeAbsoluteToleranceSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52868,7 +59918,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeAbsoluteToleranceSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52882,10 +59934,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeAbsoluteToleranceSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeAbsoluteToleranceSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeAbsoluteToleranceSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52903,14 +59959,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeAbsoluteToleranceSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET(solver%SOLVER,absoluteTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeAbsoluteToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeAbsoluteToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeAbsoluteToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52935,7 +59997,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeDivergenceToleranceSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52949,10 +60013,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeDivergenceToleranceSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeDivergenceToleranceSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeDivergenceToleranceSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -52977,7 +60045,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeDivergenceToleranceSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -52991,10 +60061,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeDivergenceToleranceSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeDivergenceToleranceSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeDivergenceToleranceSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53012,14 +60086,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeDivergenceToleranceSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET(solver%SOLVER,divergenceTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeDivergenceToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeDivergenceToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeDivergenceToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53044,7 +60124,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeGMRESRestartSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53058,10 +60140,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeGMRESRestartSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeGMRESRestartSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeGMRESRestartSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53086,7 +60172,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeGMRESRestartSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53100,10 +60188,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeGMRESRestartSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeGMRESRestartSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeGMRESRestartSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53121,14 +60213,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeGMRESRestartSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET(solver%SOLVER,GMRESRestart,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeGMRESRestartSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeGMRESRestartSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeGMRESRestartSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53153,7 +60251,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeMaximumIterationsSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53167,10 +60267,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeMaximumIterationsSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeMaximumIterationsSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeMaximumIterationsSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53195,7 +60299,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeMaximumIterationsSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53209,10 +60315,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeMaximumIterationsSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeMaximumIterationsSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeMaximumIterationsSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53230,14 +60340,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeMaximumIterationsSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET(solver%SOLVER,maximumIterations,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeMaximumIterationsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeMaximumIterationsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeMaximumIterationsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53262,7 +60378,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativePreconditionerTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53276,10 +60394,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativePreconditionerTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativePreconditionerTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativePreconditionerTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53304,7 +60426,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativePreconditionerTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53318,10 +60442,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativePreconditionerTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativePreconditionerTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativePreconditionerTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53339,14 +60467,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativePreconditionerTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET(solver%SOLVER,preconditionerType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativePreconditionerTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativePreconditionerTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativePreconditionerTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53371,7 +60505,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeRelativeToleranceSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53385,10 +60521,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeRelativeToleranceSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeRelativeToleranceSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeRelativeToleranceSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53413,7 +60553,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeRelativeToleranceSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53427,10 +60569,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeRelativeToleranceSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeRelativeToleranceSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeRelativeToleranceSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53448,14 +60594,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeRelativeToleranceSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET(solver%SOLVER,relativeTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeRelativeToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeRelativeToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeRelativeToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53479,7 +60631,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53493,10 +60647,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53520,7 +60678,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53534,10 +60694,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53555,14 +60719,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearIterativeTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_LINEAR_ITERATIVE_TYPE_SET(solver%SOLVER,iterativeSolverType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearIterativeTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearIterativeTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53586,7 +60756,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53600,10 +60772,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53627,7 +60803,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53641,10 +60819,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53662,14 +60844,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_LinearTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_LINEAR_TYPE_SET(solver%SOLVER,linearSolverType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_LinearTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_LinearTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53694,7 +60882,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonAbsoluteToleranceSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53708,10 +60898,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonAbsoluteToleranceSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonAbsoluteToleranceSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonAbsoluteToleranceSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53736,7 +60930,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonAbsoluteToleranceSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53750,10 +60946,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonAbsoluteToleranceSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonAbsoluteToleranceSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonAbsoluteToleranceSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53771,14 +60971,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonAbsoluteToleranceSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET(solver%SOLVER,absoluteTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonAbsoluteToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonAbsoluteToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonAbsoluteToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53803,7 +61009,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53817,10 +61025,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53845,7 +61057,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53859,10 +61073,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53880,14 +61098,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj",err,error,*999)
+#endif
 
     CALL Solver_NewtonLineSearchMonitorOutputSet(solver%SOLVER,monitorLinesearchFlag,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMonitorOutputSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53912,7 +61136,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonJacobianCalculationTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53926,10 +61152,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonJacobianCalculationTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonJacobianCalculationTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonJacobianCalculationTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53954,7 +61184,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonJacobianCalculationTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -53968,10 +61200,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonJacobianCalculationTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonJacobianCalculationTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonJacobianCalculationTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -53989,14 +61225,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonJacobianCalculationTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(solver%SOLVER,jacobianCalculationType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonJacobianCalculationTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonJacobianCalculationTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonJacobianCalculationTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54020,7 +61262,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,LINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLinearSolverGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54038,10 +61282,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLinearSolverGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLinearSolverGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLinearSolverGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54065,7 +61313,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,LINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLinearSolverGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54083,10 +61333,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLinearSolverGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLinearSolverGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLinearSolverGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54104,14 +61358,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLinearSolverGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_LINEAR_SOLVER_GET(solver%SOLVER,linearSolver%SOLVER,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLinearSolverGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLinearSolverGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLinearSolverGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54135,7 +61395,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,CELLML_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonCellMLSolverGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54153,10 +61415,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonCellMLSolverGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonCellMLSolverGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonCellMLSolverGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54180,7 +61446,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,CELLML_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonCellMLSolverGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54198,10 +61466,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonCellMLSolverGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonCellMLSolverGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonCellMLSolverGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54220,14 +61492,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonCellMLSolverGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_CELLML_SOLVER_GET(solver%SOLVER,CellMLSolver%SOLVER,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonCellMLSolverGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonCellMLSolverGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonCellMLSolverGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54252,7 +61530,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -54266,10 +61546,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54294,7 +61578,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -54308,10 +61594,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54330,14 +61620,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonConvergenceTestTypeSetObj",err,error,*999)
+#endif
 
     CALL Solver_NewtonConvergenceTestTypeSet(solver%SOLVER,convergenceTestType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonConvergenceTestTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonConvergenceTestTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54361,7 +61657,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchAlphaSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54375,10 +61673,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchAlphaSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchAlphaSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchAlphaSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54402,7 +61704,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchAlphaSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54416,10 +61720,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchAlphaSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchAlphaSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchAlphaSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54437,14 +61745,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchAlphaSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_LINESEARCH_ALPHA_SET(solver%SOLVER,alpha,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchAlphaSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchAlphaSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchAlphaSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54468,7 +61782,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchMaxStepSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54482,10 +61798,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMaxStepSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchMaxStepSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMaxStepSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54509,7 +61829,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchMaxStepSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54523,10 +61845,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMaxStepSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchMaxStepSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMaxStepSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54544,14 +61870,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchMaxStepSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET(solver%SOLVER,maxStep,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMaxStepSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchMaxStepSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchMaxStepSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54575,7 +61907,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchStepTolSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54589,10 +61923,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchStepTolSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchStepTolSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchStepTolSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54616,7 +61954,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchStepTolSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54630,10 +61970,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchStepTolSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchStepTolSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchStepTolSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54651,14 +61995,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchStepTolSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_LINESEARCH_STEPTOL_SET(solver%SOLVER,stepTol,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchStepTolSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchStepTolSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchStepTolSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54682,7 +62032,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54696,10 +62048,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54723,7 +62079,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54737,10 +62095,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54758,14 +62120,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonLineSearchTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_LINESEARCH_TYPE_SET(solver%SOLVER,lineSearchType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonLineSearchTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonLineSearchTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54790,7 +62158,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54804,10 +62174,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54832,7 +62206,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54846,10 +62222,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54867,14 +62247,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(solver%SOLVER,maximumFunctionEvaluations,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumFunctionEvaluationsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54899,7 +62285,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonMaximumIterationsSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54913,10 +62301,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumIterationsSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonMaximumIterationsSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumIterationsSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54941,7 +62333,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonMaximumIterationsSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -54955,10 +62349,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumIterationsSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonMaximumIterationsSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumIterationsSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -54976,14 +62374,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonMaximumIterationsSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_MAXIMUM_ITERATIONS_SET(solver%SOLVER,maximumIterations,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumIterationsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonMaximumIterationsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonMaximumIterationsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55008,7 +62412,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonRelativeToleranceSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55022,10 +62428,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonRelativeToleranceSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonRelativeToleranceSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonRelativeToleranceSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55050,7 +62460,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonRelativeToleranceSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55064,10 +62476,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonRelativeToleranceSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonRelativeToleranceSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonRelativeToleranceSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55085,14 +62501,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonRelativeToleranceSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_RELATIVE_TOLERANCE_SET(solver%SOLVER,relativeTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonRelativeToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonRelativeToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonRelativeToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55117,7 +62539,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonSolutionToleranceSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55131,10 +62555,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonSolutionToleranceSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonSolutionToleranceSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonSolutionToleranceSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55159,7 +62587,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonSolutionToleranceSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55173,10 +62603,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonSolutionToleranceSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonSolutionToleranceSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonSolutionToleranceSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55194,14 +62628,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonSolutionToleranceSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_SOLUTION_TOLERANCE_SET(solver%SOLVER,solutionTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonSolutionToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonSolutionToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonSolutionToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55225,7 +62665,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonTrustRegionDelta0SetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55239,10 +62681,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionDelta0SetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonTrustRegionDelta0SetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionDelta0SetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55266,7 +62712,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonTrustRegionDelta0SetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55280,10 +62728,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionDelta0SetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonTrustRegionDelta0SetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionDelta0SetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55301,14 +62753,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonTrustRegionDelta0SetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_TRUSTREGION_DELTA0_SET(solver%SOLVER,delta0,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionDelta0SetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonTrustRegionDelta0SetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionDelta0SetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55332,7 +62790,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonTrustRegionToleranceSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55346,10 +62806,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionToleranceSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonTrustRegionToleranceSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionToleranceSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55373,7 +62837,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonTrustRegionToleranceSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55387,10 +62853,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionToleranceSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonTrustRegionToleranceSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionToleranceSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55408,14 +62878,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonTrustRegionToleranceSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_TRUSTREGION_TOLERANCE_SET(solver%SOLVER,tolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonTrustRegionToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTrustRegionToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55439,7 +62915,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55453,10 +62931,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55480,7 +62962,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55494,10 +62978,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55515,14 +63003,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NewtonTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NEWTON_TYPE_SET(solver%SOLVER,newtonSolveType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NewtonTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NewtonTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55547,7 +63041,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55561,10 +63057,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55589,7 +63089,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55603,10 +63105,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55624,14 +63130,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET(solver%SOLVER,absoluteTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonAbsoluteToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55656,7 +63168,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55670,10 +63184,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55698,7 +63216,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55712,10 +63232,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55733,14 +63257,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetObj",err,error,*999)
+#endif
 
     CALL Solver_QuasiNewtonLineSearchMonitorOutputSet(solver%SOLVER,monitorLinesearchFlag,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMonitorOutputSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55765,7 +63295,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55779,10 +63311,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55807,7 +63343,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55821,10 +63359,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55842,14 +63384,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(solver%SOLVER,jacobianCalculationType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonJacobianCalculationTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55874,7 +63422,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,LINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLinearSolverGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55892,10 +63442,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLinearSolverGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55920,7 +63474,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,LINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLinearSolverGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -55938,10 +63494,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLinearSolverGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55959,14 +63519,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLinearSolverGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET(solver%SOLVER,linearSolver%SOLVER,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLinearSolverGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLinearSolverGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -55991,7 +63557,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,CELLML_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56009,10 +63577,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56037,7 +63609,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER,CELLML_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56055,10 +63629,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56077,14 +63655,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonCellMLSolverGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET(solver%SOLVER,CellMLSolver%SOLVER,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonCellMLSolverGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonCellMLSolverGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56109,7 +63693,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -56123,10 +63709,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56151,7 +63741,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: solver
     TYPE(VARYING_STRING) :: localError
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(problem)
     NULLIFY(solver)
@@ -56165,10 +63757,14 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56187,14 +63783,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetObj",err,error,*999)
+#endif
 
     CALL Solver_QuasiNewtonConvergenceTestTypeSet(solver%SOLVER,convergenceTestType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonConvergenceTestTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56218,7 +63820,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56232,10 +63836,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56259,7 +63867,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56273,10 +63883,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56294,14 +63908,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET(solver%SOLVER,maxStep,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchMaxStepSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56325,7 +63945,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56339,10 +63961,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56366,7 +63992,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56380,10 +64008,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56401,14 +64033,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchStepTolSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET(solver%SOLVER,stepTol,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchStepTolSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchStepTolSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56433,7 +64071,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56447,10 +64087,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56475,7 +64119,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56489,10 +64135,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56510,14 +64160,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonLineSearchTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET(solver%SOLVER,lineSearchType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonLineSearchTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonLineSearchTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56542,7 +64198,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56556,10 +64214,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56584,7 +64246,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56598,10 +64262,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56619,14 +64287,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(solver%SOLVER,maximumFunctionEvaluations,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumFunctionEvaluationsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56651,7 +64325,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56665,10 +64341,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56693,7 +64373,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56707,10 +64389,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56728,14 +64414,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonMaximumIterationsSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET(solver%SOLVER,maximumIterations,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonMaximumIterationsSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonMaximumIterationsSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56760,7 +64452,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56774,10 +64468,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56802,7 +64500,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56816,10 +64516,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56837,14 +64541,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonRelativeToleranceSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET(solver%SOLVER,relativeTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonRelativeToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRelativeToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56869,7 +64579,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56883,10 +64595,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56911,7 +64627,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56925,10 +64643,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56946,14 +64668,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonSolutionToleranceSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET(solver%SOLVER,solutionTolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonSolutionToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolutionToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -56977,7 +64705,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -56991,10 +64721,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57018,7 +64752,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57032,10 +64768,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57053,14 +64793,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET(solver%SOLVER,delta0,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionDelta0SetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57085,7 +64831,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57099,10 +64847,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57127,7 +64879,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57141,10 +64895,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57162,14 +64920,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET(solver%SOLVER,tolerance,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTrustRegionToleranceSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57194,7 +64958,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonRestartSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57208,10 +64974,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57236,7 +65006,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonRestartSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57250,10 +65022,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57271,14 +65047,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonRestartSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_RESTART_SET(solver%SOLVER,quasiNewtonRestart,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57303,7 +65085,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonRestartTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57317,10 +65101,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57345,7 +65133,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonRestartTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57359,10 +65149,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57380,14 +65174,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonRestartTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_RESTART_TYPE_SET(solver%SOLVER,quasiNewtonRestartType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonRestartTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonRestartTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57412,7 +65212,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonScaleTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57426,10 +65228,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonScaleTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57454,7 +65260,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonScaleTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57468,10 +65276,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonScaleTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57489,14 +65301,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonScaleTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_SCALE_TYPE_SET(solver%SOLVER,quasiNewtonScaleType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonScaleTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonScaleTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57521,7 +65339,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonSolveTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57535,10 +65355,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonSolveTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57563,7 +65387,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonSolveTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57577,10 +65403,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonSolveTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57598,14 +65428,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonSolveTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET(solver%SOLVER,quasiNewtonSolveType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonSolveTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonSolveTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57630,7 +65466,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57644,10 +65482,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57672,7 +65514,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57686,10 +65530,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57707,14 +65555,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_QuasiNewtonTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_QUASI_NEWTON_TYPE_SET(solver%SOLVER,quasiNewtonType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_QuasiNewtonTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_QuasiNewtonTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57739,7 +65593,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NonlinearTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57753,10 +65609,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NonlinearTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NonlinearTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NonlinearTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57780,7 +65640,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NonlinearTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57794,10 +65656,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NonlinearTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NonlinearTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NonlinearTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57815,14 +65681,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_NonlinearTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_NONLINEAR_TYPE_SET(solver%SOLVER,nonlinearSolveType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_NonlinearTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_NonlinearTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_NonlinearTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57846,7 +65718,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_OutputTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57860,10 +65734,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_OutputTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_OutputTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_OutputTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57887,7 +65765,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_OutputTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57901,10 +65781,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_OutputTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_OutputTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_OutputTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57922,14 +65806,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_OutputTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_OUTPUT_TYPE_SET(solver%SOLVER,outputType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_OutputTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_OutputTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_OutputTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57953,7 +65843,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_SolverEquationsGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -57967,10 +65859,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_SolverEquationsGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_SolverEquationsGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_SolverEquationsGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -57994,7 +65890,9 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_SolverEquationsGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -58008,10 +65906,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolver_SolverEquationsGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_SolverEquationsGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_SolverEquationsGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58029,14 +65931,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolver_SolverEquationsGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_SOLVER_EQUATIONS_GET(solver%SOLVER,solverEquations%SOLVER_EQUATIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolver_SolverEquationsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolver_SolverEquationsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolver_SolverEquationsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58066,7 +65974,9 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_EquationsSetAddNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -58098,10 +66008,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_EquationsSetAddNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_EquationsSetAddNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_EquationsSetAddNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58131,7 +66045,9 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_EquationsSetAddNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -58163,10 +66079,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_EquationsSetAddNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_EquationsSetAddNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_EquationsSetAddNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58185,15 +66105,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_EquationsSetAddObj",err,error,*999)
+#endif
 
     CALL SOLVER_EQUATIONS_EQUATIONS_SET_ADD(solverEquations%SOLVER_EQUATIONS,equationsSet%EQUATIONS_SET,equationsSetIndex, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_EquationsSetAddObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_EquationsSetAddObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_EquationsSetAddObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58225,7 +66151,9 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_InterfaceConditionAddNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -58270,10 +66198,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquationsInterfaceConditionNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_InterfaceConditionAddNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_InterfaceConditionAddNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58305,7 +66237,9 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_InterfaceConditionAddNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -58350,10 +66284,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_InterfaceConditionAddNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_InterfaceConditionAddNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_InterfaceConditionAddNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58372,15 +66310,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_InterfaceConditionAddObj",err,error,*999)
+#endif
 
     CALL SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD(solverEquations%SOLVER_EQUATIONS,interfaceCondition%INTERFACE_CONDITION, &
       & interfaceConditionIndex,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_InterfaceConditionAddObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_InterfaceConditionAddObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_InterfaceConditionAddObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58403,7 +66347,9 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMatrices_TimeDependenceTypeSet",err,error,*999)
+#endif
     
     IF(SIZE(timeDependenceTypes)/=2) CALL FLAG_ERROR("Invalid size of time dependence types array. Must be 2.",err,error,*999)
     IF(timeDependenceTypes(1)>0.AND.timeDependenceTypes(1)<=CMISS_NUMBER_OF_INTERFACE_MATRIX_TYPES) THEN
@@ -58430,10 +66376,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     ENDIF
     
+#if DEBUG
     CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeSet")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMatrices_TimeDependenceTypeSet",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeSet")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
     
@@ -58456,7 +66406,9 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
+#if DEBUG
     CALL ENTERS("CMISSInterfaceMatrices_TimeDependenceTypeGet",err,error,*999)
+#endif
     
     IF(SIZE(timeDependenceTypes)/=2) CALL FLAG_ERROR("Invalid size of time dependence types array. Must be 2.",err,error,*999)
     CALL InterfaceMatrix_TimeDependenceTypeGet(interfaceCondition%INTERFACE_CONDITION, &
@@ -58466,10 +66418,14 @@ CONTAINS
         & interfaceMatrixIndex,.TRUE.,timeDependenceTypes(2),err,error,*999)
     ENDIF
     
+#if DEBUG
     CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeGet")
+#endif
     RETURN
 999 CALL ERRORS("CMISSInterfaceMatrices_TimeDependenceTypeGet",err,error)
+#if DEBUG
     CALL EXITS("CMISSInterfaceMatrices_TimeDependenceTypeGet")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
     
@@ -58494,7 +66450,9 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_SparsityTypeSetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -58510,10 +66468,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_SparsityTypeSetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_SparsityTypeSetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_SparsityTypeSetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58538,7 +66500,9 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_SparsityTypeSetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER)
@@ -58554,10 +66518,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_SparsityTypeSetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_SparsityTypeSetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_SparsityTypeSetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58575,14 +66543,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_SparsityTypeSetObj",err,error,*999)
+#endif
 
     CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(solverEquations%SOLVER_EQUATIONS,sparsityType,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_SparsityTypeSetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_SparsityTypeSetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_SparsityTypeSetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58606,7 +66580,9 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsCreateFinishNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER_EQUATIONS)
@@ -58625,10 +66601,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateFinishNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsCreateFinishNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateFinishNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58652,7 +66632,9 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsCreateFinishNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER_EQUATIONS)
@@ -58671,10 +66653,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateFinishNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsCreateFinishNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateFinishNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58692,14 +66678,20 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsCreateFinishObj",err,error,*999)
+#endif
 
     CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH(solverEquations%SOLVER_EQUATIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateFinishObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsCreateFinishObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateFinishObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58723,7 +66715,9 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsCreateStartNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER_EQUATIONS)
@@ -58742,10 +66736,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateStartNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsCreateStartNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateStartNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58769,7 +66767,9 @@ CONTAINS
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsCreateStartNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER_EQUATIONS)
@@ -58788,10 +66788,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateStartNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsCreateStartNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateStartNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58810,15 +66814,21 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsCreateStartObj",err,error,*999)
+#endif
 
     CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_START(solverEquations%SOLVER_EQUATIONS, &
         & boundaryConditions%BOUNDARY_CONDITIONS,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateStartObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsCreateStartObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsCreateStartObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58843,7 +66853,9 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsGetNumber0",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER_EQUATIONS)
@@ -58861,10 +66873,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsGetNumber0")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsGetNumber0",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsGetNumber0")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58889,7 +66905,9 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsGetNumber1",err,error,*999)
+#endif
 
     NULLIFY(PROBLEM)
     NULLIFY(SOLVER_EQUATIONS)
@@ -58907,10 +66925,14 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
     END IF
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsGetNumber1")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsGetNumber1",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsGetNumber1")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -58928,15 +66950,21 @@ CONTAINS
     TYPE(CMISSBoundaryConditionsType), INTENT(INOUT) :: boundaryConditions !<On return, The boundary conditions for the specified solver equations.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSSolverEquations_BoundaryConditionsGetObj",err,error,*999)
+#endif
 
     CALL SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET(solverEquations%SOLVER_EQUATIONS,boundaryConditions%BOUNDARY_CONDITIONS, &
       & err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsGetObj")
+#endif
     RETURN
 999 CALL ERRORS("CMISSSolverEquations_BoundaryConditionsGetObj",err,error)
+#if DEBUG
     CALL EXITS("CMISSSolverEquations_BoundaryConditionsGetObj")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59157,14 +67185,20 @@ CONTAINS
     LOGICAL, INTENT(IN) :: calcClosestGaussPoint
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSBioelectricsFiniteElasticity_UpdateGeometricField",err,error,*999)
+#endif
 
     CALL BIOELECTRIC_FINITE_ELASTICITY_UPDATE_GEOMETRIC_FIELD(controlLoop%CONTROL_LOOP,calcClosestGaussPoint,err,error,*999)
 
+#if DEBUG
     CALL EXITS("CMISSBioelectricsFiniteElasticity_UpdateGeometricField")
+#endif
     RETURN
 999 CALL ERRORS("CMISSBioelectricsFiniteElasticity_UpdateGeometricField",err,error)
+#if DEBUG
     CALL EXITS("CMISSBioelectricsFiniteElasticity_UpdateGeometricField")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59181,7 +67215,9 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context to initialise.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputCreateFromFileVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59192,10 +67228,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateFromFileVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputCreateFromFileVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateFromFileVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59212,7 +67252,9 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context to initialise.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputCreateFromFileC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59223,10 +67265,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateFromFileC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputCreateFromFileC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateFromFileC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59246,7 +67292,9 @@ CONTAINS
     TYPE(CMISSMeshType), INTENT(INOUT) :: mesh !< On return, the newly created mesh.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputMeshCreateStartObjVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59257,10 +67305,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputMeshCreateStartObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputMeshCreateStartObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputMeshCreateStartObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59283,7 +67335,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(MESH_TYPE), POINTER :: mesh
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputMeshCreateStartNumberVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59295,10 +67349,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputMeshCreateStartNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputMeshCreateStartNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputMeshCreateStartNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59318,7 +67376,9 @@ CONTAINS
     TYPE(CMISSMeshType), INTENT(INOUT) :: mesh !< On return, the newly created mesh.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputMeshCreateStartObjC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59329,10 +67389,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputMeshCreateStartObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputMeshCreateStartObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputMeshCreateStartObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59355,7 +67419,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(MESH_TYPE), POINTER :: mesh
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputMeshCreateStartNumberC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59368,10 +67434,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputMeshCreateStartNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputMeshCreateStartNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputMeshCreateStartNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59390,7 +67460,9 @@ CONTAINS
     TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: coordinateSystem !< On return, the newly created coordinate system.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputCoordinateSystemCreateStartObjVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59401,10 +67473,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartObjVS")
+#endif
    RETURN
 999 CALL ERRORS("CMISSFieldML_InputCoordinateSystemCreateStartObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59425,7 +67501,9 @@ CONTAINS
     !Locals
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputCoordinateSystemCreateStartNumberVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59437,10 +67515,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartNumberVS")
+#endif
    RETURN
 999 CALL ERRORS("CMISSFieldML_InputCoordinateSystemCreateStartNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59459,7 +67541,9 @@ CONTAINS
     TYPE(CMISSCoordinateSystemType), INTENT(INOUT) :: coordinateSystem !< On return, the newly created coordinate system.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputCoordinateSystemCreateStartObjC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59470,10 +67554,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartObjC")
+#endif
    RETURN
 999 CALL ERRORS("CMISSFieldML_InputCoordinateSystemCreateStartObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59494,7 +67582,9 @@ CONTAINS
     !Locals
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputCoordinateSystemCreateStartNumberC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59506,10 +67596,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartNumberC")
+#endif
    RETURN
 999 CALL ERRORS("CMISSFieldML_InputCoordinateSystemCreateStartNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCoordinateSystemCreateStartNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59530,7 +67624,9 @@ CONTAINS
     !Locals
     TYPE(BASIS_TYPE), POINTER :: basis
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputBasisCreateStartNumberVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59541,10 +67637,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputBasisCreateStartNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputBasisCreateStartNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputBasisCreateStartNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
    RETURN
 
@@ -59563,7 +67663,9 @@ CONTAINS
     TYPE(CMISSBasisType), INTENT(INOUT) :: basis !<On return, the newly created basis.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputBasisCreateStartObjVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59573,10 +67675,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputBasisCreateStartObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputBasisCreateStartObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputBasisCreateStartObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
    RETURN
 
@@ -59597,7 +67703,9 @@ CONTAINS
     !Locals
     TYPE(BASIS_TYPE), POINTER :: basis
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputBasisCreateStartNumberC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59608,10 +67716,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputBasisCreateStartNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputBasisCreateStartNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputBasisCreateStartNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
    RETURN
 
@@ -59630,7 +67742,9 @@ CONTAINS
     TYPE(CMISSBasisType), INTENT(INOUT) :: basis !<On return, the newly created basis.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputBasisCreateStartObjC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59640,10 +67754,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputBasisCreateStartObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputBasisCreateStartObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputBasisCreateStartObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
    RETURN
 
@@ -59665,7 +67783,9 @@ CONTAINS
     !Locals
     TYPE(REGION_TYPE), POINTER :: region
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputNodesCreateStartNumberVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59676,10 +67796,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputNodesCreateStartNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputNodesCreateStartNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputNodesCreateStartNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
    RETURN
 
@@ -59698,7 +67822,9 @@ CONTAINS
     TYPE(CMISSNodesType), INTENT(INOUT) :: nodes  !< On return, the newly created nodes.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputNodesCreateStartObjVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59708,10 +67834,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputNodesCreateStartObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputNodesCreateStartObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputNodesCreateStartObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
    RETURN
 
@@ -59733,7 +67863,9 @@ CONTAINS
     !Locals
     TYPE(REGION_TYPE), POINTER :: region
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputNodesCreateStartNumberC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59744,10 +67876,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputNodesCreateStartNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputNodesCreateStartNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputNodesCreateStartNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
    RETURN
 
@@ -59766,7 +67902,9 @@ CONTAINS
     TYPE(CMISSNodesType), INTENT(INOUT) :: nodes  !< On return, the newly created nodes.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputNodesCreateStartObjC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59777,10 +67915,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputNodesCreateStartObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputNodesCreateStartObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputNodesCreateStartObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
    RETURN
 
@@ -59799,7 +67941,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the mesh from.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputCreateMeshComponentObjVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59809,10 +67953,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateMeshComponentObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputCreateMeshComponentObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateMeshComponentObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59837,7 +67985,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(MESH_TYPE), POINTER :: mesh
 
+#if DEBUG
     CALL ENTERS( "CMISSFieldML_InputCreateMeshComponentNumberVS", err, error, *999 )
+#endif
 
 #ifdef USEFIELDML
 
@@ -59849,11 +67999,17 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputNodesCreateStartObjVS")
+#endif
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateMeshComponentNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputCreateMeshComponentNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateMeshComponentNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59872,7 +68028,9 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(IN) :: evaluatorName !< The name of the argument evaluator to create the mesh from.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputCreateMeshComponentObjC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59883,10 +68041,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateMeshComponentObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputCreateMeshComponentObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateMeshComponentObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59911,7 +68073,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(MESH_TYPE), POINTER :: mesh
 
+#if DEBUG
     CALL ENTERS( "CMISSFieldML_InputCreateMeshComponentNumberC", err, error, *999 )
+#endif
 
 #ifdef USEFIELDML
 
@@ -59924,11 +68088,17 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputNodesCreateStartObjVS")
+#endif
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateMeshComponentNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputCreateMeshComponentNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputCreateMeshComponentNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59951,7 +68121,9 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(INOUT) :: field !< On return, the newly created field.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputFieldCreateStartObjVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -59962,10 +68134,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldCreateStartObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputFieldCreateStartObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldCreateStartObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -59994,7 +68170,9 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
     TYPE(FIELD_TYPE), POINTER :: field
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputFieldCreateStartNumberVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60010,10 +68188,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldCreateStartNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputFieldCreateStartNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldCreateStartNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60036,7 +68218,9 @@ CONTAINS
     TYPE(CMISSFieldType), INTENT(INOUT) :: field !< On return, the newly created field.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputFieldCreateStartObjC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60047,10 +68231,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldCreateStartObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputFieldCreateStartObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldCreateStartObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60079,7 +68267,9 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition
     TYPE(FIELD_TYPE), POINTER :: field
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputFieldCreateStartNumberC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60095,10 +68285,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldCreateStartNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputFieldCreateStartNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldCreateStartNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60119,7 +68313,9 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: setType !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputFieldParametersUpdateObjVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60130,10 +68326,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputFieldParametersUpdateObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60159,7 +68359,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputFieldParametersUpdateNumberVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60173,10 +68375,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputFieldParametersUpdateNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60197,7 +68403,9 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: setType !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputFieldParametersUpdateObjC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60208,10 +68416,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputFieldParametersUpdateObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60237,7 +68449,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_InputFieldParametersUpdateNumberC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60251,10 +68465,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_InputFieldParametersUpdateNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_InputFieldParametersUpdateNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60271,7 +68489,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(IN) :: filename !< The name of the file to write the FieldML document to.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputWriteVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60285,10 +68505,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputWriteVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputWriteVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputWriteVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60305,7 +68529,9 @@ CONTAINS
     CHARACTER(KIND=C_CHAR,LEN=*), INTENT(IN) :: filename !< The name of the file to write the FieldML document to.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputWriteC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60319,10 +68545,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputWriteC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputWriteC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputWriteC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60343,7 +68573,9 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: setType !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldNoTypeObjVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60354,10 +68586,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldNoTypeObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60384,7 +68620,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldNoTypeNumberVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60397,10 +68635,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldNoTypeNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60422,7 +68664,9 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: setType !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldWithTypeObjVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60433,10 +68677,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldWithTypeObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60464,7 +68712,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldWithTypeNumberVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60478,10 +68728,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldWithTypeNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60502,7 +68756,9 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: setType !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldNoTypeObjC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60513,10 +68769,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldNoTypeObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60543,7 +68803,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldNoTypeNumberC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60557,10 +68819,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldNoTypeNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldNoTypeNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60582,7 +68848,9 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: typeHandle !< The FieldML type to assign to the new FieldML field.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldWithTypeObjC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60593,10 +68861,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldWithTypeObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60624,7 +68896,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldWithTypeNumberC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60638,10 +68912,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldWithTypeNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldWithTypeNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60661,7 +68939,9 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputCreateObjVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60673,10 +68953,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputCreateObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputCreateObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputCreateObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60701,7 +68985,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(MESH_TYPE), POINTER :: mesh
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputCreateNumberVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60714,10 +69000,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputCreateNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputCreateNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputCreateNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60737,7 +69027,9 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(INOUT) :: fieldml !< The FieldML context containing the evaluator to use.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputCreateObjC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60749,10 +69041,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputCreateObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputCreateObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputCreateObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60777,7 +69073,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(MESH_TYPE), POINTER :: mesh
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputCreateNumberC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60791,10 +69089,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputCreateNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputCreateNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputCreateNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60818,7 +69120,9 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: setType !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldComponentsObjVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60829,10 +69133,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsObjVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldComponentsObjVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsObjVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60861,7 +69169,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldComponentsNumberVS",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60875,10 +69185,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsNumberVS")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldComponentsNumberVS",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsNumberVS")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60902,7 +69216,9 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) :: setType !<The parameter set type.
     INTEGER(INTG), INTENT(OUT) :: err !< The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldComponentsObjC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60913,10 +69229,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsObjC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldComponentsObjC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsObjC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60945,7 +69265,9 @@ CONTAINS
     TYPE(REGION_TYPE), POINTER :: region
     TYPE(FIELD_TYPE), POINTER :: field
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddFieldComponentsNumberC",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60959,10 +69281,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsNumberC")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddFieldComponentsNumberC",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddFieldComponentsNumberC")
+#endif
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -60983,7 +69309,9 @@ CONTAINS
     !Locals
     TYPE(VARYING_STRING) :: stringName
 
+#if DEBUG
     CALL ENTERS("CMISSFieldML_OutputAddImport",err,error,*999)
+#endif
 
 #ifdef USEFIELDML
 
@@ -60996,10 +69324,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddImport")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldML_OutputAddImport",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldML_OutputAddImport")
+#endif
     CALL CMISS_HANDLE_ERROR( err, error )
     RETURN
 
@@ -61015,7 +69347,9 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(OUT) :: fieldml !< The FieldML context to finalise.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldMLIO_Finalise", err, error, *999 )
+#endif
 
 #ifdef USEFIELDML
 
@@ -61025,10 +69359,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldMLIO_Finalise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldMLIO_Finalise",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldMLIO_Finalise")
+#endif
     CALL CMISS_HANDLE_ERROR( err, error )
     RETURN
 
@@ -61044,7 +69382,9 @@ CONTAINS
     TYPE(CMISSFieldMLIOType), INTENT(OUT) :: fieldml !< The FieldML context to initialise.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldMLIO_Initialise", err, error, *999 )
+#endif
 
 #ifdef USEFIELDML
 
@@ -61054,10 +69394,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldMLIO_Initialise")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldMLIO_Initialise",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldMLIO_Initialise")
+#endif
     CALL CMISS_HANDLE_ERROR( err, error )
     RETURN
 
@@ -61074,7 +69418,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: sessionHandle !<The session handle.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
 
+#if DEBUG
     CALL ENTERS("CMISSFieldMLIO_GetSession", err, error, *999 )
+#endif
 
 #ifdef USEFIELDML
 
@@ -61084,10 +69430,14 @@ CONTAINS
     CALL FLAG_ERROR("Must compile with USEFIELDML=true to use FieldML functionality.",ERR,error,*999)
 #endif
 
+#if DEBUG
     CALL EXITS("CMISSFieldMLIO_GetSession")
+#endif
     RETURN
 999 CALL ERRORS("CMISSFieldMLIO_GetSession",err,error)
+#if DEBUG
     CALL EXITS("CMISSFieldMLIO_GetSession")
+#endif
     CALL CMISS_HANDLE_ERROR( err, error )
     RETURN
 

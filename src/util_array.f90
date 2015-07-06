@@ -72,7 +72,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     
+#if DEBUG
     CALL ENTERS("REALLOCATE_INT",ERR,ERROR,*999)
+#endif
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
@@ -83,10 +85,14 @@ CONTAINS
     
     array(:) = 0
 
+#if DEBUG
     CALL EXITS("REALLOCATE_INT")
+#endif
     RETURN
 999 CALL ERRORS("REALLOCATE_INT",ERR,ERROR)
+#if DEBUG
     CALL EXITS("REALLOCATE_INT")
+#endif
   END SUBROUTINE REALLOCATE_INT
 
   !
@@ -100,7 +106,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     
+#if DEBUG
     CALL ENTERS("REALLOCATE_REAL",ERR,ERROR,*999)
+#endif
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
@@ -111,10 +119,14 @@ CONTAINS
     
     array(:) = 0
 
+#if DEBUG
     CALL EXITS("REALLOCATE_REAL")
+#endif
     RETURN
 999 CALL ERRORS("REALLOCATE_REAL",ERR,ERROR)
+#if DEBUG
     CALL EXITS("REALLOCATE_REAL")
+#endif
   END SUBROUTINE REALLOCATE_REAL
 
   !
@@ -130,7 +142,9 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: I
     
+#if DEBUG
     CALL ENTERS("REALLOCATE_STRING",ERR,ERROR,*999)
+#endif
 
     IF( ALLOCATED( array ) ) THEN
       DO I=1,SIZE(ARRAY,1)
@@ -142,10 +156,14 @@ CONTAINS
     ALLOCATE( array( newSize ), STAT = ERR )
     IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
     
+#if DEBUG
     CALL EXITS("REALLOCATE_STRING")
+#endif
     RETURN
 999 CALL ERRORS("REALLOCATE_STRING",ERR,ERROR)
+#if DEBUG
     CALL EXITS("REALLOCATE_STRING")
+#endif
   END SUBROUTINE REALLOCATE_STRING
   
   !
@@ -160,7 +178,9 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     
+#if DEBUG
     CALL ENTERS("REALLOCATE_2D",ERR,ERROR,*999)
+#endif
 
     IF( ALLOCATED( array ) ) THEN
       DEALLOCATE( array )
@@ -171,10 +191,14 @@ CONTAINS
     
     array(:,:) = 0
 
+#if DEBUG
     CALL EXITS("REALLOCATE_2D")
+#endif
     RETURN
 999 CALL ERRORS("REALLOCATE_2D",ERR,ERROR)
+#if DEBUG
     CALL EXITS("REALLOCATE_2D")
+#endif
   END SUBROUTINE REALLOCATE_2D
 
   !
@@ -191,7 +215,9 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: tempArray(:)
     INTEGER(INTG) :: oldSize
     
+#if DEBUG
     CALL ENTERS("GROW_ARRAY_INT",ERR,ERROR,*999)
+#endif
 
     IF( .NOT.ALLOCATED( array ) ) THEN
       CALL REALLOCATE( array, delta, errorMessage, ERR, ERROR, *999 )
@@ -210,10 +236,14 @@ CONTAINS
 
     DEALLOCATE( tempArray )
 
+#if DEBUG
     CALL EXITS("GROW_ARRAY_INT")
+#endif
     RETURN
 999 CALL ERRORS("GROW_ARRAY_INT",ERR,ERROR)
+#if DEBUG
     CALL EXITS("GROW_ARRAY_INT")
+#endif
   END SUBROUTINE GROW_ARRAY_INT
   
   !
@@ -230,7 +260,9 @@ CONTAINS
     REAL(C_DOUBLE), ALLOCATABLE :: tempArray(:)
     INTEGER(INTG) :: oldSize
     
+#if DEBUG
     CALL ENTERS("GROW_ARRAY_REAL",ERR,ERROR,*999)
+#endif
 
     IF( .NOT.ALLOCATED( array ) ) THEN
       CALL REALLOCATE( array, delta, errorMessage, ERR, ERROR, *999 )
@@ -249,10 +281,14 @@ CONTAINS
 
     DEALLOCATE( tempArray )
 
+#if DEBUG
     CALL EXITS("GROW_ARRAY_REAL")
+#endif
     RETURN
 999 CALL ERRORS("GROW_ARRAY_REAL",ERR,ERROR)
+#if DEBUG
     CALL EXITS("GROW_ARRAY_REAL")
+#endif
   END SUBROUTINE GROW_ARRAY_REAL
   
   !
