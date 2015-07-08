@@ -1841,6 +1841,9 @@ CONTAINS
             IF(equationsSet%CLASS==EQUATIONS_SET_ELASTICITY_CLASS.AND. &
                 & equationsSet%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
               validEquationsSetFound=.TRUE.
+            ELSE IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS .AND. &
+                & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE) THEN
+              validEquationsSetFound=.TRUE.
             END IF
           CASE(BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE)
             !Not actually used anywhere? So keep it as invalid, although maybe it should be removed?
