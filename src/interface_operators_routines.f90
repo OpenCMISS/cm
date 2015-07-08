@@ -646,9 +646,9 @@ CONTAINS
                       CASE(2)
                         SELECT CASE(pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)% &
                             & elementLineFaceNumber)
-                        CASE(1,2,3)
+                        CASE(1,3,5)
                           reverseNormal=.FALSE.
-                        CASE(4,5,6)
+                        CASE(2,4,6)
                           reverseNormal=.TRUE.
                         END SELECT
                         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,localFaceLineNumber, &

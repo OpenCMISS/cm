@@ -860,7 +860,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
     INTEGER(INTG) :: FIELD_VAR_TYPE,ng,nh,ns,nhs,ni,mh,ms,mhs,mi,oh
     INTEGER(INTG) :: PRESSURE_COMPONENT
     INTEGER(INTG) :: SUM_ELEMENT_PARAMETERS,TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS
@@ -868,7 +867,7 @@ CONTAINS
     INTEGER(INTG) :: ELEMENT_BASE_DOF_INDEX(4)
     INTEGER(INTG), PARAMETER :: OFF_DIAG_COMP(3)=[0,1,3],OFF_DIAG_DEP_VAR1(3)=[1,1,2],OFF_DIAG_DEP_VAR2(3)=[2,3,3]
     INTEGER(INTG) :: MESH_COMPONENT_NUMBER,NUMBER_OF_ELEMENT_PARAMETERS(4)
-    REAL(DP) :: DZDNU(3,3),CAUCHY_TENSOR(3,3),DNUDXI(3,3),DXIDNU(3,3)
+    REAL(DP) :: DZDNU(3,3),CAUCHY_TENSOR(3,3)
     REAL(DP) :: JGW_SUB_MAT(3,3) 
     REAL(DP) :: TEMPVEC(3)
     REAL(DP) :: STRESS_TENSOR(6),ELASTICITY_TENSOR(6,6)
@@ -1336,11 +1335,9 @@ CONTAINS
     INTEGER(INTG) :: TOTAL_NUMBER_OF_SURFACE_PRESSURE_CONDITIONS
     INTEGER(INTG) :: var1 ! Variable number corresponding to 'U' in single physics case
     INTEGER(INTG) :: var2 ! Variable number corresponding to 'DELUDLEN' in single physics case
-    INTEGER(INTG) :: numberOfXDimensions,numberOfZDimensions,numberOfXiDimensions
     INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
     REAL(DP) :: DZDNU(3,3),DZDNUT(3,3),AZL(3,3),AZU(3,3),I3,P,PIOLA_TENSOR(3,3),TEMP(3,3)
     REAL(DP) :: CAUCHY_TENSOR(3,3),JGW_CAUCHY_TENSOR(3,3),STRESS_TENSOR(6)
-    REAL(DP) :: DNUDXI(3,3),DXIDNU(3,3)
     REAL(DP) :: DFDZ(64,3,3) !temporary until a proper alternative is found
     REAL(DP) :: DPHIDZ(3,64,3) !temporary until a proper alternative is found
     REAL(DP) :: GAUSS_WEIGHT,Jznu,Jxxi,JGW,G_DENSITY_JGW
@@ -2547,7 +2544,7 @@ CONTAINS
     INTEGER(INTG) :: var1 ! Variable number corresponding to 'U' in single physics case
     INTEGER(INTG) :: var2 ! Variable number corresponding to 'DELUDLEN' in single physics case
     REAL(DP) :: DZDNU(3,3),E(3,3),AZL(3,3),AZU(3,3),DZDNUT(3,3)
-    REAL(DP) :: Jznu,Jxxi,I3
+    REAL(DP) :: Jxxi,I3
     REAL(SP) :: ELEMENT_USER_ELAPSED,ELEMENT_SYSTEM_ELAPSED,USER_ELAPSED,USER_TIME2(1),USER_TIME3(1),USER_TIME4(1), &
       & USER_TIME5(1),SYSTEM_ELAPSED,SYSTEM_TIME2(1),SYSTEM_TIME3(1),SYSTEM_TIME4(1), &
       & SYSTEM_TIME5(1)
@@ -3066,7 +3063,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: DEPENDENT_QUADRATURE_SCHEME
     TYPE(QUADRATURE_SCHEME_PTR_TYPE) :: QUADRATURE_SCHEMES(3)
-    INTEGER(INTG) :: FACE_NUMBER,NORMAL_COMPONENT
+    INTEGER(INTG) :: FACE_NUMBER,xiDirection(3),orientation
     INTEGER(INTG) :: FIELD_VAR_U_TYPE,FIELD_VAR_DELUDELN_TYPE,MESH_COMPONENT_NUMBER
     INTEGER(INTG) :: oh,mh,ms,mhs,nh,ns,nhs,ng,naf 
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_LOCAL_FACES
@@ -3116,7 +3113,7 @@ CONTAINS
 
       !Check if it's a boundary face
       IF(FACE%BOUNDARY_FACE) THEN 
-        NORMAL_COMPONENT=ABS(FACE%XI_DIRECTION)
+        xiDirection(3)=ABS(FACE%XI_DIRECTION)
 
         PRESSURE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_DELUDELN_TYPE)%PTR
         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_PRESSURE_VALUES_SET_TYPE,FACE_NUMBER, &
@@ -3124,10 +3121,7 @@ CONTAINS
         PRESSURE_INTERP_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_DELUDELN_TYPE)%PTR
 
         !Check if nonzero surface pressure is defined on the face
-        NONZERO_PRESSURE=.FALSE.
-        IF(ANY(ABS(PRESSURE_INTERPOLATION_PARAMETERS%PARAMETERS(:,NORMAL_COMPONENT))>ZERO_TOLERANCE)) THEN
-          NONZERO_PRESSURE=.TRUE.
-        ENDIF
+        NONZERO_PRESSURE=ANY(ABS(PRESSURE_INTERPOLATION_PARAMETERS%PARAMETERS(:,xiDirection(3)))>ZERO_TOLERANCE)
         
         !Nonzero surface pressure found?
         IF(NONZERO_PRESSURE) THEN
@@ -3154,6 +3148,10 @@ CONTAINS
             SUM_ELEMENT_PARAMETERS=SUM_ELEMENT_PARAMETERS+BASES(nh)%PTR%NUMBER_OF_ELEMENT_PARAMETERS
           ENDDO !nh
         
+          xiDirection(1)=OTHER_XI_DIRECTIONS3(xiDirection(3),2,1)
+          xiDirection(2)=OTHER_XI_DIRECTIONS3(xiDirection(3),3,1)
+          orientation=SIGN(1,OTHER_XI_ORIENTATIONS3(xiDirection(1),xiDirection(2))*FACE%XI_DIRECTION)
+          
           !Loop over all Gauss points 
           DO ng=1,DEPENDENT_QUADRATURE_SCHEME%NUMBER_OF_GAUSS
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng, &
@@ -3163,11 +3161,9 @@ CONTAINS
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_AREA_TYPE, &
               & DEPENDENT_INTERP_POINT_METRICS,ERR,ERROR,*999)
 
-            PRESSURE_GAUSS=PRESSURE_INTERP_POINT%VALUES(NORMAL_COMPONENT,NO_PART_DERIV)    !Surface pressure at this gauss point
-            IF(FACE%XI_DIRECTION<0) PRESSURE_GAUSS=-PRESSURE_GAUSS
-
             CALL CROSS_PRODUCT(DEPENDENT_INTERP_POINT_METRICS%DX_DXI(:,1), &
               & DEPENDENT_INTERP_POINT_METRICS%DX_DXI(:,2),NORMAL,ERR,ERROR,*999)
+            PRESSURE_GAUSS=PRESSURE_INTERP_POINT%VALUES(xiDirection(3),NO_PART_DERIV)*orientation
             GW_PRESSURE=DEPENDENT_QUADRATURE_SCHEME%GAUSS_WEIGHTS(ng)*PRESSURE_GAUSS
 
             !Loop over element columns belonging to geometric dependent variables
@@ -3237,9 +3233,10 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: FACE_QUADRATURE_SCHEME,COMPONENT_FACE_QUADRATURE_SCHEME
     INTEGER(INTG) :: FIELD_VAR_U_TYPE,FIELD_VAR_DUDN_TYPE,MESH_COMPONENT_NUMBER
-    INTEGER(INTG) :: element_face_idx,face_number,normal_component_idx,gauss_idx
+    INTEGER(INTG) :: element_face_idx,face_number,gauss_idx
     INTEGER(INTG) :: component_idx,element_base_dof_idx,element_dof_idx,parameter_idx,face_parameter_idx
     INTEGER(INTG) :: NUMBER_OF_DIMENSIONS,NUMBER_OF_LOCAL_FACES
+    INTEGER(INTG) :: xiDirection(3),orientation
     REAL(DP) :: PRESSURE_GAUSS,GW_PRESSURE,GW_PRESSURE_NORMAL_COMPONENT
     REAL(DP) :: NORMAL(3)
     LOGICAL :: NONZERO_PRESSURE
@@ -3284,7 +3281,7 @@ CONTAINS
 
       !Check if it's a boundary face
       IF(DECOMP_FACE%BOUNDARY_FACE) THEN !!temporary until MESH_FACE (or equivalent) is available (decomp face includes ghost faces?)
-        normal_component_idx=ABS(DECOMP_FACE%XI_DIRECTION)  ! if xi=0, this can be a negative number
+        xiDirection(3)=ABS(DECOMP_FACE%XI_DIRECTION)  ! if xi=0, this can be a negative number
         !Get pressure interpolation objects (DELUDELN pressure_values_set_type)
         FACE_PRESSURE_INTERPOLATION_PARAMETERS=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_DUDN_TYPE)%PTR
         CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_PRESSURE_VALUES_SET_TYPE,face_number, &
@@ -3292,10 +3289,7 @@ CONTAINS
         FACE_PRESSURE_INTERPOLATED_POINT=>EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(var2)%PTR
 
         !Check if nonzero surface pressure is defined on the face
-        NONZERO_PRESSURE=.FALSE.
-        IF(ANY(ABS(FACE_PRESSURE_INTERPOLATION_PARAMETERS%PARAMETERS(:,normal_component_idx))>ZERO_TOLERANCE)) THEN
-          NONZERO_PRESSURE=.TRUE.
-        ENDIF
+        NONZERO_PRESSURE=ANY(ABS(FACE_PRESSURE_INTERPOLATION_PARAMETERS%PARAMETERS(:,xiDirection(3)))>ZERO_TOLERANCE)
 
         !Nonzero surface pressure found?
         IF(NONZERO_PRESSURE) THEN
@@ -3310,6 +3304,10 @@ CONTAINS
           FACE_DEPENDENT_INTERPOLATED_POINT_METRICS=>EQUATIONS%INTERPOLATION% &
             & DEPENDENT_INTERP_POINT_METRICS(FIELD_VAR_U_TYPE)%PTR
 
+          xiDirection(1)=OTHER_XI_DIRECTIONS3(xiDirection(3),2,1)
+          xiDirection(2)=OTHER_XI_DIRECTIONS3(xiDirection(3),3,1)
+          orientation=SIGN(1,OTHER_XI_ORIENTATIONS3(xiDirection(1),xiDirection(2))*DECOMP_FACE%XI_DIRECTION)
+            
           !Start integrating
           ! Note: As the code will look for P(appl) in the *normal* component to the face, the
           !       initial assignment of P(appl) will have to be made appropriately during bc assignment
@@ -3317,10 +3315,6 @@ CONTAINS
             !Interpolate p(appl) at gauss point
             CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
               & FACE_PRESSURE_INTERPOLATED_POINT,ERR,ERROR,*999,FIELD_GEOMETRIC_COMPONENTS_TYPE)
-            PRESSURE_GAUSS=FACE_PRESSURE_INTERPOLATED_POINT%VALUES(normal_component_idx,NO_PART_DERIV)    !Surface pressure at this gauss point
-            
-            IF(DECOMP_FACE%XI_DIRECTION<0) PRESSURE_GAUSS=-PRESSURE_GAUSS
-
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gauss_idx, &
               & FACE_DEPENDENT_INTERPOLATED_POINT,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_AREA_TYPE, &
@@ -3328,6 +3322,8 @@ CONTAINS
            
             CALL CROSS_PRODUCT(FACE_DEPENDENT_INTERPOLATED_POINT_METRICS%DX_DXI(:,1), &
               & FACE_DEPENDENT_INTERPOLATED_POINT_METRICS%DX_DXI(:,2),NORMAL,ERR,ERROR,*999)
+
+            PRESSURE_GAUSS=FACE_PRESSURE_INTERPOLATED_POINT%VALUES(xiDirection(3),NO_PART_DERIV)*orientation
             GW_PRESSURE=FACE_QUADRATURE_SCHEME%GAUSS_WEIGHTS(gauss_idx)*PRESSURE_GAUSS
             element_base_dof_idx=0
             !Loop over 3 components
@@ -4149,7 +4145,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: i,j,PRESSURE_COMPONENT,component_idx,dof_idx
+    INTEGER(INTG) :: PRESSURE_COMPONENT,component_idx,dof_idx
     REAL(DP) :: P
     REAL(DP) :: I1,I2,I3 !Invariants, if needed
     REAL(DP) :: ACTIVE_STRESS_11,ACTIVE_STRESS_22,ACTIVE_STRESS_33 !Active stress to be copied in from independent field.
