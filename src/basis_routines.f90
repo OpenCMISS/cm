@@ -387,7 +387,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: ni,nic,nn,nn1,nn2,nn3,nn4,ns,local_line_idx
+    INTEGER(INTG) :: ni,nic,nn,nn1,nn2,nn3,nn4,ns,local_line_idx,local_face_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
 #if DEBUG
@@ -518,6 +518,26 @@ CONTAINS
         CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,BASIS%NUMBER_OF_DERIVATIVES(nn),8,8, &
           & BASIS%PARTIAL_DERIVATIVE_INDEX(:,nn),'("      INDEX(nk)  :",8(X,I2))','(18X,8(X,I2))',ERR,ERROR,*999)
       ENDDO !nn
+      IF(BASIS%NUMBER_OF_XI==3) THEN
+        CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Local faces:",ERR,ERROR,*999)
+        CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of local faces = ",BASIS%NUMBER_OF_LOCAL_FACES,ERR,ERROR,*999)
+        DO local_face_idx=1,BASIS%NUMBER_OF_LOCAL_FACES
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Local face = ",local_face_idx,ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Local face xi direction = ", &
+            & BASIS%LOCAL_FACE_XI_DIRECTION(local_face_idx),ERR,ERROR,*999)
+          CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of nodes in local face = ", &
+            & BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(local_face_idx),ERR,ERROR,*999)
+          CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(local_face_idx),4,4, &
+            & BASIS%NODE_NUMBERS_IN_LOCAL_FACE(:,local_face_idx),'("      Nodes in local face       :",4(X,I2))','(33X,4(X,I2))', &
+            & ERR,ERROR,*999)
+          DO nn=1,BASIS%NUMBER_OF_NODES_IN_LOCAL_FACE(local_face_idx)
+            CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Local face node: ",nn,ERR,ERROR,*999)
+            CALL WRITE_STRING_VECTOR(DIAGNOSTIC_OUTPUT_TYPE,1,1,BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(0,nn,local_face_idx),4,4, &
+              & BASIS%DERIVATIVE_NUMBERS_IN_LOCAL_FACE(1:,nn,local_face_idx),'("      Derivatives in local face :",4(X,I2))', &
+              & '(33X,4(X,I2))',ERR,ERROR,*999)
+          ENDDO
+        ENDDO !ni
+      ENDIF
       CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"  Local lines:",ERR,ERROR,*999)
       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"    Number of local lines = ",BASIS%NUMBER_OF_LOCAL_LINES,ERR,ERROR,*999)
       DO local_line_idx=1,BASIS%NUMBER_OF_LOCAL_LINES
