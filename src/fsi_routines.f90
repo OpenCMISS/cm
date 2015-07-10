@@ -443,7 +443,7 @@ CONTAINS
               IF(ControlLoop%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Running pre-solve steps.",Err,Error,*999)
                 !Pre solve for ALE NavierStokes equations set
-                CALL NAVIER_STOKES_PRE_SOLVE(ControlLoop,Solver,Err,Error,*999)
+                CALL NAVIER_STOKES_PRE_SOLVE(Solver,Err,Error,*999)
                 !Pre solve for FiniteElasticity equations set
                 !Nothing to be done???
               ELSE
@@ -637,7 +637,7 @@ CONTAINS
     TimeStepNumber=(CurrentTime-StartTime)/TimeIncrement!GLOBAL_ITERATION_NUMBER???
     !===============================================================================================================================
     !First update mesh and calculate boundary velocity values
-    CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(ControlLoop,DynamicSolver,Err,Error,*999)
+    CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(DynamicSolver,Err,Error,*999)
     !===============================================================================================================================
     !Update interface geometric field and export results
     DynamicSolverEquations=>DynamicSolver%SOLVER_EQUATIONS
