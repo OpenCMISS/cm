@@ -391,10 +391,10 @@ CONTAINS
               CALL NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET, &
                 & EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
               EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
-              EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES = 2
-              elementBasedComponents = 8  ! 4 SUPG parameters, 3 boundary normal components, 1 boundaryID
+              EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES = 3
               nodeBasedComponents = 1  ! boundary flux
-              constantBasedComponents = 5  ! maxCFL, boundaryStabilisationTerm, timeIncrement, C1, stabilisationType
+              elementBasedComponents = 10  ! 4 element metrics, 3 boundary normal components, boundaryID, boundaryType, C1
+              constantBasedComponents = 4  ! maxCFL, boundaryStabilisationBeta, timeIncrement, stabilisationType
               EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
               IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
                 !Create the auto created equations set field field for SUPG element metrics
@@ -407,19 +407,25 @@ CONTAINS
                  CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_SET_FIELD_FIELD, &
                    & EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
                  CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
-                   & [FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE],ERR,ERROR,*999)
+                   & [FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE],ERR,ERROR,*999)
                  CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
-                   & "ElementMetrics",ERR,ERROR,*999)
+                   & "BoundaryFlow",ERR,ERROR,*999)
                  CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET_FIELD_FIELD,FIELD_V_VARIABLE_TYPE, &
+                   & "ElementMetrics",ERR,ERROR,*999)
+                 CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET_FIELD_FIELD,FIELD_U1_VARIABLE_TYPE, &
                    & "EquationsConstants",ERR,ERROR,*999)
                  CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
                    & FIELD_DP_TYPE,ERR,ERROR,*999)
                  CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_V_VARIABLE_TYPE, &
                    & FIELD_DP_TYPE,ERR,ERROR,*999)
+                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,FIELD_U1_VARIABLE_TYPE, &
+                   & FIELD_DP_TYPE,ERR,ERROR,*999)
                  CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
-                   & FIELD_U_VARIABLE_TYPE,elementBasedComponents+nodeBasedComponents,ERR,ERROR,*999)
+                   & FIELD_U_VARIABLE_TYPE,nodeBasedComponents,ERR,ERROR,*999)
                  CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
-                   & FIELD_V_VARIABLE_TYPE,constantBasedComponents,ERR,ERROR,*999)
+                   & FIELD_V_VARIABLE_TYPE,elementBasedComponents,ERR,ERROR,*999)
+                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET_FIELD_FIELD,&
+                   & FIELD_U1_VARIABLE_TYPE,constantBasedComponents,ERR,ERROR,*999)
               ELSE
                 LOCAL_ERROR="User-specified fields are not yet implemented for an equations set field field &
                   & setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
@@ -429,25 +435,32 @@ CONTAINS
               IF(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
                 CALL FIELD_CREATE_FINISH(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,ERR,ERROR,*999)
                 !Default the Element Metrics parameter values 0.0
-                elementBasedComponents = 8  ! 4 SUPG parameters, 3 boundary normal components, 1 boundaryID
                 nodeBasedComponents = 1  ! boundary flux
-                constantBasedComponents = 5  ! maxCFL, boundaryStabilisationTerm, timeIncrement, C1, stabilisationType
-                DO componentIdx=1,elementBasedComponents+nodeBasedComponents
-                  CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                    & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,componentIdx,0.0_DP,ERR,ERROR,*999)
-                END DO ! componentIdx
-                ! Boundary stabilisation scale factor: default to 0
+                elementBasedComponents = 10  ! 4 element metrics, 3 boundary normal components, boundaryID, boundaryType, C1
+                constantBasedComponents = 4  ! maxCFL, boundaryStabilisationBeta, timeIncrement, stabilisationType
+                ! Init boundary flux to 0
                 CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                  & FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
+                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
+                ! Init Element Metrics to 0 (except C1)
+                DO componentIdx=1,elementBasedComponents-1
+                  CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                    & FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,componentIdx,0.0_DP,ERR,ERROR,*999)
+                END DO
+                ! Default C1 to -1 for now, will be calculated in ResidualBasedStabilisation if not specified by user
+                CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                  & FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,elementBasedComponents,-1.0_DP,ERR,ERROR,*999)
+                ! Boundary stabilisation scale factor (beta): default to 0
+                CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                  & FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
                 ! Max Courant (CFL) number: default to 1.0
                 CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                  & FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,2,1.0_DP,ERR,ERROR,*999)
-                ! Element inverse inequality: TODO: this should be an element-based field rather than constant
+                  & FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,2,1.0_DP,ERR,ERROR,*999)
+                ! Init Time increment to 0
                 CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                  & FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,4,-1.0_DP,ERR,ERROR,*999)
-                ! Stabilisation type
+                  & FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,3,0.0_DP,ERR,ERROR,*999)
+                ! Stabilisation type: default to 1 for RBS (0=none, 2=RBVM)
                 CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                  & FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,5,1.0_DP,ERR,ERROR,*999)
+                  & FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,4,1.0_DP,ERR,ERROR,*999)
               ELSE
                 LOCAL_ERROR="User-specified fields are not yet implemented for an equations set field field &
                   & setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
@@ -480,7 +493,7 @@ CONTAINS
              & EQUATIONS_SET_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
-              EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 1 ! Penalty coefficient (enforces conservation at discontinuous junctions)
+              EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 1 
               EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
               EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
               IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
@@ -517,9 +530,9 @@ CONTAINS
              &  EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
-              elementBasedComponents = 8  ! 4 SUPG parameters, 3 boundary normal components, 1 boundaryID
               nodeBasedComponents = 1  ! boundary flux
-              constantBasedComponents = 5  ! maxCFL, boundaryStabilisationTerm, timeIncrement, C1, stabilisationType
+              elementBasedComponents = 10  ! 4 element metrics, 3 boundary normal components, boundaryID, boundaryType, C1
+              constantBasedComponents = 4  ! maxCFL, boundaryStabilisationBeta, timeIncrement, stabilisationType
               EQUATIONS_EQUATIONS_SET_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD
               EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
               IF(EQUATIONS_EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
@@ -530,26 +543,23 @@ CONTAINS
                   & EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & 1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)                
-                ! Element-based fields (lengthScale, velocityScale, cellReynolds#, courant#, boundaryNormal(3), boundaryID)
+                CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                  & FIELD_U_VARIABLE_TYPE,1,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+                CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                  & FIELD_U_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
+                ! Element-based fields
                 DO componentIdx = 1, elementBasedComponents
-                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                    & FIELD_U_VARIABLE_TYPE,componentIdx,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
-                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                    & FIELD_U_VARIABLE_TYPE,componentIdx,FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)
-                END DO
-                ! Node-based fields for boundary flux and coupling
-                DO componentIdx = elementBasedComponents+1, elementBasedComponents + nodeBasedComponents
-                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                    & FIELD_U_VARIABLE_TYPE,componentIdx,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
-                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                    & FIELD_U_VARIABLE_TYPE,componentIdx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                ENDDO
-                ! Constant fields: boundary stabilisation scale factor and max courant #
-                DO componentIdx = 1, constantBasedComponents
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
                     & FIELD_V_VARIABLE_TYPE,componentIdx,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                    & FIELD_V_VARIABLE_TYPE,componentIdx,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
+                    & FIELD_V_VARIABLE_TYPE,componentIdx,FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)
+                END DO
+                ! Constant fields: boundary stabilisation scale factor and max courant #
+                DO componentIdx = 1, constantBasedComponents
+                  CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                    & FIELD_U1_VARIABLE_TYPE,componentIdx,GEOMETRIC_COMPONENT_NUMBER,ERR,ERROR,*999)
+                  CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
+                    & FIELD_U1_VARIABLE_TYPE,componentIdx,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                 ENDDO
                 !Default the field scaling to that of the geometric field
                 CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
@@ -9956,7 +9966,7 @@ CONTAINS
     REAL(DP) :: DXI_DX(3,3)
     REAL(DP) :: velocity(3),velocityPrevious(3),velocityDeriv(3,3),velocity2Deriv(3,3,3),pressure,pressureDeriv(3)
     REAL(DP) :: lineLength,JGW,SUM,SUM2,wSUPG,wPSPG,wLSIC,wBAZ1,wBAZ2,momentumTerm
-    REAL(DP) :: uDotGu,doubleDotG,tauSUPS,traceG,nuLSIC,timeIncrement,C,C1,stabilisationType
+    REAL(DP) :: uDotGu,doubleDotG,tauSUPS,traceG,nuLSIC,timeIncrement,elementInverse,C1,stabilisationType
     REAL(DP) :: elementVolume,elementArea,hp,velocityMagnitude,hu,nu,mk,xiC,tauC,fT,xiM1p,xiM1u,xiM2p,xiM2u,tauMp,tauMu
     REAL(DP) :: residualMomentum(3),residualContinuity
     TYPE(VARYING_STRING) :: localError
@@ -10096,14 +10106,14 @@ CONTAINS
                 ENDDO
               ENDDO
               ! Get time step size and calc time derivative
-              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                & 3,timeIncrement,err,error,*999)
-              ! User-specified C1 value
-              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-               & 4,C,err,error,*999)
-              ! Stabilisation type (default 1)
-              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-               & 5,stabilisationType,err,error,*999)
+              ! Stabilisation type (default 1 for RBS)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & 4,stabilisationType,err,error,*999)
+              ! User specified or previously calculated C1
+              CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & elementNumber,10,elementInverse,err,error,*999)
 
               ! Get number of element parameters for each dependent component
               numberOfElementParameters=0.0_DP
@@ -10174,21 +10184,29 @@ CONTAINS
               residualContinuity = SUM
 
               ! Constant of element inverse inequality
-              IF (C > -ZERO_TOLERANCE) THEN
+              IF (elementInverse > -ZERO_TOLERANCE) THEN
                 ! Use user-defined value if specified (default -1)
-                C1 = C
+                C1 = elementInverse
               ELSE IF (linearElement) THEN
                 C1=3.0_DP
               ELSE
                 IF (numberOfDimensions==2 .AND. basisVelocity%NUMBER_OF_ELEMENT_PARAMETERS==9 &
                   & .AND. basisVelocity%INTERPOLATION_ORDER(1)==2) THEN
                   C1=24.0_DP
+                ELSE IF (numberOfDimensions==3 .AND. basisVelocity%NUMBER_OF_ELEMENT_PARAMETERS==27 &
+                  & .AND. basisVelocity%INTERPOLATION_ORDER(1)==2) THEN
+                  C1=12.0_DP
                 !TODO: Expand C1 for multiple element types
                 ELSE
                   CALL FLAG_ERROR("Element inverse estimate undefined on element " &
                    & //TRIM(NUMBER_TO_VSTRING(elementNumber,"*",err,error)),err,error,*999)                              
                 ENDIF
               ENDIF
+              ! Update element inverse value if calculated
+              IF(ABS(C1-elementInverse) > ZERO_TOLERANCE) THEN
+                CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & elementNumber,10,C1,err,error,*999)
+              END IF
 
               !----------------------------------------------------------
               ! S t a b i l i z a t i o n    C o n s t a n t s    (Taus)
@@ -10609,7 +10627,7 @@ CONTAINS
             IF(ASSOCIATED(equationsSetField)) THEN
 
               ! Get time step size
-              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                & 3,timeIncrement,err,error,*999)
 
               ! Loop over gauss points
@@ -10765,12 +10783,12 @@ CONTAINS
                   cellCourantNumber = timeIncrement/2.0_DP*normCMatrix/normMMatrix
                 ENDIF
               ENDIF
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                & elementNumber,2,velocityNorm,err,error,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-               & elementNumber,3,cellReynoldsNumber,err,error,*999)
-              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-               & elementNumber,4,cellCourantNumber,err,error,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & elementNumber,3,cellCourantNumber,err,error,*999)
+              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_ELEMENT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & elementNumber,4,cellReynoldsNumber,err,error,*999)
 
             ELSE
               CALL FLAG_ERROR("Equations set field field is not associated.",err,error,*999)
@@ -10837,12 +10855,13 @@ CONTAINS
     INTEGER(INTG) :: elementBaseDofIdx, faceNodeIdx, elementNodeIdx
     INTEGER(INTG) :: faceNodeDerivativeIdx, meshComponentNumber, nodeDerivativeIdx,elementParameterIdx
     INTEGER(INTG) :: faceParameterIdx,elementDof,normalComponentIdx
-    INTEGER(INTG) :: numberOfDimensions,boundaryID,i,j
+    INTEGER(INTG) :: numberOfDimensions,i,j,boundaryType
     REAL(DP) :: pressure,viscosity,density,jacobianGaussWeights,beta,normalFlow
     REAL(DP) :: velocity(3),normalProjection(3),unitNormal(3),normalViscousTerm(3),stabilisationTerm(3),boundaryNormal(3)
     REAL(DP) :: boundaryValue,normalDifference,normalTolerance,SUM1,SUM2,boundaryPressure
     REAL(DP) :: dUDXi(3,3),dXiDX(3,3),gradU(3,3)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    LOGICAL :: integratedBoundary
 
     REAL(DP), POINTER :: geometricParameters(:)
 
@@ -10908,10 +10927,17 @@ CONTAINS
         CALL FLAG_ERROR("Equations set field (EQUATIONS_EQUATIONS_SET_FIELD_FIELD) is not associated.",err,error,*999)
       END IF
 
+      ! Check whether this element contains an integrated boundary type
+      CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+       & elementNumber,9,boundaryValue,err,error,*999)
+      boundaryType=NINT(boundaryValue)
+      integratedBoundary = .FALSE.
+      IF(boundaryType == BOUNDARY_CONDITION_PRESSURE) integratedBoundary = .TRUE.
+
       !Get the mesh decomposition and basis
       decomposition=>dependentVariable%FIELD%DECOMPOSITION
       !Check that face geometric parameters have been calculated
-      IF(decomposition%CALCULATE_FACES) THEN
+      IF(decomposition%CALCULATE_FACES .AND. integratedBoundary) THEN
         meshComponentNumber=dependentVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
         dependentBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
           & ELEMENTS(elementNumber)%BASIS
@@ -10937,19 +10963,15 @@ CONTAINS
         fieldVariable=>equations%EQUATIONS_MAPPING%NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
 
         ! Get the boundary element parameters
-        CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & 1,beta,err,error,*999)
         boundaryNormal = 0.0_DP
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementNumber,5,boundaryNormal(1),err,error,*999)
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementNumber,6,boundaryNormal(2),err,error,*999)
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementNumber,7,boundaryNormal(3),err,error,*999)
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-         & elementNumber,8,boundaryValue,err,error,*999)
-        boundaryID=0
-        boundaryID=NINT(boundaryValue)
 
         DO faceIdx=1,dependentBasis%NUMBER_OF_LOCAL_FACES
           !Get the face normal and quadrature information
@@ -10962,7 +10984,6 @@ CONTAINS
           !This speeds things up but is also important, as non-boundary faces have an XI_DIRECTION that might
           !correspond to the other element.
           IF(.NOT.(face%BOUNDARY_FACE)) CYCLE
-          IF(boundaryID <= 1) EXIT
 
           SELECT CASE(dependentBasis%TYPE)
           CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
@@ -11258,7 +11279,7 @@ CONTAINS
       decomposition=>dependentVariable%FIELD%DECOMPOSITION
       elementsMapping=>decomposition%DOMAIN(decomposition%MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS
       ! Get constant max Courant (CFL) number (default 1.0)
-      CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+      CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
        & 2,toleranceCourant,err,error,*999)
 
       ! Loop over elements to locate boundary elements
@@ -11272,8 +11293,8 @@ CONTAINS
         ! C F L  c o n d i t i o n   c h e c k
         ! ------------------------------------
         ! Get element metrics
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-         & elementIdx,4,courant,err,error,*999)
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+         & elementIdx,3,courant,err,error,*999)
         IF (courant < -ZERO_TOLERANCE) THEN
           CALL FLAG_WARNING("Negative Courant (CFL) number.",ERR,ERROR,*999)
         ENDIF
@@ -11289,17 +11310,17 @@ CONTAINS
 
         ! B o u n d a r y   n o r m a l   a n d   I D
         ! ----------------------------------------------
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementIdx,5,elementNormal(1),err,error,*999)
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementIdx,6,elementNormal(2),err,error,*999)
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementIdx,7,elementNormal(3),err,error,*999)
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementIdx,8,boundaryValue,err,error,*999)
-        !Check if boundary element is a multidomain boundary element
+        !Check if is a non-wall boundary element
         boundaryID=NINT(boundaryValue)
-        IF(boundaryID>0) THEN
+        IF(boundaryID>1) THEN
           faceArea=0.0_DP
           faceVelocity=0.0_DP
           !Get the dependent interpolation parameters
@@ -11426,15 +11447,14 @@ CONTAINS
       
       ! Loop over elements again to allocate flux terms to boundary nodes
       DO elementIdx=1,elementsMapping%TOTAL_NUMBER_OF_LOCAL!elementsMapping%INTERNAL_START,elementsMapping%INTERNAL_FINISH
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementIdx,5,elementNormal(1),err,error,*999)
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementIdx,6,elementNormal(2),err,error,*999)
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementIdx,7,elementNormal(3),err,error,*999)
-        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+        CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
          & elementIdx,8,boundaryValue,err,error,*999)
-
         boundaryID=NINT(boundaryValue)
         IF(boundaryID>1) THEN
           meshComponentNumber=2
@@ -11485,7 +11505,7 @@ CONTAINS
                  & TOPOLOGY%ELEMENTS%ELEMENTS(elementIdx)%ELEMENT_NODES(elementNodeIdx)
                 versionNumber=1
                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & versionNumber,faceNodeDerivativeIdx,nodeNumber,9,globalBoundaryFlux(boundaryID),err,error,*999) 
+                  & versionNumber,faceNodeDerivativeIdx,nodeNumber,1,globalBoundaryFlux(boundaryID),err,error,*999) 
               END DO !nodeDerivativeIdx
             END DO !faceNodeIdx
 
