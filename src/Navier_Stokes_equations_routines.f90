@@ -1569,7 +1569,7 @@ CONTAINS
                             !Set analytic function type
                             EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE
                             !Set numbrer of components
-                            NUMBER_OF_ANALYTIC_COMPONENTS=9
+                            NUMBER_OF_ANALYTIC_COMPONENTS=10
                           CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN)
                             !Set analtyic function type
                             EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN
@@ -1754,24 +1754,11 @@ CONTAINS
                           & FIELD_VALUES_SET_TYPE,2,0.0_DP,ERR,ERROR,*999)
                       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
                         !Default the analytic parameter values to 0
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,2,0.0_DP,ERR,ERROR,*999)
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,3,0.0_DP,ERR,ERROR,*999)
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,4,0.0_DP,ERR,ERROR,*999)
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,5,0.0_DP,ERR,ERROR,*999)
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,6,0.0_DP,ERR,ERROR,*999)
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,7,1.0_DP,ERR,ERROR,*999)
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,8,0.0_DP,ERR,ERROR,*999)
-                        CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_VALUES_SET_TYPE,9,0.0_DP,ERR,ERROR,*999)
+                        NUMBER_OF_ANALYTIC_COMPONENTS = 10
+                        DO componentIdx = 1,NUMBER_OF_ANALYTIC_COMPONENTS
+                          CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
+                            & FIELD_VALUES_SET_TYPE,componentIdx,0.0_DP,ERR,ERROR,*999)
+                        END DO
                       CASE DEFAULT
                         LOCAL_ERROR="The analytic function type of "// &
                           & TRIM(NUMBER_TO_VSTRING(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
@@ -6001,10 +5988,10 @@ CONTAINS
             CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE)
               CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,startTime,stopTime,currentTime,timeIncrement, &
                & timestep,outputIteration,ERR,ERROR,*999)
-              CALL NavierStokes_CalculateBoundaryFlux(SOLVER,timeIncrement,ERR,ERROR,*999)
+              CALL NavierStokes_CalculateBoundaryFlux(SOLVER,ERR,ERROR,*999)
               CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(SOLVER,err,error,*999)
             CASE(PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
-              CALL NavierStokes_CalculateBoundaryFlux(SOLVER,timeIncrement,ERR,ERROR,*999)
+              CALL NavierStokes_CalculateBoundaryFlux(SOLVER,ERR,ERROR,*999)
               CALL NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA(SOLVER,err,error,*999)
             CASE(PROBLEM_ALE_NAVIER_STOKES_SUBTYPE)
               !Post solve for the linear solver
@@ -8458,7 +8445,8 @@ CONTAINS
     INTEGER(INTG) :: componentIdx,derivativeIdx,dimensionIdx,local_ny,nodeIdx,numberOfDimensions,variableIdx,variableType,I,J,K
     INTEGER(INTG) :: numberOfNodesXiCoord(3),elementIdx,en_idx,boundaryCount,analyticFunctionType,globalDerivativeIndex,versionIdx
     INTEGER(INTG) :: boundaryConditionsCheckVariable,numberOfXi,nodeNumber,userNodeNumber,localDof,globalDof
-    REAL(DP) :: TIME,VALUE,X(3),xiCoordinates(3),initialValue,T_COORDINATES(20,3),nodeAnalyticParameters(9)
+    INTEGER(INTG) :: parameterIdx,numberOfParameters
+    REAL(DP) :: TIME,VALUE,X(3),xiCoordinates(3),initialValue,T_COORDINATES(20,3),nodeAnalyticParameters(10)
     REAL(DP), POINTER :: analyticParameters(:),geometricParameters(:),materialsParameters(:)
 
     CALL ENTERS("NavierStokes_AnalyticCalculate",err,error,*999)
@@ -8601,24 +8589,14 @@ CONTAINS
                               CALL FIELD_COMPONENT_DOF_GET_USER_NODE(dependentField,variableType,versionIdx,derivativeIdx, &
                                & userNodeNumber,componentIdx,localDof,globalDof,err,error,*999)
                               IF (analyticFunctionType==EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid) THEN
-                                CALL Field_ParameterSetGetLocalNode(analyticField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                                 & versionIdx,derivativeIdx,nodeIdx,1,nodeAnalyticParameters(1),err,error,*999)
-                                CALL Field_ParameterSetGetLocalNode(analyticField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                                 & versionIdx,derivativeIdx,nodeIdx,2,nodeAnalyticParameters(2),err,error,*999)
-                                CALL Field_ParameterSetGetLocalNode(analyticField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                                 & versionIdx,derivativeIdx,nodeIdx,3,nodeAnalyticParameters(3),err,error,*999)
-                                CALL Field_ParameterSetGetLocalNode(analyticField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                                 & versionIdx,derivativeIdx,nodeIdx,4,nodeAnalyticParameters(4),err,error,*999)
-                                CALL Field_ParameterSetGetLocalNode(analyticField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                                 & versionIdx,derivativeIdx,nodeIdx,5,nodeAnalyticParameters(5),err,error,*999)
-                                CALL Field_ParameterSetGetLocalNode(analyticField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                                 & versionIdx,derivativeIdx,nodeIdx,6,nodeAnalyticParameters(6),err,error,*999)
-                                CALL Field_ParameterSetGetLocalNode(analyticField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                                 & versionIdx,derivativeIdx,nodeIdx,7,nodeAnalyticParameters(7),err,error,*999)
-                                CALL Field_ParameterSetGetLocalNode(analyticField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                                 & versionIdx,derivativeIdx,nodeIdx,8,nodeAnalyticParameters(8),err,error,*999)
-                                CALL Field_ParameterSetGetLocalNode(analyticField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
-                                 & versionIdx,derivativeIdx,nodeIdx,9,nodeAnalyticParameters(9),err,error,*999)
+                                CALL FIELD_NUMBER_OF_COMPONENTS_GET(analyticField,FIELD_U_VARIABLE_TYPE, &
+                                 & numberOfParameters,err,error,*999)
+                                DO parameterIdx=1,numberOfParameters
+                                  ! populate nodeAnalyticParameters
+                                  CALL Field_ParameterSetGetLocalNode(analyticField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, & 
+                                   & versionIdx,derivativeIdx,nodeIdx,parameterIdx,nodeAnalyticParameters(parameterIdx), &
+                                   & err,error,*999)
+                                END DO
                                 CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(analyticFunctionType,X,TIME,variableType, &
                                   & globalDerivativeIndex,componentIdx,numberOfDimensions,fieldVariable%NUMBER_OF_COMPONENTS, &
                                   & nodeAnalyticParameters,materialsParameters,VALUE,err,error,*999)
@@ -8642,8 +8620,7 @@ CONTAINS
                                       ! Set velocity/flowrate values
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,variableType, &
                                        & FIELD_VALUES_SET_TYPE,localDof,VALUE,err,error,*999)
-                                    ELSE IF (boundaryConditionsCheckVariable==BOUNDARY_CONDITION_PRESSURE .OR. &
-                                      & boundaryConditionsCheckVariable==BOUNDARY_CONDITION_FIXED) THEN
+                                    ELSE IF (boundaryConditionsCheckVariable==BOUNDARY_CONDITION_PRESSURE) THEN
                                       ! Set neumann boundary pressure value on pressure nodes
                                       CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
                                        & FIELD_PRESSURE_VALUES_SET_TYPE,1,1,nodeIdx,componentIdx,VALUE,err,error,*999)
@@ -8968,8 +8945,8 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: i,j,n,m
     REAL(DP) :: L_PARAM,H_PARAM,U_PARAM,P_PARAM,MU_PARAM,NU_PARAM,RHO_PARAM,INTERNAL_TIME,CURRENT_TIME,K_PARAM
-    REAL(DP) :: amplitude,offset,period,s,startTime,stopTime,tt,tmax,Qo
-    REAL(DP) :: boundaryNormal(4),delta(300),t(300),q(300)
+    REAL(DP) :: amplitude,yOffset,period,phaseShift,frequency,s,startTime,stopTime,tt,tmax,Qo
+    REAL(DP) :: componentCoeff(4),delta(300),t(300),q(300)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
     CALL ENTERS("NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
@@ -9244,42 +9221,45 @@ CONTAINS
        ! Returns a sinusoidal value for boundary nodes
        SELECT CASE(NUMBER_OF_DIMENSIONS)
        CASE(2,3)
-         boundaryNormal(1) = ANALYTIC_PARAMETERS(1) ! normal vector x-component
-         boundaryNormal(2) = ANALYTIC_PARAMETERS(2) ! normal vector y-component
-         boundaryNormal(3) = ANALYTIC_PARAMETERS(3) ! normal vector z-component in 3D (or p coefficient in 2D)
-         boundaryNormal(4) = ANALYTIC_PARAMETERS(4) ! p coefficient in 3D (unused in 2D)
-         amplitude = ANALYTIC_PARAMETERS(5) ! amplitude of sine wave
-         offset = ANALYTIC_PARAMETERS(6) ! constant value
-         period = ANALYTIC_PARAMETERS(7) ! time period for waveform
-         startTime = ANALYTIC_PARAMETERS(8) 
-         stopTime = ANALYTIC_PARAMETERS(9) 
-         IF (CURRENT_TIME > startTime - ZERO_TOLERANCE .AND. &
-           &  CURRENT_TIME < stopTime + ZERO_TOLERANCE) THEN
-           SELECT CASE(VARIABLE_TYPE)
-           CASE(FIELD_U_VARIABLE_TYPE)
-             SELECT CASE(GLOBAL_DERIV_INDEX)
-             CASE(NO_GLOBAL_DERIV)
-               VALUE= boundaryNormal(componentNumber)*(offset + amplitude*cos(2.0_DP*pi*(CURRENT_TIME/(period))))
-             CASE DEFAULT
-               LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                 & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-             END SELECT
-           CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
-             SELECT CASE(GLOBAL_DERIV_INDEX)
-             CASE(NO_GLOBAL_DERIV)
-               VALUE= 0.0_DP
-             CASE DEFAULT
-               LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                 & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-             END SELECT
+         componentCoeff(1) = ANALYTIC_PARAMETERS(1) 
+         componentCoeff(2) = ANALYTIC_PARAMETERS(2) 
+         componentCoeff(3) = ANALYTIC_PARAMETERS(3) 
+         componentCoeff(4) = ANALYTIC_PARAMETERS(4) 
+         amplitude = ANALYTIC_PARAMETERS(5) 
+         yOffset = ANALYTIC_PARAMETERS(6) 
+         frequency = ANALYTIC_PARAMETERS(7) 
+         phaseShift = ANALYTIC_PARAMETERS(8) 
+         startTime = ANALYTIC_PARAMETERS(9) 
+         stopTime = ANALYTIC_PARAMETERS(10) 
+         SELECT CASE(VARIABLE_TYPE)
+         CASE(FIELD_U_VARIABLE_TYPE)
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             IF (CURRENT_TIME > startTime - ZERO_TOLERANCE .AND. &
+               &  CURRENT_TIME < stopTime + ZERO_TOLERANCE) THEN
+               VALUE= componentCoeff(componentNumber)*(yOffset + amplitude*SIN(frequency*CURRENT_TIME+phaseShift))
+             ELSE
+               VALUE= componentCoeff(componentNumber)*(yOffset + amplitude*SIN(frequency*stopTime+phaseShift))
+             ENDIF
            CASE DEFAULT
-             LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-               & " is invalid."
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT
-         ENDIF
+         CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
+           SELECT CASE(GLOBAL_DERIV_INDEX)
+           CASE(NO_GLOBAL_DERIV)
+             VALUE= 0.0_DP
+           CASE DEFAULT
+             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           END SELECT
+         CASE DEFAULT
+           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+             & " is invalid."
+           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+         END SELECT
        CASE DEFAULT
          LOCAL_ERROR="Sinusoidal analytic types for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
            & " dimensional problems have not yet been implemented."
@@ -11128,12 +11108,11 @@ CONTAINS
   !
 
   !> Calculate the fluid flux through 3D boundaries for use in problems with coupled solutions (e.g. multidomain)
-  SUBROUTINE NavierStokes_CalculateBoundaryFlux(solver,timeIncrement,err,error,*)
+  SUBROUTINE NavierStokes_CalculateBoundaryFlux(solver,err,error,*)
 
     !Argument variables
 
     TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer to the solver
-    REAL(DP), INTENT(IN) :: timeIncrement !<The current time increment
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
@@ -11176,7 +11155,7 @@ CONTAINS
     INTEGER(INTG) :: MPI_IERROR,numberOfComputationalNodes
     REAL(DP) :: gaussWeight, normalProjection,elementNormal(3)
     REAL(DP) :: normalDifference,normalTolerance,faceFlux
-    REAL(DP) :: cfl,maxCFL,toleranceCFL
+    REAL(DP) :: courant,maxCourant,toleranceCourant
     REAL(DP) :: velocityGauss(3),faceNormal(3),unitNormal(3),boundaryValue,faceArea,faceVelocity
     REAL(DP) :: localBoundaryFlux(10),localBoundaryArea(10),globalBoundaryFlux(10),globalBoundaryArea(10)
     LOGICAL :: correctFace
@@ -11278,12 +11257,12 @@ CONTAINS
       !Get the mesh decomposition and mapping
       decomposition=>dependentVariable%FIELD%DECOMPOSITION
       elementsMapping=>decomposition%DOMAIN(decomposition%MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS
-      ! Get constant max CFL number (default 1.0)
+      ! Get constant max Courant (CFL) number (default 1.0)
       CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-       & 2,toleranceCFL,err,error,*999)
+       & 2,toleranceCourant,err,error,*999)
 
       ! Loop over elements to locate boundary elements
-      maxCFL = 0.0_DP
+      maxCourant = 0.0_DP
       DO elementIdx=1,elementsMapping%TOTAL_NUMBER_OF_LOCAL
         meshComponentNumber=dependentVariable%COMPONENTS(1)%MESH_COMPONENT_NUMBER
         dependentBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
@@ -11294,16 +11273,16 @@ CONTAINS
         ! ------------------------------------
         ! Get element metrics
         CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-         & elementIdx,4,cfl,err,error,*999)
-        IF (cfl < -ZERO_TOLERANCE) THEN
-          CALL FLAG_WARNING("Negative CFL number.",ERR,ERROR,*999)
+         & elementIdx,4,courant,err,error,*999)
+        IF (courant < -ZERO_TOLERANCE) THEN
+          CALL FLAG_WARNING("Negative Courant (CFL) number.",ERR,ERROR,*999)
         ENDIF
-        IF (cfl > maxCFL) maxCFL = cfl
+        IF (courant > maxCourant) maxCourant = courant
         ! Check if element CFL number below specified tolerance
-        IF (cfl > toleranceCFL) THEN
+        IF (courant > toleranceCourant) THEN
           LOCAL_ERROR="Element "//TRIM(NUMBER_TO_VSTRING(decompElement%user_number, &
-            & "*",ERR,ERROR))//" has violated the CFL condition "//TRIM(NUMBER_TO_VSTRING(cfl, &
-            & "*",ERR,ERROR))//" <= "//TRIM(NUMBER_TO_VSTRING(toleranceCFL,"*",ERR,ERROR))//". Decrease timestep or increase "// &
+            & "*",ERR,ERROR))//" has violated the CFL condition "//TRIM(NUMBER_TO_VSTRING(courant, &
+            & "*",ERR,ERROR))//" <= "//TRIM(NUMBER_TO_VSTRING(toleranceCourant,"*",ERR,ERROR))//". Decrease timestep or increase "// &
             & "CFL tolerance for the 3D Navier-Stokes problem."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
