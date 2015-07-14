@@ -4448,7 +4448,6 @@ CONTAINS
             IF(ASSOCIATED(DAMPING_MATRIX)) UPDATE_DAMPING_MATRIX=DAMPING_MATRIX%UPDATE_MATRIX
             IF(ASSOCIATED(RHS_VECTOR)) UPDATE_RHS_VECTOR=RHS_VECTOR%UPDATE_VECTOR
             IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
-            CALL NavierStokes_CalculateElementMetrics(EQUATIONS_SET,ELEMENT_NUMBER,err,error,*999)            
           CASE(EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE)
             DECOMPOSITION => DEPENDENT_FIELD%DECOMPOSITION
             MESH_COMPONENT_NUMBER = DECOMPOSITION%MESH_COMPONENT_NUMBER
@@ -9961,17 +9960,16 @@ CONTAINS
 
     INTEGER(INTG) :: fieldVariableType,meshComponent1,meshComponent2
     INTEGER(INTG) :: numberOfDimensions
-    INTEGER(INTG) :: lineNumber
     INTEGER(INTG) :: i,j,k,l,mhs,nhs,ms,ns,nh,mh,nj,ni,pressureIndex
-    INTEGER(INTG) :: numberOfElementParameters(4)
+    INTEGER(INTG) :: numberOfElementParameters(4),stabilisationType
     REAL(DP) :: PHIMS,PHINS
     REAL(DP) :: dPhi_dX_Velocity(27,3),dPhi_dX_Pressure(27,3),DPHINS2_DXI(3,3)
     REAL(DP) :: jacobianMomentum(3),jacobianContinuity
     REAL(DP) :: DXI_DX(3,3)
     REAL(DP) :: velocity(3),velocityPrevious(3),velocityDeriv(3,3),velocity2Deriv(3,3,3),pressure,pressureDeriv(3)
-    REAL(DP) :: lineLength,JGW,SUM,SUM2,wSUPG,wPSPG,wLSIC,wBAZ1,wBAZ2,momentumTerm
-    REAL(DP) :: uDotGu,doubleDotG,tauSUPS,traceG,nuLSIC,timeIncrement,elementInverse,C1,stabilisationType
-    REAL(DP) :: elementVolume,elementArea,hp,velocityMagnitude,hu,nu,mk,xiC,tauC,fT,xiM1p,xiM1u,xiM2p,xiM2u,tauMp,tauMu
+    REAL(DP) :: JGW,SUM,SUM2,SUPG,PSPG,LSIC,crossStress,reynoldsStress,momentumTerm
+    REAL(DP) :: uDotGu,doubleDotG,tauSUPS,traceG,nuLSIC,timeIncrement,elementInverse,C1,stabilisationValueDP
+    REAL(DP) :: tauC,tauMp,tauMu
     REAL(DP) :: residualMomentum(3),residualContinuity
     TYPE(VARYING_STRING) :: localError
     LOGICAL :: linearElement
@@ -10030,20 +10028,37 @@ CONTAINS
 
           quadratureVelocity=>basisVelocity%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
           quadraturePressure=>basisPressure%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-          IF(ASSOCIATED(equationsEquationsSetField)) THEN
-            equationsSetField=>equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD
-            IF(ASSOCIATED(equationsSetField)) THEN
+          equationsSetField=>equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD
+          IF(ASSOCIATED(equationsSetField)) THEN
+            ! Stabilisation type (default 1 for RBS, 2 for RBVM, 0 for none)
+            CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+             & 4,stabilisationValueDP,err,error,*999)
+            stabilisationType=NINT(stabilisationValueDP)
+            ! Skip if type 0
+            IF (stabilisationType > 0) THEN
+              ! Get time step size and calc time derivative
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & 3,timeIncrement,err,error,*999)
+              ! Stabilisation type (default 1 for RBS)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & 4,stabilisationValueDP,err,error,*999)
+              stabilisationType=NINT(stabilisationValueDP)
+              ! User specified or previously calculated C1
+              CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+               & elementNumber,10,elementInverse,err,error,*999)
 
               ! Get previous timestep values
               velocityPrevious=0.0_DP
-              CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_PREVIOUS_VALUES_SET_TYPE,elementNumber,equations% &
-               & INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussNumber,EQUATIONS%INTERPOLATION% &
-               & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              velocityPrevious=0.0_DP
-              DO i=1,numberOfDimensions
-                velocityPrevious(i)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR%VALUES(i,NO_PART_DERIV)
-              ENDDO
+              IF (equationsSet%SUBTYPE /= EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_PREVIOUS_VALUES_SET_TYPE,elementNumber,equations% &
+                 & INTERPOLATION%DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,gaussNumber,EQUATIONS%INTERPOLATION% &
+                 & DEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
+                velocityPrevious=0.0_DP
+                DO i=1,numberOfDimensions
+                  velocityPrevious(i)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(fieldVariableType)%PTR%VALUES(i,NO_PART_DERIV)
+                ENDDO
+              ENDIF
 
               ! Interpolate current solution velocity/pressure field values
               CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,EQUATIONS%INTERPOLATION% &
@@ -10109,15 +10124,6 @@ CONTAINS
                     & DXI_DX(j,i)
                 ENDDO
               ENDDO
-              ! Get time step size and calc time derivative
-              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-               & 3,timeIncrement,err,error,*999)
-              ! Stabilisation type (default 1 for RBS)
-              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSetField,FIELD_U1_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-               & 4,stabilisationType,err,error,*999)
-              ! User specified or previously calculated C1
-              CALL Field_ParameterSetGetLocalElement(equationsSetField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-               & elementNumber,10,elementInverse,err,error,*999)
 
               ! Get number of element parameters for each dependent component
               numberOfElementParameters=0.0_DP
@@ -10161,7 +10167,9 @@ CONTAINS
               DO i=1,numberOfDimensions    
                 SUM = 0.0_DP
                 ! velocity time derivative              
-                SUM = rho*(velocity(i)-velocityPrevious(i))/timeIncrement
+                IF (equationsSet%SUBTYPE /= EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+                  SUM = rho*(velocity(i)-velocityPrevious(i))/timeIncrement
+                ENDIF
                 DO j=1,numberOfDimensions
                   ! pressure gradient
                   SUM = SUM + pressureDeriv(j)*DXI_DX(j,i)
@@ -10200,7 +10208,7 @@ CONTAINS
                 ELSE IF (numberOfDimensions==3 .AND. basisVelocity%NUMBER_OF_ELEMENT_PARAMETERS==27 &
                   & .AND. basisVelocity%INTERPOLATION_ORDER(1)==2) THEN
                   C1=12.0_DP
-                !TODO: Expand C1 for multiple element types
+                !TODO: Expand C1 for more element types
                 ELSE
                   CALL FLAG_ERROR("Element inverse estimate undefined on element " &
                    & //TRIM(NUMBER_TO_VSTRING(elementNumber,"*",err,error)),err,error,*999)                              
@@ -10215,8 +10223,8 @@ CONTAINS
               !----------------------------------------------------------
               ! S t a b i l i z a t i o n    C o n s t a n t s    (Taus)
               !----------------------------------------------------------
-              IF (stabilisationType > 0.5_DP) THEN
-                ! Bazilevs method
+              IF (stabilisationType == 1 .OR. stabilisationType == 2) THEN
+                ! Bazilevs method for calculating tau
                 pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
                 uDotGu = 0.0_DP
                 DO i=1,numberOfDimensions
@@ -10231,7 +10239,11 @@ CONTAINS
                   ENDDO
                 ENDDO
                 ! Calculate tauSUPS (used for both PSPG and SUPG weights)
-                tauSUPS = ((4.0_DP/(timeIncrement**2.0_DP)) + uDotGu + (C1*((mu/rho)**2.0_DP)*doubleDotG))**(-0.5_DP)
+                IF (equationsSet%SUBTYPE == EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+                  tauSUPS = (uDotGu + (C1*((mu/rho)**2.0_DP)*doubleDotG))**(-0.5_DP)
+                ELSE
+                  tauSUPS = ((4.0_DP/(timeIncrement**2.0_DP)) + uDotGu + (C1*((mu/rho)**2.0_DP)*doubleDotG))**(-0.5_DP)
+                ENDIF
 
                 ! Calculate nu_LSIC (Least-squares incompressibility constraint)
                 traceG = 0.0_DP
@@ -10244,66 +10256,9 @@ CONTAINS
                 tauMu = tauSUPS
                 tauC = nuLSIC
 
-              ELSE
-
-                ! Gravemeier method
-                ! Static length scale
-                ! TODO: need to actually properly calculate element volume
-                lineNumber = geometricField%DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%ELEMENT_LINES(1)
-                lineLength = geometricField%GEOMETRIC_FIELD_PARAMETERS%LENGTHS(lineNumber)
-                IF (numberOfDimensions==3) THEN
-                  elementVolume = lineLength**numberOfDimensions
-                  hp = (6.0_DP*elementVolume/PI)**(1.0_DP/3.0_DP)/SQRT(3.0_DP)
-                ELSE IF (numberOfDimensions==2) THEN
-                  elementArea = lineLength**numberOfDimensions
-                  hp = SQRT(6.0_DP*elementArea/PI)/SQRT(2.0_DP)
-                  ! TODO: fix this!
-                  hp = lineLength!/(2.0_DP*SQRT(2.0_DP))
-                ENDIF
-                ! TODO: generalize this as fT=theta
-                fT = 0.5_DP
-                ! TODO: generalize this for multiple element types
-                mk = MIN(1.0_DP/3.0_DP,1.0_DP/C1)
-                nu = mu/rho
-
-                SUM = 0.0_DP
-                velocityMagnitude = L2NORM(velocity)
-
-                ! Dynamic length scale
-                SUM = 0.0_DP
-                IF (velocityMagnitude > ZERO_TOLERANCE) THEN
-                  DO ms=1,basisVelocity%NUMBER_OF_ELEMENT_PARAMETERS
-                    DO j=1,numberOfDimensions
-                      !SUM = SUM + dPhi_dX_Velocity(ms,j)*velocity(j)/velocityMagnitude
-                      SUM = SUM + ABS(dPhi_dX_Velocity(ms,j)*velocity(j)/velocityMagnitude*JGW)
-                    ENDDO
-                  ENDDO
-                ENDIF
-                ! avoid FPEs
-                IF (ABS(SUM) < ZERO_TOLERANCE) THEN
-                  hu = 0.0_DP
-                ELSE
-                  hu = 2.0_DP/SUM
-                ENDIF
-                hu = hp
-                ! Calculate TauC
-                xiC = mk*velocityMagnitude*hp/(2.0_DP*nu)
-                xiC = MIN(xiC,1.0_DP)
-                tauC = velocityMagnitude*hp/2.0_DP*xiC
-
-                ! Calculate TauMu
-                xiM1u=mk*velocityMagnitude*hu/(2.0_DP*nu)
-                xiM1u=MAX(xiM1u,1.0_DP)
-                xiM2u=(4.0_DP*nu*fT*timeIncrement)/(mk*(hu**2.0_DP))
-                xiM2u=MAX(xiM2u,1.0_DP)
-                tauMu=1.0_DP/((xiM1u/(fT*timeIncrement))+((4.0_DP*nu*xiM2u)/(mk*(hu**2.0_DP))))
-
-                ! Calculate TauMp
-                xiM1p=mk*velocityMagnitude*hp/(2.0_DP*nu)
-                xiM1p=MAX(xiM1p,1.0_DP)
-                xiM2p=(4.0_DP*nu*fT*timeIncrement)/(mk*(hp**2.0_DP))
-                xiM2p=MAX(xiM2p,1.0_DP)
-                tauMp=1.0_DP/((xiM1p/(fT*timeIncrement))+((4.0_DP*nu*xiM2p)/(mk*(hp**2.0_DP))))
+              ELSE 
+                CALL FLAG_ERROR("A tau factor has not been defined for the stabilisation type of " &
+                 & //TRIM(NUMBER_TO_VSTRING(stabilisationType,"*",err,error)),err,error,*999)
               ENDIF
 
               !-------------------------------------------------------------------------------------------------
@@ -10374,7 +10329,9 @@ CONTAINS
                             !Diagonal terms
                             IF (i==nh) THEN
                               !Transient
-                              SUM = SUM + rho*PHINS/timeIncrement
+                              IF (equationsSet%SUBTYPE /= EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE) THEN
+                                SUM = SUM + rho*PHINS/timeIncrement
+                              ENDIF
                               !Convective 2: nh component only
                               DO j=1,numberOfDimensions
                                 SUM = SUM + rho*velocity(j)*dPhi_dX_Velocity(ns,j)
@@ -10399,70 +10356,77 @@ CONTAINS
 
                         ! PSPG: Pressure stabilising Petrov-Galerkin
                         IF (mh == numberOfDimensions+1) THEN
-                          wPSPG = 0.0_DP
+                          PSPG = 0.0_DP
                           SUM = 0.0_DP
                           DO i=1,numberOfDimensions
                             SUM = SUM + dPhi_dX_Pressure(ms,i)*jacobianMomentum(i)
                           ENDDO
-                          wPSPG = tauMp*SUM/rho*JGW
+                          PSPG = tauMp*SUM/rho*JGW
 
-                          jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+wPSPG
+                          jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+PSPG
 
                         ! SUPG: Streamline upwind/Petrov-Galerkin
                         ! LSIC: Least-squares incompressibility constraint
                         ELSE
-                          wSUPG=0.0_DP
-                          wLSIC=0.0_DP
-                          wBAZ1=0.0_DP
-                          wBAZ2=0.0_DP
+                          SUPG=0.0_DP
+                          LSIC=0.0_DP
 
                           SUM=0.0_DP
                           IF (nh <= numberOfDimensions) THEN
-                            wSUPG= wSUPG + PHINS*dPhi_dX_Velocity(ms,nh)*residualMomentum(mh)                            
+                            SUPG= SUPG + PHINS*dPhi_dX_Velocity(ms,nh)*residualMomentum(mh)                            
                           ENDIF
                           DO i=1,numberOfDimensions
                             SUM = SUM + velocity(i)*dPhi_dX_Velocity(ms,i)
                           ENDDO
-                          wSUPG = tauMu*(wSUPG + SUM*jacobianMomentum(mh))
+                          SUPG = tauMu*(SUPG + SUM*jacobianMomentum(mh))
 
                           SUM=0.0_DP
                           DO i=1,numberOfDimensions
                             SUM = SUM + dPhi_dX_Velocity(ms,i)
                           ENDDO
-                          wLSIC = tauC*rho*dPhi_dX_Velocity(ms,mh)*jacobianContinuity                        
+                          LSIC = tauC*rho*dPhi_dX_Velocity(ms,mh)*jacobianContinuity                        
 
-                          wBAZ1 = 0.0_DP
-                          IF (nh <= numberOfDimensions) THEN
-                            IF (mh == nh) THEN
-                              DO i=1,numberOfDimensions
-                                wBAZ1= wBAZ1 + dPhi_dX_Velocity(ns,i)*residualMomentum(i)                            
-                              ENDDO
+                          momentumTerm = (SUPG + LSIC)*JGW
+
+                          IF (stabilisationType == 2) THEN
+                            ! Additional terms for RBVM
+                            crossStress=0.0_DP
+                            reynoldsStress=0.0_DP
+                            crossStress = 0.0_DP
+                            IF (nh <= numberOfDimensions) THEN
+                              IF (mh == nh) THEN
+                                DO i=1,numberOfDimensions
+                                  crossStress= crossStress + dPhi_dX_Velocity(ns,i)*residualMomentum(i)                            
+                                ENDDO
+                              ENDIF
                             ENDIF
-                          ENDIF
-                          SUM2=0.0_DP
-                          DO i=1,numberOfDimensions
-                            SUM=0.0_DP
-                            ! dU_mh/dX_i
-                            DO j=1,numberOfDimensions                        
-                              SUM= SUM + velocityDeriv(mh,j)*DXI_DX(j,i)
+                            SUM2=0.0_DP
+                            DO i=1,numberOfDimensions
+                              SUM=0.0_DP
+                              ! dU_mh/dX_i
+                              DO j=1,numberOfDimensions                        
+                                SUM= SUM + velocityDeriv(mh,j)*DXI_DX(j,i)
+                              ENDDO
+                              ! Jm_i*dU_mh/dX_i
+                              SUM2 = SUM2 + jacobianMomentum(i)*SUM
                             ENDDO
-                            ! Jm_i*dU_mh/dX_i
-                            SUM2 = SUM2 + jacobianMomentum(i)*SUM
-                          ENDDO
-                          wBAZ1 = -tauMu*(wBAZ1 + SUM2)                          
-                          
-                          wBAZ2 = 0.0_DP
-                          SUM = 0.0_DP
-                          !Rm_mh.Rm_i.dPhi/dX_i
-                          DO i=1,numberOfDimensions
-                            SUM = SUM + jacobianMomentum(mh)*residualMomentum(i)*dPhi_DX_Velocity(ms,i)
-                            SUM = SUM + jacobianMomentum(i)*residualMomentum(mh)*dPhi_DX_Velocity(ms,i)
-                          ENDDO
-                          wBAZ2 = -tauMu*tauMu*SUM
+                            crossStress = -tauMu*(crossStress + SUM2)                          
 
-                          momentumTerm = (wSUPG + wLSIC)*JGW! + B*wBAZ1 + B*wBAZ2)*JGW
-                          jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)=jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+ &
-                           & momentumTerm
+                            reynoldsStress = 0.0_DP
+                            SUM = 0.0_DP
+                            !Rm_mh.Rm_i.dPhi/dX_i
+                            DO i=1,numberOfDimensions
+                              SUM = SUM + jacobianMomentum(mh)*residualMomentum(i)*dPhi_DX_Velocity(ms,i)
+                              SUM = SUM + jacobianMomentum(i)*residualMomentum(mh)*dPhi_DX_Velocity(ms,i)
+                            ENDDO
+                            reynoldsStress = -tauMu*tauMu*SUM
+
+                            momentumTerm = momentumTerm + (crossStress + reynoldsStress)*JGW
+                          END IF
+                          
+                          ! Add stabilisation to element jacobian
+                          jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)= &
+                           & jacobianMatrix%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+momentumTerm
 
                         ENDIF
                       ENDDO
@@ -10478,48 +10442,53 @@ CONTAINS
                       DO i=1,numberOfDimensions
                         SUM = SUM + dPhi_dX_Pressure(ms,i)*residualMomentum(i)
                       ENDDO
-                      wPSPG = SUM*(tauMp/rho)*JGW
+                      PSPG = SUM*(tauMp/rho)*JGW
                       nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(mhs)= &
-                       & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(mhs) + wPSPG
+                       & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(mhs) + PSPG
 
                     ! SUPG: Streamline upwind/Petrov-Galerkin
                     ! LSIC: Least-squares incompressibility constraint
                     ELSE
-                      wSUPG=0.0_DP
-                      wLSIC=0.0_DP
-                      wBAZ1=0.0_DP
-                      wBAZ2=0.0_DP
+                      SUPG=0.0_DP
+                      LSIC=0.0_DP
 
                       ! u_i*Rm_mh*dv_mh/dx_i
                       SUM=0.0_DP
                       DO i=1,numberOfDimensions
                         SUM = SUM + velocity(i)*dPhi_dX_Velocity(ms,i)
                       ENDDO
-                      wSUPG = tauMu*SUM*residualMomentum(mh)
+                      SUPG = tauMu*SUM*residualMomentum(mh)
 
-                      wLSIC = tauC*rho*dPhi_dX_Velocity(ms,mh)*residualContinuity                        
+                      LSIC = tauC*rho*dPhi_dX_Velocity(ms,mh)*residualContinuity                        
+                      momentumTerm = (SUPG + LSIC)*JGW
 
-                      SUM2 = 0.0_DP
-                      DO i=1,numberOfDimensions                        
-                        SUM = 0.0_DP
-                        ! dU_mh/dX_i
-                        DO j=1,numberOfDimensions                        
-                          SUM= SUM + velocityDeriv(mh,j)*DXI_DX(j,i)
+                      IF (stabilisationType ==2) THEN
+                        ! Additional terms for RBVM
+                        crossStress=0.0_DP
+                        reynoldsStress=0.0_DP
+                        SUM2 = 0.0_DP
+                        DO i=1,numberOfDimensions                        
+                          SUM = 0.0_DP
+                          ! dU_mh/dX_i
+                          DO j=1,numberOfDimensions                        
+                            SUM= SUM + velocityDeriv(mh,j)*DXI_DX(j,i)
+                          ENDDO
+                          ! Rm_i.dU_mh/dX_i
+                          SUM2= SUM2 + residualMomentum(i)*SUM
                         ENDDO
-                        ! Rm_i.dU_mh/dX_i
-                        SUM2= SUM2 + residualMomentum(i)*SUM
-                      ENDDO
-                      wBAZ1= -tauMu*PHIMS*SUM2
+                        crossStress= -tauMu*PHIMS*SUM2
 
-                      wBAZ2 = 0.0_DP
-                      SUM = 0.0_DP
-                      !Rm_mh.Rm_i.dPhi/dX_i
-                      DO i=1,numberOfDimensions
-                        SUM = SUM + dPhi_dX_Velocity(ms,i)*residualMomentum(i)*residualMomentum(mh)
-                      ENDDO
-                      wBAZ2 = -SUM*(tauMu*tauMu)/rho
+                        reynoldsStress = 0.0_DP
+                        SUM = 0.0_DP
+                        !Rm_mh.Rm_i.dPhi/dX_i
+                        DO i=1,numberOfDimensions
+                          SUM = SUM + dPhi_dX_Velocity(ms,i)*residualMomentum(i)*residualMomentum(mh)
+                        ENDDO
+                        reynoldsStress = -SUM*(tauMu*tauMu)/rho
+                        momentumTerm = momentumTerm + (crossStress + reynoldsStress)*JGW
+                      END IF
 
-                      momentumTerm = (wSUPG + wLSIC)*JGW! + B*wBAZ1 + B*wBAZ2)*JGW
+                      ! Add stabilisation to element residual
                       nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(mhs)= &
                        & nonlinearMatrices%ELEMENT_RESIDUAL%VECTOR(mhs) + momentumTerm
                     ENDIF
@@ -10527,9 +10496,7 @@ CONTAINS
                 END DO !ms
               END DO !mh
 
-            ELSE
-              CALL FLAG_ERROR("Equations set field field is not associated.",err,error,*999)
-            ENDIF               
+            ENDIF ! check stabilisation type               
           ELSE
             CALL FLAG_ERROR("Equations equations set field is not associated.",err,error,*999)
           ENDIF               
@@ -11293,6 +11260,8 @@ CONTAINS
         dependentBasis=>decomposition%DOMAIN(meshComponentNumber)%PTR%TOPOLOGY%ELEMENTS% &
           & ELEMENTS(elementIdx)%BASIS
         decompElement=>DECOMPOSITION%TOPOLOGY%ELEMENTS%ELEMENTS(elementIdx)
+        ! Calculate element metrics (courant #, cell Reynolds number)
+        CALL NavierStokes_CalculateElementMetrics(equationsSet,elementIdx,err,error,*999)            
 
         ! C F L  c o n d i t i o n   c h e c k
         ! ------------------------------------
