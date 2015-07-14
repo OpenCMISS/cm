@@ -4979,8 +4979,12 @@ CONTAINS
 
                         !!!-- S T I F F N E S S  M A T R I X --!!!
                         IF (UPDATE_STIFFNESS_MATRIX) THEN
-                          !Momentum Equation, gravitational force
                           IF (mh==1 .AND. nh==2) THEN 
+                            !Momentum Equation, linearisable A0 terms
+                            SUM=-PHINS*PHIMS*(beta*SQRT(A0_PARAM)/RHO_PARAM)*(H_DERIV/H_PARAM + E_DERIV/E_PARAM)*DXI_DX(1,1)
+                            STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)= &
+                              & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
+                            !Momentum Equation, gravitational force
                             SUM=PHINS*PHIMS*G0_PARAM
                             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)= &
                               & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
@@ -5005,8 +5009,8 @@ CONTAINS
                         & (alpha*((Q_VALUE/A_VALUE)**2.0_DP)*A_DERIV)+(beta/RHO_PARAM)* &           !Convective
                         & ((SQRT(A_VALUE)/2.0_DP)*A_DERIV+ &                                        !A  gradient                                              
                         & (A_VALUE/(2.0_DP*SQRT(A0_PARAM))-(A_VALUE**1.5_DP)/A0_PARAM)*A0_DERIV+ &  !A0 gradient                                            
-                        & (A_VALUE/H_PARAM*(SQRT(A_VALUE)-SQRT(A0_PARAM)))*H_DERIV+ &               !H  gradient
-                        & (A_VALUE/E_PARAM*(SQRT(A_VALUE)-SQRT(A0_PARAM)))*E_DERIV))* &             !E  gradient
+                        & (A_VALUE*(SQRT(A_VALUE)))*(H_DERIV/H_PARAM) + &                           !H  gradient (nonlinear part)
+                        & (A_VALUE*(SQRT(A_VALUE)))*(E_DERIV/E_PARAM)))* &                          !E  gradient (nonlinear part)
                         & DXI_DX(1,1)+(Q_VALUE/A_VALUE))*PHIMS                                      !Viscosity
                       NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)= &
                         & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+SUM*JGW
@@ -5633,7 +5637,7 @@ CONTAINS
                             SUM=((alpha*2.0_DP*PHINS*Q_DERIV/A_VALUE +  &
                               & alpha*2.0_DP*Q_VALUE*DPHINS_DXI(1)/A_VALUE+ &
                               & (-2.0_DP)*alpha*Q_VALUE*PHINS*A_DERIV/(A_VALUE**2.0_DP))*DXI_DX(1,1)+ &   !Convective
-                              & ((PHINS/A_VALUE)))*PHIMS                                               !Viscosity
+                              & ((PHINS/A_VALUE)))*PHIMS                                                  !Viscosity
                             JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)= &
                               & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+SUM*JGW
                           END IF
@@ -5645,8 +5649,8 @@ CONTAINS
                               & (-alpha*((Q_VALUE/A_VALUE)**2.0_DP)*DPHINS_DXI(1))+ &                              !Convective
                               & ((0.5_DP*PHINS*(1.0_DP/SQRT(A_VALUE))*A_DERIV+SQRT(A_VALUE)*DPHINS_DXI(1))+ &      !Area Gradient
                               & ((1.0_DP/SQRT(A0_PARAM))-((3.0_DP/(A0_PARAM))*SQRT(A_VALUE)))*(A0_DERIV) + &       !Ref Area Gradient
-                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE)-(SQRT(A0_PARAM)))*H_DERIV/H_PARAM+ &          !Thickness Gradient
-                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE)-(SQRT(A0_PARAM)))*E_DERIV/E_PARAM) &            !Elasticity Gradient
+                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE))*H_DERIV/H_PARAM+ &                             !Thickness Gradient
+                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE))*E_DERIV/E_PARAM) &                             !Elasticity Gradient
                               & *beta/(2.0_DP*RHO_PARAM))*DXI_DX(1,1)+(-PHINS*Q_VALUE/A_VALUE**2.0_DP))*PHIMS      !Viscosity
                             JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)= &
                               & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+SUM*JGW
