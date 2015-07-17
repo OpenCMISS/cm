@@ -1,5 +1,5 @@
 !> \file  
-!> \author David Ladd
+!> \author Soroush Safaei
 !> \brief This module handles the Stree equation routines. These 
 !>  equations are often used in concert with 1D fluid modelling to describe
 !>  wave propagation phenomena, which is particularly useful for models of
@@ -30,7 +30,7 @@
 !> Auckland, the University of Oxford and King's College, London.
 !> All Rights Reserved.
 !>
-!> Contributor(s): Soroush Safaei
+!> Contributor(s): 
 !>
 !> Alternatively, the contents of this file may be used under the terms of
 !> either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -109,7 +109,7 @@ CONTAINS
     
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
-      CASE(EQUATIONS_SET_Stree1D0D_SUBTYPE)                                
+      CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)                                
         SELECT CASE(solutionMethod)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           equationsSet%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
@@ -165,10 +165,10 @@ CONTAINS
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSetSubtype)
-      CASE(EQUATIONS_SET_Stree1D0D_SUBTYPE)
+      CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
         equationsSet%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
         equationsSet%TYPE=EQUATIONS_SET_Stree_EQUATION_TYPE
-        equationsSet%SUBTYPE=EQUATIONS_SET_Stree1D0D_SUBTYPE
+        equationsSet%SUBTYPE=EQUATIONS_SET_STREE1D0D_SUBTYPE
       CASE DEFAULT
         localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSetSubtype,"*",err,error))// &
           & " is not valid for a Stree fluid type of a fluid mechanics equations set class."
@@ -220,14 +220,14 @@ CONTAINS
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
-      CASE(EQUATIONS_SET_Stree1D0D_SUBTYPE)
+      CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
         SELECT CASE(equationsSetSetup%SETUP_TYPE)
         !-----------------------------------------------------------------
         ! I n i t i a l   s e t u p
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Stree1D0D_SUBTYPE)
+          CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               CALL Stree_EquationsSet_SolutionMethodSet(equationsSet, &
@@ -271,7 +271,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Stree1D0D_SUBTYPE)
+          CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               equationsEquationsSetField=>equationsSet%EQUATIONS_SET_FIELD
@@ -311,7 +311,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Stree1D0D_SUBTYPE)
+          CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
             dependentFieldNumberOfVariables=2
             dependentFieldNumberOfComponents=1
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
@@ -434,7 +434,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Stree1D0D_SUBTYPE)
+          CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
             materialsFieldNumberOfVariables=2
             materialsFieldNumberOfComponents=27
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
@@ -541,7 +541,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Stree1D0D_SUBTYPE)
+          CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               equationsMaterials=>equationsSet%MATERIALS
@@ -696,7 +696,7 @@ CONTAINS
     ENDIF
 
     SELECT CASE(equationsSet%SUBTYPE)
-    CASE(EQUATIONS_SET_Stree1D0D_SUBTYPE)
+    CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
       !Set General and Specific Pointers
       equationsMatrices=>equations%EQUATIONS_MATRICES
       equationsMapping=>equations%EQUATIONS_MAPPING
@@ -762,8 +762,8 @@ CONTAINS
         navierstokesSolver=>navierstokesLoop%SOLVERS%SOLVERS(2)%PTR
         IF(ASSOCIATED(controlLoop%PROBLEM)) THEN
           SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
-          CASE(PROBLEM_Stree1D0D_NAVIER_STOKES_SUBTYPE, &
-             & PROBLEM_Stree1D0DAdv_NAVIER_STOKES_SUBTYPE)
+          CASE(PROBLEM_STREE1D0D_NAVIER_STOKES_SUBTYPE, &
+             & PROBLEM_STREE1D0D_ADV_NAVIER_STOKES_SUBTYPE)
             solverEquations=>solver%SOLVER_EQUATIONS
             navierstokesSolverEquations=>navierstokesSolver%SOLVER_EQUATIONS
             IF(ASSOCIATED(solverEquations)) THEN

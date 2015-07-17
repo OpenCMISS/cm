@@ -108,7 +108,7 @@ CONTAINS
     
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
-      CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)                                
+      CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)                                
         SELECT CASE(solutionMethod)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           CALL FLAG_ERROR("Not implemented.",err,error,*999)
@@ -164,10 +164,10 @@ CONTAINS
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSetSubtype)
-      CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
         equationsSet%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
         equationsSet%TYPE=EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE
-        equationsSet%SUBTYPE=EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE
+        equationsSet%SUBTYPE=EQUATIONS_SET_CHARACTERISTIC_SUBTYPE
       CASE DEFAULT
         localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSetSubtype,"*",err,error))// &
           & " is not valid for a Characteristic fluid type of a fluid mechanics equations set class."
@@ -220,14 +220,14 @@ CONTAINS
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
-      CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
         SELECT CASE(equationsSetSetup%SETUP_TYPE)
         !-----------------------------------------------------------------
         ! I n i t i a l   s e t u p
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               CALL Characteristic_EquationsSet_SolutionMethodSet(equationsSet, &
@@ -276,7 +276,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               equationsEquationsSetField=>equationsSet%EQUATIONS_SET_FIELD
@@ -318,7 +318,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Set start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -500,7 +500,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INDEPENDENT_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Set start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -594,7 +594,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             materialsFieldNumberOfVariables=2 ! U type-7 constant / V type-3 variable
             materialsFieldNumberOfComponents1=8
             materialsFieldNumberOfComponents2=3
@@ -705,7 +705,7 @@ CONTAINS
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
           SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               equationsMaterials=>equationsSet%MATERIALS
@@ -884,7 +884,7 @@ CONTAINS
     ENDIF
 
     SELECT CASE(equationsSet%SUBTYPE)
-    CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+    CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
       !Set General and Specific Pointers
       independentField=>equations%INTERPOLATION%INDEPENDENT_FIELD
       materialsField=>equations%INTERPOLATION%MATERIALS_FIELD
@@ -1100,7 +1100,7 @@ CONTAINS
     ENDIF
 
     SELECT CASE(equationsSet%SUBTYPE)
-    CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+    CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
       !Set General and Specific Pointers
       independentField=>equations%EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD
       materialsField=>equations%INTERPOLATION%MATERIALS_FIELD
