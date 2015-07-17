@@ -32457,15 +32457,15 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSField_ParameterSetGetGaussPointDPObj",err,error,*999)
+    CALL Enters("CMISSField_ParameterSetGetGaussPointDPObj",err,error,*999)
 
-    CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(field%FIELD,variableType,fieldSetType,userElementNumber,gaussPointNumber,&
-    & componentNumber,value, err,error,*999)
+    CALL Field_ParameterSetGetGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+      & componentNumber,value,err,error,*999)
 
-    CALL EXITS("CMISSField_ParameterSetGetGaussPointDPObj")
+    CALL Exits("CMISSField_ParameterSetGetGaussPointDPObj")
     RETURN
-999 CALL ERRORS("CMISSField_ParameterSetGetGaussPointDPObj",err,error)
-    CALL EXITS("CMISSField_ParameterSetGetGaussPointDPObj")
+999 CALL Errors("CMISSField_ParameterSetGetGaussPointDPObj",err,error)
+    CALL Exits("CMISSField_ParameterSetGetGaussPointDPObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34214,7 +34214,7 @@ CONTAINS
     IF(ASSOCIATED(region)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
       IF(ASSOCIATED(field)) THEN
-        CALL FieldParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+        CALL Field_ParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
           & componentNumber,value,err,error,*999)
       ELSE
         localError="A field with an user number of "//TRIM(NumberToVstring(fieldUserNumber,"*",err,error))// &
@@ -34256,7 +34256,7 @@ CONTAINS
 
     CALL Enters("CMISSField_ParameterSetUpdateGaussPointIntgObj",err,error,*999)
 
-    CALL FieldParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    CALL Field_ParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
       & componentNumber,value,err,error,*999)
 
     CALL Exits("CMISSField_ParameterSetUpdateGaussPointIntgObj")
@@ -34301,7 +34301,7 @@ CONTAINS
     IF(ASSOCIATED(region)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
       IF(ASSOCIATED(field)) THEN
-        CALL FieldParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+        CALL Field_ParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
           & componentNumber,value,err,error,*999)
       ELSE
         localError="A field with an user number of "//TRIM(NumberToVString(fieldUserNumber,"*",err,error))// &
@@ -34343,7 +34343,7 @@ CONTAINS
 
     CALL Enters("CMISSField_ParameterSetUpdateGaussPointSPObj",err,error,*999)
 
-    CALL FieldParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    CALL Field_ParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
       & componentNumber,value,err,error,*999)
 
     CALL Exits("CMISSField_ParameterSetUpdateGaussPointSPObj")
@@ -34388,7 +34388,7 @@ CONTAINS
     IF(ASSOCIATED(region)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FieldParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+        CALL Field_ParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
           & componentNumber,value,err,error,*999)
       ELSE
         localError="A field with an user number of "//TRIM(NumberToVString(fieldUserNumber,"*",err,error))// &
@@ -34430,7 +34430,7 @@ CONTAINS
 
     CALL Enters("CMISSField_ParameterSetUpdateGaussPointDPObj",err,error,*999)
 
-    CALL FieldParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    CALL Field_ParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
       & componentNumber,value,err,error,*999)
 
     CALL Exits("CMISSField_ParameterSetUpdateGaussPointDPObj")
@@ -34475,7 +34475,7 @@ CONTAINS
     IF(ASSOCIATED(region)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
       IF(ASSOCIATED(field)) THEN
-        CALL FieldParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+        CALL Field_ParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
           & componentNumber,value,err,error,*999)
       ELSE
         localError="A field with an user number of "//TRIM(NumberToVString(fieldUserNumber,"*",err,error))// &
@@ -34517,7 +34517,7 @@ CONTAINS
 
     CALL Enters("CMISSField_ParameterSetUpdateGaussPointLObj",err,error,*999)
 
-    CALL FieldParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    CALL Field_ParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
       & componentNumber,value,err,error,*999)
 
     CALL Exits("CMISSField_ParameterSetUpdateGaussPointLObj")

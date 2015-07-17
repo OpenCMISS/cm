@@ -1050,10 +1050,10 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
    !>Contains the topology information for a decomposition
   TYPE DECOMPOSITION_TOPOLOGY_TYPE
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this topology information.
-    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this decomposition.
-    TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this decomposition.
-    TYPE(DECOMPOSITION_FACES_TYPE), POINTER :: FACES !<The pointer to the topology information for the faces of this decomposition.
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition !<The pointer to the decomposition for this topology information.
+    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: elements !<The pointer to the topology information for the elements of this decomposition.
+    TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: lines !<The pointer to the topology information for the lines of this decomposition.
+    TYPE(DECOMPOSITION_FACES_TYPE), POINTER :: faces !<The pointer to the topology information for the faces of this decomposition.
     TYPE(DecompositionDataPointsType), POINTER :: dataPoints !<The pointer to the topology information for the data of this decomposition.
   END TYPE DECOMPOSITION_TOPOLOGY_TYPE
 
