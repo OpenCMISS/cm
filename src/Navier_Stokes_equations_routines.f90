@@ -4553,8 +4553,6 @@ CONTAINS
             IF(ASSOCIATED(RHS_VECTOR)) UPDATE_RHS_VECTOR=RHS_VECTOR%UPDATE_VECTOR
             IF(ASSOCIATED(NONLINEAR_MATRICES)) UPDATE_NONLINEAR_RESIDUAL=NONLINEAR_MATRICES%UPDATE_RESIDUAL
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-              & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
              & MATERIALS_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           CASE(EQUATIONS_SET_TRANSIENT_RBS_NAVIER_STOKES_SUBTYPE)
             DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
@@ -4668,32 +4666,6 @@ CONTAINS
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE.OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE) THEN
               !Loop over field components
-
-              ! Get interpolated velocity and velocity gradient values for nonlinear term
-              U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
-              U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
-              U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S1)
-              U_DERIV(1,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S2)
-              U_DERIV(2,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S1)
-              U_DERIV(2,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S2)
-              IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
-                U_VALUE(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
-                U_DERIV(3,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S1)
-                U_DERIV(3,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S2)
-                U_DERIV(3,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S3)
-                U_DERIV(1,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S3)
-                U_DERIV(2,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S3) 
-              ELSE
-                U_VALUE(3)=0.0_DP
-                U_DERIV(3,1)=0.0_DP
-                U_DERIV(3,2)=0.0_DP
-                U_DERIV(3,3)=0.0_DP
-                U_DERIV(1,3)=0.0_DP
-                U_DERIV(2,3)=0.0_DP
-              END IF
-              !Here W_VALUES must be ZERO if ALE part of linear matrix
-              W_VALUE=0.0_DP
-
               mhs=0
               DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1
                 MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
@@ -4969,6 +4941,30 @@ CONTAINS
 
               !Calculate nonlinear vector
               IF(UPDATE_NONLINEAR_RESIDUAL) THEN
+                ! Get interpolated velocity and velocity gradient values for nonlinear term
+                U_VALUE(1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
+                U_VALUE(2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
+                U_DERIV(1,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S1)
+                U_DERIV(1,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S2)
+                U_DERIV(2,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S1)
+                U_DERIV(2,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S2)
+                IF(FIELD_VARIABLE%NUMBER_OF_COMPONENTS==4) THEN
+                  U_VALUE(3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
+                  U_DERIV(3,1)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S1)
+                  U_DERIV(3,2)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S2)
+                  U_DERIV(3,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(3,PART_DERIV_S3)
+                  U_DERIV(1,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(1,PART_DERIV_S3)
+                  U_DERIV(2,3)=EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT(FIELD_VAR_TYPE)%PTR%VALUES(2,PART_DERIV_S3) 
+                ELSE
+                  U_VALUE(3)=0.0_DP
+                  U_DERIV(3,1)=0.0_DP
+                  U_DERIV(3,2)=0.0_DP
+                  U_DERIV(3,3)=0.0_DP
+                  U_DERIV(1,3)=0.0_DP
+                  U_DERIV(2,3)=0.0_DP
+                END IF
+                !Here W_VALUES must be ZERO if ALE part of linear matrix
+                W_VALUE=0.0_DP
                 mhs=0
                 DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
                   MESH_COMPONENT1=FIELD_VARIABLE%COMPONENTS(mh)%MESH_COMPONENT_NUMBER
@@ -5454,8 +5450,6 @@ CONTAINS
                 FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
                 LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
                 IF(ASSOCIATED(JACOBIAN_MATRIX)) UPDATE_JACOBIAN_MATRIX=JACOBIAN_MATRIX%UPDATE_JACOBIAN
-                CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
-                 & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                 CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
                  & MATERIALS_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_TRANSIENT_RBS_NAVIER_STOKES_SUBTYPE)
@@ -6314,7 +6308,7 @@ CONTAINS
                         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Updating independent field and boundary nodes from "//inputFile, &
                           & ERR,ERROR,*999)
                         OPEN(UNIT=10, FILE=inputFile, STATUS='OLD')                  
-                        !Loop over local nodes and update independent field and (and dependent field for any FixedFitted nodes)
+                        !Loop over local nodes and update independent field and (and dependent field for any FIXED_FITTED nodes)
                         previousNodeNumber=0
                         DO nodeIdx=1,numberOfNodes
                           userNodeNumber=DOMAIN_NODES%NODES(nodeIdx)%USER_NUMBER
@@ -6339,7 +6333,7 @@ CONTAINS
                               CALL FIELD_COMPONENT_DOF_GET_USER_NODE(DEPENDENT_FIELD,dependentVariableType,1,1,userNodeNumber, & 
                                 & componentIdx,localDof,globalDof,err,error,*999)
                               BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE%CONDITION_TYPES(globalDof)
-                              IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FixedFitted) THEN
+                              IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_FITTED) THEN
                                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,dependentVariableType, &
                                   & FIELD_VALUES_SET_TYPE,localDof,VALUE,ERR,ERROR,*999)
                               END IF
@@ -6882,7 +6876,7 @@ CONTAINS
                                                 ! Update dependent field value if this is a splint BC
                                                 BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
                                                   & CONDITION_TYPES(dependentDof)
-                                                IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FixedFitted) THEN                                            
+                                                IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_FITTED) THEN                                            
                                                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,dependentVariableType, &
                                                     & FIELD_VALUES_SET_TYPE,dependentDof,VALUE,ERR,ERROR,*999)
                                                 END IF
@@ -11101,6 +11095,8 @@ CONTAINS
             !Calculate point metrics 
             pointMetrics=>equations%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_VOLUME_TYPE,pointMetrics,err,error,*999)
+
+            ! TODO: this sort of thing should be moved to a more general Basis_FaceNormalGet (or similar) routine
             !Get face normal projection
             DO componentIdx=1,dependentVariable%NUMBER_OF_COMPONENTS-1
               normalProjection(componentIdx)=DOT_PRODUCT(pointMetrics%GU(normalComponentIdx,:),pointMetrics%DX_DXI(componentIdx,:))
@@ -11162,6 +11158,7 @@ CONTAINS
             dUDXi(1:3,3)=dependentInterpolatedPoint%VALUES(1:3,PART_DERIV_S3)
             pressure=dependentInterpolatedPoint%values(4,NO_PART_DERIV) 
 
+            ! Keep this here for now: not using for Pressure BC but may want for traction BC
             ! ! Calculate viscous term
             ! dXiDX=0.0_DP
             ! dXiDX=pointMetrics%DXI_DX(:,:)
@@ -11474,6 +11471,7 @@ CONTAINS
               !Interpolated values at gauss point
               velocityGauss=dependentInterpolatedPoint%values(1:3,NO_PART_DERIV)
 
+              ! TODO: this sort of thing should be moved to a more general Basis_FaceNormalGet (or similar) routine
               elementBaseDofIdx=0
               SELECT CASE(dependentBasis%TYPE)
               CASE(BASIS_LAGRANGE_HERMITE_TP_TYPE)
@@ -12679,7 +12677,7 @@ CONTAINS
 
             ! N o n - r e f l e c t i n g   B o u n d a r y
             ! ----------------------------------------------------
-            CASE(BOUNDARY_CONDITION_FixedNonreflecting)
+            CASE(BOUNDARY_CONDITION_FIXED_NONREFLECTING)
               ! Outlet - set W2 to 0, get W1 from the extrapolated value
               IF(normalWave(1,1) > 0.0_DP) THEN
                 CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -12699,7 +12697,7 @@ CONTAINS
 
             ! C o u p l e d   C e l l M L  ( 0 D )   B o u n d a r y
             ! ------------------------------------------------------------
-            CASE(BOUNDARY_CONDITION_FixedCellml)
+            CASE(BOUNDARY_CONDITION_FIXED_CELLML)
               !Get qCellML used in pCellML calculation
               CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & versionIdx,derivativeIdx,nodeIdx,1,QCellML,err,error,*999)                    
@@ -12732,7 +12730,7 @@ CONTAINS
 
             ! S t r u c t u r e d   T r e e   B o u n d a r y
             ! ------------------------------------------------------------
-            CASE(BOUNDARY_CONDITION_FixedStree)
+            CASE(BOUNDARY_CONDITION_FIXED_STREE)
               NULLIFY(Impedance)
               NULLIFY(Flow)
               !Get qCellML used in pCellML calculation
@@ -12774,7 +12772,7 @@ CONTAINS
                & BOUNDARY_CONDITION_FIXED, &
                & BOUNDARY_CONDITION_FIXED_INLET, &
                & BOUNDARY_CONDITION_FIXED_OUTLET, &
-               & BOUNDARY_CONDITION_FixedFitted)
+               & BOUNDARY_CONDITION_FIXED_FITTED)
               ! Do nothing
 
             CASE DEFAULT
