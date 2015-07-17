@@ -4428,7 +4428,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
     INTEGER(INTG) :: ng,mh,mhs,mi,ms,nh,nhs,ni,ns,nhs_max,mhs_max,nhs_min,mhs_min,xv,out
-    INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT1,MESH_COMPONENT2,MESH_COMPONENT_NUMBER,userElementNumber
+    INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT1,MESH_COMPONENT2,MESH_COMPONENT_NUMBER
     INTEGER(INTG) :: nodeIdx,xiIdx,coordIdx,derivativeIdx,versionIdx,elementVersionNumber,componentIdx
     INTEGER(INTG) :: numberOfVersions,nodeNumber,numberOfElementNodes,numberOfParameters,firstNode,lastNode
     REAL(DP) :: JGW,SUM,X(3),DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS,momentum,mass,QUpwind,AUpwind,pExternal
@@ -4576,7 +4576,6 @@ CONTAINS
             &  EQUATIONS_SET_CONSTITUTIVE_MU_NAVIER_STOKES_SUBTYPE)
             DECOMPOSITION => DEPENDENT_FIELD%DECOMPOSITION
             MESH_COMPONENT_NUMBER = DECOMPOSITION%MESH_COMPONENT_NUMBER
-            userElementNumber=DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS%LOCAL_TO_GLOBAL_MAP(ELEMENT_NUMBER)
             DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
             STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
             DAMPING_MATRIX=>DYNAMIC_MATRICES%MATRICES(2)%PTR
@@ -4652,8 +4651,8 @@ CONTAINS
               ! Note the constant from the U_VARIABLE is a scale factor
               muScale = MU_PARAM
               ! Get the gauss point based value returned from the CellML solver
-              CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & userElementNumber,ng,1,MU_PARAM,ERR,ERROR,*999)
+              CALL Field_ParameterSetGetLocalGaussPoint(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                & ng,ELEMENT_NUMBER,1,MU_PARAM,ERR,ERROR,*999)
               MU_PARAM=MU_PARAM*muScale
             ENDIF
 
@@ -5363,7 +5362,7 @@ CONTAINS
     INTEGER(INTG) :: ng,mh,mhs,mi,ms,nh,nhs,ni,ns,x,xiIdx,coordIdx
     INTEGER(INTG) :: derivativeIdx,elementVersionNumber,firstNode,lastNode,nodeIdx,nodeNumber
     INTEGER(INTG) :: numberOfElementNodes,numberOfParameters,numberOfVersions,componentIdx
-    INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT_NUMBER,MESH_COMPONENT1,MESH_COMPONENT2,userElementNumber
+    INTEGER(INTG) :: FIELD_VAR_TYPE,MESH_COMPONENT_NUMBER,MESH_COMPONENT1,MESH_COMPONENT2
     REAL(DP) :: JGW,SUM,DXI_DX(3,3),DPHIMS_DXI(3),DPHINS_DXI(3),PHIMS,PHINS
     REAL(DP) :: U_VALUE(3),W_VALUE(3),U_DERIV(3,3),Q_VALUE,Q_DERIV,A_VALUE,A_DERIV,alpha,beta,normal,normalWave
     REAL(DP) :: MU_PARAM,RHO_PARAM,A0_PARAM,A0_DERIV,E_PARAM,E_DERIV,H_PARAM,H_DERIV,mass,momentum1,momentum2,muScale
@@ -5474,8 +5473,6 @@ CONTAINS
                 &  EQUATIONS_SET_CONSTITUTIVE_MU_NAVIER_STOKES_SUBTYPE)
                 DECOMPOSITION => DEPENDENT_FIELD%DECOMPOSITION
                 MESH_COMPONENT_NUMBER = DECOMPOSITION%MESH_COMPONENT_NUMBER
-                userElementNumber=DECOMPOSITION%DOMAIN(MESH_COMPONENT_NUMBER)%PTR%MAPPINGS%ELEMENTS% &
-                 & LOCAL_TO_GLOBAL_MAP(ELEMENT_NUMBER)
                 NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                 NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
                 JACOBIAN_MATRIX=>NONLINEAR_MATRICES%JACOBIANS(1)%PTR
@@ -5541,8 +5538,8 @@ CONTAINS
                 ! Note the constant from the U_VARIABLE is a scale factor
                 muScale = MU_PARAM
                 ! Get the gauss point based value returned from the CellML solver
-                CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & userElementNumber,ng,1,MU_PARAM,ERR,ERROR,*999)
+                CALL Field_ParameterSetGetLocalGaussPoint(MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
+                  & ng,ELEMENT_NUMBER,1,MU_PARAM,ERR,ERROR,*999)
                 MU_PARAM=MU_PARAM*muScale
               ENDIF
 
@@ -10666,7 +10663,7 @@ CONTAINS
     INTEGER(INTG) :: numberOfDimensions,mh
     INTEGER(INTG) :: gaussNumber
     INTEGER(INTG) :: i,j,ms
-    INTEGER(INTG) :: numberOfElementParameters,userElementNumber
+    INTEGER(INTG) :: numberOfElementParameters
     INTEGER(INTG) :: LWORK,INFO
     REAL(DP) :: cellReynoldsNumber,cellCourantNumber,timeIncrement
     REAL(DP) :: dPhi_dX_Velocity(27,3)
@@ -10712,8 +10709,6 @@ CONTAINS
           basisVelocity=>dependentField%DECOMPOSITION%DOMAIN(meshComponent1)%PTR% &
             & TOPOLOGY%ELEMENTS%ELEMENTS(elementNumber)%BASIS
           quadratureVelocity=>basisVelocity%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-          userElementNumber=dependentField%DECOMPOSITION%DOMAIN(meshComponent1)%PTR%MAPPINGS%ELEMENTS% &
-           & LOCAL_TO_GLOBAL_MAP(elementNumber)
 
           IF(ASSOCIATED(equationsEquationsSetField)) THEN
             equationsSetField=>equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD
@@ -10742,8 +10737,8 @@ CONTAINS
                   ! Note the constant from the U_VARIABLE is a scale factor
                   muScale = mu
                   ! Get the gauss point based value returned from the CellML solver
-                  CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(equationsSet%MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,userElementNumber,gaussNumber,1,mu,err,error,*999)
+                  CALL Field_ParameterSetGetLocalGaussPoint(equationsSet%MATERIALS%MATERIALS_FIELD,FIELD_V_VARIABLE_TYPE, &
+                    & FIELD_VALUES_SET_TYPE,gaussNumber,elementNumber,1,mu,err,error,*999)
                   mu=mu*muScale
                 ENDIF
    
@@ -12286,8 +12281,8 @@ CONTAINS
             ELSE
               shearRate=SQRT(-4.0_DP*secondInvariant)
             ENDIF
-            CALL FIELD_PARAMETER_SET_UPDATE_GAUSS_POINT(materialsField,FIELD_V_VARIABLE_TYPE, &
-              & FIELD_VALUES_SET_TYPE,userElementNumber,gaussIdx,2,shearRate,ERR,ERROR,*999)
+            CALL Field_ParameterSetUpdateLocalGaussPoint(materialsField,FIELD_V_VARIABLE_TYPE, &
+              & FIELD_VALUES_SET_TYPE,gaussIdx,localElementNumber,2,shearRate,ERR,ERROR,*999)
 
           END DO !gaussIdx
         ENDIF ! check for ghost element
