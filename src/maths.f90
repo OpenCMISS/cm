@@ -229,9 +229,7 @@ MODULE MATHS
 
   PUBLIC CROSS_PRODUCT,CrossProduct,D_CROSS_PRODUCT,dCrossProduct,Determinant,Eigenvalue,Eigenvector,IdentityMatrix,Invert, &
     & L2Norm,MATRIX_PRODUCT,MatrixProduct,MATRIX_TRANSPOSE,MatrixTranspose,Normalise,NORM_CROSS_PRODUCT,NormCrossProduct, &
-    & SOLVE_SMALL_LINEAR_SYSTEM,SolveSmallLinearSystem,Coth,spline_cubic_set,s3_fs,spline_cubic_val,J_DPC,fft,ifft, &
-	& MATRIX_VECTOR_PRODUCT
-  
+    & SOLVE_SMALL_LINEAR_SYSTEM,SolveSmallLinearSystem,Coth,spline_cubic_set,s3_fs,spline_cubic_val,MATRIX_VECTOR_PRODUCT
   
   
 CONTAINS
@@ -2249,7 +2247,7 @@ CONTAINS
   !
 
   !> Calculates second derivatives of a cubic spline function for a tabulated function y(x). Call  spline_cubic_val to evaluate at t values.
-  !> algorithm adapted from John Burkhardt's spline_cubic_set routine from the SPLINE package (https://orion.math.iastate.edu/burkardt/f_src/spline/spline.html)
+  !> algorithm adapted from John Burkhardt's spline_cubic_set routine from the SPLINE package (http://people.sc.fsu.edu/~jburkardt/f_src/spline/spline.html)
   SUBROUTINE spline_cubic_set (n, t, y, ibcbeg, ybcbeg, ibcend, ybcend, ypp, err, error, *)
 
     !Argument variables
@@ -2352,7 +2350,7 @@ CONTAINS
   !
 
   !> S3_FS factors and solves a tridiagonal linear system.
-  !> algorithm adapted from John Burkhardt's s3_fs routine from the SPLINE package (https://orion.math.iastate.edu/burkardt/f_src/spline/spline.html)
+  !> algorithm adapted from John Burkhardt's s3_fs routine from the SPLINE package (http://people.sc.fsu.edu/~jburkardt/f_src/spline/spline.html)
   SUBROUTINE s3_fs ( a1, a2, a3, n, b, x, err, error, *)
 
     !Argument variables
@@ -2373,7 +2371,7 @@ CONTAINS
 
     !  The diagonal entries can't be zero.
     DO i = 1, n
-      IF ( a2(i) == 0.0E+00 ) then
+      IF ( ABS(a2(i)) < ZERO_TOLERANCE ) then
         localError="Zero diagonal entry in tridiagonal linear system."
         CALL FLAG_ERROR(localError,ERR,ERROR,*999)
       ENDIF
@@ -2404,7 +2402,7 @@ CONTAINS
   !
   
   !> Evaluates a cubic spline at a specified point. First call spline_cubic_set to calculate derivatives
-  !> algorithm adapted from John Burkhardt's spline_cubic_val routine from the SPLINE package (https://orion.math.iastate.edu/burkardt/f_src/spline/spline.html)
+  !> algorithm adapted from John Burkhardt's spline_cubic_val routine from the SPLINE package (http://people.sc.fsu.edu/~jburkardt/f_src/spline/spline.html)
   SUBROUTINE spline_cubic_val (n, t, y, ypp, tval, yval, ypval, yppval, err, error, *)
 
     !Argument variables
@@ -2467,316 +2465,6 @@ CONTAINS
     CALL EXITS("spline_cubic_val")
     RETURN 1
   END SUBROUTINE spline_cubic_val
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE J_DPC (z,J0,J1,err,error,*)
-
-    !Argument variables
-    COMPLEX(DPC), INTENT(IN) :: z
-    COMPLEX(DPC), INTENT(OUT) :: J0,J1
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: error
-    !Local Variables
-    REAL(DP) :: a0
-    REAL(DP),SAVE,DIMENSION(12) :: a = (/ &
-      -0.703125E-01,0.112152099609375, &
-      -0.5725014209747314,0.6074042001273483E+01, &
-      -0.1100171402692467E+03,0.3038090510922384E+04, &
-      -0.1188384262567832E+06,0.6252951493434797E+07, &
-      -0.4259392165047669E+09,0.3646840080706556E+11, &
-      -0.3833534661393944E+13,0.4854014686852901E+15 /)
-    REAL(DP),SAVE,DIMENSION(12) :: a1 = (/ &
-      0.1171875,-0.144195556640625, &
-      0.6765925884246826,-0.6883914268109947E+01, &
-      0.1215978918765359E+03,-0.3302272294480852E+04, &
-      0.1276412726461746E+06,-0.6656367718817688E+07, &
-      0.4502786003050393E+09,-0.3833857520742790E+11, &
-      0.4011838599133198E+13,-0.5060568503314727E+15 /)
-    REAL(DP),SAVE,DIMENSION(12) :: b = (/ &
-      0.732421875E-01,-0.2271080017089844, &
-      0.1727727502584457E+01,-0.2438052969955606E+02, &
-      0.5513358961220206E+03,-0.1825775547429318E+05, &
-      0.8328593040162893E+06,-0.5006958953198893E+08, &
-      0.3836255180230433E+10,-0.3649010818849833E+12, &
-      0.4218971570284096E+14,-0.5827244631566907E+16 /)
-    REAL(DP),SAVE,DIMENSION(12) :: b1 = (/ &
-      -0.1025390625,0.2775764465332031, &
-      -0.1993531733751297E+01,0.2724882731126854E+02, &
-      -0.6038440767050702E+03,0.1971837591223663E+05, &
-      -0.8902978767070678E+06,0.5310411010968522E+08, &
-      -0.4043620325107754E+10,0.3827011346598605E+12, &
-      -0.4406481417852278E+14,0.6065091351222699E+16 /)
-    COMPLEX(DPC) :: ci,cp,cp0,cp1,cq0,cq1,cr,cs,ct1,ct2,cu,z1,z2
-    INTEGER(INTG) :: k,k0
-    REAL(DP) :: el,rp2,w0,w1
-
-    CALL ENTERS("J_DPC",err,error,*999)
-
-    rp2 = 2.0/PI
-    el = 0.5772156649015329
-    ci = CMPLX(0.0,1.0)
-    a0 = ABS(z)
-    z2 = z*z
-    z1 = z
-
-    IF (a0 .EQ. 0.0) THEN
-      J0 = CMPLX(1.0,0.0)
-      J1 = CMPLX(0.0,0.0)
-      RETURN
-    ENDIF
-    IF (REAL(z,DP)<0.0) THEN
-      z1 = -z
-    ENDIF
-    IF (a0 .LE. 12.0) THEN
-      J0 = CMPLX(1.0,0.0)
-      cr = CMPLX(1.0,0.0)
-      DO k = 1,40
-        cr = -0.25*cr*z2/(k*k)
-        J0 = J0+cr
-        IF (ABS(cr) < ABS(J0)*1.0e-15) THEN
-          EXIT
-        ENDIF
-      ENDDO
-      J1 = CMPLX(1.0,0.0)
-      cr = CMPLX(1.0,0.0)
-      DO k = 1,40
-        cr = -0.25*cr*z2/(k*(k+1.0))
-        J1 = J1+cr
-        IF (ABS(cr) < ABS(J1)*1.0e-15) THEN
-          EXIT
-        ENDIF
-      ENDDO
-      J1 = 0.5*z1*J1
-      w0 = 0.0
-      cr = CMPLX(1.0,0.0)
-      cs = CMPLX(0.0,0.0)
-      DO k = 1,40
-        w0 = w0+1.0/k
-        cr = -0.25*cr/(k*k)*z2
-        cp = cr*w0
-        cs = cs+cp
-        IF (ABS(cp) < ABS(cs)*1.0e-15) THEN
-          EXIT
-        ENDIF
-      ENDDO
-      w1 = 0.0
-      cr = CMPLX(1.0,0.0)
-      cs = CMPLX(1.0,0.0)
-      DO k = 1,40
-        w1 = w1+1.0/k
-        cr = -0.25*cr/(k*(k+1))*z2
-        cp = cr*(2.0*w1+1.0/(k+1.0))
-        cs = cs+cp
-        IF (ABS(cp) < ABS(cs)*1.0e-15) THEN
-          EXIT
-        ENDIF
-      ENDDO
-    ELSE
-      IF (a0 < 35.0) THEN
-        k0 = 12
-      ELSEIF (a0 < 50.0) THEN
-        k0 = 10
-      ELSE
-        k0 = 8
-      ENDIF
-      ct1 = z1-0.25*PI
-      cp0 = CMPLX(1.0,0.0)
-      DO k = 1,k0
-        cp0 = cp0+a(k)*z1**(-2*k)
-      ENDDO
-      cq0 = -0.125/z1
-      DO k = 1,k0
-        cq0 = cq0+b(k)*z1**(-2*k-1)
-      ENDDO
-      cu = SQRT(rp2/z1)
-      J0 = cu*(cp0*COS(ct1)-cq0*SIN(ct1))
-      ct2 = z1-0.75*PI
-      cp1 = CMPLX(1.0,0.0)
-      DO k = 1,k0
-        cp1 = cp1+a1(k)*z1**(-2*k)
-      ENDDO
-      cq1 = 0.375/z1
-      DO k = 1,k0
-        cq1 = cq1+b1(k)*z1**(-2*k-1)
-      ENDDO
-      J1 = cu*(cp1*COS(ct2)-cq1*SIN(ct2))
-    ENDIF
-    IF (REAL(z,DP) < 0.0) THEN
-      J1 = -J1
-    ENDIF
-
-    CALL EXITS("J_DPC")
-    RETURN
-999 CALL ERRORS("J_DPC",err,error)
-    CALL EXITS("J_DPC")
-    RETURN 1
-  END SUBROUTINE J_DPC
-
-  !
-  !================================================================================================================================
-  !
-  
-  SUBROUTINE FFT (A,N,err,error,*)
-
-    !Argument variables
-    INTEGER(INTG) :: N             !Number of data points
-    COMPLEX(DPC) :: A(N)           !Complex transform data vector
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: error
-    !Local Variables
-    INTEGER(INTG) :: M,NN,N_half,Nm1,i,j,k,ke,ke1,ip
-    REAL(DP) :: angle
-    COMPLEX(DPC) :: U,W,T
- 
-    CALL ENTERS("FFT",err,error,*999)
-
-    !Determine size of input data and check that it is power of 2
-    M = INT(ALOG(FLOAT(N))/ALOG(2.0)+0.5)  !N=2^M
-    NN = INT(2.0**M+0.5)
-    IF (N .NE. NN) THEN
-      WRITE(*,*) "ERROR in FFT(): Number of points not power of 2"
-      RETURN
-    ENDIF
-    N_half = N/2
-    Nm1 = N-1
-    !Bit-scramble the input data by swapping elements
-    j=1
-    DO i=1,Nm1
-      IF (i .LT. j) THEN
-        !Swap elements i and j of RealA and ImagA
-        T = A(j)
-        A(j) = A(i)
-        A(i) = T
-      ENDIF
-      k = N_half
-      !While loop
-1     IF (k .GE. j) GOTO 2
-        j = j-k
-        k = k/2
-        GOTO 1
-2     CONTINUE
-      j = j+k
-    ENDDO
-    !Loop over number of layers,M=log_2(N)
-    DO k=1,M
-      ke = 2**k
-      ke1 = ke/2
-      !Compute lowest, non-zero power of W for this layer
-      U = (1.0,0.0)
-      angle = -PI/ke1
-      W = CMPLX(COS(angle),SIN(angle))
-      !Loop over elements in binary order (outer loop)
-      DO j=1,ke1
-        !Loop over elements in binary order (inner loop)
-        DO i=j,N,ke
-          ip = i+ke1
-          !Compute the y(.)*W^. factor for this element
-          T = A(ip)*U
-          !Update the current element and its binary pair
-          A(ip) = A(i)-T
-          A(i)  = A(i)+T
-        ENDDO
-        !Increment the power of W for next set of elements
-        U = U*W
-      ENDDO
-    ENDDO
-
-    CALL EXITS("FFT")
-    RETURN
-999 CALL ERRORS("FFT",err,error)
-    CALL EXITS("FFT")
-    RETURN 1
-  END SUBROUTINE FFT
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE IFFT (A,N,B,err,error,*)
-
-    !Argument variables
-    COMPLEX(DPC) :: A(N)                       !Complex transform data vector
-    INTEGER(INTG), INTENT(IN) :: N             !Number of data points
-    REAL(DP), INTENT(OUT) :: B(N)              !Real transform data vector
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: error
-    !Local Variables
-    INTEGER(INTG) :: i
-
-    CALL ENTERS("IFFT",err,error,*999)
-
-    !Take complex conjugate of input transform
-    DO i=1,N
-      !Complex conjugate
-      A(i) = CONJG(A(i))
-    ENDDO
-    !Evaluate fast fourier transform
-    CALL FFT(A,N,err,error,*999)
-    !Take complex conjugate and normalize by N
-    DO i=1,N
-      !Normalize and complex conjugate
-      B(i) = REAL(CONJG(A(i))/N)
-    ENDDO
-
-    CALL EXITS("IFFT")
-    RETURN
-999 CALL ERRORS("IFFT",err,error)
-    CALL EXITS("IFFT")
-    RETURN 1
-  END SUBROUTINE IFFT
-
-  !
-  !================================================================================================================================
-  !
-
-!  ! In place Cooley-Tukey FFT
-!  RECURSIVE SUBROUTINE FFT (x,err,error,*)
-!
-!    !Argument variables
-!    COMPLEX(DPC), DIMENSION(:), INTENT(INOUT)  :: x
-!    INTEGER(INTG), INTENT(OUT) :: err
-!    TYPE(VARYING_STRING), INTENT(OUT) :: error
-!    !Local Variables
-!    COMPLEX(DPC), DIMENSION(:), ALLOCATABLE :: even, odd
-!    COMPLEX(DPC) :: t
-!    INTEGER(INTG) :: N,i
-! 
-!    CALL ENTERS("FFT",err,error,*999)
-!
-!    N=SIZE(x)
-!
-!    IF(N .LE. 1) RETURN
-!
-!    ALLOCATE(odd((N+1)/2))
-!    ALLOCATE(even(N/2))
-!
-!    !Divide
-!    odd =x(1:N:2)
-!    even=x(2:N:2)
-!
-!    !Conquer
-!    CALL FFT(odd,err,error,*999)
-!    CALL FFT(even,err,error,*999)
-!
-!    !Combine
-!    DO i=1,N/2
-!       t=EXP(CMPLX(0.0_DP,-2.0_DP*PI*REAL(i-1,DP)/REAL(N,DP),DP))*even(i)
-!       x(i)     = odd(i) + t
-!       x(i+N/2) = odd(i) - t
-!    ENDDO
-!
-!    DEALLOCATE(odd)
-!    DEALLOCATE(even)
-!
-!    CALL EXITS("FFT")
-!    RETURN
-!999 CALL ERRORS("FFT",err,error)
-!    CALL EXITS("FFT")
-!    RETURN 1
-!  END SUBROUTINE FFT
 
   !
   !================================================================================================================================
