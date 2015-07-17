@@ -489,12 +489,12 @@ MODULE EQUATIONS_SET_CONSTANTS
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1=11 !<u=tbd
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE=12 !< fully developed 2D channel flow (parabolic), u=u_max(1-y^2/H^2)
   INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN=13 !< 2D dynamic nonlinear Taylor-Green vortex decay
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta=14 !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid=15 !< A sinusoidal flow waveform
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateConstant=16 !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile=17 !< Spline integration of dependent values specified in a file
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen=18 !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateHeart=19 !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_AORTA=14 !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID=15 !< A sinusoidal flow waveform
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_CONSTANT=16 !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_SPLINT_FROM_FILE=17 !< Spline integration of dependent values specified in a file
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_OLUFSEN=18 !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_HEART=19 !< A fourier decomposed flow waveform for boundary conditions
   !>@}
   !> \addtogroup EQUATIONS_SET_CONSTANTS_DarcyAnalyticFunctionTypes EQUATIONS_SET_CONSTANTS:DarcyAnalyticFunctionTypes
   !> \brief The analytic function types for a Darcy equation

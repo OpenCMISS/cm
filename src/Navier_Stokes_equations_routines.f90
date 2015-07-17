@@ -1557,10 +1557,10 @@ CONTAINS
                             !Set analytic function type
                             EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE
                             NUMBER_OF_ANALYTIC_COMPONENTS=4
-                          CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta, &
-                             & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen, &
-                             & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateHeart, &
-                             & EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile)
+                          CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_AORTA, &
+                             & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_OLUFSEN, &
+                             & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_HEART, &
+                             & EQUATIONS_SET_NAVIER_STOKES_EQUATION_SPLINT_FROM_FILE)
                             !Check that this is a 1D equations set
                             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE .OR. &
                               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COUPLED1D0D_NAVIER_STOKES_SUBTYPE .OR. &
@@ -1576,7 +1576,7 @@ CONTAINS
                                 & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))
                               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                             END IF
-                          CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
+                          CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID)
                             !Check that domain is 2D/3D
                             IF(NUMBER_OF_DIMENSIONS<2 .OR. NUMBER_OF_DIMENSIONS>3) THEN
                               LOCAL_ERROR="The number of geometric dimensions of "// &
@@ -1684,7 +1684,7 @@ CONTAINS
                                 CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                                   & componentIdx,GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                                 IF(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE == &
-                                 & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid) THEN
+                                 & EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID) THEN
                                   CALL FIELD_COMPONENT_INTERPOLATION_SET(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                                     & componentIdx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                                 ELSE
@@ -1773,7 +1773,7 @@ CONTAINS
                           & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
                         CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_VALUES_SET_TYPE,2,0.0_DP,ERR,ERROR,*999)
-                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID)
                         !Default the analytic parameter values to 0
                         NUMBER_OF_ANALYTIC_COMPONENTS = 10
                         DO componentIdx = 1,NUMBER_OF_ANALYTIC_COMPONENTS
@@ -1791,10 +1791,10 @@ CONTAINS
                        & EQUATIONS_SET_1DTRANSIENT_ADV_NAVIER_STOKES_SUBTYPE, &
                        & EQUATIONS_SET_COUPLED1D0D_ADV_NAVIER_STOKES_SUBTYPE)
                       SELECT CASE(EQUATIONS_ANALYTIC%ANALYTIC_FUNCTION_TYPE)
-                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta, &
-                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen, &
-                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateHeart, &
-                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile)
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_AORTA, &
+                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_OLUFSEN, &
+                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_HEART, &
+                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_SPLINT_FROM_FILE)
                         !Default the analytic parameter period values to 0
                         CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_VALUES_SET_TYPE,1,0.0_DP,ERR,ERROR,*999)
@@ -6351,7 +6351,7 @@ CONTAINS
                   ! Analytic equations
                   IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                     !Standard analytic functions
-                    IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid) THEN
+                    IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID) THEN
                       ! Update analytic time value with current time
                       EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME=CURRENT_TIME
                       !Calculate analytic values
@@ -6784,8 +6784,8 @@ CONTAINS
                     EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
                     IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                       SELECT CASE(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE)
-                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta, &
-                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen)
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_AORTA, &
+                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_OLUFSEN)
                         EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME=CURRENT_TIME
                         BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
                         IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
@@ -6794,7 +6794,7 @@ CONTAINS
                         ELSE
                           CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
                         END IF
-                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_SplintFromFile)
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_SPLINT_FROM_FILE)
                         ! Perform spline interpolation of values from a file
                         EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME=CURRENT_TIME
                         BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
@@ -6902,7 +6902,7 @@ CONTAINS
                             END IF
                           END IF
                         END DO !variableIdx
-                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateHeart)
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_HEART)
                         ! Using heart lumped parameter model for input
                         EQUATIONS_SET%ANALYTIC%ANALYTIC_TIME=CURRENT_TIME
                         BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
@@ -8689,7 +8689,7 @@ CONTAINS
 
                       ! --- Set velocity boundary conditions with analytic value ---
                       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN, &
-                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
+                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID)
                         ! Get geometric position info for this node
                         DO dimensionIdx=1,numberOfDimensions
                           local_ny=geometricVariable%COMPONENTS(dimensionIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
@@ -8701,12 +8701,12 @@ CONTAINS
                           globalDerivativeIndex=domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)% &
                             & GLOBAL_DERIVATIVE_INDEX
                           IF(componentIdx<=numberOfXi .OR. &
-                            &  analyticFunctionType==EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid) THEN
+                            &  analyticFunctionType==EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID) THEN
                             DO versionIdx=1,domainNodes%NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%numberOfVersions
                               ! Get global and local dof indices
                               CALL FIELD_COMPONENT_DOF_GET_USER_NODE(dependentField,variableType,versionIdx,derivativeIdx, &
                                & userNodeNumber,componentIdx,localDof,globalDof,err,error,*999)
-                              IF(analyticFunctionType==EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid) THEN
+                              IF(analyticFunctionType==EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID) THEN
                                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(analyticField,FIELD_U_VARIABLE_TYPE, &
                                  & numberOfParameters,err,error,*999)
                                 DO parameterIdx=1,numberOfParameters
@@ -8751,8 +8751,8 @@ CONTAINS
                         END DO !derivativeIdx
 
                       ! --- Set Flow rate boundary conditions with analytic value ---
-                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta, &
-                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen)
+                      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_AORTA, &
+                         & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_OLUFSEN)
                         ! Get geometric position info for this node
                         DO dimensionIdx=1,numberOfDimensions
                           local_ny=geometricVariable%COMPONENTS(dimensionIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
@@ -9205,7 +9205,7 @@ CONTAINS
          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
        END IF
 
-     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta)
+     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_AORTA)
        SELECT CASE(NUMBER_OF_DIMENSIONS)
        CASE(1)
          SELECT CASE(VARIABLE_TYPE)
@@ -9249,7 +9249,7 @@ CONTAINS
          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
        END SELECT
 
-     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen)
+     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_OLUFSEN)
        SELECT CASE(NUMBER_OF_DIMENSIONS)
        CASE(1)
          SELECT CASE(VARIABLE_TYPE)
@@ -9335,7 +9335,7 @@ CONTAINS
          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
        END SELECT
 
-     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid)
+     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID)
        ! Returns a sinusoidal value for boundary nodes
        SELECT CASE(NUMBER_OF_DIMENSIONS)
        CASE(2,3)
