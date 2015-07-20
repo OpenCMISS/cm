@@ -2681,7 +2681,10 @@ CONTAINS
 !        PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+VALUE
 
       CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_POLYNOMIAL_SUBTYPE)
-        !Additional term for transversely isotropic (fibre-reinforced) materials (Markert et al. 2005)
+        !Additional term for transversely isotropic (fibre-reinforced) materials (Markert, B., W. Ehlers, and N. Karajan. 
+        !A general polyconvex strain-energy function for fiber-reinforced materials. 
+        !Proceedings in Applied Mathematics and Mechanics 5.1 (2005): 245-246.)
+        
         ! W_aniso=c3*(sqrt(I4)^(c4-2)-1/I4)M
         ! with M being the mapping towards the fibre direction, here: I4=C_11
         !C(3)=c3...polynomial coefficient
@@ -2708,7 +2711,9 @@ CONTAINS
 
 
       CASE(EQUATIONS_SET_ANISOTROPIC_POLYNOMIAL_SUBTYPE)
-        !Three additional terms for transversely isotropic (fibre-reinforced) materials (Markert, 2005)
+        !Three additional terms for transversely isotropic (fibre-reinforced) materials (Markert, B., W. Ehlers, and N. Karajan. 
+        !A general polyconvex strain-energy function for fiber-reinforced materials. 
+        !Proceedings in Applied Mathematics and Mechanics 5.1 (2005): 245-246.)
         ! W_aniso=c3*(sqrt(I4)^(c4-2)-1/I4)M_1 + c5*(sqrt(I4)^(c6-2)-1/I4)M_2 + c7*(sqrt(I4)^(c8-2)-1/I4)M_3
         ! with M_1 being the mapping towards the fibre direction, here: I4=C_11
         !C(3)=c3...polynomial coefficient
@@ -2728,7 +2733,9 @@ CONTAINS
         ENDIF
 
       CASE(EQUATIONS_SET_ANISOTROPIC_POLYNOMIAL_ACTIVE_SUBTYPE)
-        !Three additional terms for transversely isotropic (fibre-reinforced) materials (Markert, 2005)
+        !Three additional terms for transversely isotropic (fibre-reinforced) materials (Markert, B., W. Ehlers, and N. Karajan. 
+        !A general polyconvex strain-energy function for fiber-reinforced materials. 
+        !Proceedings in Applied Mathematics and Mechanics 5.1 (2005): 245-246.)
         ! W_aniso=c3*(sqrt(I4)^(c4-2)-1/I4)M_1 + c5*(sqrt(I4)^(c6-2)-1/I4)M_2 + c7*(sqrt(I4)^(c8-2)-1/I4)M_3
         ! with M_1 being the mapping towards the fibre direction, here: I4=C_11
         !C(3)=c3...polynomial coefficient
@@ -2775,6 +2782,9 @@ CONTAINS
       ! Material 1 is active contractible, material 2 is only passive
       !W=W_iso+W_aniso+W_act
       ! where the three parts are adopted from above (iso Mooney-Rivlin, aniso Markert, active part)
+      !Markert, B., W. Ehlers, and N. Karajan. 
+      !A general polyconvex strain-energy function for fiber-reinforced materials. 
+      !Proceedings in Applied Mathematics and Mechanics 5.1 (2005): 245-246.)
 
       !C(1)=c1_m1...Mooney Rivlin parameter material 1
       !C(2)=c2_m1...Mooney Rivlin parameter material 1

@@ -1117,7 +1117,9 @@ CONTAINS
               !compute the current half-sarcomere length at the GP: l_hs = lambda_f * l_hs_0
               LENGTH_HS=LENGTH_HS_0*FIBRE_STRETCH
               
-              !compute the scale factor (0,1.8) due to sarcomere F-l relation (Gordon, Huxley, Julian 1966)
+              !compute the scale factor (0,1) due to sarcomere F-l relation of Gordon, A. M., A.F. Huxley, and F.J. Julian. 
+              !The variation in isometric tension with sarcomere length in vertebrate muscle fibres. 
+              !The Journal of Physiology 184.1 (1966): 170-192.
               SARCO_LENGTH=2.0_DP*LENGTH_HS
               IF(SARCO_LENGTH.LE.1.27_DP) THEN
                 FACTOR_LENGTH=0.0_DP
