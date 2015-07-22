@@ -2845,7 +2845,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: elementIdx,elementGlobalNumber
+    INTEGER(INTG) :: elementIdx,elementMeshNumber
     INTEGER(INTG) :: meshComponentNumber=1 !<TODO:mesh component is harded coded to be 1, need to be removed once MeshComponentsElementsType is moved under MeshTopologyType
     LOGICAL :: elementExists
     
@@ -2858,8 +2858,8 @@ CONTAINS
         ALLOCATE(dataProjection%localFaceLineNumbers(SIZE(localFaceLineNumbers,1)),STAT=ERR)
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate candidiate local face/line numbers.",ERR,ERROR,*999)
         DO elementIdx=1,SIZE(elementUserNumber,1)
-          CALL MESH_TOPOLOGY_ELEMENT_CHECK_EXISTS(dataProjection%MESH,meshComponentNumber,elementUserNumber(elementIdx), &
-            & elementExists,elementGlobalNumber,err,error,*999)       
+          CALL MeshTopologyElementCheckExists(dataProjection%MESH,meshComponentNumber,elementUserNumber(elementIdx), &
+            & elementExists,elementMeshNumber,err,error,*999)       
           IF(elementExists) THEN
             dataProjection%candidateElementNumbers(elementIdx)=elementUserNumber(elementIdx)
             dataProjection%localFaceLineNumbers(elementIdx)=localFaceLineNumbers(elementIdx)

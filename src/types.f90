@@ -226,8 +226,7 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: LOCAL_FACE_XI_DIRECTION(:) !<LOCAL_FACE_XI_DIRECTION(nae). The Xi direction of the nae'th local face for the basis.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_FACE(:) !<NUMBER_OF_NODES_IN_LOCAL_FACE(nae). The the number of nodes in the nae'th local face for the basis. Old CMISS name NNL(0,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local element node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
-    !\todo Remove local face node derivative below since all nodes of the face would have the same number of derivatives (unless a node is collapsed?)
-    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(nnk,nnl,nae). The element derivative numbers (nk) for the nnk'th face derivative's nnl'th face node in the nae'th local face for the basis.
+    INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(0:derivativeIdx,faceNodeIdx,elementFaceIdx). The element derivative numbers for the derivativeIdx'th face derivative's of the faceNodeIdx'th face node in the elementFaceIdx'th local face for the basis. The number of derivatives at the faceNodeIdx'th face node in the elementFaceIdx'th local face is given by DERIVATIVES_NUMBERS_IN_LOCAL_FACE(0,faceNodeIdx,elementFaceIdx).
     !\todo What is the difference between LOCAL_XI_NORMAL and LOCAL_FACE_XI_DIRECTION ? They're the same
     INTEGER(INTG), ALLOCATABLE :: LOCAL_XI_NORMAL(:) !<LOCAL_XI_NORMAL(nae). The Xi direction that is normal to either the nae'th local line for bases with 2 xi directions or the nae'th local face for bases with 3 xi directions. For bases with 1 xi direction the array is not allocated. Note: Normals are always outward.
     !Sub-basis information
@@ -371,10 +370,10 @@ MODULE TYPES
   !
 
   !>Contains information on the dofs for a mesh.
-  TYPE MESH_DOFS_TYPE
-    TYPE(MESH_TYPE), POINTER :: MESH !<A pointer to the mesh.
-    INTEGER(INTG) :: NUMBER_OF_DOFS !<The number of dofs in the mesh.
-  END TYPE MESH_DOFS_TYPE
+  TYPE MeshDofsType
+    TYPE(MeshComponentTopologyType), POINTER :: meshComponentTopology !<The pointer to the mesh component topology for the dofs information.
+    INTEGER(INTG) :: numberOfDofs !<The number of dofs in the mesh.
+  END TYPE MeshDofsType
 
   !>Contains information on the mesh adjacent elements for a xi coordinate
   TYPE MESH_ADJACENT_ELEMENT_TYPE
@@ -398,42 +397,42 @@ MODULE TYPES
   END TYPE MESH_ELEMENT_TYPE
 
   !>Contains the information for the elements of a mesh.
-  TYPE MeshComponentElementsType
-    TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh for the elements information.
+  TYPE MeshElementsType
+    TYPE(MeshComponentTopologyType), POINTER :: meshComponentTopology !<The pointer to the mesh component topology for the elements information.
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS !< The number of elements in the mesh.
     LOGICAL :: ELEMENTS_FINISHED !<Is .TRUE. if the mesh elements have finished being created, .FALSE. if not.
     TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENTS(:) !<ELEMENTS(ne). The pointer to the array of information for the elements of this mesh. ELEMENTS(ne) contains the information for the ne'th global element of the mesh. \todo Should this be allocatable.
     TYPE(TREE_TYPE), POINTER :: ELEMENTS_TREE !<A tree mapping the mesh global element number to the mesh user element number.
-  END TYPE MeshComponentElementsType
+  END TYPE MeshElementsType
 
   !>Contains the information for a node derivative of a mesh.
-  TYPE MESH_NODE_DERIVATIVE_TYPE
-    INTEGER(INTG) :: NUMBER_OF_VERSIONS !The number of global versions at the node for the mesh.
-    INTEGER(INTG), ALLOCATABLE :: USER_VERSION_NUMBERS(:) !The user version index of the nk'th global derivative for the node.
-    INTEGER(INTG), ALLOCATABLE :: DOF_INDEX(:) !The global dof version index (nv) in the domain of the nk'th global derivative for the node.
-    INTEGER(INTG) :: GLOBAL_DERIVATIVE_INDEX !The global derivative index of the nk'th global derivative for the node.
-    INTEGER(INTG) :: PARTIAL_DERIVATIVE_INDEX !The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
-  END TYPE MESH_NODE_DERIVATIVE_TYPE
+  TYPE MeshNodeDerivativeType
+    INTEGER(INTG) :: numberOfVersions !The number of global versions at the node for the mesh.
+    INTEGER(INTG), ALLOCATABLE :: userVersionNumbers(:) !userVersionNumbers(versionIdx). The user version numbers for the versionIdx'th version for the node.
+    INTEGER(INTG), ALLOCATABLE :: dofIndex(:) !The global dof version index (nv) in the domain of the nk'th global derivative for the node.
+    INTEGER(INTG) :: globalDerivativeIndex !The global derivative index of the nk'th global derivative for the node.
+    INTEGER(INTG) :: partialDerivativeIndex !The partial derivative index (nu) of the nk'th global derivative for the node. Old CMISS name NUNK(nk,nj,np).
+  END TYPE MeshNodeDerivativeType
 
   !>Contains the topology information for a global node of a mesh.
-  TYPE MESH_NODE_TYPE
-    INTEGER(INTG) :: MESH_NUMBER !<The mesh node number in the mesh.
-    INTEGER(INTG) :: GLOBAL_NUMBER !<The global node number in the mesh.
-    INTEGER(INTG) :: USER_NUMBER !<The corresponding user number for the node.
-    INTEGER(INTG) :: NUMBER_OF_DERIVATIVES !<The number of global derivatives at the node for the mesh. Old CMISS name NKT(nj,np).
-    TYPE(MESH_NODE_DERIVATIVE_TYPE), ALLOCATABLE :: DERIVATIVES(:) !<DERIVATIVES(derivative_idx)
-    INTEGER(INTG) :: NUMBER_OF_SURROUNDING_ELEMENTS !<The number of elements surrounding the node in the mesh. Old CMISS name NENP(np,0,0:nr).
-    INTEGER(INTG), POINTER :: SURROUNDING_ELEMENTS(:) !<SURROUNDING_ELEMENTS(nep). The global element number of the nep'th element that is surrounding the node. Old CMISS name NENP(np,nep,0:nr). \todo Change this to allocatable.
-    LOGICAL :: BOUNDARY_NODE !<Is .TRUE. if the mesh node is on the boundary of the mesh, .FALSE. if not.
-  END TYPE MESH_NODE_TYPE
+  TYPE MeshNodeType
+    INTEGER(INTG) :: meshNumber !<The mesh node number in the mesh.
+    INTEGER(INTG) :: globalNumber !<The global node number in the mesh.
+    INTEGER(INTG) :: userNumber !<The corresponding user number for the node.
+    INTEGER(INTG) :: numberOfDerivatives !<The number of global derivatives at the node for the mesh. Old CMISS name NKT(nj,np).
+    TYPE(MeshNodeDerivativeType), ALLOCATABLE :: derivatives(:) !<derivatives(derivativeIdx). Contains information on the derivativeIdx'th derivative of the node.
+    INTEGER(INTG) :: numberOfSurroundingElements !<The number of elements surrounding the node in the mesh. Old CMISS name NENP(np,0,0:nr).
+    INTEGER(INTG), POINTER :: surroundingElements(:) !<surroudingElements(localElementIdx). The global element number of the localElementIdx'th element that is surrounding the node. Old CMISS name NENP(np,nep,0:nr). \todo Change this to allocatable.
+    LOGICAL :: boundaryNode !<Is .TRUE. if the mesh node is on the boundary of the mesh, .FALSE. if not.
+  END TYPE MeshNodeType
 
   !>Contains the information for the nodes of a mesh.
-  TYPE MESH_NODES_TYPE
-    TYPE(MESH_TYPE), POINTER :: MESH !<The pointer to the mesh for this nodes information.
-    INTEGER(INTG) :: NUMBER_OF_NODES !<The number of nodes in the mesh.
-    TYPE(MESH_NODE_TYPE), POINTER :: NODES(:) !<NODES(np). The pointer to the array of topology information for the nodes of the mesh. NODES(np) contains the topological information for the np'th global node of the mesh. \todo Should this be allocatable???
-    TYPE(TREE_TYPE), POINTER :: NODES_TREE !<A tree mapping the mesh global number to the region nodes global number.
-  END TYPE MESH_NODES_TYPE
+  TYPE MeshNodesType
+    TYPE(MeshComponentTopologyType), POINTER :: meshComponentTopology !<The pointer to the mesh component topology for the nodes information.
+    INTEGER(INTG) :: numberOfnodes !<The number of nodes in the mesh.
+    TYPE(MeshNodeType), ALLOCATABLE :: nodes(:) !<nodes(nodeIdx). The pointer to the array of topology information for the nodes of the mesh. node(nodeIdx) contains the topological information for the nodeIdx'th global node of the mesh. \todo Should this be allocatable???
+    TYPE(TREE_TYPE), POINTER :: nodesTree !<A tree mapping the mesh global number to the region nodes global number.
+  END TYPE MeshNodesType
   
   TYPE MeshElementDataPointType
     INTEGER(INTG) :: userNumber !<User number of the projected data point
@@ -456,7 +455,7 @@ MODULE TYPES
   
   !<Contains the information for the data points of a mesh
   TYPE MeshDataPointsType
-    TYPE(MESH_TYPE), POINTER :: mesh !<The pointer to the mesh for this data points information.
+    TYPE(MeshComponentTopologyType), POINTER :: meshComponentTopology !<The pointer to the mesh component topology for the data information.
     INTEGER(INTG) :: totalNumberOfProjectedData !<Number of projected data in this mesh
     TYPE(MeshDataPointType), ALLOCATABLE :: dataPoints(:) !<dataPoints(dataPointIdx). Information of the projected data points
     TYPE(MeshElementDataPointsType), ALLOCATABLE :: elementDataPoint(:) !<elementDataPoint(elementIdx). Information of the projected data on the elements 
@@ -464,17 +463,17 @@ MODULE TYPES
 
   !>Contains information on the (global) topology of a mesh.
   TYPE MeshComponentTopologyType
-    TYPE(MESH_TYPE), POINTER :: MESH !<Pointer to the parent mesh.
-    INTEGER(INTG) :: MESH_COMPONENT_NUMBER !<The mesh component number for this mesh topology.
-    TYPE(MESH_NODES_TYPE), POINTER :: NODES !<Pointer to the nodes within the mesh topology.
-    TYPE(MeshComponentElementsType), POINTER :: ELEMENTS !<Pointer to the elements within the mesh topology.
-    TYPE(MESH_DOFS_TYPE), POINTER :: DOFS !<Pointer to the dofs within the mesh topology.
+    TYPE(MESH_TYPE), POINTER :: mesh !<Pointer to the parent mesh.
+    INTEGER(INTG) :: meshComponentNumber !<The mesh component number for this mesh topology.
+    TYPE(MeshNodesType), POINTER :: nodes !<Pointer to the nodes within the mesh topology.
+    TYPE(MeshElementsType), POINTER :: elements !<Pointer to the elements within the mesh topology.
+    TYPE(MeshDofsType), POINTER :: dofs !<Pointer to the dofs within the mesh topology.
     TYPE(MeshDataPointsType), POINTER :: dataPoints !<Pointer to the data points within the mesh topology
   END TYPE MeshComponentTopologyType
 
   !>A buffer type to allow for an array of pointers to a MeshComponentTopologyType.
   TYPE MeshComponentTopologyPtrType
-    TYPE(MeshComponentTopologyType), POINTER :: PTR !<The pointer to the mesh topology.
+    TYPE(MeshComponentTopologyType), POINTER :: ptr !<The pointer to the mesh topology.
   END TYPE MeshComponentTopologyPtrType
 
   !>Embedded mesh types
@@ -513,7 +512,7 @@ MODULE TYPES
     INTEGER(INTG) :: NUMBER_OF_EMBEDDED_MESHES !<The number of meshes that are embedded in this mesh.
     TYPE(MESH_PTR_TYPE), POINTER :: EMBEDDED_MESHES(:) !<EMBEDDED_MESHES(mesh_idx). A pointer to the mesh_idx'th mesh that is embedded in this mesh.
     INTEGER(INTG) :: NUMBER_OF_ELEMENTS
-    TYPE(MeshComponentTopologyPtrType), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component.
+    TYPE(MeshComponentTopologyPtrType), POINTER :: TOPOLOGY(:) !<TOPOLOGY(mesh_component_idx). A pointer to the topology mesh_component_idx'th mesh component. \todo Change to allocatable?
     TYPE(DECOMPOSITIONS_TYPE), POINTER :: DECOMPOSITIONS !<A pointer to the decompositions for this mesh.
     LOGICAL :: SURROUNDING_ELEMENTS_CALCULATE !<Boolean flag to determine whether surrounding elements should be calculated.
   END TYPE MESH_TYPE

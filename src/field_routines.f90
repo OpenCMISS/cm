@@ -1271,7 +1271,7 @@ CONTAINS
                   decompositionTopology=>decomposition%TOPOLOGY
                   userDataPointExists=.TRUE.
                   IF(ASSOCIATED(decompositionTopology)) THEN
-                    CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber,userDataPointExists, &
+                    CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber,userDataPointExists, &
                       & decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                     IF(userDataPointExists) THEN
                       localDof=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -18571,7 +18571,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -18723,7 +18723,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -18875,7 +18875,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -19027,7 +19027,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -23405,7 +23405,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -23558,7 +23558,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -23711,7 +23711,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -23864,7 +23864,7 @@ CONTAINS
                       IF(ASSOCIATED(decomposition)) THEN
                         decompositionTopology=>decomposition%TOPOLOGY
                         IF(ASSOCIATED(decompositionTopology)) THEN
-                          CALL DecompositionTopology_DataPointCheckExists(decompositionTopology,userDataPointNumber, &
+                          CALL DecompositionTopologyDataPointCheckExists(decompositionTopology,userDataPointNumber, &
                             & userDataPointExists,decompositionLocalDataPointNumber,ghostDataPoint,err,error,*999)
                           IF(userDataPointExists) THEN
                             DofIdx=fieldVariable%COMPONENTS(componentNumber)%PARAM_TO_DOF_MAP% &
@@ -30935,7 +30935,7 @@ CONTAINS
     INTEGER(INTG), INTENT(IN) ::  CHILD_COMPONENT  !<Component of the child  field, must be nodally based
 
     !Local variables
-    TYPE(MeshComponentElementsType), POINTER :: ELEMENTS
+    TYPE(MeshElementsType), POINTER :: ELEMENTS
     TYPE(MESH_ELEMENT_TYPE), POINTER :: ELEMENT
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG) :: E,GP,B, NGP,version
@@ -30987,7 +30987,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR     !<The error string
   
     !Local variables
-    TYPE(MeshComponentElementsType), POINTER :: ELEMENTS
+    TYPE(MeshElementsType), POINTER :: ELEMENTS
     TYPE(BASIS_TYPE), POINTER :: BASIS
     INTEGER(INTG) :: GP
 
