@@ -325,7 +325,6 @@ CONTAINS
               CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,Err,Error,*999)
               SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
                 CASE(PROBLEM_SETUP_START_ACTION)
-                
                   !Start the solvers creation
                   CALL SOLVERS_CREATE_START(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
                   CALL SOLVERS_NUMBER_SET(SOLVERS,2,ERR,ERROR,*999)
@@ -343,21 +342,11 @@ CONTAINS
                   CALL SOLVER_DYNAMIC_DEGREE_SET(SOLVER,SOLVER_DYNAMIC_FIRST_DEGREE,ERR,ERROR,*999)
                   CALL SOLVER_DYNAMIC_SCHEME_SET(SOLVER,SOLVER_DYNAMIC_CRANK_NICOLSON_SCHEME,ERR,ERROR,*999)
                   CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
-                
-                
-                
-                
-                
                 CASE(PROBLEM_SETUP_FINISH_ACTION)
-                
-                
                   !Get the solvers
                   CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
                   !Finish the solvers creation
                   CALL SOLVERS_CREATE_FINISH(SOLVERS,ERR,ERROR,*999)
-                  
-                  
-                  
                 CASE DEFAULT
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",Err,Error))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",Err,Error))// &
@@ -370,10 +359,6 @@ CONTAINS
                   !Get the control loop
                   CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
                   CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,Err,Error,*999)
-                  
-                  
-                  
-                  
                   !Get the solver
                   CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
                   CALL SOLVERS_SOLVER_GET(SOLVERS,2,MOVING_MESH_SOLVER,ERR,ERROR,*999)
@@ -390,17 +375,10 @@ CONTAINS
                   CALL SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET(SOLVER_EQUATIONS,SOLVER_EQUATIONS_FIRST_ORDER_DYNAMIC,&
                   & ERR,ERROR,*999)
                   CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SOLVER_SPARSE_MATRICES,ERR,ERROR,*999)
-                  
-                  
-                  
-                  
-                  
                 CASE(PROBLEM_SETUP_FINISH_ACTION)
                   !Get the control loop
                   CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
                   CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,Err,Error,*999)
-                  
-                  
                   !Get the solver equations
                   CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
                   CALL SOLVERS_SOLVER_GET(SOLVERS,2,MOVING_MESH_SOLVER,ERR,ERROR,*999)
@@ -412,7 +390,6 @@ CONTAINS
                   CALL SOLVER_SOLVER_EQUATIONS_GET(SOLVER,SOLVER_EQUATIONS,ERR,ERROR,*999)
                   !Finish the solver equations creation
                   CALL SOLVER_EQUATIONS_CREATE_FINISH(SOLVER_EQUATIONS,ERR,ERROR,*999)    
-                  
                 CASE DEFAULT
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",Err,Error))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",Err,Error))// &
@@ -466,7 +443,7 @@ CONTAINS
               IF(ControlLoop%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Running pre-solve steps.",Err,Error,*999)
                 !Pre solve for ALE NavierStokes equations set
-                CALL NAVIER_STOKES_PRE_SOLVE(ControlLoop,Solver,Err,Error,*999)
+                CALL NAVIER_STOKES_PRE_SOLVE(Solver,Err,Error,*999)
                 !Pre solve for FiniteElasticity equations set
                 !Nothing to be done???
               ELSE
@@ -529,35 +506,9 @@ CONTAINS
                 ELSE  
                   CALL FLAG_ERROR("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
                 END IF
-                
-                
-                
-                
-                
-                
-                
-                
               !Post solve for the dynamic solver
               ELSE IF(Solver%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"ALE Navier-Stokes post solve... ",ERR,ERROR,*999)
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
      !           IF(.NOT.ASSOCIATED(ControlLoop%TIME_LOOP)) CALL FLAG_ERROR("Time loop is not associated.",Err,Error,*999)
      !           !Export solid fields
      !           FileName="SolidStep00"//TRIM(NUMBER_TO_VSTRING( &
@@ -686,7 +637,7 @@ CONTAINS
     TimeStepNumber=(CurrentTime-StartTime)/TimeIncrement!GLOBAL_ITERATION_NUMBER???
     !===============================================================================================================================
     !First update mesh and calculate boundary velocity values
-    CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(ControlLoop,DynamicSolver,Err,Error,*999)
+    CALL NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH(DynamicSolver,Err,Error,*999)
     !===============================================================================================================================
     !Update interface geometric field and export results
     DynamicSolverEquations=>DynamicSolver%SOLVER_EQUATIONS
@@ -753,50 +704,34 @@ CONTAINS
                       & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,Err,Error,*999)
                     !===============================================================================================================
                     !Export fields
-                    IF(TimeStepNumber>=0.AND.TimeStepNumber<10) THEN
-                      SolidFileName="Solid0000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                      FluidFileName="Fluid0000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                      InterfaceFileName="Interface0000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                    ELSE IF(TimeStepNumber>=10.AND.TimeStepNumber<100) THEN
-                      SolidFileName="Solid000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                      FluidFileName="Fluid000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                      InterfaceFileName="Interface000"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                    ELSE IF(TimeStepNumber>=100.AND.TimeStepNumber<1000) THEN
-                      SolidFileName="Solid00"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                      FluidFileName="Fluid00"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                      InterfaceFileName="Interface00"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                    ELSE IF(TimeStepNumber>=1000) THEN
-                      SolidFileName="Solid0"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                      FluidFileName="Fluid0"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                      InterfaceFileName="Interface0"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                    ELSE IF(TimeStepNumber>=10000) THEN
-                      SolidFileName="Solid"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                      FluidFileName="Fluid"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                      InterfaceFileName="Interface"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
-                    ENDIF
+                    SolidFileName="./output/Solid/Solid"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
+                    FluidFileName="./output/Fluid/Fluid"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
+                    InterfaceFileName="./output/Interface/Interface"//TRIM(NUMBER_TO_VSTRING(INT(TimeStepNumber),"*",Err,Error))
                     Method="FORTRAN"
                     !Export solid fields
                     IF(.NOT.ASSOCIATED(SolidEquationsSet%REGION)) CALL FLAG_ERROR("Solid region not associated.", &
                       & Err,Error,*999)
                     IF(.NOT.ASSOCIATED(SolidEquationsSet%REGION%FIELDS)) CALL FLAG_ERROR("Solid fields not associated.", &
                       & Err,Error,*999)
-                    CALL FIELD_IO_NODES_EXPORT(SolidEquationsSet%REGION%FIELDS, &
-                      & SolidFileName,Method,Err,Error,*999)
-                    CALL FIELD_IO_ELEMENTS_EXPORT(SolidEquationsSet%REGION%FIELDS, &
-                      & SolidFileName,Method,Err,Error,*999)
+                    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
+                    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Now export fields... ",ERR,ERROR,*999)
+                    CALL FIELD_IO_NODES_EXPORT(SolidEquationsSet%REGION%FIELDS,SolidFileName,Method,Err,Error,*999)
+                    CALL FIELD_IO_ELEMENTS_EXPORT(SolidEquationsSet%REGION%FIELDS,SolidFileName,Method,Err,Error,*999)
+                    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,SolidFileName,ERR,ERROR,*999)
                     IF(.NOT.ASSOCIATED(FluidEquationsSet%REGION)) CALL FLAG_ERROR("Fluid region not associated.", &
                       & Err,Error,*999)
                     IF(.NOT.ASSOCIATED(FluidEquationsSet%REGION%FIELDS)) CALL FLAG_ERROR("Fluid fields not associated.", &
                       & Err,Error,*999)
                     !Export fluid fields
-                    CALL FIELD_IO_NODES_EXPORT(FluidEquationsSet%REGION%FIELDS, &
-                      & FluidFileName,Method,Err,Error,*999)
-                    CALL FIELD_IO_ELEMENTS_EXPORT(FluidEquationsSet%REGION%FIELDS, &
-                      & FluidFileName,Method,Err,Error,*999)
+                    CALL FIELD_IO_NODES_EXPORT(FluidEquationsSet%REGION%FIELDS,FluidFileName,Method,Err,Error,*999)
+                    CALL FIELD_IO_ELEMENTS_EXPORT(FluidEquationsSet%REGION%FIELDS,FluidFileName,Method,Err,Error,*999)
+                    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,FluidFileName,ERR,ERROR,*999)
                     IF(.NOT.ASSOCIATED(FSInterface%FIELDS)) CALL FLAG_ERROR("Interface fields not associated.",Err,Error,*999)
                     !Export interface fields
                     CALL FIELD_IO_NODES_EXPORT(FSInterface%FIELDS,InterfaceFileName,Method,Err,Error,*999)
                     CALL FIELD_IO_ELEMENTS_EXPORT(FSInterface%FIELDS,InterfaceFileName,Method,Err,Error,*999)
+                    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,InterfaceFileName,ERR,ERROR,*999)
+                    CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...",ERR,ERROR,*999)
                   ELSE
                     CALL FLAG_ERROR("Interface geometric field not associated.",Err,Error,*999)
                   ENDIF

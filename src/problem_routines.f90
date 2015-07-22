@@ -1554,7 +1554,7 @@ CONTAINS
                           CASE(EQUATIONS_SET_ELASTICITY_CLASS)
                             CALL ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
                           CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-                            !Pre residual evaluate not used
+                            CALL FluidMechanics_FiniteElementPreResidualEvaluate(EQUATIONS_SET,ERR,ERROR,*999)
                           CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
                             !Pre residual evaluate not used
                           CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)

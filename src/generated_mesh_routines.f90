@@ -1409,7 +1409,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: coordinate_idx,COUNT,ELEMENT_FACTOR,grid_ne,GRID_NUMBER_OF_ELEMENTS,ni,ne,ne1,ne2,ne3,nn,nn1,nn2,nn3,np, &
       & NUMBER_OF_ELEMENTS_XI(3),TOTAL_NUMBER_OF_NODES_XI(3),TOTAL_NUMBER_OF_NODES,NUMBER_OF_CORNER_NODES, &
-      & TOTAL_NUMBER_OF_ELEMENTS,xi_idx,NUM_BASES,basis_idx,BASIS_NUMBER_OF_NODES
+      & TOTAL_NUMBER_OF_ELEMENTS,xi_idx,NUM_BASES,basis_idx,BASIS_NUMBER_OF_NODES(10)
     INTEGER(INTG), ALLOCATABLE :: ELEMENT_NODES(:),ELEMENT_NODES_USER_NUMBERS(:)
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
@@ -1507,15 +1507,23 @@ CONTAINS
               NUMBER_OF_CORNER_NODES=TOTAL_NUMBER_OF_NODES
               !Add extra nodes for each basis
               !Will end up with some duplicate nodes if bases have the same interpolation in one direction
+              BASIS_NUMBER_OF_NODES=0
               DO basis_idx=1,NUM_BASES
                 BASIS=>REGULAR_MESH%BASES(basis_idx)%PTR
-                BASIS_NUMBER_OF_NODES=1
+                BASIS_NUMBER_OF_NODES(basis_idx)=1
                 DO ni=1,REGULAR_MESH%MESH_DIMENSION
-                  BASIS_NUMBER_OF_NODES=BASIS_NUMBER_OF_NODES*((BASIS%NUMBER_OF_NODES_XIC(ni)-1)* &
+                  BASIS_NUMBER_OF_NODES(basis_idx)=BASIS_NUMBER_OF_NODES(basis_idx)*((BASIS%NUMBER_OF_NODES_XIC(ni)-1)* &
                       & REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1)
                 ENDDO
-                TOTAL_NUMBER_OF_NODES=TOTAL_NUMBER_OF_NODES+BASIS_NUMBER_OF_NODES-NUMBER_OF_CORNER_NODES
+                BASIS_NUMBER_OF_NODES(basis_idx)=TOTAL_NUMBER_OF_NODES+BASIS_NUMBER_OF_NODES(basis_idx)-NUMBER_OF_CORNER_NODES
+                ! BASIS_NUMBER_OF_NODES=1
+                ! DO ni=1,REGULAR_MESH%MESH_DIMENSION
+                !   BASIS_NUMBER_OF_NODES=BASIS_NUMBER_OF_NODES*((BASIS%NUMBER_OF_NODES_XIC(ni)-1)* &
+                !       & REGULAR_MESH%NUMBER_OF_ELEMENTS_XI(ni)+1)
+                ! ENDDO
+                ! TOTAL_NUMBER_OF_NODES=TOTAL_NUMBER_OF_NODES+BASIS_NUMBER_OF_NODES-NUMBER_OF_CORNER_NODES
               ENDDO
+              TOTAL_NUMBER_OF_NODES=MAXVAL(BASIS_NUMBER_OF_NODES)
               !Compute the element factor i.e., the number of sub elements each grid element will be split into.
               IF(BASIS%TYPE==BASIS_LAGRANGE_HERMITE_TP_TYPE) THEN
                 ELEMENT_FACTOR=1
