@@ -616,7 +616,6 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_MATRICES_DYNAMIC_ASSEMBLE,SOLVER_MATRICES_STATIC_ASSEMBLE
 
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
   PUBLIC SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET
 
   PUBLIC Solver_QuasiNewtonLineSearchMonitorOutputSet
@@ -658,7 +657,6 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_QUASI_NEWTON_SCALE_TYPE_SET
 
   PUBLIC SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET
-#endif
 
   PUBLIC SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET
 
@@ -12162,7 +12160,7 @@ CONTAINS
                     CASE(SOLVER_ITERATIVE_BICONJUGATE_GRADIENT)
                       SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE=SOLVER_ITERATIVE_BICONJUGATE_GRADIENT
                     CASE(SOLVER_ITERATIVE_GMRES)
-                      SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE=SOLVER_ITERATIVE_BiCGSTAB
+                      SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE=SOLVER_ITERATIVE_GMRES
                     CASE(SOLVER_ITERATIVE_BiCGSTAB)
                       SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE=SOLVER_ITERATIVE_BiCGSTAB
                     CASE(SOLVER_ITERATIVE_CONJGRAD_SQUARED)
@@ -15370,8 +15368,6 @@ CONTAINS
    
   END SUBROUTINE SOLVER_MATRICES_LIBRARY_TYPE_GET
 
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-
   !
   !================================================================================================================================
   !
@@ -16299,6 +16295,8 @@ CONTAINS
                   CALL PETSC_SNESCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
                   !Set the nonlinear solver type to be a Quasi-Newton line search solver
                   CALL PETSC_SNESSETTYPE(LINESEARCH_SOLVER%SNES,PETSC_SNESQN,ERR,ERROR,*999)
+                  !Following routines don't work for petsc version < 3.5.
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
                   !Set the nonlinear Quasi-Newton type
                   SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE)
                   CASE(SOLVER_QUASI_NEWTON_LBFGS)
@@ -16342,8 +16340,8 @@ CONTAINS
                   END SELECT
 
                   !Set the Quasi-Newton restart
-                  ! To be implemented, also in PETSc!
-
+                  !Not implemented yet, as there is currently no routine in PETSc for this. If need be, this can be set in your petscrc file.
+#endif
                   !Create the solver matrices and vectors
                   LINEAR_SOLVER=>QUASI_NEWTON_SOLVER%LINEAR_SOLVER
                   IF(ASSOCIATED(LINEAR_SOLVER)) THEN
@@ -16423,6 +16421,7 @@ CONTAINS
                               CALL DISTRIBUTED_MATRIX_FORM(JACOBIAN_MATRIX,ERR,ERROR,*999)
                               SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                               CASE(SOLVER_SPARSE_MATRICES)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
                                 CALL PETSC_MATCOLORINGCREATE(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER%JACOBIAN_COLORING, &
                                   & ERR,ERROR,*999)
                                 CALL PETSC_MATCOLORINGSETTYPE(LINESEARCH_SOLVER%JACOBIAN_COLORING,PETSC_MATCOLORING_SL, &
@@ -16431,6 +16430,10 @@ CONTAINS
                                 CALL PETSC_MATCOLORINGAPPLY(LINESEARCH_SOLVER%JACOBIAN_COLORING,LINESEARCH_SOLVER% &
                                   & JACOBIAN_ISCOLORING,ERR,ERROR,*999)
                                 CALL PETSC_MATCOLORINGDESTROY(LINESEARCH_SOLVER%JACOBIAN_COLORING,ERR,ERROR,*999)
+#else
+                                CALL PETSC_MATGETCOLORING(JACOBIAN_MATRIX%PETSC%MATRIX,PETSC_MATCOLORING_SL,LINESEARCH_SOLVER% &
+                                  & JACOBIAN_ISCOLORING,ERR,ERROR,*999)
+#endif
                                 CALL PETSC_MATFDCOLORINGCREATE(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER% &
                                   & JACOBIAN_ISCOLORING,LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
                                 !Pass the linesearch solver object rather than the temporary solver
@@ -16438,8 +16441,10 @@ CONTAINS
                                   & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER% &
                                   & SOLVER,ERR,ERROR,*999)
                                 CALL PETSC_MATFDCOLORINGSETFROMOPTIONS(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
                                 CALL PETSC_MATFDCOLORINGSETUP(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER% &
                                   & JACOBIAN_ISCOLORING,LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
+#endif
                                 CALL PETSC_ISCOLORINGDESTROY(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
                               CASE(SOLVER_FULL_MATRICES)
                                 !Do nothing
@@ -16492,10 +16497,17 @@ CONTAINS
                       CALL FlagError(local_error,err,error,*999)
                     END SELECT
                     ! Set step tolerances, leave iterative line search options as defaults
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
                     CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
                       & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
                       & PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL, &
                       & PETSC_DEFAULT_INTEGER,err,error,*999)
+#else
+                    CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
+                      & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
+                      & PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION, &
+                      & PETSC_DEFAULT_INTEGER,err,error,*999)
+#endif
                     IF(linesearch_solver%linesearchMonitorOutput) THEN
                       CALL Petsc_SnesLineSearchSetMonitor(linesearch_solver%snesLineSearch,PETSC_TRUE,err,error,*999)
                     ELSE
@@ -16620,7 +16632,9 @@ CONTAINS
         QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_QUASI_NEWTON_LINESEARCH_CP
         QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_MAXSTEP=1.0E8_DP
         QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE=CONVERGENCE_TOLERANCE
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
         CALL PETSC_MATCOLORINGINITIALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_COLORING,ERR,ERROR,*999)
+#endif
         CALL PETSC_ISCOLORINGINITIALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
         CALL PETSC_MATFDCOLORINGINITIALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
         CALL PETSC_SNESINITIALISE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
@@ -16817,9 +16831,6 @@ CONTAINS
                           CALL PETSC_SNESGETITERATIONNUMBER(LINESEARCH_SOLVER%SNES,NUMBER_ITERATIONS,ERR,ERROR,*999)
                           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Final number of iterations = ",NUMBER_ITERATIONS, &
                             & ERR,ERROR,*999)
-                          !CALL PETSC_SNESGETFUNCTION(LINESEARCH_SOLVER%SNES,FUNCTION_VECTOR, &
-                          !  & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
-                          !  & ERR,ERROR,*999)
                           CALL PETSC_SNESGETFUNCTION(LINESEARCH_SOLVER%SNES,FUNCTION_VECTOR, &
                             & ERR,ERROR,*999)
                           CALL PETSC_VECNORM(FUNCTION_VECTOR,PETSC_NORM_2,FUNCTION_NORM,ERR,ERROR,*999)
@@ -18373,7 +18384,6 @@ CONTAINS
     RETURN 1
    
   END SUBROUTINE SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET
-#endif
 
   !
   !================================================================================================================================
@@ -19912,9 +19922,6 @@ CONTAINS
                           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Final number of iterations = ",NUMBER_ITERATIONS, &
                             & ERR,ERROR,*999)
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                          !CALL PETSC_SNESGETFUNCTION(LINESEARCH_SOLVER%SNES,FUNCTION_VECTOR, &
-                          !  & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
-                          !  & ERR,ERROR,*999)
                           CALL PETSC_SNESGETFUNCTION(LINESEARCH_SOLVER%SNES,FUNCTION_VECTOR, &
                             & ERR,ERROR,*999)
                           CALL PETSC_VECNORM(FUNCTION_VECTOR,PETSC_NORM_2,FUNCTION_NORM,ERR,ERROR,*999)
@@ -21232,10 +21239,8 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         CALL SOLVER_QUASI_NEWTON_CREATE_FINISH(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
-#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -21324,7 +21329,6 @@ CONTAINS
         !Not yet implemented. Don't kick up a fuss, just exit
       CASE(SOLVER_NONLINEAR_SQP)
         !Not yet implemented. Don't kick up a fuss, just exit
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
@@ -21357,7 +21361,6 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
-#endif
       END SELECT
     ELSE
       CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
@@ -21400,10 +21403,8 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
-#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -21507,7 +21508,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
@@ -21516,7 +21516,6 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
-#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -21572,7 +21571,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
@@ -21581,7 +21579,6 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
-#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -21637,7 +21634,6 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
@@ -21646,7 +21642,6 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
-#endif
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -21746,7 +21741,6 @@ CONTAINS
         !Do nothing
       CASE(SOLVER_NONLINEAR_SQP)
         !Do nothing
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>nonlinearSolver%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
@@ -21778,7 +21772,6 @@ CONTAINS
         ELSE
           CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",err,error,*999)
         ENDIF
-#endif
       CASE DEFAULT
         localError="The nonlinear solver type of "// &
           & TRIM(NUMBER_TO_VSTRING(nonlinearSolver%NONLINEAR_SOLVE_TYPE,"*",err,error))// &
@@ -21832,10 +21825,8 @@ CONTAINS
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
         CASE(SOLVER_NONLINEAR_SQP)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
         CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
           CALL SOLVER_QUASI_NEWTON_SOLVE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
-#endif
         CASE DEFAULT
           LOCAL_ERROR="The nonlinear solver type of "// &
             & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -21930,10 +21921,8 @@ CONTAINS
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                
               CASE(SOLVER_NONLINEAR_SQP)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
               CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
                 CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
-#endif
               CASE DEFAULT
                 LOCAL_ERROR="The nonlinear solver type of "// &
                   & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -21949,11 +21938,9 @@ CONTAINS
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
               CASE(SOLVER_NONLINEAR_SQP)
                 CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
               CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
                 NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER)
                 CALL SOLVER_QUASI_NEWTON_INITIALISE(NONLINEAR_SOLVER,ERR,ERROR,*999)
-#endif
               CASE DEFAULT
                 LOCAL_ERROR="The specified nonlinear solver type of "// &
                   & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -21982,10 +21969,8 @@ CONTAINS
       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*998)                
     CASE(SOLVER_NONLINEAR_SQP)
       CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*998)      
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )      
     CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
       CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
-#endif
     END SELECT
 998 CALL ERRORS("SOLVER_NONLINEAR_TYPE_SET",ERR,ERROR)
 #if DEBUG
