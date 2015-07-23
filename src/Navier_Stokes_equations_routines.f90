@@ -2636,7 +2636,8 @@ CONTAINS
                     CALL FIELD_PARAMETER_SET_CREATE(dependentField,FIELD_U_VARIABLE_TYPE, &
                      & FIELD_UPWIND_VALUES_SET_TYPE,ERR,ERROR,*999)
                   END IF
-                  ! Extrapolate new W from Q,A if this is the first timestep (otherwise will be calculated based on Navier-Stokes values)
+                  ! Extrapolate new W from Q,A if this is the first timestep (otherwise will be calculated based on Navier-Stokes
+                  ! values)
                   CALL Characteristic_Extrapolate(SOLVER,currentTime,timeIncrement,ERR,ERROR,*999)
                 END IF
 
@@ -4915,8 +4916,8 @@ CONTAINS
                               SUM=PHIMS*(-2.0_DP*PI*COS(2.0_DP*PI*X(3)/10.0_DP)*RHO_PARAM*SIN(2.0_DP*PI*X(3)/10.0_DP)* & 
                                 & (-1.0_DP+COS(2.0_DP*PI*X(2)/10.0_DP)**2)/10.0_DP)
                             END IF
-                          ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4) & 
-                           & THEN
+                          ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE== &
+                            & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4) THEN
                             IF(mh==1) THEN 
                               !Calculate SUM 
                               !SUM=PHIMS*(2.0_DP*SIN(X(1))*COS(X(2)))*MU_PARAM
@@ -4924,8 +4925,8 @@ CONTAINS
                               !Calculate SUM 
                               !SUM=PHIMS*(-2.0_DP*COS(X(1))*SIN(X(2)))*MU_PARAM
                             END IF
-                          ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5) & 
-                           & THEN
+                          ELSE IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE== &
+                            & EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5) THEN
                             !do nothing
                           END IF
                           !Calculate RH VECTOR
@@ -5130,8 +5131,8 @@ CONTAINS
                     IF(mh==1) THEN
                       SUM=((2.0_DP*alpha*(Q_VALUE/A_VALUE)*Q_DERIV - &
                         & (alpha*((Q_VALUE/A_VALUE)**2.0_DP)*A_DERIV)+(beta/RHO_PARAM)* &           !Convective
-                        & ((SQRT(A_VALUE)/2.0_DP)*A_DERIV+ &                                        !A  gradient                                              
-                        & (A_VALUE/(2.0_DP*SQRT(A0_PARAM))-(A_VALUE**1.5_DP)/A0_PARAM)*A0_DERIV+ &  !A0 gradient                                            
+                        & ((SQRT(A_VALUE)/2.0_DP)*A_DERIV+ &                                        !A  gradient 
+                        & (A_VALUE/(2.0_DP*SQRT(A0_PARAM))-(A_VALUE**1.5_DP)/A0_PARAM)*A0_DERIV+ &  !A0 gradient
                         & (A_VALUE*(SQRT(A_VALUE)))*(H_DERIV/H_PARAM) + &                           !H  gradient (nonlinear part)
                         & (A_VALUE*(SQRT(A_VALUE)))*(E_DERIV/E_PARAM)))* &                          !E  gradient (nonlinear part)
                         & DXI_DX(1,1)+(Q_VALUE/A_VALUE))*PHIMS                                      !Viscosity
@@ -5741,12 +5742,12 @@ CONTAINS
                           IF(mh==1 .AND. nh==2) THEN
                             SUM=((((-2.0_DP*alpha*Q_VALUE*PHINS*Q_DERIV)/(A_VALUE**2.0_DP))+ & 
                               & ((2.0_DP*alpha*PHINS*(Q_VALUE**2.0_DP)*A_DERIV)/(A_VALUE**3.0_DP))+ &             
-                              & (-alpha*((Q_VALUE/A_VALUE)**2.0_DP)*DPHINS_DXI(1))+ &                              !Convective
-                              & ((0.5_DP*PHINS*(1.0_DP/SQRT(A_VALUE))*A_DERIV+SQRT(A_VALUE)*DPHINS_DXI(1))+ &      !Area Gradient
-                              & ((1.0_DP/SQRT(A0_PARAM))-((3.0_DP/(A0_PARAM))*SQRT(A_VALUE)))*(A0_DERIV) + &       !Ref Area Gradient
-                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE))*H_DERIV/H_PARAM+ &                             !Thickness Gradient
-                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE))*E_DERIV/E_PARAM) &                             !Elasticity Gradient
-                              & *beta/(2.0_DP*RHO_PARAM))*DXI_DX(1,1)+(-PHINS*Q_VALUE/A_VALUE**2.0_DP))*PHIMS      !Viscosity
+                              & (-alpha*((Q_VALUE/A_VALUE)**2.0_DP)*DPHINS_DXI(1))+ &                           !Convective
+                              & ((0.5_DP*PHINS*(1.0_DP/SQRT(A_VALUE))*A_DERIV+SQRT(A_VALUE)*DPHINS_DXI(1))+ &   !Area Gradient
+                              & ((1.0_DP/SQRT(A0_PARAM))-((3.0_DP/(A0_PARAM))*SQRT(A_VALUE)))*(A0_DERIV) + &    !Ref Area Gradient
+                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE))*H_DERIV/H_PARAM+ &                          !Thickness Gradient
+                              & (2.0_DP*PHINS*1.5_DP*SQRT(A_VALUE))*E_DERIV/E_PARAM) &                          !Elasticity Gradient
+                              & *beta/(2.0_DP*RHO_PARAM))*DXI_DX(1,1)+(-PHINS*Q_VALUE/A_VALUE**2.0_DP))*PHIMS   !Viscosity
                             JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)= &
                               & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+SUM*JGW
                           END IF
@@ -6692,7 +6693,7 @@ CONTAINS
                                               RHO_PARAM=MATERIALS_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr% &
                                                 & parameters%cmiss%data_dp(2)
                                               CALL NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE(ANALYTIC_FUNCTION_TYPE,X, &
-                                                & CURRENT_TIME,variable_type,GLOBAL_DERIV_INDEX,componentIdx,NUMBER_OF_DIMENSIONS, & 
+                                                & CURRENT_TIME,variable_type,GLOBAL_DERIV_INDEX,componentIdx,NUMBER_OF_DIMENSIONS,& 
                                                 & FIELD_VARIABLE%NUMBER_OF_COMPONENTS,ANALYTIC_PARAMETERS, &
                                                 & MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
                                               !Default to version 1 of each node derivative
@@ -6876,7 +6877,7 @@ CONTAINS
                                                 ! Update dependent field value if this is a splint BC
                                                 BOUNDARY_CONDITION_CHECK_VARIABLE=BOUNDARY_CONDITIONS_VARIABLE% &
                                                   & CONDITION_TYPES(dependentDof)
-                                                IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_FITTED) THEN                                            
+                                                IF(BOUNDARY_CONDITION_CHECK_VARIABLE==BOUNDARY_CONDITION_FIXED_FITTED) THEN 
                                                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,dependentVariableType, &
                                                     & FIELD_VALUES_SET_TYPE,dependentDof,VALUE,ERR,ERROR,*999)
                                                 END IF
@@ -8246,8 +8247,8 @@ CONTAINS
                                               & NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(deriv_idx)%VERSIONS(1)
                                             !Calculation of K values dependent on current mesh topology
                                             MESH_STIFF_VALUES(local_ny)=1.0_DP
-                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
-                                              & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
+                                            CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(EQUATIONS_SET%INDEPENDENT% &
+                                              & INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,local_ny, & 
                                               & MESH_STIFF_VALUES(local_ny),ERR,ERROR,*999)
                                           END DO !deriv_idx
                                         END DO !node_idx
@@ -10718,10 +10719,10 @@ CONTAINS
               KMatrix = 0.0_DP
               CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,elementNumber,equations%INTERPOLATION% &
                 & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
-              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSet%MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & 1,mu,err,error,*999)
-              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSet%MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                & 2,rho,err,error,*999)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSet%MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                & FIELD_VALUES_SET_TYPE,1,mu,err,error,*999)
+              CALL FIELD_PARAMETER_SET_GET_CONSTANT(equationsSet%MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                & FIELD_VALUES_SET_TYPE,2,rho,err,error,*999)
 
               avgVelocity = 0.0_DP
               DO gaussNumber = 1,quadratureVelocity%NUMBER_OF_GAUSS
@@ -11397,8 +11398,8 @@ CONTAINS
         IF(courant > toleranceCourant) THEN
           LOCAL_ERROR="Element "//TRIM(NUMBER_TO_VSTRING(decompElement%user_number, &
             & "*",ERR,ERROR))//" has violated the CFL condition "//TRIM(NUMBER_TO_VSTRING(courant, &
-            & "*",ERR,ERROR))//" <= "//TRIM(NUMBER_TO_VSTRING(toleranceCourant,"*",ERR,ERROR))//". Decrease timestep or increase "// &
-            & "CFL tolerance for the 3D Navier-Stokes problem."
+            & "*",ERR,ERROR))//" <= "//TRIM(NUMBER_TO_VSTRING(toleranceCourant,"*",ERR,ERROR))// &
+            & ". Decrease timestep or increase CFL tolerance for the 3D Navier-Stokes problem."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         END IF
 
@@ -11625,8 +11626,9 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !> Update the solution for the 1D solver with boundary conditions from a lumped parameter model defined by CellML. For more information please see chapter 11 of:  
-  !> L. Formaggia, A. Quarteroni, and A. Veneziani, Cardiovascular mathematics: modeling and simulation of the circulatory system. Milan; New York: Springer, 2009.
+  !> Update the solution for the 1D solver with boundary conditions from a lumped parameter model defined by CellML.
+  !> For more information please see chapter 11 of: L. Formaggia, A. Quarteroni, and A. Veneziani, Cardiovascular mathematics:
+  !> modeling and simulation of the circulatory system. Milan; New York: Springer, 2009.
   SUBROUTINE NavierStokes_Couple1D0D(controlLoop,solver,err,error,*)
 
     !Argument variables
