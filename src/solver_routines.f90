@@ -61,6 +61,7 @@ MODULE SOLVER_ROUTINES
   USE INTERFACE_CONDITIONS_CONSTANTS
   USE INTERFACE_MATRICES_CONSTANTS
   USE ISO_VARYING_STRING
+  USE MATHS
   USE PROBLEM_CONSTANTS
   USE SOLVER_MAPPING_ROUTINES
   USE SOLVER_MATRICES_ROUTINES
@@ -8716,11 +8717,13 @@ CONTAINS
                       CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_SUPERLU_DIST, &
                         & ERR,ERROR,*999)
                     CASE(SOLVER_LAPACK_LIBRARY)
+#if ( PETSC_VERSION_MINOR < 4 )
                       !PETSc will default to LAPACK for seqdense matrix, for mpidense, set to parallel LAPACK
                       IF(COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)>1) THEN
                         CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PLAPACK, &
                           & ERR,ERROR,*999)
                       ENDIF
+#endif
                     CASE(SOLVER_PASTIX_LIBRARY)
 #if ( PETSC_VERSION_MINOR >= 1 )
                       !Set the PC factorisation package to PaStiX
@@ -9132,94 +9135,102 @@ CONTAINS
     TYPE(PETSC_MAT_TYPE) :: petscFactoredMatrix !<The factored matrix obtained by calling MatGetFactor() from PETSc-MUMPS interface 
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Solver_MumpsSetIcntl",err,error,*999)
+    CALL Enters("Solver_MumpsSetIcntl",err,error,*999)
 
     IF(ASSOCIATED(solver)) THEN
-      linearSolver=>solver%LINEAR_SOLVER
-      IF(ASSOCIATED(linearSolver)) THEN
-        linearDirectSolver=>linearSolver%DIRECT_SOLVER
-        IF(ASSOCIATED(linearDirectSolver)) THEN
-          SELECT CASE(linearDirectSolver%DIRECT_SOLVER_TYPE)
-          CASE(SOLVER_DIRECT_LU)
-            SELECT CASE(linearDirectSolver%SOLVER_LIBRARY)
-            CASE(SOLVER_MUMPS_LIBRARY)
-              solverEquations=>solver%SOLVER_EQUATIONS
-              NULLIFY(solverMatrices)
-              IF(ASSOCIATED(solverEquations)) THEN
-                !Solver equations for this solver.
-                solverMatrices=>solverEquations%SOLVER_MATRICES
-              ELSE
-                !No solver equations. See if there are solver equations in the linking solver.
-                linkingSolver=>solver%LINKING_SOLVER
-                IF(ASSOCIATED(linkingSolver)) THEN
-                  linkingSolverEquations=>linkingSolver%SOLVER_EQUATIONS
-                  IF(ASSOCIATED(linkingSolverEquations)) THEN
-                    solverMatrices=>linkingSolverEquations%SOLVER_MATRICES
+      IF(solver%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
+        linearSolver=>solver%LINEAR_SOLVER
+        IF(ASSOCIATED(linearSolver)) THEN
+          IF(linearSolver%LINEAR_SOLVE_TYPE==SOLVER_LINEAR_DIRECT_SOLVE_TYPE) THEN
+            linearDirectSolver=>linearSolver%DIRECT_SOLVER
+            IF(ASSOCIATED(linearDirectSolver)) THEN
+              SELECT CASE(linearDirectSolver%DIRECT_SOLVER_TYPE)
+              CASE(SOLVER_DIRECT_LU)
+                SELECT CASE(linearDirectSolver%SOLVER_LIBRARY)
+                CASE(SOLVER_MUMPS_LIBRARY)
+                  solverEquations=>solver%SOLVER_EQUATIONS
+                  NULLIFY(solverMatrices)
+                  IF(ASSOCIATED(solverEquations)) THEN
+                    !Solver equations for this solver.
+                    solverMatrices=>solverEquations%SOLVER_MATRICES
                   ELSE
-                    CALL FLAG_ERROR("Solver equations is not associated for the linking solver.",ERR,ERROR,*999)
+                    !No solver equations. See if there are solver equations in the linking solver.
+                    linkingSolver=>solver%LINKING_SOLVER
+                    IF(ASSOCIATED(linkingSolver)) THEN
+                      linkingSolverEquations=>linkingSolver%SOLVER_EQUATIONS
+                      IF(ASSOCIATED(linkingSolverEquations)) THEN
+                        solverMatrices=>linkingSolverEquations%SOLVER_MATRICES
+                      ELSE
+                        CALL FlagError("Solver equations is not associated for the linking solver.",err,error,*999)
+                      ENDIF
+                    ENDIF
                   ENDIF
-                ENDIF
-              ENDIF
-              IF(ASSOCIATED(solverMatrices)) THEN
-                IF(solverMatrices%NUMBER_OF_MATRICES==1) THEN
-                  solverMatrix=>solverMatrices%MATRICES(1)%PTR%MATRIX
-                  IF(ASSOCIATED(solverMatrix)) THEN
-                    IF(ASSOCIATED(solverMatrix%PETSC)) THEN
+                  IF(ASSOCIATED(solverMatrices)) THEN
+                    IF(solverMatrices%NUMBER_OF_MATRICES==1) THEN
+                      solverMatrix=>solverMatrices%MATRICES(1)%PTR%MATRIX
+                      IF(ASSOCIATED(solverMatrix)) THEN
+                        IF(ASSOCIATED(solverMatrix%PETSC)) THEN
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 1 )
-                      !Call MatGetFactor to create matrix petscFactoredMatrix from preconditioner context
-                      CALL Petsc_PCFactorSetUpMatSolverPackage(linearDirectSolver%PC,err,error,*999)
-                      CALL Petsc_PCFactorGetMatrix(linearDirectSolver%PC,petscFactoredMatrix,err,error,*999)
-                      !Set ICNTL(icntl)=ivalue
-                      CALL Petsc_MatMumpsSetIcntl(petscFactoredMatrix,icntl,ivalue,err,error,*999)
+                          !Call MatGetFactor to create matrix petscFactoredMatrix from preconditioner context
+                          CALL Petsc_PCFactorSetUpMatSolverPackage(linearDirectSolver%PC,err,error,*999)
+                          CALL Petsc_PCFactorGetMatrix(linearDirectSolver%PC,petscFactoredMatrix,err,error,*999)
+                          !Set ICNTL(icntl)=ivalue
+                          CALL Petsc_MatMumpsSetIcntl(petscFactoredMatrix,icntl,ivalue,err,error,*999)
 #else
-                      CALL FLAG_ERROR("MatMumpsSetIcntl not available in this version of PETSc. "// &
-                        & "Use version 3.1 or greater.",ERR,ERROR,*999)
+                          CALL FlagError("MatMumpsSetIcntl not available in this version of PETSc. "// &
+                            & "Use version 3.1 or greater.",ERR,ERROR,*999)
 #endif
+                        ELSE
+                          CALL FlagError("Solver matrix PETSc is not associated.",err,error,*999)
+                        ENDIF
+                      ELSE
+                        CALL FlagError("Solver matrices distributed matrix is not associated.",err,error,*999)
+                      ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Solver matrix PETSc is not associated.",err,error,*999)
+                      localError="The given number of solver matrices of "// &
+                        & TRIM(NumberToVstring(solverMatrices%NUMBER_OF_MATRICES,"*",err,error))// &
+                        & " is invalid. There should only be one solver matrix for a linear direct solver."
+                      CALL FlagError(localError,err,error,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",err,error,*999)
+                    CALL FlagError("Solver matrices not associated.",ERR,ERROR,*999)
                   ENDIF
-                ELSE
-                  localError="The given number of solver matrices of "// &
-                    & TRIM(NUMBER_TO_VSTRING(solverMatrices%NUMBER_OF_MATRICES,"*",err,error))// &
-                    & " is invalid. There should only be one solver matrix for a linear direct solver."
-                  CALL FLAG_ERROR(localError,err,error,*999)
-                ENDIF
-              ELSE
-                CALL FLAG_ERROR("Solver matrices not associated.",ERR,ERROR,*999)
-              ENDIF
-            CASE DEFAULT
-              localError="The solver library type of "// &
-                & TRIM(NUMBER_TO_VSTRING(linearDirectSolver%SOLVER_LIBRARY,"*",err,error))//" is invalid. "// &
-                & "Use MUMPS library when calling Solver_MumpsSetIcntl"
-              CALL FLAG_ERROR(localError,err,error,*999)
-            END SELECT
-          CASE(SOLVER_DIRECT_CHOLESKY)
-            CALL FLAG_ERROR("Not implemented.",err,error,*999)
-          CASE(SOLVER_DIRECT_SVD)
-            CALL FLAG_ERROR("Not implemented.",err,error,*999)
-          CASE DEFAULT
-            localError="The direct solver type of "// &
-              & TRIM(NUMBER_TO_VSTRING(linearDirectSolver%DIRECT_SOLVER_TYPE,"*",err,error))// &
-              & " is invalid."
-            CALL FLAG_ERROR(localError,err,error,*999)
-          END SELECT
+                CASE DEFAULT
+                  localError="The solver library type of "// &
+                    & TRIM(NumberToVstring(linearDirectSolver%SOLVER_LIBRARY,"*",err,error))//" is invalid. "// &
+                    & "Use MUMPS library when calling Solver_MumpsSetIcntl"
+                  CALL FlagError(localError,err,error,*999)
+                END SELECT
+              CASE(SOLVER_DIRECT_CHOLESKY)
+                CALL FlagError("Not implemented.",err,error,*999)
+              CASE(SOLVER_DIRECT_SVD)
+                CALL FlagError("Not implemented.",err,error,*999)
+              CASE DEFAULT
+                localError="The direct solver type of "// &
+                  & TRIM(NumberToVstring(linearDirectSolver%DIRECT_SOLVER_TYPE,"*",err,error))// &
+                  & " is invalid."
+                CALL FlagError(localError,err,error,*999)
+              END SELECT
+          ELSE
+            CALL FlagError("Linear solver direct solver is not associated.",err,error,*999)
+          ENDIF
         ELSE
-          CALL FLAG_ERROR("Linear solver solver is not associated.",err,error,*999)
+          CALL FlagError("Solver is not a direct linear solver.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linear direct solver linear solver is not associated.",err,error,*999)
+         CALL FlagError("Solver linear solver is not associated.",err,error,*999)
+       ENDIF
+      ELSE
+        CALL FlagError("Solver is not a linear solver.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linear direct solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
     
-    CALL EXITS("Solver_MumpsSetIcntl")
+    CALL Exits("Solver_MumpsSetIcntl")
     RETURN
-999 CALL ERRORS("Solver_MumpsSetIcntl",err,error)    
-    CALL EXITS("Solver_MumpsSetIcntl")
+999 CALL Errors("Solver_MumpsSetIcntl",err,error)    
+    CALL Exits("Solver_MumpsSetIcntl")
     RETURN 1
     
   END SUBROUTINE Solver_MumpsSetIcntl
@@ -12676,7 +12687,6 @@ CONTAINS
                                               & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number)% &
                                               & COUPLING_COEFFICIENTS(solver_row_idx)
                                             VALUE=RESIDUAL_VALUE*row_coupling_coefficient
-!                                             VALUE=VALUE*DYNAMIC_SOLVER%THETA(1)
                                             !Add in nonlinear residual values
                                             CALL DISTRIBUTED_VECTOR_VALUES_ADD(SOLVER_RESIDUAL_VECTOR,solver_row_number,VALUE, &
                                               & ERR,ERROR,*999)
@@ -12705,7 +12715,7 @@ CONTAINS
                           CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !equations_set_idx
-                  !
+
                       !Loop over the interface conditions
                       DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
                         INTERFACE_CONDITION=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
@@ -15525,22 +15535,22 @@ CONTAINS
                         CALL PETSC_SNESGETCONVERGEDREASON(LINESEARCH_SOLVER%SNES,CONVERGED_REASON,ERR,ERROR,*999)
                         SELECT CASE(CONVERGED_REASON)
                         CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged function count.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged function count.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_LINEAR_SOLVE)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged linear solve.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged linear solve.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_FNORM_NAN)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged F Norm NaN.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged F Norm NaN.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_MAX_IT)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged maximum iterations.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged maximum iterations.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged line search failure.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged line search failure.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged local minimum.", &
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged local minimum.", &
                             & ERR,ERROR,*999)
                         END SELECT
                          IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
@@ -17095,7 +17105,25 @@ CONTAINS
       IF(ASSOCIATED(newtonSolver)) THEN
         SELECT CASE(newtonSolver%convergenceTestType)
           CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
-            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",norm,err,error,*999)
+!            CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",norm,err,error,*999)
+            SELECT CASE(newtonSolver%NEWTON_SOLVE_TYPE)
+            CASE(SOLVER_NEWTON_LINESEARCH)
+              linesearchSolver=>newtonSolver%LINESEARCH_SOLVER
+              IF(ASSOCIATED(linesearchSolver)) THEN
+                CALL petsc_SnesLineSearchGetNorms(linesearchSolver%sneslinesearch,xnorm,fnorm,ynorm,err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solution Norm    = ",xnorm,err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Solution Update Norm    = ",ynorm,err,error,*999)
+                CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Function Norm    = ",fnorm,err,error,*999)
+              ELSE
+                CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",err,error,*999)
+              ENDIF
+            CASE(SOLVER_NEWTON_TRUSTREGION)
+              CALL FLAG_ERROR("The Newton Trust region solver is not implemented.",err,error,*999)
+            CASE DEFAULT
+              localError="The Newton solve type of "// &
+                & TRIM(NUMBER_TO_VSTRING(newtonSolver%NEWTON_SOLVE_TYPE,"*",err,error))//"is invalid."
+              CALL FLAG_ERROR(localError,err,error,*999)
+            END SELECT
           CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
             SELECT CASE(newtonSolver%NEWTON_SOLVE_TYPE)
             CASE(SOLVER_NEWTON_LINESEARCH)

@@ -851,7 +851,9 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_IMPERMEABLE_WALL = BOUNDARY_CONDITION_IMPERMEABLE_WALL
   INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY = BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY !<A Neumann integrated boundary condition, and no point values will be integrated over a face or line that includes this dof
 
-  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FixedFitted = BOUNDARY_CONDITION_FixedFitted
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FIXED_FITTED = BOUNDARY_CONDITION_FIXED_FITTED
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FIXED_NONREFLECTING = BOUNDARY_CONDITION_FIXED_NONREFLECTING
+  INTEGER(INTG), PARAMETER :: CMISS_BOUNDARY_CONDITION_FIXED_CELLML = BOUNDARY_CONDITION_FIXED_CELLML
   !>@}
   !> \addtogroup OPENCMISS_BoundaryConditionSparsityTypes OPENCMISS::BoundaryConditions::SparsityTypes
   !> \brief Storage type for matrices used by boundary conditions.
@@ -929,7 +931,8 @@ MODULE OPENCMISS
     & CMISS_BOUNDARY_CONDITION_FIXED_WALL,CMISS_BOUNDARY_CONDITION_FIXED_INLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL, &
     & CMISS_BOUNDARY_CONDITION_FREE_WALL,CMISS_BOUNDARY_CONDITION_FIXED_OUTLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
     & CMISS_BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,CMISS_BOUNDARY_CONDITION_IMPERMEABLE_WALL, &
-    & CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY,CMISS_BOUNDARY_CONDITION_FixedFitted
+    & CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY,CMISS_BOUNDARY_CONDITION_FIXED_FITTED, &
+    & CMISS_BOUNDARY_CONDITION_FIXED_NONREFLECTING,CMISS_BOUNDARY_CONDITION_FIXED_CELLML
 
   PUBLIC CMISS_BOUNDARY_CONDITION_NEUMANN_POINT,CMISS_BOUNDARY_CONDITION_NEUMANN_INTEGRATED,CMISS_BOUNDARY_CONDITION_DIRICHLET
   PUBLIC CMISS_BOUNDARY_CONDITION_CAUCHY,CMISS_BOUNDARY_CONDITION_ROBIN,CMISS_BOUNDARY_CONDITION_FIXED_INCREMENTED
@@ -1365,6 +1368,13 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSControlLoop_MaximumIterationsSetObj
   END INTERFACE !CMISSControlLoop_MaximumIterationsSet
 
+  !>Sets/changes the convergence tolerance for a while control loop. \todo need a get method
+  INTERFACE CMISSControlLoop_AbsoluteToleranceSet
+    MODULE PROCEDURE CMISSControlLoop_AbsoluteToleranceSetNumber0
+    MODULE PROCEDURE CMISSControlLoop_AbsoluteToleranceSetNumber1
+    MODULE PROCEDURE CMISSControlLoop_AbsoluteToleranceSetObj
+  END INTERFACE !CMISSControlLoop_AbsoluteToleranceSet
+
   !>Returns the number of sub loops for a control loop.
   INTERFACE CMISSControlLoop_NumberOfSubLoopsGet
     MODULE PROCEDURE CMISSControlLoop_NumberOfSubLoopsGetNumber0
@@ -1443,6 +1453,8 @@ MODULE OPENCMISS
   PUBLIC CMISSControlLoop_LabelGet,CMISSControlLoop_LabelSet
 
   PUBLIC CMISSControlLoop_MaximumIterationsSet
+
+  PUBLIC CMISSControlLoop_AbsoluteToleranceSet
 
   PUBLIC CMISSControlLoop_NumberOfSubLoopsGet,CMISSControlLoop_NumberOfSubLoopsSet
 
@@ -2012,15 +2024,15 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_NONLINEAR = EQUATIONS_NONLINEAR !<The equations are non-linear. \see \see OPENCMISS_EquationsLinearityTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_NONLINEAR_BCS = EQUATIONS_NONLINEAR_BCS !<The equations have non-linear boundary conditions. \see \see OPENCMISS_EquationsLinearityTypes,OPENCMISS
   !>@}
-  !> \addtogroup OPENCMISS_EquationsTimeDepedenceTypes OPENCMISS::Equations::TimeDepedenceTypes
+  !> \addtogroup OPENCMISS_EquationsTimeDependenceTypes OPENCMISS::Equations::TimeDependenceTypes
   !> \brief The equations time dependence types
   !> \see OPENCMISS::Equations,OPENCMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_STATIC = EQUATIONS_STATIC !<The equations are static and have no time dependence. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_QUASISTATIC = EQUATIONS_QUASISTATIC !<The equations are quasi-static. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_FIRST_ORDER_DYNAMIC = EQUATIONS_FIRST_ORDER_DYNAMIC !<The equations are first order dynamic. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SECOND_ORDER_DYNAMIC = EQUATIONS_SECOND_ORDER_DYNAMIC !<The equations are a second order dynamic. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_TIME_STEPPING = EQUATIONS_TIME_STEPPING !<The equations are for time stepping. \see OPENCMISS_EquationsTimeDepedenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_STATIC = EQUATIONS_STATIC !<The equations are static and have no time dependence. \see OPENCMISS_EquationsTimeDependenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_QUASISTATIC = EQUATIONS_QUASISTATIC !<The equations are quasi-static. \see OPENCMISS_EquationsTimeDependenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_FIRST_ORDER_DYNAMIC = EQUATIONS_FIRST_ORDER_DYNAMIC !<The equations are first order dynamic. \see OPENCMISS_EquationsTimeDependenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SECOND_ORDER_DYNAMIC = EQUATIONS_SECOND_ORDER_DYNAMIC !<The equations are a second order dynamic. \see OPENCMISS_EquationsTimeDependenceTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_TIME_STEPPING = EQUATIONS_TIME_STEPPING !<The equations are for time stepping. \see OPENCMISS_EquationsTimeDependenceTypes,OPENCMISS
   !>@}
   !>@}
 
@@ -2184,6 +2196,7 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_TYPE = EQUATIONS_SET_HELMHOLTZ_EQUATION_TYPE !<Helmholtz equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_WAVE_EQUATION_TYPE = EQUATIONS_SET_WAVE_EQUATION_TYPE !<Wave equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_DIFFUSION_EQUATION_TYPE = EQUATIONS_SET_DIFFUSION_EQUATION_TYPE !<Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ADVECTION_EQUATION_TYPE = EQUATIONS_SET_ADVECTION_EQUATION_TYPE !<Advection-Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TYPE = &
     & EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TYPE !<Advection-Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE = EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE !<Reaction-Diffusion equation equations set type \see OPENCMISS_EquationsSetTypes,OPENCMISS
@@ -2280,19 +2293,28 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE !<Static Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE = & 
-    & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE !<Transient SUPG Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE =  &
-    & EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE !<Transient SUPG Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE = & 
-    & EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE !<Transient SUPG Navier-Stokes equations set with coupled multidomain method subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE = &
-    & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE = EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE !<Static Characteristics equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE = &
-    & EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE !<Static Characteristics equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE = &
-    & EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE !<Coupled 1D-0D Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT_RBS_NAVIER_STOKES_SUBTYPE = & 
+    & EQUATIONS_SET_TRANSIENT_RBS_NAVIER_STOKES_SUBTYPE !<Transient residual-based stabilisation Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STATIC_RBS_NAVIER_STOKES_SUBTYPE =  &
+    & EQUATIONS_SET_STATIC_RBS_NAVIER_STOKES_SUBTYPE !<Transient residual-based stabilisation Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MULTISCALE3D_NAVIER_STOKES_SUBTYPE = & 
+    & EQUATIONS_SET_MULTISCALE3D_NAVIER_STOKES_SUBTYPE !<Transient stabilised 3D Navier-Stokes equations set with coupled multiscale boundaries subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTITUTIVE_MU_NAVIER_STOKES_SUBTYPE = & 
+    & EQUATIONS_SET_CONSTITUTIVE_MU_NAVIER_STOKES_SUBTYPE !<Transient stabilised 3D Navier-Stokes equations set with coupled constitutive model for non-Newtonian viscosity \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT1D_NAVIER_STOKES_SUBTYPE = &
+    & EQUATIONS_SET_TRANSIENT1D_NAVIER_STOKES_SUBTYPE !<TRANSIENT1D Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_TRANSIENT1D_ADV_NAVIER_STOKES_SUBTYPE = &
+    & EQUATIONS_SET_TRANSIENT1D_ADV_NAVIER_STOKES_SUBTYPE !<TRANSIENT1D Navier-Stokes equations set subtype with coupled Advection \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CHARACTERISTIC_SUBTYPE = &
+    & EQUATIONS_SET_CHARACTERISTIC_SUBTYPE !<Static Characteristics equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_COUPLED1D0D_NAVIER_STOKES_SUBTYPE = &
+    & EQUATIONS_SET_COUPLED1D0D_NAVIER_STOKES_SUBTYPE !<Coupled 1D-0D Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_COUPLED1D0D_ADV_NAVIER_STOKES_SUBTYPE = &
+    & EQUATIONS_SET_COUPLED1D0D_ADV_NAVIER_STOKES_SUBTYPE !<Coupled 1D-0D Navier-Stokes equations set subtype with coupled Advection \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STREE1D0D_SUBTYPE = &
+    & EQUATIONS_SET_STREE1D0D_SUBTYPE !<Coupled 1D-0D Navier-Stokes equations set subtype with coupled Advection \see
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_STREE1D0D_ADV_SUBTYPE = &
+    & EQUATIONS_SET_STREE1D0D_ADV_SUBTYPE !<Coupled 1D-0D Navier-Stokes equations set subtype with coupled Advection \see
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_PGM_NAVIER_STOKES_SUBTYPE !<PGM Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE = EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE !<Optimised Navier-Stokes equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
@@ -2346,6 +2368,8 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_MULTI_COMP_TRANSPORT_DIFFUSION_SUBTYPE !<Multi-compartment transport diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
 
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_ADVECTION_SUBTYPE = &
+    & EQUATIONS_SET_ADVECTION_SUBTYPE !<advection equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE = &
     & EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE !<No source advection diffusion equations set subtype \see OPENCMISS_EquationsSetSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFFUSION_SUBTYPE = &
@@ -2582,16 +2606,12 @@ MODULE OPENCMISS
     & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE !< fully developed 2D channel flow (parabolic) \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN= &
     & EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN !< 2D dynamic nonlinear Taylor-Green vortex decay \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield= &
-    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds= &
-    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen= &
-    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta= &
-    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta !< A fourier decomposed flow waveform for boundary conditions
-  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid= &
-    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid !< A sinusoidal flow waveform
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_AORTA= &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_AORTA !< A fourier decomposed flow waveform for boundary conditions
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID= &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID !< A sinusoidal flow waveform
+  INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_SPLINT_FROM_FILE= &
+    & EQUATIONS_SET_NAVIER_STOKES_EQUATION_SPLINT_FROM_FILE !< Spline integration of dependent values specified in a file
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 = EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3 !<u=tbd \see OPENCMISS_EquationsSetNavierStokesAnalyticFunctionTypes,OPENCMISS
@@ -2697,7 +2717,7 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_LAPLACE_EQUATION_TYPE,CMISS_EQUATIONS_SET_POISEUILLE_EQUATION_TYPE, &
     & CMISS_EQUATIONS_SET_POISSON_EQUATION_TYPE, &
     & CMISS_EQUATIONS_SET_HELMHOLTZ_EQUATION_TYPE,CMISS_EQUATIONS_SET_WAVE_EQUATION_TYPE, &
-    & CMISS_EQUATIONS_SET_DIFFUSION_EQUATION_TYPE, &
+    & CMISS_EQUATIONS_SET_DIFFUSION_EQUATION_TYPE,CMISS_EQUATIONS_SET_ADVECTION_EQUATION_TYPE, &
     & CMISS_EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TYPE,CMISS_EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE, &
     & CMISS_EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE,CMISS_EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE, &
     & CMISS_EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE, &
@@ -2736,12 +2756,14 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_ALE_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_STATIC_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_LAPLACE_NAVIER_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_TRANSIENT_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE, CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_EQUATIONS_SET_STATIC_SUPG_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_EQUATIONS_SET_STATIC_CHARACTERISTIC_SUBTYPE, &
-    & CMISS_EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE, &
-    & CMISS_EQUATIONS_SET_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE, &
-    & CMISS_EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_TRANSIENT1D_NAVIER_STOKES_SUBTYPE, CMISS_EQUATIONS_SET_TRANSIENT_RBS_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_STATIC_RBS_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_CHARACTERISTIC_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_TRANSIENT1D_ADV_NAVIER_STOKES_SUBTYPE, CMISS_EQUATIONS_SET_COUPLED1D0D_ADV_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_STREE1D0D_SUBTYPE, CMISS_EQUATIONS_SET_STREE1D0D_ADV_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_MULTISCALE3D_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_CONSTITUTIVE_MU_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_COUPLED1D0D_NAVIER_STOKES_SUBTYPE, &
     & CMISS_EQUATIONS_SET_OPTIMISED_NAVIER_STOKES_SUBTYPE,CMISS_EQUATIONS_SET_STANDARD_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_QUASISTATIC_DARCY_SUBTYPE,CMISS_EQUATIONS_SET_ALE_DARCY_SUBTYPE, &
     & CMISS_EQUATIONS_SET_TRANSIENT_DARCY_SUBTYPE, &
@@ -2760,6 +2782,7 @@ MODULE OPENCMISS
     & CMISS_EQUATIONS_SET_NO_SOURCE_ALE_DIFFUSION_SUBTYPE,CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ALE_DIFFUSION_SUBTYPE, &
     & CMISS_EQUATIONS_SET_LINEAR_SOURCE_ALE_DIFFUSION_SUBTYPE,CMISS_EQUATIONS_SET_QUADRATIC_SOURCE_ALE_DIFFUSION_SUBTYPE, &
     & CMISS_EQUATIONS_SET_EXPONENTIAL_SOURCE_ALE_DIFFUSION_SUBTYPE, &
+    & CMISS_EQUATIONS_SET_ADVECTION_SUBTYPE, &
     & CMISS_EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE, &
     & CMISS_EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFFUSION_SUBTYPE, &
     & CMISS_EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE, &
@@ -2854,11 +2877,9 @@ MODULE OPENCMISS
 
   PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE, &
     & CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN
-  PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSheffield, &
-    &    CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateReymonds, &
-    &    CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateOlufsen, &
-    &    CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateAorta, &
-    &    CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FlowrateSinusoid
+  PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_AORTA, &
+    &    CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID, &
+    &    CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_SPLINT_FROM_FILE
   PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1,CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2, &
     & CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3
   PUBLIC CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4,CMISS_EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5
@@ -5323,12 +5344,15 @@ MODULE OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE = PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE !<Static Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE = PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE !<Laplace type Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE !<Transient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE !<Transient SUPG Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE = &
-    & PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_MULTIDOMAIN_SUBTYPE !<Transient SUPG Navier-Stokes problem with coupled multidomain method subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE = PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE !<1DTransient Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE = PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE !<Coupled 1D-0D Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
-  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_Coupled1dDae_NAVIER_STOKES_SUBTYPE = Problem_Coupled1dDaeNavierStokesSubtype !<Coupled 1D-DAE Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT_RBS_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT_RBS_NAVIER_STOKES_SUBTYPE !<Transient stabilised Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_MULTISCALE_NAVIER_STOKES_SUBTYPE = &
+    & PROBLEM_MULTISCALE_NAVIER_STOKES_SUBTYPE !<Transient stabilised Navier-Stokes problem with multiscale boundary coupling subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT1D_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT1D_NAVIER_STOKES_SUBTYPE !<TRANSIENT1D Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_COUPLED1D0D_NAVIER_STOKES_SUBTYPE = PROBLEM_COUPLED1D0D_NAVIER_STOKES_SUBTYPE !<Coupled 1D-DAE Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_TRANSIENT1D_ADV_NAVIER_STOKES_SUBTYPE = PROBLEM_TRANSIENT1D_ADV_NAVIER_STOKES_SUBTYPE !<TRANSIENT1D Navier-Stokes problem subtype with Advection \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_COUPLED1D0D_ADV_NAVIER_STOKES_SUBTYPE = PROBLEM_COUPLED1D0D_ADV_NAVIER_STOKES_SUBTYPE !<Coupled 1D-DAE Navier-Stokes problem subtype with Advection \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STREE1D0D_SUBTYPE = PROBLEM_COUPLED1D0D_ADV_NAVIER_STOKES_SUBTYPE !<Coupled 1D-DAE Navier-Stokes problem subtype with Advection \see OPENCMISS_ProblemSubtypes,OPENCMISS
+  INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_STREE1D0D_ADV_SUBTYPE = PROBLEM_COUPLED1D0D_ADV_NAVIER_STOKES_SUBTYPE !<Coupled 1D-DAE Navier-Stokes problem subtype with Advection \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE = PROBLEM_ALE_NAVIER_STOKES_SUBTYPE !<ALE Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE = PROBLEM_PGM_NAVIER_STOKES_SUBTYPE !<PGM Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
   INTEGER(INTG), PARAMETER :: CMISS_PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE = PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE !<Optimised Navier-Stokes problem subtype \see OPENCMISS_ProblemSubtypes,OPENCMISS
@@ -5510,11 +5534,12 @@ MODULE OPENCMISS
     & CMISS_PROBLEM_OPTIMISED_STOKES_SUBTYPE,CMISS_PROBLEM_ALE_STOKES_SUBTYPE,CMISS_PROBLEM_PGM_STOKES_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_STATIC_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_LAPLACE_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_PROBLEM_1DTRANSIENT_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_TRANSIENT_SUPG_NAVIER_STOKES_CMM_SUBTYPE, &
-    & CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
-    & CMISS_PROBLEM_Coupled1dDae_NAVIER_STOKES_SUBTYPE
+    & CMISS_PROBLEM_TRANSIENT_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_TRANSIENT_RBS_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_PGM_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_OPTIMISED_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_TRANSIENT1D_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_COUPLED1D0D_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_TRANSIENT1D_ADV_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_COUPLED1D0D_ADV_NAVIER_STOKES_SUBTYPE, &
+    & CMISS_PROBLEM_STREE1D0D_ADV_SUBTYPE,CMISS_PROBLEM_STREE1D0D_SUBTYPE, &
+    & CMISS_PROBLEM_ALE_NAVIER_STOKES_SUBTYPE,CMISS_PROBLEM_MULTISCALE_NAVIER_STOKES_SUBTYPE
 
   PUBLIC CMISS_PROBLEM_STANDARD_DARCY_SUBTYPE,CMISS_PROBLEM_QUASISTATIC_DARCY_SUBTYPE,CMISS_PROBLEM_ALE_DARCY_SUBTYPE, &
     & CMISS_PROBLEM_TRANSIENT_DARCY_SUBTYPE,CMISS_PROBLEM_PGM_DARCY_SUBTYPE,CMISS_PROBLEM_PGM_TRANSIENT_DARCY_SUBTYPE
@@ -16485,6 +16510,110 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets/changes the maximum iterations for a while control loop identified by user numbers.
+  SUBROUTINE CMISSControlLoop_AbsoluteToleranceSetNumber0(problemUserNumber,controlLoopIdentifier,absoluteTolerance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier.
+    REAL(DP), INTENT(IN) :: absoluteTolerance !<The absolute tolerance value for a control loop.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSControlLoop_AbsoluteToleranceSetNumber0",err,error,*999)
+
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,controlLoopIdentifier,CONTROL_LOOP,err,error,*999)
+      CALL ControlLoop_AbsoluteToleranceSet(CONTROL_LOOP,absoluteTolerance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSControlLoop_AbsoluteToleranceSetNumber0")
+    RETURN
+999 CALL ERRORS("CMISSControlLoop_AbsoluteToleranceSetNumber0",err,error)
+    CALL EXITS("CMISSControlLoop_AbsoluteToleranceSetNumber0")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSControlLoop_AbsoluteToleranceSetNumber0
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum iterations for a while control loop identified by user numbers.
+  SUBROUTINE CMISSControlLoop_AbsoluteToleranceSetNumber1(problemUserNumber,controlLoopIdentifiers,absoluteTolerance,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem to set the maximum iterations for.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifiers(:) !<The control loop identifiers.
+    REAL(DP), INTENT(IN) :: absoluteTolerance !<The absolute tolerance value for a control loop.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
+    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
+    TYPE(VARYING_STRING) :: LOCAL_ERROR
+
+    CALL ENTERS("CMISSControlLoop_AbsoluteToleranceSetNumber1",err,error,*999)
+
+    NULLIFY(CONTROL_LOOP)
+    NULLIFY(PROBLEM)
+    CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,controlLoopIdentifiers,CONTROL_LOOP,err,error,*999)
+      CALL ControlLoop_AbsoluteToleranceSet(CONTROL_LOOP,absoluteTolerance,err,error,*999)
+    ELSE
+      LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSControlLoop_AbsoluteToleranceSetNumber1")
+    RETURN
+999 CALL ERRORS("CMISSControlLoop_AbsoluteToleranceSetNumber1",err,error)
+    CALL EXITS("CMISSControlLoop_AbsoluteToleranceSetNumber1")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSControlLoop_AbsoluteToleranceSetNumber1
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets/changes the maximum iterations for a while control loop identified by an object.
+  SUBROUTINE CMISSControlLoop_AbsoluteToleranceSetObj(controlLoop,absoluteTolerance,err)
+
+    !Argument variables
+    TYPE(CMISSControlLoopType), INTENT(INOUT) :: controlLoop !<The control loop to set the maximum iterations for.
+    REAL(DP), INTENT(IN) :: absoluteTolerance !<The absolute tolerance value for a control loop.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+
+    CALL ENTERS("CMISSControlLoop_AbsoluteToleranceSetObj",err,error,*999)
+
+    CALL ControlLoop_AbsoluteToleranceSet(controlLoop%CONTROL_LOOP,absoluteTolerance,err,error,*999)
+
+    CALL EXITS("CMISSControlLoop_AbsoluteToleranceSetObj")
+    RETURN
+999 CALL ERRORS("CMISSControlLoop_AbsoluteToleranceSetObj",err,error)
+    CALL EXITS("CMISSControlLoop_AbsoluteToleranceSetObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSControlLoop_AbsoluteToleranceSetObj
+
+  !
+  !================================================================================================================================
+  !
+  
   !>Returns the number of sub-control loops for a control loop identified by user numbers.
   SUBROUTINE CMISSControlLoop_NumberOfSubLoopsGetNumber0(problemUserNumber,controlLoopIdentifier,numberOfSubLoops,err)
 
@@ -17112,7 +17241,7 @@ CONTAINS
 
   !>Returns the time parameters for a time control loop identified by user numbers.
   SUBROUTINE CMISSControlLoop_TimesGetNumber0(problemUserNumber,controlLoopIdentifier,startTime,stopTime,timeIncrement, &
-    & currentTime,err)
+    & currentTime,currentLoopIteration,outputIterationNumber,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem to get the time parameters for for.
@@ -17121,6 +17250,8 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: stopTime !<On return, the stop time for the time control loop.
     REAL(DP), INTENT(OUT) :: timeIncrement !<On return, the time increment for the time control loop.
     REAL(DP), INTENT(OUT) :: currentTime !<On return, the current time for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the iteration number for the current loop.
+    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the iteration number for the time control loop.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
@@ -17134,7 +17265,8 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,controlLoopIdentifier,CONTROL_LOOP,err,error,*999)
-      CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime,err,error,*999)
+      CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime, &
+        & currentLoopIteration,outputIterationNumber,err,error,*999)
     ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
@@ -17155,7 +17287,7 @@ CONTAINS
 
   !>Returns the time parameters for a time control loop identified by user numbers.
   SUBROUTINE CMISSControlLoop_TimesGetNumber1(problemUserNumber,controlLoopIdentifiers,startTime,stopTime,timeIncrement, &
-    & currentTime,err)
+    & currentTime,currentLoopIteration,outputIterationNumber,err)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem to get the time parameters for for.
@@ -17164,6 +17296,8 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: stopTime !<On return, the stop time for the time control loop.
     REAL(DP), INTENT(OUT) :: timeIncrement !<On return, the time increment for the time control loop.
     REAL(DP), INTENT(OUT) :: currentTime !<On return, the current time for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the iteration number for the current loop.
+    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the iteration number for the time control loop.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
@@ -17177,7 +17311,8 @@ CONTAINS
     CALL PROBLEM_USER_NUMBER_FIND(problemUserNumber,PROBLEM,err,error,*999)
     IF(ASSOCIATED(PROBLEM)) THEN
       CALL PROBLEM_CONTROL_LOOP_GET(PROBLEM,controlLoopIdentifiers,CONTROL_LOOP,err,error,*999)
-      CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime,err,error,*999)
+      CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime, &
+        & currentLoopIteration,outputIterationNumber,err,error,*999)
    ELSE
       LOCAL_ERROR="A problem with an user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
       CALL FLAG_ERROR(LOCAL_ERROR,err,error,*999)
@@ -17197,7 +17332,8 @@ CONTAINS
   !
 
   !>Returns the time parameters for a time control loop identified by an object.
-  SUBROUTINE CMISSControlLoop_TimesGetObj(controlLoop,startTime,stopTime,timeIncrement,currentTime,err)
+  SUBROUTINE CMISSControlLoop_TimesGetObj(controlLoop,startTime,stopTime,timeIncrement,currentTime, &
+    & currentLoopIteration,outputIterationNumber,err)
 
     !Argument variables
     TYPE(CMISSControlLoopType), INTENT(IN) :: controlLoop !<The control loop to get the times for.
@@ -17205,12 +17341,15 @@ CONTAINS
     REAL(DP), INTENT(OUT) :: stopTime !<On return, the stop time for the time control loop.
     REAL(DP), INTENT(OUT) :: timeIncrement !<On return, the time increment for the time control loop.
     REAL(DP), INTENT(OUT) :: currentTime !<On return, the current time for the time control loop.
+    INTEGER(INTG), INTENT(OUT) :: currentLoopIteration !<On return, the iteration number for the current loop.
+    INTEGER(INTG), INTENT(OUT) :: outputIterationNumber !<On return, the iteration number for the time control loop.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
     CALL ENTERS("CMISSControlLoop_TimesGetObj",err,error,*999)
 
-    CALL CONTROL_LOOP_TIMES_GET(controlLoop%CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime,err,error,*999)
+    CALL CONTROL_LOOP_TIMES_GET(controlLoop%CONTROL_LOOP,startTime,stopTime,timeIncrement,currentTime, &
+      & currentLoopIteration,outputIterationNumber,err,error,*999)
 
     CALL EXITS("CMISSControlLoop_TimesGetObj")
     RETURN
@@ -32329,15 +32468,15 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
-    CALL ENTERS("CMISSField_ParameterSetGetGaussPointDPObj",err,error,*999)
+    CALL Enters("CMISSField_ParameterSetGetGaussPointDPObj",err,error,*999)
 
-    CALL FIELD_PARAMETER_SET_GET_GAUSS_POINT(field%FIELD,variableType,fieldSetType,userElementNumber,gaussPointNumber,&
-    & componentNumber,value, err,error,*999)
+    CALL Field_ParameterSetGetGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+      & componentNumber,value,err,error,*999)
 
-    CALL EXITS("CMISSField_ParameterSetGetGaussPointDPObj")
+    CALL Exits("CMISSField_ParameterSetGetGaussPointDPObj")
     RETURN
-999 CALL ERRORS("CMISSField_ParameterSetGetGaussPointDPObj",err,error)
-    CALL EXITS("CMISSField_ParameterSetGetGaussPointDPObj")
+999 CALL Errors("CMISSField_ParameterSetGetGaussPointDPObj",err,error)
+    CALL Exits("CMISSField_ParameterSetGetGaussPointDPObj")
     CALL CMISS_HANDLE_ERROR(err,error)
     RETURN
 
@@ -34086,7 +34225,7 @@ CONTAINS
     IF(ASSOCIATED(region)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
       IF(ASSOCIATED(field)) THEN
-        CALL FieldParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+        CALL Field_ParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
           & componentNumber,value,err,error,*999)
       ELSE
         localError="A field with an user number of "//TRIM(NumberToVstring(fieldUserNumber,"*",err,error))// &
@@ -34128,7 +34267,7 @@ CONTAINS
 
     CALL Enters("CMISSField_ParameterSetUpdateGaussPointIntgObj",err,error,*999)
 
-    CALL FieldParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    CALL Field_ParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
       & componentNumber,value,err,error,*999)
 
     CALL Exits("CMISSField_ParameterSetUpdateGaussPointIntgObj")
@@ -34173,7 +34312,7 @@ CONTAINS
     IF(ASSOCIATED(region)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
       IF(ASSOCIATED(field)) THEN
-        CALL FieldParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+        CALL Field_ParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
           & componentNumber,value,err,error,*999)
       ELSE
         localError="A field with an user number of "//TRIM(NumberToVString(fieldUserNumber,"*",err,error))// &
@@ -34215,7 +34354,7 @@ CONTAINS
 
     CALL Enters("CMISSField_ParameterSetUpdateGaussPointSPObj",err,error,*999)
 
-    CALL FieldParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    CALL Field_ParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
       & componentNumber,value,err,error,*999)
 
     CALL Exits("CMISSField_ParameterSetUpdateGaussPointSPObj")
@@ -34260,7 +34399,7 @@ CONTAINS
     IF(ASSOCIATED(region)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
       IF(ASSOCIATED(FIELD)) THEN
-        CALL FieldParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+        CALL Field_ParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
           & componentNumber,value,err,error,*999)
       ELSE
         localError="A field with an user number of "//TRIM(NumberToVString(fieldUserNumber,"*",err,error))// &
@@ -34302,7 +34441,7 @@ CONTAINS
 
     CALL Enters("CMISSField_ParameterSetUpdateGaussPointDPObj",err,error,*999)
 
-    CALL FieldParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    CALL Field_ParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
       & componentNumber,value,err,error,*999)
 
     CALL Exits("CMISSField_ParameterSetUpdateGaussPointDPObj")
@@ -34347,7 +34486,7 @@ CONTAINS
     IF(ASSOCIATED(region)) THEN
       CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
       IF(ASSOCIATED(field)) THEN
-        CALL FieldParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+        CALL Field_ParameterSetUpdateGaussPoint(field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
           & componentNumber,value,err,error,*999)
       ELSE
         localError="A field with an user number of "//TRIM(NumberToVString(fieldUserNumber,"*",err,error))// &
@@ -34389,7 +34528,7 @@ CONTAINS
 
     CALL Enters("CMISSField_ParameterSetUpdateGaussPointLObj",err,error,*999)
 
-    CALL FieldParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
+    CALL Field_ParameterSetUpdateGaussPoint(field%field,variableType,fieldSetType,gaussPointNumber,userElementNumber, &
       & componentNumber,value,err,error,*999)
 
     CALL Exits("CMISSField_ParameterSetUpdateGaussPointLObj")

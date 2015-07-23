@@ -1050,10 +1050,10 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
    !>Contains the topology information for a decomposition
   TYPE DECOMPOSITION_TOPOLOGY_TYPE
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this topology information.
-    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this decomposition.
-    TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this decomposition.
-    TYPE(DECOMPOSITION_FACES_TYPE), POINTER :: FACES !<The pointer to the topology information for the faces of this decomposition.
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition !<The pointer to the decomposition for this topology information.
+    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: elements !<The pointer to the topology information for the elements of this decomposition.
+    TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: lines !<The pointer to the topology information for the lines of this decomposition.
+    TYPE(DECOMPOSITION_FACES_TYPE), POINTER :: faces !<The pointer to the topology information for the faces of this decomposition.
     TYPE(DecompositionDataPointsType), POINTER :: dataPoints !<The pointer to the topology information for the data of this decomposition.
   END TYPE DECOMPOSITION_TOPOLOGY_TYPE
 
@@ -1734,7 +1734,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations_set
     LOGICAL :: EQUATIONS_FINISHED !<Is .TRUE. if the equations have finished being created, .FALSE. if not.
     INTEGER(INTG) :: LINEARITY !<The equations linearity type \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
-    INTEGER(INTG) :: TIME_DEPENDENCE !<The equations time dependence type \see EQUATIONS_SET_CONSTANTS_TimeDepedenceTypes,EQUATIONS_SET_CONSTANTS
+    INTEGER(INTG) :: TIME_DEPENDENCE !<The equations time dependence type \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
     INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the equations \see EQUATIONS_ROUTINES_EquationsOutputTypes,EQUATIONS_ROUTINES
     INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsSparsityTypes,EQUATIONS_ROUTINES
     INTEGER(INTG) :: LUMPING_TYPE !<The lumping type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsLumpingTypes,EQUATIONS_ROUTINES
@@ -2113,7 +2113,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the interface equations \see INTERFACE_EQUATIONS_ROUTINES_OutputTypes,INTERFACE_EQUATIONS_ROUTINES
     INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the interface equation matrices of the interface equations \see INTERFACE_EQUATIONS_ROUTINES_SparsityTypes,INTERFACE_EQUATIONS_ROUTINES
     INTEGER(INTG) :: LINEARITY !<The interface equations linearity type \see INTERFACE_CONDITIONS_CONSTANTS_LinearityTypes,INTERFACE_CONDITIONS_CONSTANTS
-    INTEGER(INTG) :: TIME_DEPENDENCE !<The interface equations time dependence type \see INTERFACE_CONDITIONS_CONSTANTS_TimeDepedenceTypes,INTERFACE_CONDITIONS_CONSTANTS
+    INTEGER(INTG) :: TIME_DEPENDENCE !<The interface equations time dependence type \see INTERFACE_CONDITIONS_CONSTANTS_TimeDependenceTypes,INTERFACE_CONDITIONS_CONSTANTS
     TYPE(INTERFACE_EQUATIONS_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the interface equations.
     TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface equations mapping for the interface.
     TYPE(INTERFACE_MATRICES_TYPE), POINTER :: INTERFACE_MATRICES !<A pointer to the interface equations matrices and vectors used for the interface equations.
@@ -3101,6 +3101,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
     INTEGER(INTG) :: ITERATION_NUMBER
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS
+    REAL(DP) :: ABSOLUTE_TOLERANCE
     LOGICAL :: CONTINUE_LOOP
   END TYPE CONTROL_LOOP_WHILE_TYPE
 

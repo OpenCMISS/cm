@@ -48,6 +48,7 @@ MODULE MATHS
   USE CONSTANTS
   USE KINDS
   USE ISO_VARYING_STRING
+  USE STRINGS
   
   IMPLICIT NONE
 
@@ -86,6 +87,12 @@ MODULE MATHS
     MODULE PROCEDURE D_CROSS_PRODUCT_SP
     MODULE PROCEDURE D_CROSS_PRODUCT_DP
   END INTERFACE dCrossProduct
+
+  !>Calculates and returns the MATRIX-VECTOR-prouct of the double precision VECTOR A*B in C.
+  INTERFACE MATRIX_VECTOR_PRODUCT
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_SP
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_DP
+  END INTERFACE !MATRIX_VECTOR_PRODUCT
 
   !>Returns the determinant of a matrix
   INTERFACE Determinant
@@ -222,7 +229,7 @@ MODULE MATHS
 
   PUBLIC CROSS_PRODUCT,CrossProduct,D_CROSS_PRODUCT,dCrossProduct,Determinant,Eigenvalue,Eigenvector,IdentityMatrix,Invert, &
     & L2Norm,MATRIX_PRODUCT,MatrixProduct,MATRIX_TRANSPOSE,MatrixTranspose,Normalise,NORM_CROSS_PRODUCT,NormCrossProduct, &
-    & SOLVE_SMALL_LINEAR_SYSTEM,SolveSmallLinearSystem,Coth
+    & SOLVE_SMALL_LINEAR_SYSTEM,SolveSmallLinearSystem,Coth,spline_cubic_set,s3_fs,spline_cubic_val,MATRIX_VECTOR_PRODUCT
   
   
 CONTAINS
@@ -511,6 +518,88 @@ CONTAINS
     CALL EXITS("D_CROSS_PRODUCT_DP")
     RETURN 1
   END SUBROUTINE D_CROSS_PRODUCT_DP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates and returns the MATRIX-VECTOR-prouct of the single precision VECTOR A*B in C.
+  SUBROUTINE MATRIX_VECTOR_PRODUCT_SP(A,B,C,err,error,*)
+
+    !Argument variables
+    REAL(SP), INTENT(IN) :: A(:,:)  !<The A MATRIX
+    REAL(SP), INTENT(IN) :: B(:)    !<The B VECTOR
+    REAL(SP), INTENT(OUT) :: C(:)   !<On exit, the product VECTOR C=A*B
+    INTEGER(INTG) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL ENTERS("MATRIX_VECTOR_PRODUCT_SP",err,error,*999)
+
+    IF(SIZE(A,2)==SIZE(B,1).AND.SIZE(A,1)==SIZE(C,1)) THEN
+       SELECT CASE(SIZE(A,1))
+       CASE(1)
+         C(1)=A(1,1)*B(1)
+       CASE(2)
+         C(1)=A(1,1)*B(1)+A(1,2)*B(2)
+         C(2)=A(2,1)*B(1)+A(2,2)*B(2)
+       CASE(3)
+         C(1)=A(1,1)*B(1)+A(1,2)*B(2)+A(1,3)*B(3)
+         C(2)=A(2,1)*B(1)+A(2,2)*B(2)+A(2,3)*B(3)
+         C(3)=A(3,1)*B(1)+A(3,2)*B(2)+A(3,3)*B(3)
+       CASE DEFAULT
+         CALL FLAG_ERROR("Invalid matrix and/or vector size.",err,error,*999)
+       END SELECT
+     ELSE
+       CALL FLAG_ERROR("Invalid matrix sizes.",err,error,*999)
+     ENDIF
+
+     CALL EXITS("MATRIX_VECTOR_PRODUCT_SP")
+     RETURN
+ 999 CALL ERRORS("MATRIX_VECTOR_PRODUCT_SP",err,error)
+     CALL EXITS("MATRIX_VECTOR_PRODUCT_SP")
+     RETURN 1
+  END SUBROUTINE MATRIX_VECTOR_PRODUCT_SP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Calculates and returns the MATRIX-VECTOR-prouct of the double precision VECTOR A*B in C.
+  SUBROUTINE MATRIX_VECTOR_PRODUCT_DP(A,B,C,err,error,*)
+
+    !Argument variables
+    REAL(DP), INTENT(IN) :: A(:,:)  !<The A MATRIX
+    REAL(DP), INTENT(IN) :: B(:)    !<The B VECTOR
+    REAL(DP), INTENT(OUT) :: C(:)   !<On exit, the product VECTOR C=A*B
+    INTEGER(INTG) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    CALL ENTERS("MATRIX_VECTOR_PRODUCT_DP",err,error,*999)
+
+    IF(SIZE(A,2)==SIZE(B,1).AND.SIZE(A,1)==SIZE(C,1)) THEN
+       SELECT CASE(SIZE(A,1))
+       CASE(1)
+         C(1)=A(1,1)*B(1)
+       CASE(2)
+         C(1)=A(1,1)*B(1)+A(1,2)*B(2)
+         C(2)=A(2,1)*B(1)+A(2,2)*B(2)
+       CASE(3)
+         C(1)=A(1,1)*B(1)+A(1,2)*B(2)+A(1,3)*B(3)
+         C(2)=A(2,1)*B(1)+A(2,2)*B(2)+A(2,3)*B(3)
+         C(3)=A(3,1)*B(1)+A(3,2)*B(2)+A(3,3)*B(3)
+       CASE DEFAULT
+         CALL FLAG_ERROR("Invalid matrix and/or vector size.",err,error,*999)
+       END SELECT
+     ELSE
+       CALL FLAG_ERROR("Invalid matrix sizes.",err,error,*999)
+     ENDIF
+
+     CALL EXITS("MATRIX_VECTOR_PRODUCT_DP")
+     RETURN
+ 999 CALL ERRORS("MATRIX_VECTOR_PRODUCT_DP",err,error)
+     CALL EXITS("MATRIX_VECTOR_PRODUCT_DP")
+     RETURN 1
+  END SUBROUTINE MATRIX_VECTOR_PRODUCT_DP
   
   !
   !================================================================================================================================
@@ -2153,11 +2242,233 @@ CONTAINS
     RETURN
   END FUNCTION COTH_DP
 
+  !
+  !================================================================================================================================
+  !
+
+  !> Calculates second derivatives of a cubic spline function for a tabulated function y(x). Call  spline_cubic_val to evaluate at t values.
+  !> algorithm adapted from John Burkhardt's spline_cubic_set routine from the SPLINE package (http://people.sc.fsu.edu/~jburkardt/f_src/spline/spline.html)
+  SUBROUTINE spline_cubic_set (n, t, y, ibcbeg, ybcbeg, ibcend, ybcend, ypp, err, error, *)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: n !< size of x,y arrays to interpolate values from
+    REAL(DP), INTENT(IN) :: t(n) !< t array: known values
+    REAL(DP), INTENT(IN) :: y(n) !< y array: values to interpolate
+    INTEGER(INTG), INTENT(IN) :: ibcbeg !< left boundary condition flag
+    REAL(DP), INTENT(IN) :: ybcbeg !< 1st derivative interpolating function at point 1 (left boundary)
+    INTEGER(INTG), INTENT(IN) :: ibcend !< right boundary condition flag
+    REAL(DP), INTENT(IN) :: ybcend !< 1st derivative interpolating function at point n (right boundary)
+    REAL(DP), INTENT(OUT) :: ypp(n) !< 2nd derivatives of interpolating function at x values
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    REAL(DP) :: diag(n)
+    REAL(DP) :: sub(2:n)
+    REAL(DP) :: sup(1:n-1)
+    INTEGER(INTG) :: i
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("spline_cubic_set",ERR,ERROR,*999)
+
+    ! Sanity checks
+    IF ( n <= 1 ) then
+      localError="spline interpolation requires at least 2 knots- user supplied "//TRIM(NUMBER_TO_VSTRING(n,"*",ERR,ERROR))
+      CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+    ENDIF
+    DO i = 1, n-1
+      IF ( t(i) >= t(i+1) ) then
+        localError="Non-increasing knots supplied for cubic spline interpolation."
+        CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+      ENDIF
+    ENDDO
+
+    !  Set the first equation.
+    IF ( ibcbeg == 0 ) then
+      ypp(1) = 0.0E+00_DP
+      diag(1) = 1.0E+00_DP
+      sup(1) = -1.0E+00_DP
+    ELSE IF ( ibcbeg == 1 ) then
+      ypp(1) = ( y(2) - y(1) ) / ( t(2) - t(1) ) - ybcbeg
+      diag(1) = ( t(2) - t(1) ) / 3.0E+00_DP
+      sup(1) = ( t(2) - t(1) ) / 6.0E+00_DP
+    ELSE IF ( ibcbeg == 2 ) then
+      ypp(1) = ybcbeg
+      diag(1) = 1.0E+00_DP
+      sup(1) = 0.0E+00_DP
+    ELSE
+      localError="The boundary flag IBCBEG must be 0, 1 or 2."
+      CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+    ENDIF
+
+    !  Set the intermediate equations.
+    DO i = 2, n-1
+      ypp(i) = ( y(i+1) - y(i) ) / ( t(i+1) - t(i) ) &
+       &     - ( y(i) - y(i-1) ) / ( t(i) - t(i-1) )
+      sub(i) = ( t(i) - t(i-1) ) / 6.0E+00_DP
+      diag(i) = ( t(i+1) - t(i-1) ) / 3.0E+00_DP
+      sup(i) = ( t(i+1) - t(i) ) / 6.0E+00_DP
+    ENDDO
+
+    !  Set the last equation.
+    IF ( ibcend == 0 ) then
+      ypp(n) = 0.0E+00_DP
+      sub(n) = -1.0E+00_DP
+      diag(n) = 1.0E+00_DP
+    ELSE IF ( ibcend == 1 ) then
+      ypp(n) = ybcend - ( y(n) - y(n-1) ) / ( t(n) - t(n-1) )
+      sub(n) = ( t(n) - t(n-1) ) / 6.0E+00_DP
+      diag(n) = ( t(n) - t(n-1) ) / 3.0E+00_DP
+    ELSE IF ( ibcend == 2 ) then
+      ypp(n) = ybcend
+      sub(n) = 0.0E+00_DP
+      diag(n) = 1.0E+00_DP
+    ELSE
+      localError="The boundary flag IBCEND must be 0, 1 or 2."
+      CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+    ENDIF
+
+    !  Special case:
+    !    N = 2, IBCBEG = IBCEND = 0.
+    IF ( n == 2 .and. ibcbeg == 0 .and. ibcend == 0 ) then
+      ypp(1) = 0.0E+00_DP
+      ypp(2) = 0.0E+00_DP
+
+    !  Solve the linear system.
+    ELSE
+      CALL s3_fs ( sub, diag, sup, n, ypp, ypp, err, error, *999 )
+    ENDIF
+
+    CALL EXITS("spline_cubic_set")
+    RETURN
+999 CALL ERRORS("spline_cubic_set",ERR,ERROR)
+    CALL EXITS("spline_cubic_set")
+    RETURN 1
+  END SUBROUTINE spline_cubic_set
 
   !
   !================================================================================================================================
   !
 
+  !> S3_FS factors and solves a tridiagonal linear system.
+  !> algorithm adapted from John Burkhardt's s3_fs routine from the SPLINE package (http://people.sc.fsu.edu/~jburkardt/f_src/spline/spline.html)
+  SUBROUTINE s3_fs ( a1, a2, a3, n, b, x, err, error, *)
+
+    !Argument variables
+    REAL(DP), INTENT(INOUT) :: a1(2:n) !< IN: nonzero diagonal of linear system OUT: factorization info
+    REAL(DP), INTENT(INOUT) :: a2(1:n) !< IN: nonzero diagonal of linear system OUT: factorization info
+    REAL(DP), INTENT(INOUT) :: a3(1:n-1) !< IN: nonzero diagonal of linear system OUT: factorization info
+    INTEGER(INTG), INTENT(IN) :: n !< size of x,y arrays to interpolate values from
+    REAL(DP), INTENT(INOUT) :: b(n) !< IN: RHS of linear system OUT: factorization info
+    REAL(DP), INTENT(OUT) :: x(n) !< solution of linear system
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    INTEGER(INTG) :: i
+    REAL(DP) :: xmult
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("s3_fs",ERR,ERROR,*999)
+
+    !  The diagonal entries can't be zero.
+    DO i = 1, n
+      IF ( ABS(a2(i)) < ZERO_TOLERANCE ) then
+        localError="Zero diagonal entry in tridiagonal linear system."
+        CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+      ENDIF
+    ENDDO
+
+    DO i = 2, n-1
+      xmult = a1(i) / a2(i-1)
+      a2(i) = a2(i) - xmult * a3(i-1)
+      b(i) = b(i) - xmult * b(i-1)
+    ENDDO
+
+    xmult = a1(n) / a2(n-1)
+    a2(n) = a2(n) - xmult * a3(n-1)
+    x(n) = ( b(n) - xmult * b(n-1) ) / a2(n)
+    DO i = n-1, 1, -1
+      x(i) = ( b(i) - a3(i) * x(i+1) ) / a2(i)
+    ENDDO
+
+    CALL EXITS("s3_fs")
+    RETURN
+999 CALL ERRORS("s3_fs",ERR,ERROR)
+    CALL EXITS("s3_fs")
+    RETURN 1
+  END SUBROUTINE s3_fs
+
+  !
+  !================================================================================================================================
+  !
   
+  !> Evaluates a cubic spline at a specified point. First call spline_cubic_set to calculate derivatives
+  !> algorithm adapted from John Burkhardt's spline_cubic_val routine from the SPLINE package (http://people.sc.fsu.edu/~jburkardt/f_src/spline/spline.html)
+  SUBROUTINE spline_cubic_val (n, t, y, ypp, tval, yval, ypval, yppval, err, error, *)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: n !< size of t,y arrays to interpolate values from
+    REAL(DP), INTENT(IN) :: t(n) !< t array: known knot values
+    REAL(DP), INTENT(IN) :: y(n) !< y array: data values to interpolate at the knots
+    REAL(DP), INTENT(IN) :: ypp(n) !< 2nd derivatives of interpolating function at t values
+    REAL(DP), INTENT(IN) :: tval !< point in t at which spline is to be evaluated
+    REAL(DP), INTENT(OUT) :: yval !< spline interpolated y value at tval
+    REAL(DP), INTENT(OUT) :: ypval !< first derivative of spline interpolated y value at tval
+    REAL(DP), INTENT(OUT) :: yppval !< second derivative of spline interpolated y value at tval
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local variables
+    REAL(DP) :: dt
+    REAL(DP) :: h
+    INTEGER(INTG) :: i
+    INTEGER(INTG) :: left
+    INTEGER(INTG) :: right
+    LOGICAL :: foundInterval
+
+    CALL ENTERS("spline_cubic_val",ERR,ERROR,*999)
+
+    !  Determine the interval [T(LEFT), T(RIGHT)] that contains TVAL.
+    !  Values below T(1) or above T(N) use extrapolation.
+    foundInterval = .FALSE.
+    DO i = 2, n - 1
+      IF ( tval < t(i) ) THEN
+        foundInterval=.TRUE.
+        left = i - 1
+        right = i
+        EXIT
+      ENDIF
+    ENDDO
+    IF (foundInterval .EQV. .FALSE.) THEN
+      left = n - 1
+      right = n
+    ENDIF
+
+    !  Evaluate the polynomial.
+    dt = tval - t(left)
+    h = t(right) - t(left)
+
+    yval = y(left) &
+     &   + dt * ( ( y(right) - y(left) ) / h &
+     &          - ( ypp(right) / 6.0E+00_DP + ypp(left) / 3.0E+00_DP ) * h &
+     &   + dt * ( 0.5E+00 * ypp(left) &
+     &   + dt * ( ( ypp(right) - ypp(left) ) / ( 6.0E+00_DP * h ) ) ) )
+
+    ypval = ( y(right) - y(left) ) / h &
+     &   - ( ypp(right) / 6.0E+00_DP + ypp(left) / 3.0E+00_DP ) * h &
+     &   + dt * ( ypp(left) &
+     &   + dt * ( 0.5E+00_DP * ( ypp(right) - ypp(left) ) / h ) )
+
+    yppval = ypp(left) + dt * ( ypp(right) - ypp(left) ) / h 
+
+    CALL EXITS("spline_cubic_val")
+    RETURN
+999 CALL ERRORS("spline_cubic_val",ERR,ERROR)
+    CALL EXITS("spline_cubic_val")
+    RETURN 1
+  END SUBROUTINE spline_cubic_val
+
+  !
+  !================================================================================================================================
+  !
+
 END MODULE MATHS
 
