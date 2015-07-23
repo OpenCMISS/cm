@@ -166,7 +166,9 @@ MODULE MATRIX_VECTOR
   INTEGER(INTG), PARAMETER :: MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE=5 !<Matrix compressed column storage type \see MATRIX_VECTOR_StorageTypes,MATRIX_VECTOR
   INTEGER(INTG), PARAMETER :: MATRIX_ROW_COLUMN_STORAGE_TYPE=6 !<Matrix row-column storage type \see MATRIX_VECTOR_StorageTypes,MATRIX_VECTOR
   !>@}
-  
+
+  INTEGER(INTG), PARAMETER :: bisectionToLinearSearchThreshold=10 !<Threshold for transition from bisection to linear search.
+
   !Module types
 
   !Matrix types
@@ -1598,7 +1600,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: LOWLIMIT,MIDPOINT,UPLIMIT
+    INTEGER(INTG) :: k,LOWLIMIT,MIDPOINT,UPLIMIT
     LOGICAL :: FOUNDCOLUMN, FOUNDROW
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -1636,7 +1638,7 @@ CONTAINS
             UPLIMIT=MATRIX%ROW_INDICES(I+1)
             IF(UPLIMIT>LOWLIMIT) THEN
               IF(J<=MATRIX%COLUMN_INDICES(UPLIMIT-1)) THEN
-                DO WHILE((UPLIMIT-LOWLIMIT)>1)
+                DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
                   MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                   IF(MATRIX%COLUMN_INDICES(MIDPOINT)>J) THEN
                     UPLIMIT=MIDPOINT
@@ -1644,7 +1646,12 @@ CONTAINS
                     LOWLIMIT=MIDPOINT
                   ENDIF
                 ENDDO
-                IF(MATRIX%COLUMN_INDICES(LOWLIMIT)==J) LOCATION=LOWLIMIT
+                DO k=LOWLIMIT,UPLIMIT
+                  IF(MATRIX%COLUMN_INDICES(k)==J) THEN
+                    LOCATION=k
+                    EXIT
+                  ENDIF
+                ENDDO !k
               ENDIF
             ENDIF
           ENDIF
@@ -1664,6 +1671,20 @@ CONTAINS
                   ENDIF
                 ENDDO
                 IF(MATRIX%ROW_INDICES(LOWLIMIT)==I) LOCATION=LOWLIMIT
+                DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                  MIDPOINT=(UPLIMIT+LOWLIMIT)/2
+                  IF(MATRIX%ROW_INDICES(MIDPOINT)>I) THEN
+                    UPLIMIT=MIDPOINT
+                  ELSE
+                    LOWLIMIT=MIDPOINT
+                  ENDIF
+                ENDDO
+                DO k=LOWLIMIT,UPLIMIT
+                  IF(MATRIX%ROW_INDICES(k)==I) THEN
+                    LOCATION=k
+                    EXIT
+                  ENDIF
+                ENDDO !k
               ENDIF
             ENDIF
           ENDIF
@@ -2249,7 +2270,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: i,j,LOCATION
+    INTEGER(INTG) :: i,j,k,ROW_INDEX,PREVIOUS_ROW_INDEX,COLUMN_INDEX,PREVIOUS_COLUMN_INDEX,LOCATION,LOWLIMIT,MIDPOINT,UPLIMIT
+    LOGICAL :: FOUNDCOLUMN, FOUNDROW
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
 #if DEBUG
@@ -2260,19 +2282,186 @@ CONTAINS
       IF(MATRIX%MATRIX_FINISHED) THEN
         IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
           IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
-            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
-              DO i=1,SIZE(ROW_INDICES,1)
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
+              SELECT CASE(MATRIX%STORAGE_TYPE)
+              CASE(MATRIX_BLOCK_STORAGE_TYPE)
                 DO j=1,SIZE(COLUMN_INDICES,1)
-                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
-                  IF(LOCATION==0) THEN
-                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ELSE
-                    MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
-                  ENDIF
+                  COLUMN_INDEX=COLUMN_INDICES(j)
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    ROW_INDEX=ROW_INDICES(i)
+                    LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%M
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !i
                 ENDDO !j
-              ENDDO !i
+              CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    LOCATION=0
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    IF(ROW_INDEX==COLUMN_INDEX) LOCATION=ROW_INDEX
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  COLUMN_INDEX=COLUMN_INDICES(j)
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    ROW_INDEX=ROW_INDICES(i)
+                    LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%MAX_M
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !i
+                ENDDO !j
+              CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    LOCATION=(ROW_INDEX-1)*MATRIX%MAX_N+COLUMN_INDEX
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                !Search for the column number in the sparsity list using the bisection (binary search) algorithm
+                PREVIOUS_COLUMN_INDEX=-1
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  LOWLIMIT=MATRIX%ROW_INDICES(ROW_INDEX)
+                  UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    LOCATION=0
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    IF(COLUMN_INDEX<=PREVIOUS_COLUMN_INDEX) THEN
+                      LOWLIMIT=MATRIX%ROW_INDICES(ROW_INDEX)
+                    ELSE
+                      UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
+                    ENDIF
+                    PREVIOUS_COLUMN_INDEX=COLUMN_INDEX
+                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                      MIDPOINT=(UPLIMIT+LOWLIMIT)/2
+                      IF(MATRIX%COLUMN_INDICES(MIDPOINT)>COLUMN_INDEX) THEN
+                        UPLIMIT=MIDPOINT
+                      ELSE
+                        LOWLIMIT=MIDPOINT
+                      ENDIF
+                    ENDDO
+                    DO k=LOWLIMIT,UPLIMIT
+                      IF(MATRIX%COLUMN_INDICES(k)==COLUMN_INDEX) THEN
+                        LOCATION=k
+                        LOWLIMIT=k+1
+                        EXIT
+                      ENDIF
+                    ENDDO !k
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                !Search for the row number in the sparsity list using the bisection (binary search) algorithm
+                PREVIOUS_ROW_INDEX=-1
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  COLUMN_INDEX=COLUMN_INDICES(j)
+                  LOWLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX)
+                  UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    LOCATION=0
+                    ROW_INDEX=ROW_INDICES(i)
+                    IF(ROW_INDEX<=PREVIOUS_ROW_INDEX) THEN
+                      LOWLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX)
+                    ELSE
+                      UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
+                    ENDIF
+                    PREVIOUS_ROW_INDEX=ROW_INDEX
+                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                      MIDPOINT=(UPLIMIT+LOWLIMIT)/2
+                      IF(MATRIX%ROW_INDICES(MIDPOINT)>ROW_INDEX) THEN
+                        UPLIMIT=MIDPOINT
+                      ELSE
+                        LOWLIMIT=MIDPOINT
+                      ENDIF
+                    ENDDO
+                    DO k=LOWLIMIT,UPLIMIT
+                      IF(MATRIX%ROW_INDICES(k)==ROW_INDEX) THEN
+                        LOCATION=k
+                        LOWLIMIT=k+1
+                        EXIT
+                      ENDIF
+                    ENDDO !k
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !i
+                ENDDO !j
+              CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    FOUNDROW=.FALSE.
+                    LOCATION=1
+                    DO WHILE(.NOT.FOUNDCOLUMN.AND.LOCATION<=MATRIX%SIZE)
+                      IF(MATRIX%ROW_INDICES(LOCATION)==ROW_INDEX) THEN
+                        DO WHILE(.NOT.FOUNDCOLUMN.AND.LOCATION<=MATRIX%SIZE)
+                          IF(MATRIX%COLUMN_INDICES(LOCATION)==COLUMN_INDEX.AND.MATRIX%ROW_INDICES(LOCATION)==ROW_INDEX) THEN
+                            FOUNDCOLUMN=.TRUE.
+                          ELSE IF(MATRIX%ROW_INDICES(LOCATION)/=ROW_INDEX) THEN
+                            LOCATION=MATRIX%SIZE+1
+                          ELSE
+                            LOCATION=LOCATION+1
+                          ENDIF
+                        ENDDO
+                      ELSE
+                        LOCATION=LOCATION+1
+                      ENDIF
+                    ENDDO
+                    IF(.NOT.(FOUNDROW.AND.FOUNDCOLUMN)) LOCATION=0
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE DEFAULT
+                LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the integer data type of the given values."
@@ -2288,7 +2477,7 @@ CONTAINS
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the number of rows in the values array ("// &
+            & ") does not conform to the number of rows the values array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -2453,7 +2642,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: i,j,LOCATION
+    INTEGER(INTG) :: i,j,k,ROW_INDEX,PREVIOUS_ROW_INDEX,COLUMN_INDEX,PREVIOUS_COLUMN_INDEX,LOCATION,LOWLIMIT,MIDPOINT,UPLIMIT
+    LOGICAL :: FOUNDCOLUMN, FOUNDROW
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
 #if DEBUG
@@ -2464,19 +2654,186 @@ CONTAINS
       IF(MATRIX%MATRIX_FINISHED) THEN
         IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
           IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
-            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
-              DO i=1,SIZE(ROW_INDICES,1)
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
+              SELECT CASE(MATRIX%STORAGE_TYPE)
+              CASE(MATRIX_BLOCK_STORAGE_TYPE)
                 DO j=1,SIZE(COLUMN_INDICES,1)
-                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
-                  IF(LOCATION==0) THEN
-                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ELSE
-                    MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
-                  ENDIF
+                  COLUMN_INDEX=COLUMN_INDICES(j)
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    ROW_INDEX=ROW_INDICES(i)
+                    LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%M
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !i
                 ENDDO !j
-              ENDDO !i
+              CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    LOCATION=0
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    IF(ROW_INDEX==COLUMN_INDEX) LOCATION=ROW_INDEX
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  COLUMN_INDEX=COLUMN_INDICES(j)
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    ROW_INDEX=ROW_INDICES(i)
+                    LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%MAX_M
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !i
+                ENDDO !j
+              CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    LOCATION=(ROW_INDEX-1)*MATRIX%MAX_N+COLUMN_INDEX
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                !Search for the column number in the sparsity list using the bisection (binary search) algorithm
+                PREVIOUS_COLUMN_INDEX=-1
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  LOWLIMIT=MATRIX%ROW_INDICES(ROW_INDEX)
+                  UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    LOCATION=0
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    IF(COLUMN_INDEX<=PREVIOUS_COLUMN_INDEX) THEN
+                      LOWLIMIT=MATRIX%ROW_INDICES(ROW_INDEX)
+                    ELSE
+                      UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
+                    ENDIF
+                    PREVIOUS_COLUMN_INDEX=COLUMN_INDEX
+                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                      MIDPOINT=(UPLIMIT+LOWLIMIT)/2
+                      IF(MATRIX%COLUMN_INDICES(MIDPOINT)>COLUMN_INDEX) THEN
+                        UPLIMIT=MIDPOINT
+                      ELSE
+                        LOWLIMIT=MIDPOINT
+                      ENDIF
+                    ENDDO
+                    DO k=LOWLIMIT,UPLIMIT
+                      IF(MATRIX%COLUMN_INDICES(k)==COLUMN_INDEX) THEN
+                        LOCATION=k
+                        LOWLIMIT=k+1
+                        EXIT
+                      ENDIF
+                    ENDDO !k
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                !Search for the row number in the sparsity list using the bisection (binary search) algorithm
+                PREVIOUS_ROW_INDEX=-1
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  COLUMN_INDEX=COLUMN_INDICES(j)
+                  LOWLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX)
+                  UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    LOCATION=0
+                    ROW_INDEX=ROW_INDICES(i)
+                    IF(ROW_INDEX<=PREVIOUS_ROW_INDEX) THEN
+                      LOWLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX)
+                    ELSE
+                      UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
+                    ENDIF
+                    PREVIOUS_ROW_INDEX=ROW_INDEX
+                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                      MIDPOINT=(UPLIMIT+LOWLIMIT)/2
+                      IF(MATRIX%ROW_INDICES(MIDPOINT)>ROW_INDEX) THEN
+                        UPLIMIT=MIDPOINT
+                      ELSE
+                        LOWLIMIT=MIDPOINT
+                      ENDIF
+                    ENDDO
+                    DO k=LOWLIMIT,UPLIMIT
+                      IF(MATRIX%ROW_INDICES(k)==ROW_INDEX) THEN
+                        LOCATION=k
+                        LOWLIMIT=k+1
+                        EXIT
+                      ENDIF
+                    ENDDO !k
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !i
+                ENDDO !j
+              CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    FOUNDROW=.FALSE.
+                    LOCATION=1
+                    DO WHILE(.NOT.FOUNDCOLUMN.AND.LOCATION<=MATRIX%SIZE)
+                      IF(MATRIX%ROW_INDICES(LOCATION)==ROW_INDEX) THEN
+                        DO WHILE(.NOT.FOUNDCOLUMN.AND.LOCATION<=MATRIX%SIZE)
+                          IF(MATRIX%COLUMN_INDICES(LOCATION)==COLUMN_INDEX.AND.MATRIX%ROW_INDICES(LOCATION)==ROW_INDEX) THEN
+                            FOUNDCOLUMN=.TRUE.
+                          ELSE IF(MATRIX%ROW_INDICES(LOCATION)/=ROW_INDEX) THEN
+                            LOCATION=MATRIX%SIZE+1
+                          ELSE
+                            LOCATION=LOCATION+1
+                          ENDIF
+                        ENDDO
+                      ELSE
+                        LOCATION=LOCATION+1
+                      ENDIF
+                    ENDDO
+                    IF(.NOT.(FOUNDROW.AND.FOUNDCOLUMN)) LOCATION=0
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE DEFAULT
+                LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the single precision data type of the given values."
@@ -2492,7 +2849,7 @@ CONTAINS
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the number of rows in the values array ("// &
+            & ") does not conform to the number of rows the values array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -2658,7 +3015,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     INTEGER(INTG) :: i,j,k,ROW_INDEX,PREVIOUS_ROW_INDEX,COLUMN_INDEX,PREVIOUS_COLUMN_INDEX,LOCATION,LOWLIMIT,MIDPOINT,UPLIMIT
-    REAL(DP) :: VALUE
     LOGICAL :: FOUNDCOLUMN, FOUNDROW
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
@@ -2741,8 +3097,7 @@ CONTAINS
                   LOWLIMIT=MATRIX%ROW_INDICES(ROW_INDEX)
                   UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
                   DO j=1,SIZE(COLUMN_INDICES,1)
-                    VALUE=VALUES(i,j)
-!                    LOCATION=0
+                    LOCATION=0
                     COLUMN_INDEX=COLUMN_INDICES(j)
                     IF(COLUMN_INDEX<=PREVIOUS_COLUMN_INDEX) THEN
                       LOWLIMIT=MATRIX%ROW_INDICES(ROW_INDEX)
@@ -2750,7 +3105,7 @@ CONTAINS
                       UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
                     ENDIF
                     PREVIOUS_COLUMN_INDEX=COLUMN_INDEX
-                    DO WHILE((UPLIMIT-LOWLIMIT)>5)
+                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
                       MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                       IF(MATRIX%COLUMN_INDICES(MIDPOINT)>COLUMN_INDEX) THEN
                         UPLIMIT=MIDPOINT
@@ -2760,32 +3115,29 @@ CONTAINS
                     ENDDO
                     DO k=LOWLIMIT,UPLIMIT
                       IF(MATRIX%COLUMN_INDICES(k)==COLUMN_INDEX) THEN
-                        MATRIX%DATA_DP(k)=MATRIX%DATA_DP(k)+VALUE
-!                        LOCATION=k
+                        LOCATION=k
                         LOWLIMIT=k+1
                         EXIT
                       ENDIF
                     ENDDO !k
-!                   IF(LOCATION==0) THEN
-!                     LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-!                       & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
-!                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-!                   ELSE
-!                     MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUE
-!                   ENDIF
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(i,j)
+                    ENDIF
                   ENDDO !j
                 ENDDO !i
               CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
                 !Search for the row number in the sparsity list using the bisection (binary search) algorithm
-
                 PREVIOUS_ROW_INDEX=-1
                 DO j=1,SIZE(COLUMN_INDICES,1)
                   COLUMN_INDEX=COLUMN_INDICES(j)
                   LOWLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX)
                   UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
                   DO i=1,SIZE(ROW_INDICES,1)
-                    VALUE=VALUES(i,j)
-!                    LOCATION=0
+                    LOCATION=0
                     ROW_INDEX=ROW_INDICES(i)
                     IF(ROW_INDEX<=PREVIOUS_ROW_INDEX) THEN
                       LOWLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX)
@@ -2793,7 +3145,7 @@ CONTAINS
                       UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
                     ENDIF
                     PREVIOUS_ROW_INDEX=ROW_INDEX
-                    DO WHILE((UPLIMIT-LOWLIMIT)>5)
+                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
                       MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                       IF(MATRIX%ROW_INDICES(MIDPOINT)>ROW_INDEX) THEN
                         UPLIMIT=MIDPOINT
@@ -2803,19 +3155,18 @@ CONTAINS
                     ENDDO
                     DO k=LOWLIMIT,UPLIMIT
                       IF(MATRIX%ROW_INDICES(k)==ROW_INDEX) THEN
-                        MATRIX%DATA_DP(k)=MATRIX%DATA_DP(k)+VALUE
-!                        LOCATION=k
+                        LOCATION=k
                         LOWLIMIT=k+1
                         EXIT
                       ENDIF
                     ENDDO !k
-!                   IF(LOCATION==0) THEN
-!                     LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-!                       & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
-!                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-!                   ELSE
-!                     MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUE
-!                   ENDIF
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(i,j)
+                    ENDIF
                   ENDDO !i
                 ENDDO !j
               CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
@@ -3035,7 +3386,8 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
-    INTEGER(INTG) :: i,j,LOCATION
+    INTEGER(INTG) :: i,j,k,ROW_INDEX,PREVIOUS_ROW_INDEX,COLUMN_INDEX,PREVIOUS_COLUMN_INDEX,LOCATION,LOWLIMIT,MIDPOINT,UPLIMIT
+    LOGICAL :: FOUNDCOLUMN, FOUNDROW
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
 #if DEBUG
@@ -3046,19 +3398,186 @@ CONTAINS
       IF(MATRIX%MATRIX_FINISHED) THEN
         IF(SIZE(ROW_INDICES,1)==SIZE(VALUES,1)) THEN
           IF(SIZE(COLUMN_INDICES,1)==SIZE(VALUES,2)) THEN
-            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
-              DO i=1,SIZE(ROW_INDICES,1)
+            IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
+              SELECT CASE(MATRIX%STORAGE_TYPE)
+              CASE(MATRIX_BLOCK_STORAGE_TYPE)
                 DO j=1,SIZE(COLUMN_INDICES,1)
-                  CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
-                  IF(LOCATION==0) THEN
-                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                  ELSE
-                    MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
-                  ENDIF
+                  COLUMN_INDEX=COLUMN_INDICES(j)
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    ROW_INDEX=ROW_INDICES(i)
+                    LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%M
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !i
                 ENDDO !j
-              ENDDO !i
+              CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    LOCATION=0
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    IF(ROW_INDEX==COLUMN_INDEX) LOCATION=ROW_INDEX
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  COLUMN_INDEX=COLUMN_INDICES(j)
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    ROW_INDEX=ROW_INDICES(i)
+                    LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%MAX_M
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !i
+                ENDDO !j
+              CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    LOCATION=(ROW_INDEX-1)*MATRIX%MAX_N+COLUMN_INDEX
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                !Search for the column number in the sparsity list using the bisection (binary search) algorithm
+                PREVIOUS_COLUMN_INDEX=-1
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  LOWLIMIT=MATRIX%ROW_INDICES(ROW_INDEX)
+                  UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    LOCATION=0
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    IF(COLUMN_INDEX<=PREVIOUS_COLUMN_INDEX) THEN
+                      LOWLIMIT=MATRIX%ROW_INDICES(ROW_INDEX)
+                    ELSE
+                      UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
+                    ENDIF
+                    PREVIOUS_COLUMN_INDEX=COLUMN_INDEX
+                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                      MIDPOINT=(UPLIMIT+LOWLIMIT)/2
+                      IF(MATRIX%COLUMN_INDICES(MIDPOINT)>COLUMN_INDEX) THEN
+                        UPLIMIT=MIDPOINT
+                      ELSE
+                        LOWLIMIT=MIDPOINT
+                      ENDIF
+                    ENDDO
+                    DO k=LOWLIMIT,UPLIMIT
+                      IF(MATRIX%COLUMN_INDICES(k)==COLUMN_INDEX) THEN
+                        LOCATION=k
+                        LOWLIMIT=k+1
+                        EXIT
+                      ENDIF
+                    ENDDO !k
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                !Search for the row number in the sparsity list using the bisection (binary search) algorithm
+                PREVIOUS_ROW_INDEX=-1
+                DO j=1,SIZE(COLUMN_INDICES,1)
+                  COLUMN_INDEX=COLUMN_INDICES(j)
+                  LOWLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX)
+                  UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
+                  DO i=1,SIZE(ROW_INDICES,1)
+                    LOCATION=0
+                    ROW_INDEX=ROW_INDICES(i)
+                    IF(ROW_INDEX<=PREVIOUS_ROW_INDEX) THEN
+                      LOWLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX)
+                    ELSE
+                      UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
+                    ENDIF
+                    PREVIOUS_ROW_INDEX=ROW_INDEX
+                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                      MIDPOINT=(UPLIMIT+LOWLIMIT)/2
+                      IF(MATRIX%ROW_INDICES(MIDPOINT)>ROW_INDEX) THEN
+                        UPLIMIT=MIDPOINT
+                      ELSE
+                        LOWLIMIT=MIDPOINT
+                      ENDIF
+                    ENDDO
+                    DO k=LOWLIMIT,UPLIMIT
+                      IF(MATRIX%ROW_INDICES(k)==ROW_INDEX) THEN
+                        LOCATION=k
+                        LOWLIMIT=k+1
+                        EXIT
+                      ENDIF
+                    ENDDO !k
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !i
+                ENDDO !j
+              CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                DO i=1,SIZE(ROW_INDICES,1)
+                  ROW_INDEX=ROW_INDICES(i)
+                  DO j=1,SIZE(COLUMN_INDICES,1)
+                    COLUMN_INDEX=COLUMN_INDICES(j)
+                    FOUNDROW=.FALSE.
+                    LOCATION=1
+                    DO WHILE(.NOT.FOUNDCOLUMN.AND.LOCATION<=MATRIX%SIZE)
+                      IF(MATRIX%ROW_INDICES(LOCATION)==ROW_INDEX) THEN
+                        DO WHILE(.NOT.FOUNDCOLUMN.AND.LOCATION<=MATRIX%SIZE)
+                          IF(MATRIX%COLUMN_INDICES(LOCATION)==COLUMN_INDEX.AND.MATRIX%ROW_INDICES(LOCATION)==ROW_INDEX) THEN
+                            FOUNDCOLUMN=.TRUE.
+                          ELSE IF(MATRIX%ROW_INDICES(LOCATION)/=ROW_INDEX) THEN
+                            LOCATION=MATRIX%SIZE+1
+                          ELSE
+                            LOCATION=LOCATION+1
+                          ENDIF
+                        ENDDO
+                      ELSE
+                        LOCATION=LOCATION+1
+                      ENDIF
+                    ENDDO
+                    IF(.NOT.(FOUNDROW.AND.FOUNDCOLUMN)) LOCATION=0
+                    IF(LOCATION==0) THEN
+                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    ELSE
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                    ENDIF
+                  ENDDO !j
+                ENDDO !i
+              CASE DEFAULT
+                LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
+                  & " is invalid."
+                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              END SELECT
             ELSE
               LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the logical data type of the given values."
@@ -3074,7 +3593,7 @@ CONTAINS
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the number of rows in the values array ("// &
+            & ") does not conform to the number of rows the values array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
