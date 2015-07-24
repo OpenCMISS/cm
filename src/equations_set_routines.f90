@@ -7158,22 +7158,21 @@ CONTAINS
                           ENDIF !Current domain
                         ENDDO !condition_idx
                       ENDIF
-                      !Transfer of dofs to neighbouring domains
+                      !Start transfer of dofs to neighbouring domains
                       CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
                         & ERR,ERROR,*999)
-                      CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
+                      CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
                         & ERR,ERROR,*999)
                       !Restore the vector handles
                       CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
                         & PREV_LOADS,ERR,ERROR,*999)
-                      !Transfer of dofs to neighbouring domains
-                      CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
+                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
+                        & CURRENT_LOADS,ERR,ERROR,*999)
+                      !Finish transfer of dofs to neighbouring domains
+                      CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_PREVIOUS_PRESSURE_SET_TYPE, &
                         & ERR,ERROR,*999)
                       CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
                         & ERR,ERROR,*999)
-                      !Restore the vector handles
-                      CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_PRESSURE_VALUES_SET_TYPE, &
-                        & CURRENT_LOADS,ERR,ERROR,*999)
                     ELSE
                       LOCAL_ERROR="Pressure incremented boundary condition for variable type "// &
                         & TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//" is not associated even though"// &
