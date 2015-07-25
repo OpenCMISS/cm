@@ -75,6 +75,8 @@ MODULE CHARACTERISTIC_EQUATION_ROUTINES
   USE TIMER
   USE TYPES
 
+#include "macros.h"
+
   IMPLICIT NONE
 
   PRIVATE
@@ -102,9 +104,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: localError
     
-#if DEBUG
-    CALL ENTERS("Characteristic_EquationsSet_SolutionMethodSet",err,error,*999)
-#endif
+    ENTERS("Characteristic_EquationsSet_SolutionMethodSet",err,error,*999)
     
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
@@ -138,14 +138,9 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
        
-#if DEBUG
-    CALL EXITS("Characteristic_EquationsSet_SolutionMethodSet")
-#endif
+    EXITS("Characteristic_EquationsSet_SolutionMethodSet")
     RETURN
-999 CALL ERRORS("Characteristic_EquationsSet_SolutionMethodSet",err,error)
-#if DEBUG
-    CALL EXITS("Characteristic_EquationsSet_SolutionMethodSet")
-#endif
+999 ERRORSEXITS("Characteristic_EquationsSet_SolutionMethodSet",err,error)
     RETURN 1
   END SUBROUTINE Characteristic_EquationsSet_SolutionMethodSet
 
@@ -164,9 +159,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: localError
 
-#if DEBUG
-    CALL ENTERS("Characteristic_EquationsSet_SubtypeSet",err,error,*999)
-#endif
+    ENTERS("Characteristic_EquationsSet_SubtypeSet",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSetSubtype)
@@ -187,14 +180,9 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
-#if DEBUG
-    CALL EXITS("Characteristic_EquationsSet_SubtypeSet")
-#endif
+    EXITS("Characteristic_EquationsSet_SubtypeSet")
     RETURN
-999 CALL ERRORS("Characteristic_EquationsSet_SubtypeSet",err,error)
-#if DEBUG
-    CALL EXITS("Characteristic_EquationsSet_SubtypeSet")
-#endif
+999 ERRORSEXITS("Characteristic_EquationsSet_SubtypeSet",err,error)
     RETURN 1
   END SUBROUTINE Characteristic_EquationsSet_SubtypeSet
 
@@ -223,9 +211,7 @@ CONTAINS
     INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsField1DNumberOfComponents,materialsFieldCoupledNumberOfComponents
     TYPE(VARYING_STRING) :: localError
 
-#if DEBUG
-    CALL ENTERS("Characteristic_EquationsSet_Setup",err,error,*999)
-#endif
+    ENTERS("Characteristic_EquationsSet_Setup",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -825,14 +811,9 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
-#if DEBUG
-    CALL EXITS("Characteristic_EquationsSet_Setup")
-#endif
+    EXITS("Characteristic_EquationsSet_Setup")
     RETURN
-999 CALL ERRORS("Characteristic_EquationsSet_Setup",err,error)
-#if DEBUG
-    CALL EXITS("Characteristic_EquationsSet_Setup")
-#endif
+999 ERRORSEXITS("Characteristic_EquationsSet_Setup",err,error)
     RETURN 1
   END SUBROUTINE Characteristic_EquationsSet_Setup
 
@@ -873,9 +854,7 @@ CONTAINS
     LOGICAL :: updateStiffnessMatrix, updateRhsVector,updateNonlinearResidual
     TYPE(VARYING_STRING) :: localError
 
-#if DEBUG
-    CALL ENTERS("Characteristic_NodalResidualEvaluate",err,error,*999)
-#endif
+    ENTERS("Characteristic_NodalResidualEvaluate",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -1095,14 +1074,9 @@ CONTAINS
     END SELECT
 
     
-#if DEBUG
-    CALL EXITS("Characteristic_NodalResidualEvaluate")
-#endif
+    EXITS("Characteristic_NodalResidualEvaluate")
     RETURN
-999 CALL ERRORS("Characteristic_NodalResidualEvaluate",err,error)
-#if DEBUG
-    CALL EXITS("Characteristic_NodalResidualEvaluate")
-#endif
+999 ERRORSEXITS("Characteristic_NodalResidualEvaluate",err,error)
     RETURN 1
   END SUBROUTINE Characteristic_NodalResidualEvaluate
 
@@ -1143,9 +1117,7 @@ CONTAINS
     LOGICAL :: updateJacobianMatrix
     TYPE(VARYING_STRING) :: localError
 
-#if DEBUG
-    CALL ENTERS("Characteristic_NodalJacobianEvaluate",err,error,*999)
-#endif
+    ENTERS("Characteristic_NodalJacobianEvaluate",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -1374,14 +1346,9 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END SELECT
        
-#if DEBUG
-    CALL EXITS("Characteristic_NodalJacobianEvaluate")
-#endif
+    EXITS("Characteristic_NodalJacobianEvaluate")
     RETURN
-999 CALL ERRORS("Characteristic_NodalJacobianEvaluate",err,error)
-#if DEBUG
-    CALL EXITS("Characteristic_NodalJacobianEvaluate")
-#endif
+999 ERRORSEXITS("Characteristic_NodalJacobianEvaluate",err,error)
     RETURN 1
   END SUBROUTINE Characteristic_NodalJacobianEvaluate
 
