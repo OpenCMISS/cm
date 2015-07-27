@@ -791,8 +791,8 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(CONTROL_LOOP,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to while control loop to set the maximum iterations for
-    INTEGER(INTG), INTENT(IN) :: MAXIMUM_ITERATIONS !<The maximum number of iterations for a while control loop.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to the while or load incremented control loop to set the maximum iterations for
+    INTEGER(INTG), INTENT(IN) :: MAXIMUM_ITERATIONS !<The maximum number of iterations for the while or load incremented control loop.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -804,7 +804,23 @@ CONTAINS
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+        !allow to update the maximum number of iterations at a later time for the load increment loop type
+        IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
+          LOAD_INCREMENT_LOOP=>CONTROL_LOOP%LOAD_INCREMENT_LOOP
+          IF(ASSOCIATED(LOAD_INCREMENT_LOOP)) THEN
+            IF(MAXIMUM_ITERATIONS<=0) THEN
+              LOCAL_ERROR="The specified maximum number of iterations of "// &
+                & TRIM(NUMBER_TO_VSTRING(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
+                & " is invalid. The maximum number of iterations must be greater than zero."          
+              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+            ENDIF
+            LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS=MAXIMUM_ITERATIONS
+          ELSE
+            CALL FLAG_ERROR("Control loop load incremented loop is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+        ENDIF
       ELSE
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
           WHILE_LOOP=>CONTROL_LOOP%WHILE_LOOP
@@ -855,7 +871,7 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_LOAD_OUTPUT_SET(CONTROL_LOOP,OUTPUT_FREQUENCY,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to while control loop to set the maximum iterations for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to the load incremented control loop to set the maximum iterations for
     INTEGER(INTG), INTENT(IN) :: OUTPUT_FREQUENCY !<The output frequency modulo to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string

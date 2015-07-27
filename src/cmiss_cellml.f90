@@ -3228,6 +3228,8 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(state_component_idx,"*",ERR,ERROR))//"."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
+                    !WRITE(*,*) '(single model) Initial value for state variable: ',state_component_idx,'; type: ',&
+                    !  & CELLML_VARIABLE_TYPE,'; value = ',INITIAL_VALUE
                     CALL FIELD_COMPONENT_VALUES_INITIALISE(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
                       & FIELD_VALUES_SET_TYPE,state_component_idx,INITIAL_VALUE,ERR,ERROR,*999)
                   ENDDO !state_component_idx
@@ -3260,6 +3262,8 @@ CONTAINS
                               & TRIM(NUMBER_TO_VSTRING(state_component_idx,"*",ERR,ERROR))//"."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ENDIF
+                          !WRITE(*,*) '(multiple models) Initial value for state variable: ',state_component_idx,'; type: ',&
+                          !  & CELLML_VARIABLE_TYPE,'; value = ',INITIAL_VALUE
                           CALL CellML_FieldModelDofSet(MODELS_VARIABLE,models_dof_idx,CELLML%STATE_FIELD%STATE_FIELD, &
                             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,state_component_idx,INITIAL_VALUE,ERR,ERROR,*999)
                         ENDDO !state_component_idx
@@ -4137,6 +4141,8 @@ CONTAINS
                               & TRIM(NUMBER_TO_VSTRING(parameter_component_idx,"*",ERR,ERROR))//"."
                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                           ENDIF
+                          !WRITE(*,*) '(multiple models) Initial value for parameter variable: ',parameter_component_idx,'; type: ',&
+                          !  & CELLML_VARIABLE_TYPE,'; value = ',INITIAL_VALUE
                           CALL CellML_FieldModelDofSet(MODELS_VARIABLE,models_dof_idx,CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
                             & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,parameter_component_idx,INITIAL_VALUE,ERR,ERROR,*999)
                         ENDDO !parameter_component_idx
