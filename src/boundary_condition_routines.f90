@@ -104,10 +104,13 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY=20 !<A Neumann integrated boundary condition, and no point values will be integrated over a face or line that includes this dof. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_LINEAR_CONSTRAINT=21 !<The dof is constrained to be a linear combination of other DOFs. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED=22!<A Neumann point boundary condition that is incremented inside a load increment control loop. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
-  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FixedFitted=23 !<The dof is fixed as a boundary condition to be updated from fitting data \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FIXED_FITTED=23 !<The dof is fixed as a boundary condition to be updated from fitting data \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FIXED_NONREFLECTING=24 !<The dof is fixed and set to a non-reflecting type for 1D wave propagation problems. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FIXED_CELLML=25 !<The dof is fixed and set to values specified based on the coupled CellML solution at the dof. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
+  INTEGER(INTG), PARAMETER :: BOUNDARY_CONDITION_FIXED_STREE=26 !<The dof is fixed and set to values specified based on the transmission line theory at the dof. \see BOUNDARY_CONDITIONS_ROUTINES_BoundaryConditions,BOUNDARY_CONDITIONS_ROUTINES
   !>@}
 
-  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=23 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
+  INTEGER(INTG), PARAMETER :: MAX_BOUNDARY_CONDITION_NUMBER=26 !The maximum boundary condition type identifier, used for allocating an array with an entry for each type
 
   !> \addtogroup BOUNDARY_CONDITIONS_ROUTINES_SparsityTypes BOUNDARY_CONDITIONS_ROUTINES::BoundaryConditions
   !> \brief Storage type for matrices used by boundary conditions.
@@ -142,8 +145,8 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
     & BOUNDARY_CONDITION_CAUCHY,BOUNDARY_CONDITION_ROBIN,BOUNDARY_CONDITION_FIXED_INCREMENTED,BOUNDARY_CONDITION_PRESSURE,&
     & BOUNDARY_CONDITION_PRESSURE_INCREMENTED,BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
     & BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE,BOUNDARY_CONDITION_IMPERMEABLE_WALL,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY, &
-    & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED, &
-    & BOUNDARY_CONDITION_FixedFitted
+    & BOUNDARY_CONDITION_NEUMANN_POINT_INCREMENTED,BOUNDARY_CONDITION_FIXED_STREE, &
+    & BOUNDARY_CONDITION_FIXED_FITTED,BOUNDARY_CONDITION_FIXED_NONREFLECTING,BOUNDARY_CONDITION_FIXED_CELLML
 
   PUBLIC BOUNDARY_CONDITION_SPARSE_MATRICES,BOUNDARY_CONDITION_FULL_MATRICES
 
@@ -356,7 +359,7 @@ CONTAINS
                                             LAST=1
                                             DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
                                               DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
-                                              CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array)
+                                              CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array,ERR,ERROR,*999)
                                                 DO row_idx=1,size(column_array)
                                                   CALL LIST_ITEM_ADD(SPARSE_INDICES,column_array(row_idx),ERR,ERROR,*999)
                                                   COUNT=COUNT+1
@@ -367,7 +370,7 @@ CONTAINS
                                             CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
                                               & ERR,ERROR,*999)
                                             DO col_idx =1,NUMBER_OF_ROWS
-                                              CALL LINKEDLIST_DESTROY(list(col_idx))
+                                              CALL LINKEDLIST_DESTROY(list(col_idx),ERR,ERROR,*999)
                                             ENDDO
                                           ELSE
                                             LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix."
@@ -436,7 +439,7 @@ CONTAINS
                                             DO dirichlet_idx=1,BOUNDARY_CONDITION_VARIABLE%NUMBER_OF_DIRICHLET_CONDITIONS
                                               !Dirichlet columns
                                               DIRICHLET_DOF=BOUNDARY_CONDITIONS_DIRICHLET%DIRICHLET_DOF_INDICES(dirichlet_idx)
-                                              CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array)
+                                              CALL LinkedList_to_Array(list(DIRICHLET_DOF),column_array,ERR,ERROR,*999)
                                               !The row indices
                                               DO row_idx=1,size(column_array)
                                                 CALL LIST_ITEM_ADD(SPARSE_INDICES,column_array(row_idx),ERR,ERROR,*999)
@@ -448,7 +451,7 @@ CONTAINS
                                             CALL LIST_DETACH_AND_DESTROY(SPARSE_INDICES,DUMMY,SPARSITY_INDICES%SPARSE_ROW_INDICES, &
                                               & ERR,ERROR,*999)
                                             DO col_idx =1,NUMBER_OF_ROWS
-                                              CALL LINKEDLIST_DESTROY(list(col_idx))
+                                              CALL LINKEDLIST_DESTROY(list(col_idx),ERR,ERROR,*999)
                                             ENDDO
                                           ELSE
                                             LOCAL_ERROR="Sparsity indices arrays are not associated for this equations matrix."
@@ -756,6 +759,9 @@ CONTAINS
                   & " is not associated",ERR,ERROR,*999)
           ENDIF
         ENDDO !variable_idx
+        NULLIFY(BOUNDARY_CONDITIONS%SOLVER_EQUATIONS%SOLVER%SOLVER_EQUATIONS)
+        !BOUNDARY_CONDITIONS%SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED = .FALSE.
+        !BOUNDARY_CONDITIONS%SOLVER_EQUATIONS%SOLVER_MAPPING%SOLVER_MAPPING_FINISHED = .FALSE.
         DEALLOCATE(BOUNDARY_CONDITIONS%BOUNDARY_CONDITIONS_VARIABLES)
       ENDIF
       DEALLOCATE(BOUNDARY_CONDITIONS)
@@ -1250,7 +1256,8 @@ CONTAINS
                           ! dof value directly
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
-                        CASE(BOUNDARY_CONDITION_FixedFitted)
+                        CASE(BOUNDARY_CONDITION_FIXED_FITTED,BOUNDARY_CONDITION_FIXED_NONREFLECTING, &
+                          &  BOUNDARY_CONDITION_FIXED_CELLML,BOUNDARY_CONDITION_FIXED_STREE)
                           CALL FIELD_PARAMETER_SET_ADD_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE DEFAULT
@@ -1433,7 +1440,8 @@ CONTAINS
                         CASE(BOUNDARY_CONDITION_IMPERMEABLE_WALL)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_IMPERMEABLE_FLAG_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
-                        CASE(BOUNDARY_CONDITION_FixedFitted)
+                        CASE(BOUNDARY_CONDITION_FIXED_FITTED,BOUNDARY_CONDITION_FIXED_NONREFLECTING, &
+                            & BOUNDARY_CONDITION_FIXED_CELLML,BOUNDARY_CONDITION_FIXED_STREE)
                           CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                             & local_ny,VALUES(i),ERR,ERROR,*999)
                         CASE DEFAULT
@@ -1571,7 +1579,8 @@ CONTAINS
       boundaryConditionsVariable%parameterSetRequired(FIELD_INTEGRATED_NEUMANN_SET_TYPE)=.TRUE.
     CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
-    CASE(BOUNDARY_CONDITION_FixedFitted)
+    CASE(BOUNDARY_CONDITION_FIXED_FITTED,BOUNDARY_CONDITION_FIXED_NONREFLECTING,BOUNDARY_CONDITION_FIXED_CELLML, &
+      & BOUNDARY_CONDITION_FIXED_STREE)
       dofType=BOUNDARY_CONDITION_DOF_FIXED
     CASE DEFAULT
       CALL FLAG_ERROR("The specified boundary condition type for dof number "// &
@@ -1741,7 +1750,8 @@ CONTAINS
       IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
         validCondition=.FALSE.
       END IF
-    CASE(BOUNDARY_CONDITION_FixedFitted)
+    CASE(BOUNDARY_CONDITION_FIXED_FITTED,BOUNDARY_CONDITION_FIXED_NONREFLECTING,BOUNDARY_CONDITION_FIXED_CELLML, &
+      & BOUNDARY_CONDITION_FIXED_STREE)
       IF(interpolationType/=FIELD_NODE_BASED_INTERPOLATION) THEN
         validCondition=.FALSE.
       END IF
@@ -1839,6 +1849,9 @@ CONTAINS
             IF(equationsSet%CLASS==EQUATIONS_SET_ELASTICITY_CLASS.AND. &
                 & equationsSet%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) THEN
               validEquationsSetFound=.TRUE.
+            ELSE IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS .AND. &
+                & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE) THEN
+              validEquationsSetFound=.TRUE.
             END IF
           CASE(BOUNDARY_CONDITION_CORRECTION_MASS_INCREASE)
             !Not actually used anywhere? So keep it as invalid, although maybe it should be removed?
@@ -1855,9 +1868,15 @@ CONTAINS
             validEquationsSetFound=.TRUE.
           CASE(BOUNDARY_CONDITION_NEUMANN_INTEGRATED,BOUNDARY_CONDITION_NEUMANN_INTEGRATED_ONLY)
             validEquationsSetFound=.TRUE.
-          CASE(BOUNDARY_CONDITION_FixedFitted)
+          CASE(BOUNDARY_CONDITION_FIXED_FITTED)
             IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
                 & (equationsSet%TYPE==EQUATIONS_SET_STOKES_EQUATION_TYPE.OR. &
+                & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
+              validEquationsSetFound=.TRUE.
+            END IF
+          CASE(BOUNDARY_CONDITION_FIXED_NONREFLECTING,BOUNDARY_CONDITION_FIXED_CELLML,BOUNDARY_CONDITION_FIXED_STREE)
+            IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
+                & (equationsSet%TYPE==EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE.OR. &
                 & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
               validEquationsSetFound=.TRUE.
             END IF

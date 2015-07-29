@@ -1734,7 +1734,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations_set
     LOGICAL :: EQUATIONS_FINISHED !<Is .TRUE. if the equations have finished being created, .FALSE. if not.
     INTEGER(INTG) :: LINEARITY !<The equations linearity type \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
-    INTEGER(INTG) :: TIME_DEPENDENCE !<The equations time dependence type \see EQUATIONS_SET_CONSTANTS_TimeDepedenceTypes,EQUATIONS_SET_CONSTANTS
+    INTEGER(INTG) :: TIME_DEPENDENCE !<The equations time dependence type \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
     INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the equations \see EQUATIONS_ROUTINES_EquationsOutputTypes,EQUATIONS_ROUTINES
     INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsSparsityTypes,EQUATIONS_ROUTINES
     INTEGER(INTG) :: LUMPING_TYPE !<The lumping type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsLumpingTypes,EQUATIONS_ROUTINES
@@ -2113,7 +2113,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the interface equations \see INTERFACE_EQUATIONS_ROUTINES_OutputTypes,INTERFACE_EQUATIONS_ROUTINES
     INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the interface equation matrices of the interface equations \see INTERFACE_EQUATIONS_ROUTINES_SparsityTypes,INTERFACE_EQUATIONS_ROUTINES
     INTEGER(INTG) :: LINEARITY !<The interface equations linearity type \see INTERFACE_CONDITIONS_CONSTANTS_LinearityTypes,INTERFACE_CONDITIONS_CONSTANTS
-    INTEGER(INTG) :: TIME_DEPENDENCE !<The interface equations time dependence type \see INTERFACE_CONDITIONS_CONSTANTS_TimeDepedenceTypes,INTERFACE_CONDITIONS_CONSTANTS
+    INTEGER(INTG) :: TIME_DEPENDENCE !<The interface equations time dependence type \see INTERFACE_CONDITIONS_CONSTANTS_TimeDependenceTypes,INTERFACE_CONDITIONS_CONSTANTS
     TYPE(INTERFACE_EQUATIONS_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the interface equations.
     TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface equations mapping for the interface.
     TYPE(INTERFACE_MATRICES_TYPE), POINTER :: INTERFACE_MATRICES !<A pointer to the interface equations matrices and vectors used for the interface equations.
@@ -2313,7 +2313,12 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: PARAMETERS_FIELD_AUTO_CREATED !<Is .TRUE. if the parameters field has been auto created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: PARAMETERS_FIELD !<A pointer to the parameters field
   END TYPE CELLML_PARAMETERS_FIELD_TYPE
-  
+ 
+  !> Contains information on the solver and the dof for which cellml equations are to be evaluated by petsc
+  TYPE CELLML_PETSC_CONTEXT_TYPE
+    TYPE(SOLVER_TYPE), POINTER :: SOLVER
+    INTEGER(INTG) :: DOF_NUMBER
+  END TYPE CELLML_PETSC_CONTEXT_TYPE 
   !>Contains information on the mapping between CellML fields and OpenCMISS fields and vise versa.
   TYPE CELLML_MODEL_MAP_TYPE
     INTEGER(INTG) :: CELLML_MAP_TYPE !<The direction of the mapping. \see CELLML_FieldMappingTypes,CMISS_CELLML
@@ -3101,6 +3106,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
     INTEGER(INTG) :: ITERATION_NUMBER
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS
+    REAL(DP) :: ABSOLUTE_TOLERANCE
     LOGICAL :: CONTINUE_LOOP
   END TYPE CONTROL_LOOP_WHILE_TYPE
 

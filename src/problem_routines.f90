@@ -525,9 +525,15 @@ CONTAINS
                 IF(ASSOCIATED(SOLVERS)) THEN
                   DO solver_idx=1,SOLVERS%NUMBER_OF_SOLVERS
                     SOLVER=>SOLVERS%SOLVERS(solver_idx)%PTR
-                    
-                    CALL PROBLEM_SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-                    
+                    IF(ASSOCIATED(SOLVER)) THEN
+                      IF(ASSOCIATED(SOLVER%SOLVER_EQUATIONS)) THEN
+                        CALL PROBLEM_SOLVER_LOAD_INCREMENT_APPLY(SOLVER%SOLVER_EQUATIONS,1, &
+                          & 1,ERR,ERROR,*999)
+                      ENDIF
+                      CALL PROBLEM_SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+                    ELSE
+                      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+                    ENDIF
                   ENDDO !solver_idx
                 ELSE
                   CALL FLAG_ERROR("Control loop solvers is not associated.",ERR,ERROR,*999)
@@ -1554,7 +1560,7 @@ CONTAINS
                           CASE(EQUATIONS_SET_ELASTICITY_CLASS)
                             CALL ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
                           CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-                            !Pre residual evaluate not used
+                            CALL FluidMechanics_FiniteElementPreResidualEvaluate(EQUATIONS_SET,ERR,ERROR,*999)
                           CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
                             !Pre residual evaluate not used
                           CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)

@@ -155,7 +155,7 @@ run : main
 	$(EXECUTABLE)
 
 test:	main
-	DIR=$(EXAMPLE_ROOT) python $(OPENCMISSEXAMPLES_ROOT)/scripts/run_tests.py 
+	DIR=$(EXAMPLE_PATH)$(EXAMPLE_NAME) python $(OPENCMISSEXAMPLES_ROOT)/scripts/run_tests.py 
 
 callgrindrun : main
 	valgrind --tool=callgrind $(EXECUTABLE)

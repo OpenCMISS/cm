@@ -199,6 +199,11 @@ MODULE CMISS_PETSC
   MatOption, PARAMETER :: PETSC_MAT_ERROR_LOWER_TRIANGULAR = MAT_ERROR_LOWER_TRIANGULAR
   MatOption, PARAMETER :: PETSC_MAT_GETROW_UPPERTRIANGULAR = MAT_GETROW_UPPERTRIANGULAR
   MatOption, PARAMETER :: PETSC_MAT_UNUSED_NONZERO_LOCATION_ERR = MAT_UNUSED_NONZERO_LOCATION_ERR
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR > 3 )
+  MatOption, PARAMETER :: PETSC_NUM_MAT_OPTIONS = MAT_OPTION_MAX
+#else
+  MatOption, PARAMETER :: PETSC_NUM_MAT_OPTIONS = NUM_MAT_OPTIONS
+#endif
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR <= 4 )
   MatOption, PARAMETER :: PETSC_MAT_CHECK_COMPRESSED_ROW = MAT_CHECK_COMPRESSED_ROW
@@ -1339,6 +1344,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE TSSetFromOptions
 
+    SUBROUTINE TSSetExactFinalTime(ts,eftopt,ierr)
+      TS ts
+      PetscBool eftopt
+      PetscInt ierr
+    END SUBROUTINE TSSetExactFinalTime
+
     SUBROUTINE TSSetInitialTimeStep(ts,initial_time,time_step,ierr)
       TS ts
       PetscReal initial_time
@@ -1352,13 +1363,26 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE TSSetProblemType
     
-    SUBROUTINE TSSetRHSFunction(ts,rhsfunc,ctx,ierr)
+    SUBROUTINE TSSetRHSFunction(ts,r,rhsfunc,ctx,ierr)
       USE TYPES
       TS ts
+      Vec r
       EXTERNAL rhsfunc
-      TYPE(SOLVER_TYPE), POINTER :: ctx
+      TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE TSSetRHSFunction
+
+    SUBROUTINE TSSetSolution(ts,initialsolution,ierr)
+      TS ts
+      Vec initialsolution
+      PetscInt ierr
+    END SUBROUTINE TSSetSolution
+
+    SUBROUTINE TSGetSolution(ts,currentsolution,ierr)
+      TS ts
+      Vec currentsolution
+      PetscInt ierr
+    END SUBROUTINE TSGetSolution
     
     SUBROUTINE TSSetTimeStep(ts,time_step,ierr)
       TS ts
@@ -1372,9 +1396,10 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE TSSetType
     
-    SUBROUTINE TSSolve(ts,x,ierr)
+    SUBROUTINE TSSolve(ts,x,ftime,ierr)
       TS ts
       Vec x
+      PetscReal ftime
       PetscInt ierr
     END SUBROUTINE TSSolve
 
@@ -1384,6 +1409,19 @@ MODULE CMISS_PETSC
       PetscReal ptime
       PetscInt ierr
     END SUBROUTINE TSStep
+
+    SUBROUTINE TSSundialsSetType(ts,sundialstype,ierr)
+      TS ts
+      TSSundialsType sundialstype
+      PetscInt ierr
+    END SUBROUTINE TSSundialsSetType
+
+    SUBROUTINE TSSundialsSetTolerance(ts,abstol,reltol,ierr)
+      TS ts
+      PetscReal abstol
+      PetscReal reltol
+      PetscInt ierr
+    END SUBROUTINE TSSundialsSetTolerance
 
     SUBROUTINE VecAssemblyBegin(x,ierr)
       Vec x
@@ -1792,8 +1830,10 @@ MODULE CMISS_PETSC
   PUBLIC PETSC_SUNDIALS_ADAMS,PETSC_SUNDIALS_BDF,PETSC_SUNDIALS_MODIFIED_GS,PETSC_SUNDIALS_CLASSICAL_GS
 
   PUBLIC PETSC_TSCREATE,PETSC_TSDESTROY,PETSC_TSFINALISE,PETSC_TSINITIALISE,PETSC_TSMONITORSET, &
-    & PETSC_TSSETDURATION,PETSC_TSSETFROMOPTIONS,PETSC_TSSETINITIALTIMESTEP, &
-    & PETSC_TSSETPROBLEMTYPE,PETSC_TSSETRHSFUNCTION,PETSC_TSSETTIMESTEP,PETSC_TSSETTYPE,PETSC_TSSOLVE,PETSC_TSSTEP
+    & PETSC_TSSETDURATION,PETSC_TSSETFROMOPTIONS, PETSC_TSSETEXACTFINALTIME, &
+    & PETSC_TSSETINITIALTIMESTEP,PETSC_TSSETSOLUTION, PETSC_TSGETSOLUTION, &
+    & PETSC_TSSETPROBLEMTYPE,PETSC_TSSETRHSFUNCTION,PETSC_TSSETTIMESTEP,PETSC_TSSETTYPE, &
+    & PETSC_TSSUNDIALSSETTYPE, PETSC_TSSUNDIALSSETTOLERANCE,PETSC_TSSOLVE,PETSC_TSSTEP
 #if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 2 )
   PUBLIC PETSC_TSSETMATRICES
 #endif
@@ -6122,7 +6162,36 @@ CONTAINS
     CALL EXITS("PETSC_TSSETFROMOPTIONS")
     RETURN 1
   END SUBROUTINE PETSC_TSSETFROMOPTIONS
+
+  !
+  !================================================================================================================================
+  !
     
+  !>Buffer routine to the PETSc TSSetExactFinalTime routine.
+  SUBROUTINE PETSC_TSSETEXACTFINALTIME(TS_,EFTOPT,ERR,ERROR,*)
+
+    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the initial time step for
+    LOGICAL, INTENT(IN) :: EFTOPT !<The option for exact final time to set
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_TSSETEXACTFINALTIME",ERR,ERROR,*999)
+
+    CALL TSSetExactFinalTime(TS_%TS_,EFTOPT,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in TSSetExactFinalTime",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_TSSETEXACTFINALTIME")
+    RETURN
+999 CALL ERRORS("PETSC_TTSSETEXACTFINALTIME",ERR,ERROR)
+    CALL EXITS("PETSC_TSSETEXACTFINALTIME")
+    RETURN 1
+  END SUBROUTINE PETSC_TSSETEXACTFINALTIME    
   !
   !================================================================================================================================
   !
@@ -6226,18 +6295,19 @@ CONTAINS
   !
     
   !>Buffer routine to the PETSc TSSetRHSFunction routine.
-  SUBROUTINE PETSC_TSSETRHSFUNCTION(TS_,RHSFUNCTION,CTX,ERR,ERROR,*)
+  SUBROUTINE PETSC_TSSETRHSFUNCTION(TS_,PETSC_RATES,RHSFUNCTION,CTX,ERR,ERROR,*)
 
     TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the problem type for
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: PETSC_RATES
     EXTERNAL RHSFUNCTION !<The external RHS function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
+    TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: CTX !<The solver data to pass to the function
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_TSSETRHSFUNCTION",ERR,ERROR,*999)
 
-    CALL TSSetRHSFunction(TS_%TS_,RHSFUNCTION,CTX,ERR)
+    CALL TSSetRHSFunction(TS_%TS_,PETSC_RATES%VEC,RHSFUNCTION,CTX,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -6251,6 +6321,66 @@ CONTAINS
     CALL EXITS("PETSC_TSSETRHSFUNCTION")
     RETURN 1
   END SUBROUTINE PETSC_TSSETRHSFUNCTION
+
+  !
+  !================================================================================================================================
+  !
+    
+  !>Buffer routine to the PETSc TSSetSolution routine.
+  SUBROUTINE PETSC_TSSETSOLUTION(TS_,INITIALSOLUTION,ERR,ERROR,*)
+
+    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the time step for
+    TYPE(PETSC_VEC_TYPE), INTENT(IN) :: INITIALSOLUTION !<The initial solution to be set for the TS
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_TSSETSOLUTION",ERR,ERROR,*999)
+
+    CALL TSSetSolution(TS_%TS_,INITIALSOLUTION%VEC,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in TSSetSolution",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_TSSETSOLUTION")
+    RETURN
+999 CALL ERRORS("PETSC_TSSETSOLUTION",ERR,ERROR)
+    CALL EXITS("PETSC_TSSETSOLUTION")
+    RETURN 1
+  END SUBROUTINE PETSC_TSSETSOLUTION
+
+  !
+  !================================================================================================================================
+  !
+    
+  !>Buffer routine to the PETSc TSGetSolution routine.
+  SUBROUTINE PETSC_TSGETSOLUTION(TS_,CURRENTSOLUTION,ERR,ERROR,*)
+
+    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the time step for
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: CURRENTSOLUTION !<The current solution to be set for the TS
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_TSSETSOLUTION",ERR,ERROR,*999)
+
+    CALL TSGetSolution(TS_%TS_,CURRENTSOLUTION%VEC,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in TSGetSolution",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_TSGETSOLUTION")
+    RETURN
+999 CALL ERRORS("PETSC_TSGETSOLUTION",ERR,ERROR)
+    CALL EXITS("PETSC_TSGETSOLUTION")
+    RETURN 1
+  END SUBROUTINE PETSC_TSGETSOLUTION
     
   !
   !================================================================================================================================
@@ -6317,17 +6447,18 @@ CONTAINS
   !
     
   !>Buffer routine to the PETSc TSSolve routine.
-  SUBROUTINE PETSC_TSSOLVE(TS_,X,ERR,ERROR,*)
+  SUBROUTINE PETSC_TSSOLVE(TS_,X,FINALTIME,ERR,ERROR,*)
 
     TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to solve
-    TYPE(PETSC_VEC_TYPE), INTENT(IN) :: X !<The solution vector
+    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The solution vector
+    REAL(DP), INTENT(OUT) :: FINALTIME
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
     CALL ENTERS("PETSC_TSSOLVE",ERR,ERROR,*999)
 
-    CALL TSSolve(TS_%TS_,X%VEC,ERR)
+    CALL TSSolve(TS_%TS_,X%VEC,FINALTIME,ERR)
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
@@ -6372,7 +6503,66 @@ CONTAINS
     CALL EXITS("PETSC_TSSTEP")
     RETURN 1
   END SUBROUTINE PETSC_TSSTEP
-  
+
+  !
+  !================================================================================================================================
+  !
+    
+  !>Buffer routine to the PETSc TSSundialsSetType routine.
+  SUBROUTINE PETSC_TSSUNDIALSSETTYPE(TS_,SUNDIALSTYPE,ERR,ERROR,*)
+
+    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to step
+    TSSundialsType, INTENT(IN) :: SUNDIALSTYPE
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_TSSUNDIALSSETTYPE",ERR,ERROR,*999)
+
+    CALL TSSundialsSetType(TS_%TS_,SUNDIALSTYPE,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in TSSUNDIALSSETTYPE",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_TSSUNDIALSSETTYPE")
+    RETURN
+999 CALL ERRORS("PETSC_TSSUNDIALSSETTYPE",ERR,ERROR)
+    CALL EXITS("PETSC_TSSUNDIALSSETTYPE")
+    RETURN 1
+  END SUBROUTINE PETSC_TSSUNDIALSSETTYPE  
+  !
+  !================================================================================================================================
+  !
+    
+  !>Buffer routine to the PETSc TSSundialsSetType routine.
+  SUBROUTINE PETSC_TSSUNDIALSSETTOLERANCE(TS_,ABSTOL,RELTOL,ERR,ERROR,*)
+
+    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to step
+    REAL(DP), INTENT(IN) :: ABSTOL
+    REAL(DP), INTENT(IN) :: RELTOL
+    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    !Local Variables
+
+    CALL ENTERS("PETSC_TSSUNDIALSSETTOLERANCE",ERR,ERROR,*999)
+
+    CALL TSSundialsSetTolerance(TS_%TS_,ABSTOL,RELTOL,ERR)
+    IF(ERR/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(ERR)
+      ENDIF
+      CALL FLAG_ERROR("PETSc error in TSSUNDIALSSETTOLERANCE",ERR,ERROR,*999)
+    ENDIF
+    
+    CALL EXITS("PETSC_TSSUNDIALSSETTOLERANCE")
+    RETURN
+999 CALL ERRORS("PETSC_TSSUNDIALSSETTYPE",ERR,ERROR)
+    CALL EXITS("PETSC_TSSUNDIALSSETTOLERANCE")
+    RETURN 1
+  END SUBROUTINE PETSC_TSSUNDIALSSETTOLERANCE
   !
   !================================================================================================================================
   !
@@ -7486,7 +7676,8 @@ CONTAINS
     CALL EXITS("PETSC_VECVIEW")
     RETURN 1
   END SUBROUTINE PETSC_VECVIEW
-    
+
+
   !
   !================================================================================================================================
   !
