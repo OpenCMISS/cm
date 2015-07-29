@@ -74,9 +74,8 @@ MODULE SOLVER_ROUTINES
 
   PRIVATE
 
-#include "include/petscversion.h"
-
-
+#include "petscversion.h"
+ 
   !Module parameters
 
   !> \addtogroup SOLVER_ROUTINES_SolverTypes SOLVER_ROUTINES::SolverTypes
@@ -9084,8 +9083,13 @@ CONTAINS
                 SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
                 IF(ASSOCIATED(SOLVER_MATRIX)) THEN
                   IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+                    CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
+                      & ERR,ERROR,*999)
+#else
                     CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
                       & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
+#endif                    
                     !Check that the solver supports the matrix sparsity type
                     SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                     CASE(SOLVER_FULL_MATRICES)
@@ -9834,11 +9838,22 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
+#endif                                      
                                     ELSE
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+                                      CALL PETSc_KSPSetReusePreconditioner(LINEAR_DIRECT_SOLVER%KSP,.TRUE.,err,error,*999)
+#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
+#endif                                      
                                     ENDIF
                                     !Solve the linear system
                                     CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
@@ -9862,11 +9877,22 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
+#endif                                      
                                     ELSE
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+                                      CALL PETSc_KSPSetReusePreconditioner(LINEAR_DIRECT_SOLVER%KSP,.TRUE.,err,error,*999)
+#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                          & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
+#endif                                      
                                     ENDIF
                                     !Solve the linear system
                                     CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
@@ -9898,11 +9924,22 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+#else                                      
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
+#endif                                      
                                     ELSE
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+                                      CALL PETSc_KSPSetReusePreconditioner(LINEAR_DIRECT_SOLVER%KSP,.TRUE.,err,error,*999)
+#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
+#endif                                      
                                     ENDIF
                                     !Solve the linear system
                                     CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
@@ -9926,11 +9963,22 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
+#endif                                      
                                     ELSE
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
+                                      CALL PETSc_KSPSetReusePreconditioner(LINEAR_DIRECT_SOLVER%KSP,.TRUE.,err,error,*999)
+#else
                                       CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
+#endif                                      
                                     ENDIF
                                     !Solve the linear system
                                     CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
@@ -10438,8 +10486,13 @@ CONTAINS
               SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
               IF(ASSOCIATED(SOLVER_MATRIX)) THEN
                 IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+                  CALL PETSC_KSPSETOPERATORS(LINEAR_ITERATIVE_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
+                    & ERR,ERROR,*999)
+#else
                   CALL PETSC_KSPSETOPERATORS(LINEAR_ITERATIVE_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
                     & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
+#endif                  
                 ELSE
                   CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
                 ENDIF
@@ -15661,11 +15714,18 @@ CONTAINS
                       CALL Petsc_SnesLineSearchBTSetAlpha(linesearch_solver%snesLineSearch,LINESEARCH_SOLVER%LINESEARCH_ALPHA, &
                         & err,error,*999)
                     END SELECT
-                    ! Set step tolerances, leave iterative line search options as defaults
+                    ! Set step tolerances, leave iterative line search options as defaults.
+!!TODO: set the rtol, atol, ltol and maxits properly.
+#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
+                    CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
+                      & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
+                      & PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,err,error,*999)
+#else
                     CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
                       & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
                       & PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION, &
                       & PETSC_DEFAULT_INTEGER,err,error,*999)
+#endif                    
 #endif
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
                     IF(linesearch_solver%linesearchMonitorOutput) THEN
@@ -20036,7 +20096,7 @@ SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
   USE TYPES
 
   IMPLICIT NONE
-  
+
   !Argument variables
   TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS !<The PETSc TS type
   INTEGER(INTG), INTENT(INOUT) :: STEPS !<The iteration number
@@ -20058,15 +20118,15 @@ SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
       LOCAL_ERROR="Invalid solve type. The solve type of "//TRIM(NUMBER_TO_VSTRING(CTX%SOLVE_TYPE,"*",ERR,ERROR))// &
         & " does not correspond to a differntial-algebraic equations solver."
       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-    ENDIF      
+    ENDIF
   ELSE
     CALL FLAG_ERROR("Solver context is not associated.",ERR,ERROR,*999)
   ENDIF
-  
+
   RETURN
 999 CALL WRITE_ERROR(ERR,ERROR,*998)
 998 CALL FLAG_WARNING("Error monitoring differential-algebraic equations solve.",ERR,ERROR,*997)
-997 RETURN    
+997 RETURN
 END SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC
 
 
@@ -20085,7 +20145,7 @@ SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(SNES,ITS,NORM,CTX,ERR)
   USE TYPES
 
   IMPLICIT NONE
-  
+
   !Argument variables
   TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES !<The PETSc SNES type
   INTEGER(INTG), INTENT(INOUT) :: ITS !<The iteration number
@@ -20106,15 +20166,15 @@ SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(SNES,ITS,NORM,CTX,ERR)
       LOCAL_ERROR="Invalid solve type. The solve type of "//TRIM(NUMBER_TO_VSTRING(CTX%SOLVE_TYPE,"*",ERR,ERROR))// &
         & " does not correspond to a nonlinear solver."
       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-    ENDIF      
+    ENDIF
   ELSE
     CALL FLAG_ERROR("Solver context is not associated.",ERR,ERROR,*999)
   ENDIF
-  
+
   RETURN
 999 CALL WRITE_ERROR(ERR,ERROR,*998)
 998 CALL FLAG_WARNING("Error monitoring nonlinear solve.",ERR,ERROR,*997)
-997 RETURN    
+997 RETURN
 END SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC
 !
 !================================================================================================================================
