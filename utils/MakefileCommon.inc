@@ -156,12 +156,14 @@ ifneq ($(DEBUG),false)
   FFLAGS += $(strip $(DBGCF_FLGS) $(DBGF_FLGS))
   DLFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
   CPPFLAGS += -DDEBUG
+  FPPFLAGS += -DDEBUG
 else
   ifneq ($(MPIPROF),false)
     CFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
     FFLAGS += $(strip $(DBGCF_FLGS) $(DBGF_FLGS))
     CPPFLAGS += -DDEBUG
-  else
+    FPPFLAGS += -DDEBUG
+else
     CFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTC_FLGS))
     FFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTF_FLGS))
     ELFLAGS += $(OPTCFE_FLGS)
@@ -667,7 +669,7 @@ ifeq ($(or ${OPENCMISS_USE_CELLML},${OPENCMISS_USE_FIELDML}),true)
   ZLIB_LIB_PATH += $(addprefix -L, $(OCE_ZLIBLIBPATH) )
   ZLIB_INCLUDE_PATH += $(addprefix -I, $(OCE_ZLIBINCLUDEPATH) )
 else
-  ifeq ($(and ${OPENCMISS_USE_HDF5},$(OCE_HDF5),true)
+  ifeq ($(and ${OPENCMISS_USE_HDF5},$(OCE_HDF5)),true)
     ZLIB_LIBRARIES += $(call convertlistlink,$(OCE_ZLIBLIBS))
     ZLIB_LIB_PATH += $(addprefix -L, $(OCE_ZLIBLIBPATH) )
     ZLIB_INCLUDE_PATH += $(addprefix -I, $(OCE_ZLIBINCLUDEPATH) )
