@@ -2155,7 +2155,7 @@ CONTAINS
 
     !Argument variables
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: DISTRIBUTED_MATRIX !<A pointer to the distributed matrix to override
-    TYPE(PETSC_MAT_TYPE), INTENT(IN) :: OVERRIDE_MATRIX !<The override matrix
+    TYPE(PetscMatType), INTENT(IN) :: OVERRIDE_MATRIX !<The override matrix
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -7089,7 +7089,7 @@ CONTAINS
 
     !Argument variables
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: DISTRIBUTED_VECTOR !<A pointer to the distributed vector to override
-    TYPE(PETSC_VEC_TYPE), INTENT(IN) :: OVERRIDE_VECTOR !<The override vector
+    TYPE(PetscVecType), INTENT(IN) :: OVERRIDE_VECTOR !<The override vector
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables

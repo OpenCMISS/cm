@@ -2005,8 +2005,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(PROBLEM_TYPE) :: PROBLEM
- 
+
     CALL ENTERS("PROBLEM_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
@@ -3958,10 +3957,10 @@ END MODULE PROBLEM_ROUTINES
 !
 
 !>Called from the PETSc SNES solvers to evaluate the Jacobian for a Newton like nonlinear solver
-SUBROUTINE PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
+SUBROUTINE PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC(snes,x,A,B,flag,ctx,err)
 
   USE BASE_ROUTINES
-  USE CMISS_PETSC_TYPES
+  USE CmissPetscTypes
   USE DISTRIBUTED_MATRIX_VECTOR
   USE ISO_VARYING_STRING
   USE KINDS
@@ -3973,13 +3972,13 @@ SUBROUTINE PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
   IMPLICIT NONE
   
   !Argument variables
-  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES !<The PETSc SNES
-  TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The PETSc X Vec
-  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The PETSc A Mat
-  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The PETSc B Mat
-  INTEGER(INTG) :: FLAG !<The PETSC MatStructure flag
-  TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
-  INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+  TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The PETSc snes
+  TYPE(PetscVecType), INTENT(INOUT) :: X !<The PETSc x Vec
+  TYPE(PetscMatType), INTENT(INOUT) :: A !<The PETSc A Mat
+  TYPE(PetscMatType), INTENT(INOUT) :: B !<The PETSc B Mat
+  INTEGER(INTG) :: flag !<The PETSC MatStructure flag
+  TYPE(SOLVER_TYPE), POINTER :: ctx !<The passed through context
+  INTEGER(INTG), INTENT(INOUT) :: err !<The error code
   !Local Variables
   INTEGER(INTG) :: DUMMY_ERR
   TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOLVER_VECTOR
@@ -4051,11 +4050,11 @@ END SUBROUTINE PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC
 !
 
 !>Called from the PETSc SNES solvers to evaluate the Jacobian for a Newton like nonlinear solver using PETSc's FD Jacobian calculation
-SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
+SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC(snes,x,A,B,flag,ctx,err)
 
   USE BASE_ROUTINES
   USE CMISS_PETSC
-  USE CMISS_PETSC_TYPES
+  USE CmissPetscTypes
   USE DISTRIBUTED_MATRIX_VECTOR
   USE ISO_VARYING_STRING
   USE KINDS
@@ -4068,13 +4067,13 @@ SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
   IMPLICIT NONE
 
   !Argument variables
-  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES !<The PETSc SNES
-  TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The PETSc X Vec
-  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The PETSc A Mat
-  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The PETSc B Mat
-  INTEGER(INTG) :: FLAG !<The PETSC MatStructure flag
-  TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
-  INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+  TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The PETSc SNES
+  TYPE(PetscVecType), INTENT(INOUT) :: x !<The PETSc X Vec
+  TYPE(PetscMatType), INTENT(INOUT) :: A !<The PETSc A Mat
+  TYPE(PetscMatType), INTENT(INOUT) :: B !<The PETSc B Mat
+  INTEGER(INTG) :: flag !<The PETSC MatStructure flag
+  TYPE(SOLVER_TYPE), POINTER :: ctx !<The passed through context
+  INTEGER(INTG), INTENT(INOUT) :: err !<The error code
   !Local Variables
   INTEGER(INTG) :: DUMMY_ERR
   TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER
@@ -4083,7 +4082,7 @@ SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
   TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
   TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
   TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
-  TYPE(PETSC_MATFDCOLORING_TYPE), POINTER :: JACOBIAN_FDCOLORING
+  TYPE(PetscMatFDColoringType), POINTER :: jacobianMatFDColoring
   TYPE(VARYING_STRING) :: DUMMY_ERROR,ERROR,LOCAL_ERROR
 
   IF(ASSOCIATED(CTX)) THEN
@@ -4102,9 +4101,9 @@ SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC(SNES,X,A,B,FLAG,CTX,ERR)
                 IF(ASSOCIATED(SOLVER_MATRIX)) THEN
                   SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                   CASE(SOLVER_SPARSE_MATRICES)
-                    JACOBIAN_FDCOLORING=>LINESEARCH_SOLVER%JACOBIAN_FDCOLORING
-                    IF(ASSOCIATED(JACOBIAN_FDCOLORING)) THEN
-                      CALL PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR(SNES,X,A,B,FLAG,JACOBIAN_FDCOLORING,ERR,ERROR,*999)
+                    jacobianMatFDColoring=>LINESEARCH_SOLVER%jacobianMatFDColoring
+                    IF(ASSOCIATED(jacobianMatFDColoring)) THEN
+                      CALL PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR(snes,x,A,B,FLAG,jacobianMatFDColoring,ERR,ERROR,*999)
                     ELSE
                       CALL FLAG_ERROR("Linesearch solver FD colouring is not associated.",ERR,ERROR,*998)
                     ENDIF
@@ -4161,10 +4160,10 @@ END SUBROUTINE PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC
 !
 
 !>Called from the PETSc SNES solvers to evaluate the residual for a Newton like nonlinear solver
-SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC(SNES,X,F,CTX,ERR)
+SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC(snes,x,f,ctx,err)
 
   USE BASE_ROUTINES
-  USE CMISS_PETSC_TYPES
+  USE CmissPetscTypes
   USE DISTRIBUTED_MATRIX_VECTOR
   USE ISO_VARYING_STRING
   USE KINDS
@@ -4175,11 +4174,11 @@ SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC(SNES,X,F,CTX,ERR)
   IMPLICIT NONE
   
   !Argument variables
-  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES !<The PETSc SNES type
-  TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The PETSc X Vec type
-  TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: F !<The PETSc F Vec type
-  TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
-  INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
+  TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The PETSc snes type
+  TYPE(PetscVecType), INTENT(INOUT) :: x !<The PETSc x Vec type
+  TYPE(PetscVecType), INTENT(INOUT) :: f !<The PETSc f Vec type
+  TYPE(SOLVER_TYPE), POINTER :: ctx !<The passed through context
+  INTEGER(INTG), INTENT(INOUT) :: err !<The error code
   !Local Variables
   INTEGER(INTG) :: DUMMY_ERR
   TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR,SOLVER_VECTOR
@@ -4263,7 +4262,7 @@ END SUBROUTINE PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
 SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,fnorm,reason,ctx,err)
 
   USE BASE_ROUTINES
-  USE CMISS_PETSC_TYPES
+  USE CmissPetscTypes
   USE DISTRIBUTED_MATRIX_VECTOR
   USE INPUT_OUTPUT
   USE KINDS
@@ -4276,7 +4275,7 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
   IMPLICIT NONE
   
   !Argument variables
-  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: snes !<The PETSc SNES type
+  TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The PETSc SNES type
   INTEGER(INTG), INTENT(INOUT) :: iterationNumber !< The current iteration (1 is the first and is before any Newton step)
   REAL(DP), INTENT(INOUT) :: xnorm !<The 2-norm of current iterate
   REAL(DP), INTENT(INOUT) :: gnorm !<The 2-norm of current step
@@ -4285,7 +4284,7 @@ SUBROUTINE ProblemSolver_ConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
   TYPE(SOLVER_TYPE), POINTER :: ctx !<The passed through context
   INTEGER(INTG), INTENT(INOUT) :: err !<The error code
   !Local Variables
-  TYPE(PETSC_VEC_TYPE) :: x,f,y,w,g
+  TYPE(PetscVecType) :: x,f,y,w,g
   TYPE(NEWTON_SOLVER_TYPE), POINTER :: newtonSolver
   TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: nonlinearSolver
   TYPE(PetscSnesLinesearchType) :: lineSearch
@@ -4360,10 +4359,10 @@ END SUBROUTINE ProblemSolver_ConvergenceTestPetsc
 !
 
 !>Called from the PETSc SNES solvers to monitor a nonlinear solver
-SUBROUTINE Problem_SolverNonlinearMonitorPETSC(SNES,iterationNumber,residualNorm,context,err)
+SUBROUTINE Problem_SolverNonlinearMonitorPETSC(snes,iterationNumber,residualNorm,context,err)
 
   USE BASE_ROUTINES
-  USE CMISS_PETSC_TYPES
+  USE CmissPetscTypes
   USE DISTRIBUTED_MATRIX_VECTOR
   USE ISO_VARYING_STRING
   USE KINDS
@@ -4374,7 +4373,7 @@ SUBROUTINE Problem_SolverNonlinearMonitorPETSC(SNES,iterationNumber,residualNorm
   IMPLICIT NONE
   
   !Argument variables
-  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES !<The PETSc SNES type
+  TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The PETSc snes type
   INTEGER(INTG), INTENT(INOUT) :: iterationNumber !<The iteration number
   REAL(DP), INTENT(INOUT) :: residualNorm !<The residual norm
   TYPE(SOLVER_TYPE), POINTER :: context !<The passed through context
