@@ -69,8 +69,8 @@
 !> This module contains all type definitions in order to avoid cyclic module references.
 MODULE TYPES
 
-  USE CMISS_PETSC_TYPES, ONLY : PETSC_ISCOLORING_TYPE,PETSC_KSP_TYPE,PETSC_MAT_TYPE,PETSC_MATFDCOLORING_TYPE,PETSC_PC_TYPE, &
-    & PETSC_SNES_TYPE,PetscSnesLineSearchType,PETSC_VEC_TYPE
+  USE CmissPetscTypes, ONLY : PetscISColoringType,PetscKspType,PetscMatType,PetscMatColoringType,PetscMatFDColoringType, &
+    & PetscPCType,PetscSnesType,PetscSnesLineSearchType,PetscVecType
   USE CONSTANTS
   USE KINDS
   USE ISO_C_BINDING
@@ -776,8 +776,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: DATA_SIZE  !<The size of the distributed vector that is held locally by the domain.
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_NUMBERS(:) !<GLOBAL_NUMBERS(i). The PETSc global number corresponding to the i'th local number.
     LOGICAL :: USE_OVERRIDE_VECTOR !<Is .TRUE. if the override vector is used instead of the standard vector
-    TYPE(PETSC_VEC_TYPE) :: VECTOR !<The PETSc vector
-    TYPE(PETSC_VEC_TYPE) :: OVERRIDE_VECTOR !<The PETSc override vector
+    TYPE(PetscVecType) :: VECTOR !<The PETSc vector
+    TYPE(PetscVecType) :: OVERRIDE_VECTOR !<The PETSc override vector
   END TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
   
   !>Contains the information for a vector that is distributed across a number of domains.
@@ -818,8 +818,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_ROW_NUMBERS(:) !<GLOBAL_ROW_NUMBERS(i). The PETSc global row number corresponding to the i'th local row number.
     REAL(DP), POINTER :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix. \todo Is this used???
     LOGICAL :: USE_OVERRIDE_MATRIX !<Is .TRUE. if the override matrix is to be used instead of the standard matrix
-    TYPE(PETSC_MAT_TYPE) :: MATRIX !<The PETSc matrix
-    TYPE(PETSC_MAT_TYPE) :: OVERRIDE_MATRIX !<The PETSc override matrix
+    TYPE(PetscMatType) :: MATRIX !<The PETSc matrix
+    TYPE(PetscMatType) :: OVERRIDE_MATRIX !<The PETSc override matrix
   END TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
   
   !>Contains the information for a matrix that is distributed across a number of domains.
@@ -2588,8 +2588,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the linear direct solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
     INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the linear direct solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
     INTEGER(INTG) :: DIRECT_SOLVER_TYPE !<The type of direct linear solver
-    TYPE(PETSC_PC_TYPE) :: PC !<The PETSc preconditioner object
-    TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
+    TYPE(PetscPCType) :: PC !<The PETSc preconditioner object
+    TYPE(PetscKspType) :: KSP !<The PETSc solver object
   END TYPE LINEAR_DIRECT_SOLVER_TYPE
 
   !>Contains information for an iterative linear solver
@@ -2605,8 +2605,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the residual norm
     REAL(DP) :: DIVERGENCE_TOLERANCE !<The absolute tolerance of the residual norm
     INTEGER(INTG) :: GMRES_RESTART !<The GMRES restart iterations size
-    TYPE(PETSC_PC_TYPE) :: PC !<The PETSc preconditioner object
-    TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
+    TYPE(PetscPCType) :: PC !<The PETSc preconditioner object
+    TYPE(PetscKspType) :: KSP !<The PETSc solver object
   END TYPE LINEAR_ITERATIVE_SOLVER_TYPE
   
   !>Contains information for a linear solver
@@ -2627,9 +2627,10 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     REAL(DP) :: LINESEARCH_ALPHA !<The line search alpha
     REAL(DP) :: LINESEARCH_MAXSTEP !<The line search maximum step
     REAL(DP) :: LINESEARCH_STEPTOLERANCE !<The line search step tolerance
-    TYPE(PETSC_ISCOLORING_TYPE) :: JACOBIAN_ISCOLORING !<The Jacobian matrix index set colouring
-    TYPE(PETSC_MATFDCOLORING_TYPE) :: JACOBIAN_FDCOLORING !<The Jacobian matrix finite difference colouring
-    TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
+    TYPE(PetscMatColoringType) :: jacobianMatColoring !<The Jacobian matrix colouring
+    TYPE(PetscISColoringType) :: jacobianISColoring !<The Jacobian matrix index set colouring
+    TYPE(PetscMatFDColoringType) :: jacobianMatFDColoring !<The Jacobian matrix finite difference colouring
+    TYPE(PetscSnesType) :: snes !<The PETSc nonlinear solver object
     TYPE(PetscSnesLineSearchType) :: snesLineSearch !<The PETSc SNES line search object
     LOGICAL :: linesearchMonitorOutput !<Flag to determine whether to enable/disable linesearch monitor output.
   END TYPE NEWTON_LINESEARCH_SOLVER_TYPE
@@ -2641,7 +2642,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the Newton trustregion solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
     REAL(DP) :: TRUSTREGION_TOLERANCE !<The trust region tolerance
     REAL(DP) :: TRUSTREGION_DELTA0 !<The trust region delta0
-    TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
+    TYPE(PetscSnesType) :: snes !<The PETSc nonlinear solver object
   END TYPE NEWTON_TRUSTREGION_SOLVER_TYPE
 
   !>Contains information about the convergence test for a newton solver

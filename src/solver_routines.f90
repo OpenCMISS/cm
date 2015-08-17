@@ -51,7 +51,7 @@ MODULE SOLVER_ROUTINES
 #endif
   USE CMISS_CELLML
   USE CMISS_PETSC
-  USE CMISS_PETSC_TYPES
+  USE CmissPetscTypes
   USE COMP_ENVIRONMENT
   USE CONSTANTS
   USE DISTRIBUTED_MATRIX_VECTOR
@@ -1658,7 +1658,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     INTEGER(INTG) :: solver_idx
-    TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
 
     CALL ENTERS("SOLVER_CREATE_FINISH",ERR,ERROR,*999)
 
@@ -3512,9 +3511,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
-    
+   
     CALL ENTERS("SOLVER_DAE_CELLML_PETSC_CONTEXT_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CTX)) THEN
@@ -3561,22 +3558,18 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    TYPE(PETSC_TS_TYPE) :: TS !<The PETSc TS type
-    INTEGER(INTG) :: STEPS !<The iteration number
-    REAL(DP) :: TIME !<The current time
+    TYPE(PetscTSType) :: ts !<The PETSc TS type
     REAL(DP) :: FINALSOLVEDTIME,TIMESTEP
-    TYPE(PETSC_VEC_TYPE) :: PETSC_CURRENT_STATES !<The initial and final states for the DAE
+    TYPE(PetscVecType) :: PETSC_CURRENT_STATES !<The initial and final states for the DAE
     TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: CTX !<The passed through context
-    INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,INTERMEDIATE_END_DOF,intermediate_idx,INTERMEDIATE_START_DOF,model_idx, &
-      & NUMBER_INTERMEDIATES,NUMBER_PARAMETERS,NUMBER_STATES,PARAMETER_END_DOF,parameter_idx,PARAMETER_START_DOF, &
+    INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,model_idx, &
+      & NUMBER_PARAMETERS,NUMBER_STATES, &
       & STATE_END_DOF,state_idx,STATE_START_DOF,array_idx
-    REAL(DP) :: INTERMEDIATES(MAX(1,MAX_NUMBER_INTERMEDIATES)),PARAMETERS(MAX(1,MAX_NUMBER_PARAMETERS)), &
-      & RATES(MAX(1,MAX_NUMBER_STATES)),STATES(MAX(1,MAX_NUMBER_STATES))
     REAL(DP), ALLOCATABLE  :: STATES_TEMP(:),RATES_TEMP(:)
     INTEGER(INTG), ALLOCATABLE :: ARRAY_INDICES(:)
     TYPE(CELLML_MODEL_TYPE), POINTER :: MODEL
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(PETSC_VEC_TYPE) :: PETSC_RATES
+    TYPE(PetscVecType) :: PETSC_RATES
     EXTERNAL :: CELLML_DAE_RHS
   
     
@@ -3634,11 +3627,11 @@ CONTAINS
                     !CALL PETSC_VECSETFROMOPTIONS(PETSC_RATES,ERR,ERROR,*999)
 
                     !Set up PETSC TS context for sundials BDF solver
-                    CALL PETSC_TSCREATE(PETSC_COMM_SELF,TS,ERR,ERROR,*999)
-                    CALL PETSC_TSSETPROBLEMTYPE(TS,PETSC_TS_NONLINEAR,ERR,ERROR,*999)
-                    CALL PETSC_TSSETTYPE(TS,PETSC_TS_SUNDIALS,ERR,ERROR,*999)
-                    CALL PETSC_TSSUNDIALSSETTYPE(TS,PETSC_SUNDIALS_BDF,ERR,ERROR,*999)
-                    CALL PETSC_TSSUNDIALSSETTOLERANCE(TS,0.0000001_DP, &
+                    CALL PETSC_TSCREATE(PETSC_COMM_SELF,ts,ERR,ERROR,*999)
+                    CALL PETSC_TSSETPROBLEMTYPE(ts,PETSC_TS_NONLINEAR,ERR,ERROR,*999)
+                    CALL PETSC_TSSETTYPE(ts,PETSC_TS_SUNDIALS,ERR,ERROR,*999)
+                    CALL PETSC_TSSUNDIALSSETTYPE(ts,PETSC_SUNDIALS_BDF,ERR,ERROR,*999)
+                    CALL PETSC_TSSUNDIALSSETTOLERANCE(ts,0.0000001_DP, &
                       & 0.0000001_DP,ERR,ERROR,*999)
                     !set the initial solution to the current state
                     CALL PETSC_VECSETVALUES(PETSC_CURRENT_STATES,(NUMBER_STATES), &
@@ -3649,9 +3642,9 @@ CONTAINS
                     CALL PETSC_TSSETSOLUTION(TS,PETSC_CURRENT_STATES,ERR,ERROR,*999)
 
                     !set up the time data
-                    CALL PETSC_TSSETINITIALTIMESTEP(TS,START_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-                    CALL PETSC_TSSETDURATION(TS,5000,END_TIME,ERR,ERROR,*999)
-                    CALL PETSC_TSSETEXACTFINALTIME(TS,PETSC_TRUE,ERR,ERROR,*999)
+                    CALL PETSC_TSSETINITIALTIMESTEP(ts,START_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+                    CALL PETSC_TSSETDURATION(ts,5000,END_TIME,ERR,ERROR,*999)
+                    CALL PETSC_TSSETEXACTFINALTIME(ts,PETSC_TRUE,ERR,ERROR,*999)
 
                     IF(DIAGNOSTICS1) THEN
                       CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  DAE START TIME = ",START_TIME,ERR,ERROR,*999)
@@ -3726,8 +3719,6 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-
-
     INTEGER(INTG) :: cellml_idx
     INTEGER(INTG), POINTER :: MODELS_DATA(:)
     REAL(DP), POINTER :: INTERMEDIATE_DATA(:),PARAMETERS_DATA(:),STATE_DATA(:)
@@ -3739,8 +3730,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD,STATE_FIELD,PARAMETERS_FIELD,INTERMEDIATE_FIELD
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
-    TYPE(PETSC_TS_TYPE) :: TS
-    TYPE(PETSC_VEC_TYPE) :: PETSC_STATES
+    
     CALL ENTERS("SOLVER_DAE_BDF_SOLVE",ERR,ERROR,*999)
 
     NULLIFY(MODELS_DATA)
@@ -9536,7 +9526,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: linkingSolver
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: linkingSolverEquations,solverEquations
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: solverMatrices
-    TYPE(PETSC_MAT_TYPE) :: petscFactoredMatrix !<The factored matrix obtained by calling MatGetFactor() from PETSc-MUMPS interface 
+    TYPE(PetscMatType) :: petscFactoredMatrix !<The factored matrix obtained by calling MatGetFactor() from PETSc-MUMPS interface 
     TYPE(VARYING_STRING) :: localError
 
     CALL Enters("Solver_MumpsSetIcntl",err,error,*999)
@@ -9576,8 +9566,8 @@ CONTAINS
                         IF(ASSOCIATED(solverMatrix%PETSC)) THEN
 #if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 1 )
                           !Call MatGetFactor to create matrix petscFactoredMatrix from preconditioner context
-                          CALL Petsc_PCFactorSetUpMatSolverPackage(linearDirectSolver%PC,err,error,*999)
-                          CALL Petsc_PCFactorGetMatrix(linearDirectSolver%PC,petscFactoredMatrix,err,error,*999)
+                          CALL Petsc_PCFactorSetUpMatSolverPackage(linearDirectSolver%pc,err,error,*999)
+                          CALL Petsc_PCFactorGetMatrix(linearDirectSolver%pc,petscFactoredMatrix,err,error,*999)
                           !Set ICNTL(icntl)=ivalue
                           CALL Petsc_MatMumpsSetIcntl(petscFactoredMatrix,icntl,ivalue,err,error,*999)
 #else
@@ -9661,7 +9651,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: linkingSolver
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: linkingSolverEquations,solverEquations
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: solverMatrices
-    TYPE(PETSC_MAT_TYPE) :: petscFactoredMatrix !<The factored matrix obtained by calling MatGetFactor() from PETSc-MUMPS interface 
+    TYPE(PetscMatType) :: petscFactoredMatrix !<The factored matrix obtained by calling MatGetFactor() from PETSc-MUMPS interface 
     TYPE(VARYING_STRING) :: localError
 
     CALL ENTERS("Solver_MumpsSetCntl",err,error,*999)
@@ -15559,9 +15549,9 @@ CONTAINS
                     !Associate linear solver's KSP to nonlinear solver's SNES
                     SELECT CASE(LINEAR_SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE)
                     CASE(SOLVER_LINEAR_DIRECT_SOLVE_TYPE)
-                      CALL PETSC_SNESSETKSP(linesearch_solver%snes,linear_solver%linear_solver%direct_solver%ksp,ERR,ERROR,*999)
+                      CALL Petsc_SnesSetKsp(linesearch_solver%snes,linear_solver%linear_solver%direct_solver%ksp,ERR,ERROR,*999)
                     CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
-                      CALL PETSC_SNESSETKSP(linesearch_solver%snes,linear_solver%linear_solver%iterative_solver%ksp,ERR,ERROR,*999)
+                      CALL Petsc_SnesSetKsp(linesearch_solver%snes,linear_solver%linear_solver%iterative_solver%ksp,ERR,ERROR,*999)
                     END SELECT
 
                     !Set the nonlinear function
@@ -15569,14 +15559,14 @@ CONTAINS
                     IF(ASSOCIATED(RESIDUAL_VECTOR)) THEN
                       IF(ASSOCIATED(RESIDUAL_VECTOR%PETSC)) THEN
                         !Pass the linesearch solver object rather than the temporary solver
-                        CALL PETSC_SNESSETFUNCTION(LINESEARCH_SOLVER%SNES,RESIDUAL_VECTOR%PETSC%VECTOR, &
+                        CALL Petsc_SnesSetFunction(LINESEARCH_SOLVER%SNES,RESIDUAL_VECTOR%PETSC%VECTOR, &
                           & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
                           & ERR,ERROR,*999)
                         SELECT CASE(LINESEARCH_SOLVER%NEWTON_SOLVER%convergenceTestType)
                         CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
                           !Default convergence test, do nothing
                         CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM,SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
-                          CALL PETSC_SNESSETCONVERGENCETEST(LINESEARCH_SOLVER%SNES,ProblemSolver_ConvergenceTestPetsc, &
+                          CALL Petsc_SnesSetConvergenceTest(LINESEARCH_SOLVER%SNES,ProblemSolver_ConvergenceTestPetsc, &
                             & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                         CASE DEFAULT
                           LOCAL_ERROR="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER% &
@@ -15604,7 +15594,7 @@ CONTAINS
                             CASE(SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED)
                               SOLVER_JACOBIAN%UPDATE_MATRIX=.TRUE. !CMISS will fill in the Jacobian values
                               !Pass the linesearch solver object rather than the temporary solver
-                              CALL PETSC_SNESSETJACOBIAN(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
+                              CALL Petsc_SnesSetJacobian(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
                                 & JACOBIAN_MATRIX%PETSC%MATRIX,PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC, &
                                 & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                             CASE(SOLVER_NEWTON_JACOBIAN_FD_CALCULATED)
@@ -15612,22 +15602,34 @@ CONTAINS
                               CALL DISTRIBUTED_MATRIX_FORM(JACOBIAN_MATRIX,ERR,ERROR,*999)
                               SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                               CASE(SOLVER_SPARSE_MATRICES)
-                                CALL PETSC_MATGETCOLORING(JACOBIAN_MATRIX%PETSC%MATRIX,PETSC_MATCOLORING_SL,LINESEARCH_SOLVER% &
-                                  & JACOBIAN_ISCOLORING,ERR,ERROR,*999)
-                                CALL PETSC_MATFDCOLORINGCREATE(JACOBIAN_MATRIX%PETSC%MATRIX,LINESEARCH_SOLVER% &
-                                  & JACOBIAN_ISCOLORING,LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
-                                CALL PETSC_ISCOLORINGDESTROY(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR == 3 )
+#if ( PETSC_VERSION_GE(3,6,0) )
+                                CALL Petsc_MatColoringCreate(JACOBIAN_MATRIX%petsc%matrix,LINESEARCH_SOLVER%jacobianMatColoring, &
+                                  & err,error,*999)
+                                CALL Petsc_MatColoringSetType(LINESEARCH_SOLVER%jacobianMatColoring,PETSC_MATCOLORING_SL, &
+                                  & err,error,*999)
+                                CALL Petsc_MatColoringSetFromOptions(LINESEARCH_SOLVER%jacobianMatColoring,err,error,*999)
+                                CALL Petsc_MatColoringApply(LINESEARCH_SOLVER%jacobianMatColoring,LINESEARCH_SOLVER% &
+                                  & jacobianISColoring,err,error,*999)
+                                CALL Petsc_MatColoringDestroy(LINESEARCH_SOLVER%jacobianMatColoring,err,error,*999)
+#else                                
+                                CALL Petsc_MatGetColoring(JACOBIAN_MATRIX%PETSC%MATRIX,PETSC_MATCOLORING_SL,LINESEARCH_SOLVER% &
+                                  & jacobianISColoring,ERR,ERROR,*999)
+#endif                                
+                                !Compute SNESComputeJacobianDefaultColor data structure
+                                CALL Petsc_MatFDColoringCreate(JACOBIAN_MATRIX%petsc%matrix,LINESEARCH_SOLVER%jacobianISColoring, &
+                                  & LINESEARCH_SOLVER%jacobianMatFDColoring,err,error,*999)
+                                CALL Petsc_ISColoringDestroy(LINESEARCH_SOLVER%jacobianISColoring,err,error,*999)
+#if ( PETSC_VERSION_GE(3,0,0) )
                                 !Pass the linesearch solver object rather than the temporary solver
-                                CALL PETSC_MATFDCOLORINGSETFUNCTION(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING, &
+                                CALL Petsc_MatFDColoringSetFunction(LINESEARCH_SOLVER%jacobianMatFDColoring, &
                                   & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER% &
                                   & SOLVER,ERR,ERROR,*999)
 #else
-                                CALL PETSC_MATFDCOLORINGSETFUNCTIONSNES(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING, &
+                                CALL Petsc_MatFDColoringSetFunctionSnes(LINESEARCH_SOLVER%jacobianMatFDColoring, &
                                   & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER% &
                                   & SOLVER,ERR,ERROR,*999)
 #endif
-                                CALL PETSC_MATFDCOLORINGSETFROMOPTIONS(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
+                                CALL Petsc_MatFDColoringSetFromOptions(LINESEARCH_SOLVER%jacobianMatFDColoring,err,error,*999)
                               CASE(SOLVER_FULL_MATRICES)
                                 !Do nothing
                               CASE DEFAULT
@@ -15635,9 +15637,9 @@ CONTAINS
                                   & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
-                              CALL PETSC_SNESSETJACOBIAN(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
-                                & JACOBIAN_MATRIX%PETSC%MATRIX,PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC,LINESEARCH_SOLVER% &
-                                & NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
+                              CALL Petsc_SnesSetJacobian(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%petsc%matrix, &
+                                & JACOBIAN_MATRIX%petsc%matrix,PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC,LINESEARCH_SOLVER% &
+                                & jacobianMatFDColoring,err,error,*999)
                             CASE DEFAULT
                               LOCAL_ERROR="The Jacobian calculation type of "// &
                                 & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))// &
@@ -15661,7 +15663,7 @@ CONTAINS
                     IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
                       !Set the monitor
                       !Pass the linesearch solver object rather than the temporary solver
-                      CALL PETSC_SNESMONITORSET(LINESEARCH_SOLVER%SNES,Problem_SolverNonlinearMonitorPETSC, &
+                      CALL Petsc_SnesMonitorSet(LINESEARCH_SOLVER%SNES,Problem_SolverNonlinearMonitorPETSC, &
                         & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                     ENDIF
 #if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
@@ -15792,10 +15794,11 @@ CONTAINS
     CALL ENTERS("SOLVER_NEWTON_LINESEARCH_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-      CALL PETSC_ISCOLORINGFINALISE(LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
-      CALL PETSC_MATFDCOLORINGFINALISE(LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
+      CALL Petsc_MatColoringFinalise(LINESEARCH_SOLVER%jacobianMatColoring,ERR,ERROR,*999)
+      CALL Petsc_ISColoringFinalise(LINESEARCH_SOLVER%jacobianISColoring,ERR,ERROR,*999)
+      CALL Petsc_MatFDColoringFinalise(LINESEARCH_SOLVER%jacobianMatFDColoring,ERR,ERROR,*999)
       CALL Petsc_SnesLineSearchFinalise(LINESEARCH_SOLVER%snesLineSearch,err,error,*999)
-      CALL PETSC_SNESFINALISE(LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
+      CALL PETSC_SnesFinalise(LINESEARCH_SOLVER%snes,ERR,ERROR,*999)
       DEALLOCATE(LINESEARCH_SOLVER)
     ENDIF
         
@@ -15838,9 +15841,10 @@ CONTAINS
         NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_ALPHA=0.0001_DP
         NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_MAXSTEP=1.0E8_DP
         NEWTON_SOLVER%LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE=CONVERGENCE_TOLERANCE
-        CALL PETSC_ISCOLORINGINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_ISCOLORING,ERR,ERROR,*999)
-        CALL PETSC_MATFDCOLORINGINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%JACOBIAN_FDCOLORING,ERR,ERROR,*999)
-        CALL PETSC_SNESINITIALISE(NEWTON_SOLVER%LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
+        CALL Petsc_MatColoringInitialise(NEWTON_SOLVER%LINESEARCH_SOLVER%jacobianMatColoring,ERR,ERROR,*999)
+        CALL Petsc_ISColoringInitialise(NEWTON_SOLVER%LINESEARCH_SOLVER%jacobianISColoring,ERR,ERROR,*999)
+        CALL Petsc_MatFDColoringInitialise(NEWTON_SOLVER%LINESEARCH_SOLVER%jacobianMatFDColoring,ERR,ERROR,*999)
+        CALL Petsc_SnesInitialise(NEWTON_SOLVER%LINESEARCH_SOLVER%snes,ERR,ERROR,*999)
         CALL Petsc_SnesLineSearchInitialise(NEWTON_SOLVER%LINESEARCH_SOLVER%snesLineSearch,err,error,*999)
         NEWTON_SOLVER%LINESEARCH_SOLVER%linesearchMonitorOutput=.false.
       ENDIF
@@ -18474,8 +18478,8 @@ CONTAINS
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
     TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,LAGRANGE_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,LAGRANGE_VARIABLE
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
@@ -20085,10 +20089,10 @@ END MODULE SOLVER_ROUTINES
 !
 
 !>Called from the PETSc TS solvers to monitor the dynamic solver
-SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
+SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC(ts,STEPS,TIME,X,CTX,ERR)
 
   USE BASE_ROUTINES
-  USE CMISS_PETSC_TYPES
+  USE CmissPetscTypes
   USE ISO_VARYING_STRING
   USE KINDS
   USE SOLVER_ROUTINES
@@ -20098,10 +20102,10 @@ SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC(TS,STEPS,TIME,X,CTX,ERR)
   IMPLICIT NONE
 
   !Argument variables
-  TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS !<The PETSc TS type
+  TYPE(PetscTSType), INTENT(INOUT) :: ts !<The PETSc ts type
   INTEGER(INTG), INTENT(INOUT) :: STEPS !<The iteration number
   REAL(DP), INTENT(INOUT) :: TIME !<The current time
-  TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The current iterate
+  TYPE(PetscVecType), INTENT(INOUT) :: X !<The current iterate
   TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
   INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
   !Local Variables
@@ -20134,10 +20138,10 @@ END SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC
 !================================================================================================================================
 !
 !>Called from the PETSc SNES solvers to monitor the Newton nonlinear solver
-SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(SNES,ITS,NORM,CTX,ERR)
+SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(snes,ITS,NORM,CTX,ERR)
 
   USE BASE_ROUTINES
-  USE CMISS_PETSC_TYPES
+  USE CmissPetscTypes
   USE ISO_VARYING_STRING
   USE KINDS
   USE SOLVER_ROUTINES
@@ -20147,7 +20151,7 @@ SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(SNES,ITS,NORM,CTX,ERR)
   IMPLICIT NONE
 
   !Argument variables
-  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES !<The PETSc SNES type
+  TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The PETSc SNES type
   INTEGER(INTG), INTENT(INOUT) :: ITS !<The iteration number
   REAL(DP), INTENT(INOUT) :: NORM !<The residual norm
   TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
@@ -20180,10 +20184,10 @@ END SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC
 !================================================================================================================================
 !
 !>Called from the PETSc TS solvers to solve cellml DAE
-SUBROUTINE CELLML_DAE_RHS(TS_, TIME, PETSC_STATES, PETSC_RATES, CTX,ERR)
+SUBROUTINE CELLML_DAE_RHS(ts, TIME, PETSC_STATES, PETSC_RATES, CTX,ERR)
 
   USE BASE_ROUTINES
-  USE CMISS_PETSC_TYPES
+  USE CmissPetscTypes
   USE TYPES
   USE SOLVER_ROUTINES
 #ifdef USECELLML
@@ -20194,12 +20198,10 @@ SUBROUTINE CELLML_DAE_RHS(TS_, TIME, PETSC_STATES, PETSC_RATES, CTX,ERR)
   USE COMP_ENVIRONMENT
 
   IMPLICIT NONE 
-#include "include/finclude/petsc.h"
-
-
+#include "petsc/finclude/petsc.h"
 
   !Argument variables
-  TS, INTENT(INOUT) :: TS_ !<The PETSc TS type
+  TS, INTENT(INOUT) :: ts !<The PETSc TS type
   PetscScalar, INTENT(INOUT) :: TIME !<The current time
   Vec, INTENT(INOUT) :: PETSC_STATES !<current states
   Vec, INTENT(INOUT) :: PETSC_RATES !<returned rates
