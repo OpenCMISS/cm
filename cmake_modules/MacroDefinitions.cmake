@@ -77,9 +77,6 @@ IF (${SYSNAME} MATCHES "Linux")
   IF(NOT DEFINED COMPILER)
     SET(COMPILER gnu)
   ENDIF(NOT DEFINED COMPILER)
-  IF(NOT DEFINED MPI)
-    SET(MPI mpich2)
-  ENDIF(NOT DEFINED MPI)
 ENDIF (${SYSNAME} MATCHES "Linux")
 IF("${SYSNAME}" MATCHES "CYGWIN_NT-5.1|CYGWIN_NT-6.0|Windows")
   SET(LIB_ARCH_DIR ${INSTRUCTION}-${OPERATING_SYSTEM})# no ABI
@@ -89,9 +86,6 @@ IF("${SYSNAME}" MATCHES "CYGWIN_NT-5.1|CYGWIN_NT-6.0|Windows")
   IF(NOT DEFINED COMPILER)
     SET(COMPILER intel)
   ENDIF(NOT DEFINED COMPILER)
-  IF(NOT DEFINED MPI)
-    SET(MPI mpich2)
-  ENDIF(NOT DEFINED MPI)
 ENDIF("${SYSNAME}" MATCHES "CYGWIN_NT-5.1|CYGWIN_NT-6.0|Windows")
 IF("${SYSNAME}" MATCHES "AIX")
   IF(NOT DEFINED ABI)
@@ -109,9 +103,6 @@ IF("${SYSNAME}" MATCHES "AIX")
   IF(NOT DEFINED COMPILER)
     SET(COMPILER "ibm")
   ENDIF(NOT DEFINED COMPILER)
-  IF(NOT DEFINED MPI)
-    SET(MPI "poe")
-  ENDIF(NOT DEFINED MPI)
 ENDIF("${SYSNAME}" MATCHES "AIX")
 
 SET(EXE_ABI_SUFFIX)
@@ -175,59 +166,45 @@ ENDIF(${OPERATING_SYSTEM} MATCHES "linux")
 # Useful functions
 
 # This returns an empty string if not found
-SET(searchdirs COMMAND($(firstword $(wildcard $(addsuffix /$(strip $2),$1)))))
+#SET(searchdirs COMMAND($(firstword $(wildcard $(addsuffix /$(strip $2),$1)))))
 
 # This still returns the name of the desired file if not found and so is useful for error checking and reporting.
-SET(searchdirsforce COMMAND($(firstword $(wildcard $(addsuffix /$(strip $2),$1)) $2)))
+#SET(searchdirsforce COMMAND($(firstword $(wildcard $(addsuffix /$(strip $2),$1)) $2)))
 
 # Convert a cygwin path to a normal windows path
-SET(cygwintowin $($1))
+#SET(cygwintowin $($1))
 
 # Create a shell that can pass environment variables
-SET(ENV_FILE  /tmp/env)
-SET(env_shell1 COMMAND($(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo 'rm -f $3' >> $(ENV_FILE))$(shell echo '$2 >& $3' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE) )))
-SET(env_shell2  $(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo '$2' >> $(ENV_FILE))$(shell echo 'rm -f $4'>> $(ENV_FILE))$(shell echo '$3 >& $4' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE)))
+#SET(ENV_FILE  /tmp/env)
+#SET(env_shell1 COMMAND($(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo 'rm -f $3' >> $(ENV_FILE))$(shell echo '$2 >& $3' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE) )))
+#SET(env_shell2  $(shell rm -f $(ENV_FILE))$(foreach V,$1,$(shell echo export $V=$($V) >> $(ENV_FILE)))$(shell echo '$2' >> $(ENV_FILE))$(shell echo 'rm -f $4'>> $(ENV_FILE))$(shell echo '$3 >& $4' >> $(ENV_FILE))$(shell /bin/bash -e $(ENV_FILE)))
 
 # Create a shell that can call nmake from make 
-SET(NMAKE_ENV_FILE /tmp/nmake_env)
-SET(nmake_shell COMMAND($(shell rm -f $(NMAKE_ENV_FILE))$(shell echo 'rm -f $3' >> $(NMAKE_ENV_FILE))$(shell echo '$1' >> $(NMAKE_ENV_FILE))$(shell echo 'nmake MAKEFLAGS= $2 >& $3' >> $(NMAKE_ENV_FILE))$(shell /bin/bash -e $(NMAKE_ENV_FILE) ))) 
+#SET(NMAKE_ENV_FILE /tmp/nmake_env)
+#SET(nmake_shell COMMAND($(shell rm -f $(NMAKE_ENV_FILE))$(shell echo 'rm -f $3' >> $(NMAKE_ENV_FILE))$(shell echo '$1' >> $(NMAKE_ENV_FILE))$(shell echo 'nmake MAKEFLAGS= $2 >& $3' >> $(NMAKE_ENV_FILE))$(shell /bin/bash -e $(NMAKE_ENV_FILE) ))) 
 
 #-------------------------------------------------------------------------------------------------------------------
 
-IF(NOT DEFINED MPI)
-  SET(MPI mpich2)
-ENDIF(NOT DEFINED MPI)
-
-IF(NOT DEFINED USECELLML)
-  SET(USECELLML false)
-ENDIF(NOT DEFINED USECELLML)
-
-IF(NOT DEFINED USEFIELDML)
-  SET(USEFIELDML false)
-ENDIF(NOT DEFINED USEFIELDML)
-
-IF(${MPI} STREQUAL intel)
+IF("${MPI}" STREQUAL intel)
   IF (${OPERATING_SYSTEM} STREQUAL linux)
     IF(NOT DEFINED I_MPI_ROOT)
       MESSAGE(FATAL_ERROR "Intel MPI libraries not setup")
-    ENDIF(NOT DEFINED I_MPI_ROOT)
-  ELSE(${OPERATING_SYSTEM} STREQUAL linux)
+    ENDIF()
+  ELSE()
     MESSAGE(FATAL_ERROR "can only use intel mpi with Linux")
-  ENDIF(${OPERATING_SYSTEM} STREQUAL linux)
-ELSEIF(NOT (${MPI} MATCHES "(mpich2|openmpi|mvapich2|cray|poe)"))
-  MESSAGE( FATAL_ERROR "unknown MPI type - ${MPI}")
-ENDIF(${MPI} STREQUAL intel)
+  ENDIF()
+ENDIF()
 
 IF(${MPIPROF} STREQUAL true)
   IF($(MPI) STREQUAL intel)
     IF(NOT DEFINED VT_ROOT)
       MESSAGE(FATAL_ERROR "Intel MPI libraries not setup")
-    ENDIF(NOT DEFINED VT_ROOT)
+    ENDIF()
     IF(NOT DEFINED VT_ADD_LIBS)
       MESSAGE(FATAL_ERROR "intel trace collector not setup")
-    ENDIF(NOT DEFINED VT_ADD_LIBS)
-  ENDIF($(MPI) STREQUAL intel)
-ENDIF(${MPIPROF} STREQUAL true)
+    ENDIF()
+  ENDIF()
+ENDIF()
 
 SET(BIN_ARCH_DIR ${INSTRUCTION}-${OPERATING_SYSTEM})
 SET(LIB_ARCH_DIR ${INSTRUCTION}-${ABI}-${OPERATING_SYSTEM})

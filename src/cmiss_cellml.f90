@@ -308,6 +308,7 @@ CONTAINS
             IF(ASSOCIATED(MODELS_FIELD)) THEN
               NULLIFY(MODELS_VARIABLE)
               CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
+              NULLIFY(MODELS_DATA)
               CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & MODELS_DATA,ERR,ERROR,*999)
               IF(DIAGNOSTICS1) THEN
@@ -315,7 +316,7 @@ CONTAINS
                 CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  CellML user number = ",CELLML%USER_NUMBER,ERR,ERROR,*999)
               ENDIF
               !Loop over the dofs in the models field
-              DO dofIdx=1,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
+              DO dofIdx=1,MODELS_VARIABLE%NUMBER_OF_DOFS
                 modelIdx=MODELS_DATA(dofIdx)
                 IF(modelIdx>0) THEN
                   MODEL_MAPS=>FIELD_MAPS%MODEL_MAPS(modelIdx)%PTR
@@ -387,7 +388,7 @@ CONTAINS
                                 & MODEL_MAP%CELLML_PARAMETER_SET,elementNumber,MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue, &
                                 & ERR,ERROR,*999)
                             CASE(FIELD_NODE_BASED_INTERPOLATION)
-                              CALL FIELD_PARAMETER_SET_GET_NODE(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                              CALL Field_ParameterSetGetLocalNode(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & MODEL_MAP%CELLML_PARAMETER_SET,versionNumber,derivativeNumber,nodeNumber, &
                                 & MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue,ERR,ERROR,*999)
                             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
@@ -416,7 +417,7 @@ CONTAINS
                                 & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,elementNumber, &
                                 & MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue,ERR,ERROR,*999)
                             CASE(FIELD_NODE_BASED_INTERPOLATION)
-                              CALL FIELD_PARAMETER_SET_GET_NODE(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
+                              CALL Field_ParameterSetGetLocalNode(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
                                 & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,versionNumber,derivativeNumber,nodeNumber, &
                                 & MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue,ERR,ERROR,*999)
                             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
@@ -445,7 +446,7 @@ CONTAINS
                                 & MODEL_MAP%CELLML_PARAMETER_SET,elementNumber,MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue, &
                                 & ERR,ERROR,*999)
                             CASE(FIELD_NODE_BASED_INTERPOLATION)
-                              CALL FIELD_PARAMETER_SET_GET_NODE(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE, &
+                              CALL Field_ParameterSetGetLocalNode(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & MODEL_MAP%CELLML_PARAMETER_SET,versionNumber,derivativeNumber,nodeNumber, &
                                 & MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue,ERR,ERROR,*999)
                             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
@@ -480,7 +481,7 @@ CONTAINS
                             & MODEL_MAP%FIELD_PARAMETER_SET,elementNumber,MODEL_MAP%COMPONENT_NUMBER,dofValue, &
                             & ERR,ERROR,*999)
                         CASE(FIELD_NODE_BASED_INTERPOLATION)
-                          CALL FIELD_PARAMETER_SET_UPDATE_NODE(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
+                          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
                             & MODEL_MAP%FIELD_PARAMETER_SET,versionNumber,derivativeNumber,nodeNumber, &
                             & MODEL_MAP%COMPONENT_NUMBER,dofValue,ERR,ERROR,*999)
                         CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
@@ -889,6 +890,7 @@ CONTAINS
             IF(ASSOCIATED(MODELS_FIELD)) THEN
               NULLIFY(MODELS_VARIABLE)
               CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
+              NULLIFY(MODELS_DATA)
               CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & MODELS_DATA,ERR,ERROR,*999)
               IF(DIAGNOSTICS1) THEN
@@ -896,7 +898,7 @@ CONTAINS
                 CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  CellML user number = ",CELLML%USER_NUMBER,ERR,ERROR,*999)
               ENDIF
               !Loop over the dofs in the models field
-              DO dofIdx=1,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
+              DO dofIdx=1,MODELS_VARIABLE%NUMBER_OF_DOFS
                 modelIdx=MODELS_DATA(dofIdx)
                 IF(modelIdx>0) THEN
                   MODEL_MAPS=>FIELD_MAPS%MODEL_MAPS(modelIdx)%PTR
@@ -963,7 +965,7 @@ CONTAINS
                             & MODEL_MAP%FIELD_PARAMETER_SET,elementNumber,MODEL_MAP%COMPONENT_NUMBER,dofValue, &
                             & ERR,ERROR,*999)
                         CASE(FIELD_NODE_BASED_INTERPOLATION)
-                          CALL FIELD_PARAMETER_SET_GET_NODE(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
+                          CALL Field_ParameterSetGetLocalNode(MODEL_MAP%FIELD,MODEL_MAP%VARIABLE_TYPE, &
                             & MODEL_MAP%FIELD_PARAMETER_SET,versionNumber,derivativeNumber,nodeNumber, &
                             & MODEL_MAP%COMPONENT_NUMBER,dofValue,ERR,ERROR,*999)
                         CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
@@ -992,7 +994,7 @@ CONTAINS
                                 & MODEL_MAP%CELLML_PARAMETER_SET,elementNumber,MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue, &
                                 & ERR,ERROR,*999)
                             CASE(FIELD_NODE_BASED_INTERPOLATION)
-                              CALL FIELD_PARAMETER_SET_UPDATE_NODE(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(CELLML%STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
                                 & MODEL_MAP%CELLML_PARAMETER_SET,versionNumber,derivativeNumber,nodeNumber, &
                                 & MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue,ERR,ERROR,*999)
                             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
@@ -1021,7 +1023,7 @@ CONTAINS
                                 & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,elementNumber, &
                                 & MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue,ERR,ERROR,*999)
                             CASE(FIELD_NODE_BASED_INTERPOLATION)
-                              CALL FIELD_PARAMETER_SET_UPDATE_NODE(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(CELLML%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD, &
                                 & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,versionNumber,derivativeNumber,nodeNumber, &
                                 & MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue,ERR,ERROR,*999)
                             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
@@ -1050,8 +1052,8 @@ CONTAINS
                                 & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,elementNumber, &
                                 & MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue,ERR,ERROR,*999)
                             CASE(FIELD_NODE_BASED_INTERPOLATION)
-                              CALL FIELD_PARAMETER_SET_UPDATE_NODE(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD,FIELD_U_VARIABLE_TYPE, &
-                                & MODEL_MAP%CELLML_PARAMETER_SET,versionNumber,derivativeNumber,nodeNumber, &
+                              CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
+                                & FIELD_U_VARIABLE_TYPE,MODEL_MAP%CELLML_PARAMETER_SET,versionNumber,derivativeNumber,nodeNumber, &
                                 & MODEL_MAP%CELLML_VARIABLE_NUMBER,dofValue,ERR,ERROR,*999)
                             CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
                               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -2513,7 +2515,7 @@ CONTAINS
 #ifdef USECELLML
 
     IF(ASSOCIATED(modelVariable)) THEN
-      IF(modelDofIdx>0.AND.modelDofIdx<=modelVariable%TOTAL_NUMBER_OF_DOFS) THEN
+      IF(modelDofIdx>0.AND.modelDofIdx<=modelVariable%NUMBER_OF_DOFS) THEN
         dofType=modelVariable%DOF_TO_PARAM_MAP%DOF_TYPE(1,modelDofIdx)
         dofParamIdx=modelVariable%DOF_TO_PARAM_MAP%DOF_TYPE(2,modelDofIdx)
         SELECT CASE(dofType)
@@ -2527,7 +2529,7 @@ CONTAINS
           versionNumber=modelVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(1,dofParamIdx)
           derivativeNumber=modelVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(2,dofParamIdx)
           nodeNumber=modelVariable%DOF_TO_PARAM_MAP%NODE_DOF2PARAM_MAP(3,dofParamIdx)
-          CALL FIELD_PARAMETER_SET_UPDATE_NODE(field,variableType,parameterSetIdx,versionNumber,derivativeNumber,NodeNumber, &
+          CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(field,variableType,parameterSetIdx,versionNumber,derivativeNumber,NodeNumber, &
             & componentIdx,VALUE,err,error,*999)
         CASE(FIELD_GRID_POINT_DOF_TYPE)
           gridNumber=modelVariable%DOF_TO_PARAM_MAP%GRID_POINT_DOF2PARAM_MAP(1,dofParamIdx)
@@ -2545,7 +2547,7 @@ CONTAINS
       ELSE
         localError="The model DOF index of "//TRIM(NUMBER_TO_VSTRING(modelDofIdx,"*",err,error))// &
           & " is invalid. The DOF index needs to be > 0 and <= "// &
-          & TRIM(NUMBER_TO_VSTRING(modelVariable%TOTAL_NUMBER_OF_DOFS,"*",err,error))//"."
+          & TRIM(NUMBER_TO_VSTRING(modelVariable%NUMBER_OF_DOFS,"*",err,error))//"."
         CALL FLAG_ERROR(localError,err,error,*999)
       ENDIF
     ELSE
@@ -2596,12 +2598,13 @@ CONTAINS
             NULLIFY(MODELS_VARIABLE)
             CALL FIELD_VARIABLE_GET(MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
             IF(MODELS_VARIABLE%NUMBER_OF_DOFS>0) THEN
+              NULLIFY(MODELS_DATA)
               CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & MODELS_DATA,ERR,ERROR,*999)
               !check for the first non-zero model index
               source_dof_idx=0
               first_dof_idx=1
-              DO source_dof_idx=1,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
+              DO source_dof_idx=1,MODELS_VARIABLE%NUMBER_OF_DOFS
                 model_idx=MODELS_DATA(source_dof_idx)
                 IF(model_idx>=0) THEN
                   MODELS_FIELD%ONLY_ONE_MODEL_INDEX=model_idx
@@ -2617,7 +2620,7 @@ CONTAINS
                 ENDIF
               ENDDO
               IF(model_idx>=0.AND.model_idx<=CELLML%NUMBER_OF_MODELS) THEN
-                DO source_dof_idx=(first_dof_idx+1),MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                DO source_dof_idx=(first_dof_idx+1),MODELS_VARIABLE%NUMBER_OF_DOFS
                   model_idx=MODELS_DATA(source_dof_idx)
                   IF(model_idx>=0.AND.model_idx<=CELLML%NUMBER_OF_MODELS) THEN
                     IF(model_idx/=MODELS_FIELD%ONLY_ONE_MODEL_INDEX.AND.model_idx/=0) THEN
@@ -3243,7 +3246,7 @@ CONTAINS
                   NULLIFY(MODELS_DATA)
                   CALL FIELD_PARAMETER_SET_DATA_GET(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_VALUES_SET_TYPE,MODELS_DATA,ERR,ERROR,*999)
-                  DO models_dof_idx=1,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                  DO models_dof_idx=1,MODELS_VARIABLE%NUMBER_OF_DOFS
                     model_idx=MODELS_DATA(models_dof_idx)
                     IF(model_idx>0) THEN
                       MODEL=>CELLML%MODELS(model_idx)%PTR
@@ -4118,9 +4121,10 @@ CONTAINS
                   NULLIFY(MODELS_VARIABLE)
                   CALL FIELD_VARIABLE_GET(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE, &
                     & ERR,ERROR,*999)
+                  NULLIFY(MODELS_DATA)
                   CALL FIELD_PARAMETER_SET_DATA_GET(CELLML%MODELS_FIELD%MODELS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_VALUES_SET_TYPE,MODELS_DATA,ERR,ERROR,*999)
-                  DO models_dof_idx=1,MODELS_VARIABLE%TOTAL_NUMBER_OF_DOFS
+                  DO models_dof_idx=1,MODELS_VARIABLE%NUMBER_OF_DOFS
                     model_idx=MODELS_DATA(models_dof_idx)
                     IF(model_idx==0) THEN
                       ! Do nothing- empty model index specified
@@ -4140,8 +4144,7 @@ CONTAINS
                           !WRITE(*,*) '(multiple models) Initial value for parameter variable: ',parameter_component_idx,'; type: ',&
                           !  & CELLML_VARIABLE_TYPE,'; value = ',INITIAL_VALUE
                           CALL CellML_FieldModelDofSet(MODELS_VARIABLE,models_dof_idx,CELLML%PARAMETERS_FIELD%PARAMETERS_FIELD, &
-                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,parameter_component_idx,INITIAL_VALUE, &
-                            & ERR,ERROR,*999)
+                            & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,parameter_component_idx,INITIAL_VALUE,ERR,ERROR,*999)
                         ENDDO !parameter_component_idx
                       ELSE
                         LOCAL_ERROR="The model is not associated for model index "// &

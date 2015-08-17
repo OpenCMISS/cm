@@ -49,6 +49,7 @@
 !> This module handles all fluid mechanics class routines.
 MODULE FLUID_MECHANICS_ROUTINES
 
+  USE ADVECTION_EQUATION_ROUTINES
   USE BASE_ROUTINES
   USE BURGERS_EQUATION_ROUTINES
   USE CHARACTERISTIC_EQUATION_ROUTINES
@@ -64,6 +65,7 @@ MODULE FLUID_MECHANICS_ROUTINES
   USE POISEUILLE_EQUATIONS_ROUTINES
   USE PROBLEM_CONSTANTS
   USE STRINGS
+  USE STREE_EQUATION_ROUTINES
   USE TYPES
 
 
@@ -83,6 +85,7 @@ MODULE FLUID_MECHANICS_ROUTINES
 
   PUBLIC FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE,FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE
   PUBLIC FluidMechanics_NodalJacobianEvaluate,FluidMechanics_NodalResidualEvaluate
+  PUBLIC FluidMechanics_FiniteElementPreResidualEvaluate
 
   PUBLIC FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET,FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE, &
     & FLUID_MECHANICS_EQUATIONS_SET_SETUP,FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET, &
@@ -227,6 +230,8 @@ CONTAINS
         CALL BURGERS_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
         CALL Characteristic_EquationsSet_SubtypeSet(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_STREE_EQUATION_TYPE)
+        CALL Stree_EquationsSet_SubtypeSet(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equations set class."
@@ -276,6 +281,8 @@ CONTAINS
         CALL FLAG_ERROR("There are no finite element matrices to be calculated for Burgers equation.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
         CALL FLAG_ERROR("There are no finite element matrices to be calculated for Characteristic equations.",ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_STREE_EQUATION_TYPE)
+        CALL STREE_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."
@@ -521,6 +528,8 @@ CONTAINS
         CALL BURGERS_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
         CALL Characteristic_EquationsSet_Setup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+      CASE(EQUATIONS_SET_STREE_EQUATION_TYPE)
+        CALL Stree_EquationsSet_Setup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."
@@ -784,7 +793,7 @@ CONTAINS
       CASE(PROBLEM_STOKES_EQUATION_TYPE)
         CALL STOKES_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_NAVIER_STOKES_EQUATION_TYPE)
-        CALL NAVIER_STOKES_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+        CALL NAVIER_STOKES_POST_SOLVE(SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_DARCY_EQUATION_TYPE)
         CALL DARCY_EQUATION_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_POISEUILLE_EQUATION_TYPE)
@@ -829,7 +838,7 @@ CONTAINS
       CASE(PROBLEM_STOKES_EQUATION_TYPE)
         CALL STOKES_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_NAVIER_STOKES_EQUATION_TYPE)
-        CALL NAVIER_STOKES_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+        CALL NAVIER_STOKES_PRE_SOLVE(SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_DARCY_EQUATION_TYPE)
         CALL DARCY_EQUATION_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_POISEUILLE_EQUATION_TYPE)
@@ -919,12 +928,12 @@ CONTAINS
 
     IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
       SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
-      CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
+      CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE,PROBLEM_CONTROL_SIMPLE_TYPE,PROBLEM_CONTROL_WHILE_LOOP_TYPE)
         SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
         CASE(PROBLEM_STOKES_EQUATION_TYPE)
           !do nothing
         CASE(PROBLEM_NAVIER_STOKES_EQUATION_TYPE)
-          !do nothing
+          CALL NavierStokes_ControlLoopPostLoop(CONTROL_LOOP,ERR,ERROR,*999)
         CASE(PROBLEM_DARCY_EQUATION_TYPE)
           !do nothing
         CASE(PROBLEM_POISEUILLE_EQUATION_TYPE)
@@ -949,6 +958,53 @@ CONTAINS
     CALL EXITS("FLUID_MECHANICS_CONTROL_LOOP_POST_LOOP")
     RETURN 1
   END SUBROUTINE FLUID_MECHANICS_CONTROL_LOOP_POST_LOOP
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Pre-residual steps for an fluid mechanics class finite element equation set.
+  SUBROUTINE FluidMechanics_FiniteElementPreResidualEvaluate(equationsSet,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer the equations set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("FluidMechanics_FiniteElementPreResidualEvaluate",err,error,*999)
+    IF(ASSOCIATED(equationsSet)) THEN
+      SELECT CASE(equationsSet%TYPE)
+      CASE(EQUATIONS_SET_STOKES_EQUATION_TYPE)
+        ! Do nothing
+      CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
+        CALL NavierStokes_FiniteElementPreResidualEvaluate(equationsSet,err,error,*999)
+      CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
+        ! Do nothing
+      CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
+        ! Do nothing
+      CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
+        ! Do nothing
+      CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
+        ! Do nothing
+      CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
+        ! Do nothing
+      CASE DEFAULT
+        localError="Equations set type "//TRIM(NUMBER_TO_VSTRING(equationsSet%TYPE,"*",ERR,ERROR))// &
+          & " is not valid for a fluid mechanics equation set class."
+        CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+      END SELECT
+    ELSE
+      CALL FLAG_ERROR("Equations set is not associated",err,error,*999)
+    ENDIF
+       
+    CALL EXITS("FluidMechanics_FiniteElementPreResidualEvaluate")
+    RETURN
+999 CALL ERRORS("FluidMechanics_FiniteElementPreResidualEvaluate",err,error)
+    CALL EXITS("FluidMechanics_FiniteElementPreResidualEvaluate")
+    RETURN 1
+  END SUBROUTINE FluidMechanics_FiniteElementPreResidualEvaluate
 
   !
   !================================================================================================================================
