@@ -595,7 +595,7 @@ CONTAINS
 !          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION%equations_sets% &
 !          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
 !          & %ptr%number_of_nodes_xi(2)-1.0)
-        IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
+        IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT1D_NAVIER_STOKES_SUBTYPE.OR. &
           & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)THEN
            XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
              & geometric_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(J))
@@ -869,7 +869,7 @@ CONTAINS
           NodeRHOValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
 
-          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
+          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT1D_NAVIER_STOKES_SUBTYPE) THEN
           NodeEValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
           NodeH0Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
@@ -2366,7 +2366,7 @@ CONTAINS
       WRITE(14,'("    ", es25.16 )')NodeRHOValue(I)
 
       IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-        & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)) THEN
+        & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT1D_NAVIER_STOKES_SUBTYPE)) THEN
         WRITE(14,'("    ", es25.16 )')NodeEValue(I)
         WRITE(14,'("    ", es25.16 )')NodeH0Value(I)
         WRITE(14,'("    ", es25.16 )')NodeA0Value(I)
@@ -4254,11 +4254,11 @@ CONTAINS
         ENDDO
       CASE(Plate2D,Plate3D)
         IF(MaterialSpecification==Plate2D) THEN
-          OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate2DinletBC.txt', &
+          OPEN (unit=1, file='./Input/2D/BC/Plate2DinletBC.txt', &
             & status='old', action='read')
           ComponentNumber=2
         ELSE
-          OPEN (unit=1, file='/software/OpenCMISS/Coupling/examples/InterfaceExamples/CoupledFluidSolid/Plate3DinletBC.txt', &
+          OPEN (unit=1, file='./Input/3D/BC/Plate3DinletBC.txt', &
             & status='old', action='read')
           ComponentNumber=3
         ENDIF
