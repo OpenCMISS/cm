@@ -847,6 +847,13 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatFDColoringSetFunctionSNES
     
+    SUBROUTINE MatFDColoringSetup(A,iscoloring,fdcoloring,ierr)
+      Mat A
+      ISColoring iscoloring
+      MatFDColoring fdcoloring
+      PetscInt ierr
+    END SUBROUTINE MatFDColoringSetup
+    
     SUBROUTINE MatGetArray(A,mat_data,mat_offset,ierr)
       Mat A
       PetscScalar mat_data(1)
@@ -1078,6 +1085,20 @@ MODULE CMISS_PETSC
       SNES snes
       PetscInt ierr
     END SUBROUTINE SNESDestroy
+
+    SUBROUTINE SNESGetApplicationContext(snes,ctx,ierr)
+      USE TYPES
+      SNES snes
+      TYPE(SOLVER_TYPE), POINTER :: ctx
+      PetscInt ierr
+    END SUBROUTINE SNESGetApplicationContext
+
+    SUBROUTINE SNESSetApplicationContext(snes,ctx,ierr)
+      USE TYPES
+      SNES snes
+      TYPE(SOLVER_TYPE), POINTER :: ctx
+      PetscInt ierr
+    END SUBROUTINE SNESSetApplicationContext
 
     SUBROUTINE SNESSetConvergenceTest(snes,cfunction,ctx,destroy,ierr)
       USE TYPES
@@ -1557,6 +1578,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE VecGetArrayF90
 
+    SUBROUTINE VecGetArrayReadF90(x,vec_data,ierr)
+      Vec x
+      PetscScalar, POINTER :: vec_data(:)
+      PetscInt ierr
+    END SUBROUTINE VecGetArrayReadF90
+
     SUBROUTINE VecGetLocalSize(x,size,ierr)
       Vec x
       PetscInt size
@@ -1623,6 +1650,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE VecRestoreArrayF90
 
+    SUBROUTINE VecRestoreArrayReadF90(x,vec_data,ierr)
+      Vec x
+      PetscScalar, POINTER :: vec_data(:)
+      PetscInt ierr
+    END SUBROUTINE VecRestoreArrayReadF90
+    
     SUBROUTINE VecScale(x,alpha,ierr)
       Vec x
       PetscScalar alpha
@@ -1794,25 +1827,27 @@ MODULE CMISS_PETSC
 
   PUBLIC Petsc_MatColoringApply,Petsc_MatColoringCreate,Petsc_MatColoringDestroy,Petsc_MatColoringFinalise, &
     & Petsc_MatColoringInitialise,Petsc_MatColoringSetFromOptions,Petsc_MatColoringSetType
+#if ( PETSC_VERSION_LT(3,6,0) )
+  PUBLIC Petsc_MatGetColouring
+#endif
+
+  PUBLIC Petsc_MatFDColoringCreate,Petsc_MatFDColoringDestroy,Petsc_MatFDColoringFinalise,Petsc_MatFDColoringInitialise, &
+    & Petsc_MatFDColoringSetFromOptions,Petsc_MatFDColoringSetFunction,Petsc_MatFDColoringSetParameters, &
+    & Petsc_MatFDColoringSetup
+#if ( PETSC_VERSION_LT(3,0,0) )
+  PUBLIC Petsc_MatFDColoringSetFunctionSnes
+#endif
 
   PUBLIC PETSC_MATINITIALISE,PETSC_MATFINALISE,PETSC_MATASSEMBLYBEGIN,PETSC_MATASSEMBLYEND,PETSC_MATCREATE, &
-    & PETSC_MATCREATESEQAIJ,PETSC_MATCREATESEQDENSE,PETSC_MATDESTROY, &
-    & PETSC_MATFDCOLORINGCREATE,PETSC_MATFDCOLORINGDESTROY,PETSC_MATFDCOLORINGFINALISE,PETSC_MATFDCOLORINGINITIALISE, &
-    & PETSC_MATFDCOLORINGSETFROMOPTIONS,PETSC_MATFDCOLORINGSETFUNCTION,PETSC_MATFDCOLORINGSETPARAMETERS, &
-    & PETSC_MATGETARRAY,PETSC_MATGETARRAYF90,PETSC_MATGETINFO,PETSC_MATGETOWNERSHIPRANGE, &
+    & PETSC_MATCREATESEQAIJ,PETSC_MATCREATESEQDENSE,PETSC_MATDESTROY,PETSC_MATGETARRAY,PETSC_MATGETARRAYF90, &
+    & PETSC_MATGETINFO,PETSC_MATGETOWNERSHIPRANGE, &
     & PETSC_MATGETROW,PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY,PETSC_MATRESTOREARRAYF90,PETSC_MATRESTOREROW, &
     & PETSC_MATSETLOCALTOGLOBALMAPPING,PETSC_MATSETOPTION,PETSC_MATSETSIZES,PETSC_MATSETVALUE,PETSC_MATSETVALUES, &
     & PETSC_MATSETVALUELOCAL,PETSC_MATSETVALUESLOCAL,PETSC_MATVIEW,PETSC_MATZEROENTRIES,PETSC_MATSETTYPE
-#if ( PETSC_VERSION_LT(3,0,0) )
-  PUBLIC PETSC_MATFDCOLORINGSETFUNCTIONSNES
-#endif
 #if ( PETSC_VERSION_GE(3,3,0) )
   PUBLIC PETSC_MATCREATEAIJ,PETSC_MATCREATEDENSE
 #else
   PUBLIC PETSC_MATCREATEMPIAIJ,PETSC_MATCREATEMPIDENSE
-#endif
-#if ( PETSC_VERSION_LT(3,6,0) )
-  PUBLIC Petsc_MatGetColouring
 #endif
   
 #if ( PETSC_VERSION_GE(3,2,0) )
@@ -1909,12 +1944,16 @@ MODULE CMISS_PETSC
 #if ( PETSC_VERSION_LE(3,2,0) )
   PUBLIC PETSC_SNES_CONVERGED_PNORM_RELATIVE
 #endif
+
+#if ( PETSC_VERSION_GT(3,6,0) )
+  PUBLIC Petsc_SnesGetApplicationContext,Petsc_SnesSetApplicationContext
+#endif
   
   PUBLIC PETSC_SNESFINALISE,PETSC_SNESINITIALISE,PETSC_SNESCREATE,PETSC_SNESDESTROY,PETSC_SNESGETCONVERGEDREASON, &
     & PETSC_SNESGETFUNCTIONNORM,petsc_sneslinesearchsetnorms,petsc_sneslinesearchgetnorms, &
     & PETSC_SNESGETITERATIONNUMBER,PETSC_SNESGETKSP,PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION, &
     & PETSC_SNESSETJACOBIAN,PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE, &
-    & PETSC_SNESSETKSP,PETSC_SNESGETJACOBIAN,PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR,PETSC_SNESDEFAULTCOMPUTEJACOBIAN, &
+    & PETSC_SNESSETKSP,PETSC_SNESGETJACOBIAN,Petsc_SnesDefaultComputeJacobianColor,Petsc_SnesDefaultComputeJacobian, &
     & PETSC_SNESSETCONVERGENCETEST,Petsc_SnesLineSearchGetVecs,Petsc_SnesGetSolutionUpdate
 #if ( PETSC_VERSION_GE(3,2,0) )
   PUBLIC Petsc_SnesLineSearchSetMonitor
@@ -1938,6 +1977,9 @@ MODULE CMISS_PETSC
     & PETSC_VECGHOSTRESTORELOCALFORM,PETSC_VECGHOSTUPDATEBEGIN,PETSC_VECGHOSTUPDATEEND, &
     & PETSC_VECRESTOREARRAYF90,PETSC_VECSCALE,PETSC_VECSET,PETSC_VECSETFROMOPTIONS,PETSC_VECSETLOCALTOGLOBALMAPPING, &
     & PETSC_VECSETSIZES,PETSC_VECSETVALUES,PETSC_VECSETVALUESLOCAL,PETSC_VECVIEW,Petsc_VecDot
+#if ( PETSC_VERSION_GE(3,6,0) )
+  PUBLIC Petsc_VecGetArrayReadF90,Petsc_VecRestoreArrayReadF90
+#endif
 
   PUBLIC PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_DRAW_WORLD,PETSC_VIEWER_DRAW_SELF
 
@@ -3618,207 +3660,207 @@ CONTAINS
   !
 
   !>Buffer routine to the PETSc MatFDColoringCreate routine.
-  SUBROUTINE PETSC_MATFDCOLORINGCREATE(A,isColoring,matFDColoring,ERR,ERROR,*)
+  SUBROUTINE Petsc_MatFDColoringCreate(A,isColoring,matFDColoring,err,error,*)
 
     !Argument Variables
     TYPE(PetscMatType), INTENT(INOUT) :: A !<The PETSc matrix to create the FD coloring for
     TYPE(PetscISColoringType), INTENT(IN) :: isColoring !<The index set coloring to create the finite difference coloring for
     TYPE(PetscMatFDColoringType), INTENT(OUT) :: matFDColoring !<On exit, the matrix finite difference coloring
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_MATFDCOLORINGCREATE",ERR,ERROR,*999)
+    CALL ENTERS("Petsc_MatFDColoringCreate",err,error,*999)
 
-    CALL MatFDColoringCreate(A%mat,isColoring%isColoring,matFDColoring%matFDColoring,ERR)
-    IF(ERR/=0) THEN
+    CALL MatFDColoringCreate(A%mat,isColoring%isColoring,matFDColoring%matFDColoring,err)
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringCreate",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in MatFDColoringCreate.",err,error,*999)
     ENDIF
     
-    CALL EXITS("PETSC_MATFDCOLORINGCREATE")
+    CALL EXITS("Petsc_MatFDColoringCreate")
     RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGCREATE",ERR,ERROR)
-    CALL EXITS("PETSC_MATFDCOLORINGCREATE")
+999 CALL ERRORS("Petsc_MatFDColoringCreate",err,error)
+    CALL EXITS("Petsc_MatFDColoringCreate")
     RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGCREATE
+  END SUBROUTINE Petsc_MatFDColoringCreate
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc MatFDColoringDestroy routine.
-  SUBROUTINE PETSC_MATFDCOLORINGDESTROY(matFDColoring,ERR,ERROR,*)
+  SUBROUTINE Petsc_MatFDColoringDestroy(matFDColoring,err,error,*)
 
     !Argument Variables
     TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The matrix finite difference coloring to destroy
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_MATFDCOLORINGDESTROY",ERR,ERROR,*999)
+    CALL ENTERS("Petsc_MatFDColoringDestroy",err,error,*999)
 
-    CALL MatFDColoringDestroy(matFDColoring%matFDColoring,ERR)
-    IF(ERR/=0) THEN
+    CALL MatFDColoringDestroy(matFDColoring%matFDColoring,err)
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringDestroy",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in MatFDColoringDestroy.",err,error,*999)
     ENDIF
     matFDColoring%matFDColoring=PETSC_NULL_INTEGER
      
-    CALL EXITS("PETSC_MATFDCOLORINGDESTROY")
+    CALL EXITS("Petsc_MatFDColoringDestroy")
     RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGDESTROY",ERR,ERROR)
-    CALL EXITS("PETSC_MATFDCOLORINGDESTROY")
+999 CALL ERRORS("Petsc_MatFDColoringDestroy",err,error)
+    CALL EXITS("Petsc_MatFDColoringDestroy")
     RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGDESTROY
+  END SUBROUTINE Petsc_MatFDColoringDestroy
     
   !
   !================================================================================================================================
   !
 
   !Finalise the PETSc MatFDColoring structure and destroy the MatFDColoring
-  SUBROUTINE PETSC_MATFDCOLORINGFINALISE(matFDColoring,ERR,ERROR,*)
+  SUBROUTINE Petsc_MatFDColoringFinalise(matFDColoring,err,error,*)
 
     !Argument Variables
     TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The MatFDColoring to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_MATFDCOLORINGFINALISE",ERR,ERROR,*999)
+    CALL ENTERS("Petsc_MatFDColoringFinalise",err,error,*999)
 
     IF(matFDColoring%matFDColoring/=PETSC_NULL_INTEGER) THEN
-      CALL PETSC_MATFDCOLORINGDESTROY(matFDColoring,ERR,ERROR,*999)
+      CALL Petsc_MatFDColoringDestroy(matFDColoring,err,error,*999)
     ENDIF
     
-    CALL EXITS("PETSC_MATFDCOLORINGFINALISE")
+    CALL EXITS("Petsc_MatFDColoringFinalise")
     RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGFINALISE",ERR,ERROR)
-    CALL EXITS("PETSC_MATFDCOLORINGFINALISE")
+999 CALL ERRORS("Petsc_MatFDColoringFinalise",err,error)
+    CALL EXITS("Petsc_MatFDColoringFinalise")
     RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGFINALISE
+  END SUBROUTINE Petsc_MatFDColoringFinalise
     
   !
   !================================================================================================================================
   !
   
   !Initialise the PETSc MatFDColoring structure
-  SUBROUTINE PETSC_MATFDCOLORINGINITIALISE(matFDColoring,ERR,ERROR,*)
+  SUBROUTINE Petsc_MatFDColoringInitialise(matFDColoring,err,error,*)
 
     !Argument Variables
     TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The MatFDColoring to initialise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_MATFDCOLORINGINITIALISE",ERR,ERROR,*999)
+    CALL ENTERS("Petsc_MatFDColoringInitialise",err,error,*999)
 
     matFDColoring%matFDColoring=PETSC_NULL_INTEGER
     
-    CALL EXITS("PETSC_MATFDCOLORINGINITIALISE")
+    CALL EXITS("Petsc_MatFDColoringInitialise")
     RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGINITIALISE",ERR,ERROR)
-    CALL EXITS("PETSC_MATFDCOLORINGINITIALISE")
+999 CALL ERRORS("Petsc_MatFDColoringInitialise",err,error)
+    CALL EXITS("Petsc_MatFDColoringInitialise")
     RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGINITIALISE
+  END SUBROUTINE Petsc_MatFDColoringInitialise
     
   !
-  !================================================================================================================================
+  !================================================================================================================================2
   !
 
   !>Buffer routine to the PETSc MatFDColoringSetFromOptions routine.
-  SUBROUTINE PETSC_MATFDCOLORINGSETFROMOPTIONS(matFDColoring,ERR,ERROR,*)
+  SUBROUTINE Petsc_MatFDColoringSetFromOptions(matFDColoring,err,error,*)
 
     !Argument Variables
     TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The matrix finite difference coloring to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_MATFDCOLORINGSETFROMOPTIONS",ERR,ERROR,*999)
+    CALL ENTERS("Petsc_MatFDColoringSetFromOptions",err,error,*999)
 
-    CALL MatFDColoringSetFromOptions(matFDColoring%matFDColoring,ERR)
-    IF(ERR/=0) THEN
+    CALL MatFDColoringSetFromOptions(matFDColoring%matFDColoring,err)
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringSetFromOptions",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in MatFDColoringSetFromOptions.",err,error,*999)
     ENDIF
     
-    CALL EXITS("PETSC_MATFDCOLORINGSETFROMOPTIONS")
+    CALL EXITS("Petsc_MatFDColoringSetFromOptions")
     RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGSETFROMOPTIONS",ERR,ERROR)
-    CALL EXITS("PETSC_MATFDCOLORINGSETFROMOPTIONS")
+999 CALL ERRORS("Petsc_MatFDColoringSetFromOptions",err,error)
+    CALL EXITS("Petsc_MatFDColoringSetFromOptions")
     RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGSETFROMOPTIONS
+  END SUBROUTINE Petsc_MatFDColoringSetFromOptions
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc MatFDColoringSetParameters routine.
-  SUBROUTINE PETSC_MATFDCOLORINGSETPARAMETERS(matFDColoring,RERROR,UMIN,ERR,ERROR,*)
+  SUBROUTINE Petsc_MatFDColoringSetParameters(matFDColoring,rError,uMin,err,error,*)
 
     !Argument Variables
     TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The matrix finite difference coloring to set
-    REAL(DP) :: RERROR !<The square root of the relative error
-    REAL(DP) :: UMIN !<MatFDColoring umin option
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    REAL(DP) :: rError !<The square root of the relative error
+    REAL(DP) :: uMin !<MatFDColoring umin option
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_MATFDCOLORINGSETPARAMETERS",ERR,ERROR,*999)
+    CALL ENTERS("Petsc_MatFDColoringSetParameters",err,error,*999)
 
-    CALL MatFDColoringSetParameters(matFDColoring%matFDColoring,RERROR,UMIN,ERR)
-    IF(ERR/=0) THEN
+    CALL MatFDColoringSetParameters(matFDColoring%matFDColoring,rError,uMin,err)
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringSetParameters",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in MatFDColoringSetParameters.",err,error,*999)
     ENDIF
 
-    CALL EXITS("PETSC_MATFDCOLORINGSETPARAMETERS")
+    CALL EXITS("Petsc_MatFDColoringSetParameters")
     RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGSETPARAMETERS",ERR,ERROR)
-    CALL EXITS("PETSC_MATFDCOLORINGSETPARAMETERS")
+999 CALL ERRORS("Petsc_MatFDColoringSetParameters",err,error)
+    CALL EXITS("Petsc_MatFDColoringSetParameters")
     RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGSETPARAMETERS
+  END SUBROUTINE Petsc_MatFDColoringSetParameters
 
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc MatFDColoringSetFunction routine.
-  SUBROUTINE PETSC_MATFDCOLORINGSETFUNCTION(matFDColoring,FFUNCTION,CTX,ERR,ERROR,*)
+  SUBROUTINE Petsc_MatFDColoringSetFunction(matFDColoring,fFunction,ctx,err,error,*)
 
     !Argument Variables
     TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The matrix finite difference coloring to set
-    EXTERNAL FFUNCTION !<The external function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    EXTERNAL fFunction !<The external function to call
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The solver data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_MATFDCOLORINGSETFUNCTION",ERR,ERROR,*999)
+    CALL ENTERS("Petsc_MatFDColoringSetFunction",err,error,*999)
 
-    CALL MatFDColoringSetFunction(matFDColoring%matFDColoring,FFUNCTION,CTX,ERR)
-    IF(ERR/=0) THEN
+    CALL MatFDColoringSetFunction(matFDColoring%matFDColoring,fFunction,ctx,err)
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringSetFunction",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in MatFDColoringSetFunction.",err,error,*999)
     ENDIF
     
-    CALL EXITS("PETSC_MATFDCOLORINGSETFUNCTION")
+    CALL EXITS("Petsc_MatFDColoringSetFunction")
     RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGSETFUNCTION",ERR,ERROR)
-    CALL EXITS("PETSC_MATFDCOLORINGSETFUNCTION")
+999 CALL ERRORS("Petsc_MatFDColoringSetFunction",err,error)
+    CALL EXITS("Petsc_MatFDColoringSetFunction")
     RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGSETFUNCTION
+  END SUBROUTINE Petsc_MatFDColoringSetFunction
         
   !
   !================================================================================================================================
@@ -3826,34 +3868,66 @@ CONTAINS
 
 #if ( PETSC_VERSION_LT(3,0,0) )
   !>Buffer routine to the PETSc MatFDColoringSetFunctionSNES routine.
-  SUBROUTINE PETSC_MATFDCOLORINGSETFUNCTIONSNES(matFDColoring,FFUNCTION,CTX,ERR,ERROR,*)
+  SUBROUTINE Petsc_MatFDColoringSetFunctionSnes(matFDColoring,fFunction,ctx,err,error,*)
 
     !Argument Variables
     TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The matrix finite difference coloring to set
-    EXTERNAL FFUNCTION !<The external function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    EXTERNAL fFunction !<The external function to call
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The solver data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    CALL ENTERS("PETSC_MATFDCOLORINGSETFUNCTIONSNES",ERR,ERROR,*999)
+    CALL ENTERS("Petsc_MatFDColoringSetFunctionSnes",err,error,*999)
 
-    CALL MatFDColoringSetFunctionSNES(matFDColoring%matFDColoring,FFUNCTION,CTX,ERR)
-    IF(ERR/=0) THEN
+    CALL MatFDColoringSetFunctionSNES(matFDColoring%matFDColoring,fFunction,ctx,err)
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringSetFunctionSNES",ERR,ERROR,*999)
+      CALL FLAG_ERROR("PETSc error in MatFDColoringSetFunctionSNES.",err,error,*999)
     ENDIF
     
-    CALL EXITS("PETSC_MATFDCOLORINGSETFUNCTIONSNES")
+    CALL EXITS("Petsc_MatFDColoringSetFunctionSnes")
     RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGSETFUNCTIONSNES",ERR,ERROR)
-    CALL EXITS("PETSC_MATFDCOLORINGSETFUNCTIONSNES")
+999 CALL ERRORS("Petsc_MatFDColoringSetFunctionSnes",err,error)
+    CALL EXITS("Petsc_MatFDColoringSetFunctionSnes")
     RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGSETFUNCTIONSNES
+  END SUBROUTINE Petsc_MatFDColoringSetFunctionSnes
 #endif
         
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatFDColoringSetup routine.
+  SUBROUTINE Petsc_MatFDColoringSetup(A,isColoring,matFDColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: A !<The PETSc matrix to setup the FD coloring for
+    TYPE(PetscISColoringType), INTENT(INOUT) :: isColoring !<The index set coloring to setup the finite difference coloring for
+    TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The matrix finite difference coloring to setup
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_MatFDColoringSetup",err,error,*999)
+
+    CALL MatFDColoringSetup(A%mat,isColoring%isColoring,matFDColoring%matFDColoring,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatFDColoringSetup.",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Petsc_MatFDColoringSetup")
+    RETURN
+999 CALL ERRORS("Petsc_MatFDColoringSetup",err,error)
+    CALL EXITS("Petsc_MatFDColoringSetup")
+    RETURN 1
+  END SUBROUTINE Petsc_MatFDColoringSetup
+    
   !
   !================================================================================================================================
   !
@@ -4914,6 +4988,41 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc SNESGetApplicationContext routine.
+  SUBROUTINE Petsc_SnesGetApplicationContext(snes,ctx,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to get the context for
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<On exit, the solver data context to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_SnesGetApplicationContext",err,error,*999)
+
+    IF(ASSOCIATED(ctx)) THEN
+      CALL FlagError("Context is already associated.",err,error,*999)
+    ELSE
+      CALL SNESGetApplicationContext(snes%snes,ctx,err)
+      IF(err/=0) THEN
+        IF(PETSC_HANDLE_ERROR) THEN
+          CHKERRQ(err)
+        ENDIF
+        CALL FlagError("PETSc error in SNESGetApplicationContext.",err,error,*999)
+      ENDIF
+    ENDIF
+    
+    CALL EXITS("Petsc_SnesGetApplicationContext")
+    RETURN
+999 CALL ERRORS("Petsc_SnesGetApplicationContext",err,error)
+    CALL EXITS("Petsc_SnesGetApplicationContext")
+    RETURN 1
+  END SUBROUTINE Petsc_SnesGetApplicationContext
+
+  !
+  !================================================================================================================================
+  !
+
   !>Buffer routine to the PETSc SNESGetConvergedReason routine.
   SUBROUTINE PETSC_SNESGETCONVERGEDREASON(snes,REASON,ERR,ERROR,*)
 
@@ -5007,6 +5116,37 @@ CONTAINS
     RETURN 1
   END SUBROUTINE Petsc_SnesGetSolutionUpdate
     
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetApplicationContext routine.
+  SUBROUTINE Petsc_SnesSetApplicationContext(snes,ctx,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the context for
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The solver data context to set as a context
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_SnesSetApplicationContext",err,error,*999)
+
+    CALL SNESSetApplicationContext(snes%snes,ctx,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetApplicationContext",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Petsc_SnesSetApplicationContext")
+    RETURN
+999 CALL ERRORS("Petsc_SnesSetApplicationContext",err,error)
+    CALL EXITS("Petsc_SnesSetApplicationContext")
+    RETURN 1
+  END SUBROUTINE Petsc_SnesSetApplicationContext
+
   !
   !================================================================================================================================
   !
@@ -5837,74 +5977,64 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc SNESComputeJacobianColor routine for solver contexts.
-  SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR(snes,X,J,B,FLAG,CTX,ERR,ERROR,*)
+  !>Buffer routine to the PETSc SNESDefaultComputeJacobianColor routine.
+  SUBROUTINE Petsc_SnesDefaultComputeJacobianColor(snes,x,J,B,ctx,err,error,*)
 
     !Argument variables
     TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The PETSc SNES
-    TYPE(PetscVecType), INTENT(INOUT) :: X !<The PETSc X Vec
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The PETSc X Vec
     TYPE(PetscMatType), INTENT(INOUT) :: J !<The PETSc J Mat
     TYPE(PetscMatType), INTENT(INOUT) :: B !<The PETSc B Mat
-    INTEGER(INTG) :: FLAG !<The PETSC MatStructure flag
-    TYPE(PetscMatFDColoringType), POINTER :: CTX !<The passed through context
-    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscMatFDColoringType), POINTER :: ctx !<The passed through context
+    INTEGER(INTG), INTENT(INOUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-    CALL Enters("PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR",err,error,*999)
+    CALL Enters("Petsc_SnesDefaultComputeJacobianColor",err,error,*999)
     
-#if ( PETSC_VERSION_GE(3,3,0) )
-    CALL SNESComputeJacobianDefaultColor(snes%snes,X%vec,J%mat,B%mat,FLAG,CTX,ERR)
-#else
-    CALL SNESDefaultComputeJacobianColor(snes%snes,X%vec,J%mat,B%mat,FLAG,CTX,ERR)
-#endif
-    IF(ERR/=0) THEN
+    CALL SNESComputeJacobianDefaultColor(snes%snes,x%vec,J%mat,B%mat,ctx,err)
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetJacobian",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in SNESDefaultComputeJacobianColor.",err,error,*999)
     ENDIF
 
-    CALL EXITS("PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR")
+    CALL EXITS("Petsc_SnesDefaultComputeJacobianColor")
     RETURN
-999 CALL ERRORS("PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR",ERR,ERROR)
+999 CALL ERRORS("Petsc_SnesDefaultComputeJacobianColor",err,error)
     RETURN
-  END SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR
+  END SUBROUTINE Petsc_SnesDefaultComputeJacobianColor
 
   !
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc SNESComputeJacobian routine for solver contexts.
-  SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIAN(snes,X,J,B,FLAG,CTX,ERR,ERROR,*)
+  !>Buffer routine to the PETSc SNESDefaultComputeJacobian routine.
+  SUBROUTINE Petsc_SnesDefaultComputeJacobian(snes,x,J,B,ctx,err,error,*)
 
     !Argument variables
     TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The PETSc SNES
-    TYPE(PetscVecType), INTENT(INOUT) :: X !<The PETSc X Vec
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The PETSc x Vec
     TYPE(PetscMatType), INTENT(INOUT) :: J !<The PETSc J Mat
     TYPE(PetscMatType), INTENT(INOUT) :: B !<The PETSc B Mat
-    INTEGER(INTG) :: FLAG !<The PETSC MatStructure flag
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
-    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The passed through context
+    INTEGER(INTG), INTENT(INOUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-    CALL ENTERS("PETSC_SNESDEFAULTCOMPUTEJACOBIAN",ERR,ERROR,*999)
+    CALL ENTERS("Petsc_SnesDefaultComputeJacobian",ERR,ERROR,*999)
     
-#if ( PETSC_VERSION_GE(3,4,0) )
-    CALL SNESComputeJacobianDefault(snes%snes,X%vec,J%mat,B%mat,FLAG,CTX,ERR)
-#else
-    CALL SNESDefaultComputeJacobian(snes%snes,X%vec,J%mat,B%mat,FLAG,CTX,ERR)
-#endif
-    IF(ERR/=0) THEN
+    CALL SNESComputeJacobianDefault(snes%snes,X%vec,J%mat,B%mat,ctx,err)
+    IF(err/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetJacobian",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in SNESDefaultComputeJacobian",err,error,*999)
     ENDIF
 
     RETURN
-999 CALL ERRORS("PETSC_SNESDEFAULTCOMPUTEJACOBIAN",ERR,ERROR)
+999 CALL ERRORS("Petsc_SnesDefaultComputeJacobian",err,error)
     RETURN
-  END SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIAN
+  END SUBROUTINE Petsc_SnesDefaultComputeJacobian
 
   !
   !================================================================================================================================
@@ -7317,6 +7447,41 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Buffer routine to the PETSc VecGetArrayReadF90 routine.
+  SUBROUTINE Petsc_VecGetArrayReadF90(x,array,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscVecType), INTENT(INOUT), TARGET :: x !<The vector to get the array of
+    REAL(DP), POINTER :: array(:) !<On exit, a pointer to the array of the vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_VecGetArrayReadF90",err,error,*999)
+
+    IF(ASSOCIATED(array)) THEN
+      CALL FlagError("Array is already associated",err,error,*999)
+    ELSE
+      CALL VecGetArrayReadF90(x%vec,array,err)
+      IF(err/=0) THEN
+        IF(PETSC_HANDLE_ERROR) THEN
+          CHKERRQ(err)
+        ENDIF
+        CALL FlagError("PETSc error in VecGetArrayReadF90",err,error,*999)
+      ENDIF
+    ENDIF
+    
+    CALL EXITS("Petsc_VecGetArrayReadF90")
+    RETURN
+999 CALL ERRORS("Petsc_VecGetArrayReadF90",err,error)
+    CALL EXITS("Petsc_VecGetArrayReadF90")
+    RETURN 1
+  END SUBROUTINE Petsc_VecGetArrayReadF90
+    
+  !
+  !================================================================================================================================
+  !
+
   !>Buffer routine to the PETSc VecGetLocalSize routine.
   SUBROUTINE PETSC_VECGETLOCALSIZE(X,SIZE,ERR,ERROR,*)
 
@@ -7660,6 +7825,37 @@ CONTAINS
     CALL EXITS("PETSC_VECRESTOREARRAYF90")
     RETURN 1
   END SUBROUTINE PETSC_VECRESTOREARRAYF90
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecRestoreArrayReadF90 routine.
+  SUBROUTINE Petsc_VecRestoreArrayReadF90(x,array,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscVecType), INTENT(INOUT), TARGET :: x !<The vector to restore the array for
+    REAL(DP), POINTER :: array(:) !<A pointer to the array of the vector to restore
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    CALL ENTERS("Petsc_VecRestoreArrayReadF90",err,error,*999)
+
+    CALL VecRestoreArrayReadF90(x%vec,array,err)
+    IF(err/=0) THEN
+      IF(PETSC_HANDLE_ERROR) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in VecRestoreArrayReadF90",err,error,*999)
+    ENDIF
+    
+    CALL EXITS("Petsc_VecRestoreArrayReadF90")
+    RETURN
+999 CALL ERRORS("Petsc_VecRestoreArrayReadF90",err,error)
+    CALL EXITS("Petsc_VecRestoreArrayReadF90")
+    RETURN 1
+  END SUBROUTINE Petsc_VecRestoreArrayReadF90
     
   !
   !================================================================================================================================

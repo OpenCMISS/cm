@@ -10535,8 +10535,7 @@ CONTAINS
               ENDDO
               !Handle global dofs domain mapping
               element_ny=0
-!              NUMBER_OF_GLOBAL_DOFS=FIELD%VARIABLES(variable_idx)%COMPONENTS(1)%DOMAIN%MAPPINGS%ELEMENTS%NUMBER_OF_GLOBAL
-              NUMBER_OF_GLOBAL_DOFS=FIELD%VARIABLES(variable_idx)%COMPONENTS(1)%DOMAIN%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
+              NUMBER_OF_GLOBAL_DOFS=FIELD%VARIABLES(variable_idx)%COMPONENTS(1)%DOMAIN%MAPPINGS%ELEMENTS%NUMBER_OF_GLOBAL
               DO ny=1,NUMBER_OF_GLOBAL_DOFS
                 DO gauss_point_idx=1,MAX_NGP
                   DO component_idx=1,FIELD%VARIABLES(variable_idx)%NUMBER_OF_COMPONENTS
