@@ -3661,7 +3661,7 @@ CONTAINS
 
 !	    PRINT *,F(1,1),F(1,2),F(1,3),F(2,1),F(2,2),F(2,3),F(3,1),F(3,2),F(3,3)
 
-            CALL MATRIX_VECTOR_PRODUCT(FMFT,DISTANCE_VECTOR,MV,Err)
+            CALL MATRIX_VECTOR_PRODUCT(FMFT,DISTANCE_VECTOR,MV,Err,Error,*999)
             CALL VECTOR_VECTOR_PRODUCT(DISTANCE_VECTOR,MV,VMV,Err)
 
             TIME_ITER=SEED_VALUE(CONNECTIVITY_LIST(CONNECTIVITY_LIST(MIN_TRIAL_NODE,I),J))+SQRT(ABS(VMV))*&
@@ -3812,7 +3812,7 @@ CONTAINS
             CALL MATRIX_PRODUCT(F,MFT,FMFT,Err,Error,*999)
 !            CALL INVERT(FMFT,INV_FMFT,DET,Err,Error,*999)
 
-            CALL MATRIX_VECTOR_PRODUCT(FMFT,DISTANCE_VECTOR,MV,Err)
+            CALL MATRIX_VECTOR_PRODUCT(FMFT,DISTANCE_VECTOR,MV,Err,Error,*999)
             CALL VECTOR_VECTOR_PRODUCT(DISTANCE_VECTOR,MV,VMV,Err)
 
             TIME_ITER=SEED_VALUE(COLUMN_INDEX(J))+SQRT(ABS(VMV))*SPEED_FUNCTION_TABLE_ON_CONNECTIVITY(J,1)
@@ -3931,7 +3931,7 @@ CONTAINS
         CALL MATRIX_PRODUCT(CONDUCTIVITY_MATRIX,FT,MFT,Err,Error,*999)
         CALL MATRIX_PRODUCT(F,MFT,FMFT,Err,Error,*999)
 
-        CALL MATRIX_VECTOR_PRODUCT(FMFT,DISTANCE_VECTOR,MV,Err)
+        CALL MATRIX_VECTOR_PRODUCT(FMFT,DISTANCE_VECTOR,MV,Err,Error,*999)
         CALL VECTOR_VECTOR_PRODUCT(DISTANCE_VECTOR,MV,VMV,Err)
 
         CONNECTIVITY_WEIGHT(J)=SQRT(ABS(VMV))*SPEED_FUNCTION_TABLE_ON_CONNECTIVITY(J,1)
@@ -4120,7 +4120,7 @@ CONTAINS
             CALL MATRIX_PRODUCT(CONDUCTIVITY_MATRIX,FT,MFT,Err,Error,*999)
             CALL MATRIX_PRODUCT(F,MFT,FMFT,Err,Error,*999)
 
-            CALL MATRIX_VECTOR_PRODUCT(FMFT,DISTANCE_VECTOR,MV,Err)
+            CALL MATRIX_VECTOR_PRODUCT(FMFT,DISTANCE_VECTOR,MV,Err,Error,*999)
             CALL VECTOR_VECTOR_PRODUCT(DISTANCE_VECTOR,MV,VMV,Err)
 
             TIME_ITER=SEED_VALUE(CONNECTIVITY_LIST(CONNECTIVITY_LIST(MIN_TRIAL_NODE,I),J))+&
@@ -4215,50 +4215,6 @@ CONTAINS
 
   END SUBROUTINE GENERATE_STATUS_MASK
 
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Calculates and returns the MATRIX-VECTOR-prouct of the double precision VECTOR A*B in C.
-  SUBROUTINE MATRIX_VECTOR_PRODUCT(A,B,C,Err)
-
-    !Argument variables
-    REAL(DP), INTENT(IN) :: A(3,3) !<The A MATRIX
-    REAL(DP), INTENT(IN) :: B(3) !<The B VECTOR
-    REAL(DP), INTENT(OUT) :: C(3) !<On exit, the product VECTOR C=A*B
-    INTEGER(INTG) :: ERR !<The error code
-    !    TYPE(VARYING_STRING) :: LOCAL_ERROR !<The error string
-
-    !Local variables
-        
-!   CALL ENTERS("MATRIX_VECTOR_PRODUCT",Err)
-    
-   IF(SIZE(A,2)==SIZE(B,1).AND.SIZE(A,1)==SIZE(C,1)) THEN
-      SELECT CASE(SIZE(A,1))
-      CASE(1)
-        C(1)=A(1,1)*B(1)
-      CASE(2)
-        C(1)=A(1,1)*B(1)+A(1,2)*B(2)
-        C(2)=A(2,1)*B(1)+A(2,2)*B(2)
-      CASE(3)
-        C(1)=A(1,1)*B(1)+A(1,2)*B(2)+A(1,3)*B(3)
-        C(2)=A(2,1)*B(1)+A(2,2)*B(2)+A(2,3)*B(3)
-        C(3)=A(3,1)*B(1)+A(3,2)*B(2)+A(3,3)*B(3)
-!      CASE DEFAULT
-!        CALL FLAG_ERROR("Invalid matrix size.",Err)
-      END SELECT
-!    ELSE
-!      CALL FLAG_ERROR("Invalid matrix sizes.",Err)
-    ENDIF
-
-!    CALL EXITS("MATRIX_VECTOR_PRODUCT")
-!    RETURN
-!999 CALL ERRORS("MATRIX_VECTOR_PRODUCT",ERR,ERROR)
-!    CALL EXITS("MATRIX_VECTOR_PRODUCT")
-!    RETURN 1
-
-  END SUBROUTINE MATRIX_VECTOR_PRODUCT
 
   !
   !================================================================================================================================

@@ -82,7 +82,7 @@ MODULE INTERFACE_CONDITIONS_CONSTANTS
   INTEGER(INTG), PARAMETER :: INTERFACE_CONDITION_NONLINEAR_BCS=3 !<The interface conditions have non-linear boundary conditions. \see INTERFACE_CONDITIONS_CONSTANTS_LinearityTypes,INTERFACE_CONDITIONS_CONSTANTS
   !>@}
 
-  !> \addtogroup INTERFACE_CONDITIONS_CONSTANTS_TimeDepedenceTypes INTERFACE_CONDITIONS_CONSTANTS::TimeDepedenceTypes
+  !> \addtogroup INTERFACE_CONDITIONS_CONSTANTS_TimeDependenceTypes INTERFACE_CONDITIONS_CONSTANTS::TimeDependenceTypes
   !> \brief The interface condition time dependence type parameters
   !> \see INTERFACE_CONDITIONS_CONSTANTS,OPENCMISS_EquationsTimeDependenceTypes
   !>@{
