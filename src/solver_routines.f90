@@ -15339,11 +15339,11 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    EXTERNAL :: PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC
-    EXTERNAL :: PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC
-    EXTERNAL :: PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
-    EXTERNAL :: ProblemSolver_ConvergenceTestPetsc
-    EXTERNAL :: Problem_SolverNonlinearMonitorPETSC
+    EXTERNAL :: Problem_SolverJacobianEvaluatePetsc
+    EXTERNAL :: Problem_SolverJacobianFDCalculatePetsc
+    EXTERNAL :: Problem_SolverResidualEvaluatePetsc
+    EXTERNAL :: Problem_SolverConvergenceTestPetsc
+    EXTERNAL :: Problem_SolverNonlinearMonitorPetsc
     INTEGER(INTG) :: equations_matrix_idx,equations_set_idx,interface_condition_idx,interface_matrix_idx
     TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
@@ -15519,9 +15519,9 @@ CONTAINS
                     ENDIF
                   ENDDO !interface_idx
                   !Create the PETSc SNES solver
-                  CALL PETSC_SNESCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
+                  CALL Petsc_SnesCreate(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINESEARCH_SOLVER%SNES,ERR,ERROR,*999)
                   !Set the nonlinear solver type to be a Newton line search solver
-                  CALL PETSC_SNESSETTYPE(LINESEARCH_SOLVER%SNES,PETSC_SNESLS,ERR,ERROR,*999)
+                  CALL Petsc_SnesSetType(LINESEARCH_SOLVER%SNES,PETSC_SNESLS,ERR,ERROR,*999)
                   
                   !Create the solver matrices and vectors
                   LINEAR_SOLVER=>NEWTON_SOLVER%LINEAR_SOLVER
@@ -15558,15 +15558,18 @@ CONTAINS
                     RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
                     IF(ASSOCIATED(RESIDUAL_VECTOR)) THEN
                       IF(ASSOCIATED(RESIDUAL_VECTOR%PETSC)) THEN
+                        !Set the solver as a context for the SNES object
+                        CALL Petsc_SnesSetApplicationContext(LINESEARCH_SOLVER%SNES,LINESEARCH_SOLVER%NEWTON_SOLVER% &
+                          & NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                         !Pass the linesearch solver object rather than the temporary solver
                         CALL Petsc_SnesSetFunction(LINESEARCH_SOLVER%SNES,RESIDUAL_VECTOR%PETSC%VECTOR, &
-                          & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
+                          & Problem_SolverResidualEvaluatePetsc,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER, &
                           & ERR,ERROR,*999)
                         SELECT CASE(LINESEARCH_SOLVER%NEWTON_SOLVER%convergenceTestType)
                         CASE(SOLVER_NEWTON_CONVERGENCE_PETSC_DEFAULT)
                           !Default convergence test, do nothing
                         CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM,SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
-                          CALL Petsc_SnesSetConvergenceTest(LINESEARCH_SOLVER%SNES,ProblemSolver_ConvergenceTestPetsc, &
+                          CALL Petsc_SnesSetConvergenceTest(LINESEARCH_SOLVER%SNES,Problem_SolverConvergenceTestPetsc, &
                             & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                         CASE DEFAULT
                           LOCAL_ERROR="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER% &
@@ -15595,7 +15598,7 @@ CONTAINS
                               SOLVER_JACOBIAN%UPDATE_MATRIX=.TRUE. !CMISS will fill in the Jacobian values
                               !Pass the linesearch solver object rather than the temporary solver
                               CALL Petsc_SnesSetJacobian(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%PETSC%MATRIX, &
-                                & JACOBIAN_MATRIX%PETSC%MATRIX,PROBLEM_SOLVER_JACOBIAN_EVALUATE_PETSC, &
+                                & JACOBIAN_MATRIX%PETSC%MATRIX,Problem_SolverJacobianEvaluatePetsc, &
                                 & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                             CASE(SOLVER_NEWTON_JACOBIAN_FD_CALCULATED)
                               SOLVER_JACOBIAN%UPDATE_MATRIX=.FALSE. !Petsc will fill in the Jacobian values
@@ -15618,18 +15621,20 @@ CONTAINS
                                 !Compute SNESComputeJacobianDefaultColor data structure
                                 CALL Petsc_MatFDColoringCreate(JACOBIAN_MATRIX%petsc%matrix,LINESEARCH_SOLVER%jacobianISColoring, &
                                   & LINESEARCH_SOLVER%jacobianMatFDColoring,err,error,*999)
-                                CALL Petsc_ISColoringDestroy(LINESEARCH_SOLVER%jacobianISColoring,err,error,*999)
 #if ( PETSC_VERSION_GE(3,0,0) )
                                 !Pass the linesearch solver object rather than the temporary solver
                                 CALL Petsc_MatFDColoringSetFunction(LINESEARCH_SOLVER%jacobianMatFDColoring, &
-                                  & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER% &
+                                  & Problem_SolverResidualEvaluatePetsc,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER% &
                                   & SOLVER,ERR,ERROR,*999)
 #else
                                 CALL Petsc_MatFDColoringSetFunctionSnes(LINESEARCH_SOLVER%jacobianMatFDColoring, &
-                                  & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER% &
+                                  & Problem_SolverResidualEvaluatePetsc,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER% &
                                   & SOLVER,ERR,ERROR,*999)
 #endif
                                 CALL Petsc_MatFDColoringSetFromOptions(LINESEARCH_SOLVER%jacobianMatFDColoring,err,error,*999)
+                                CALL Petsc_MatFDColoringSetup(JACOBIAN_MATRIX%petsc%matrix,LINESEARCH_SOLVER%jacobianISColoring, &
+                                  & LINESEARCH_SOLVER%jacobianMatFDColoring,err,error,*999)
+                                CALL Petsc_ISColoringDestroy(LINESEARCH_SOLVER%jacobianISColoring,err,error,*999)
                               CASE(SOLVER_FULL_MATRICES)
                                 !Do nothing
                               CASE DEFAULT
@@ -15638,8 +15643,8 @@ CONTAINS
                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                               CALL Petsc_SnesSetJacobian(LINESEARCH_SOLVER%SNES,JACOBIAN_MATRIX%petsc%matrix, &
-                                & JACOBIAN_MATRIX%petsc%matrix,PROBLEM_SOLVER_JACOBIAN_FD_CALCULATE_PETSC,LINESEARCH_SOLVER% &
-                                & jacobianMatFDColoring,err,error,*999)
+                                & JACOBIAN_MATRIX%petsc%matrix,Problem_SolverJacobianFDCalculatePetsc,LINESEARCH_SOLVER% &
+                                & NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,err,error,*999)
                             CASE DEFAULT
                               LOCAL_ERROR="The Jacobian calculation type of "// &
                                 & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))// &
@@ -16670,7 +16675,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    EXTERNAL :: PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC
+    EXTERNAL :: Problem_SolverResidualEvaluatePetsc
     INTEGER(INTG) :: equations_matrix_idx,equations_set_idx
     TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
@@ -16776,15 +16781,17 @@ CONTAINS
 !!TODO: set up the matrix structure if using an analytic Jacobian
                   CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
                   !Create the PETSc SNES solver
-                  CALL PETSC_SNESCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,TRUSTREGION_SOLVER%SNES,ERR,ERROR,*999)
+                  CALL Petsc_SnesCreate(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,TRUSTREGION_SOLVER%SNES,ERR,ERROR,*999)
                   !Set the nonlinear solver type to be a Newton trust region solver
-                  CALL PETSC_SNESSETTYPE(TRUSTREGION_SOLVER%SNES,PETSC_SNESTR,ERR,ERROR,*999)
+                  CALL Petsc_SnesSetType(TRUSTREGION_SOLVER%SNES,PETSC_SNESTR,ERR,ERROR,*999)
+                  !Set the solver as the SNES application context
+                  CALL Petsc_SnesSetApplicationContext(TRUSTREGION_SOLVER%SNES,solver,err,error,*999)
                   !Set the nonlinear function
                   RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
                   IF(ASSOCIATED(RESIDUAL_VECTOR)) THEN
                     IF(ASSOCIATED(RESIDUAL_VECTOR%PETSC)) THEN
-                      CALL PETSC_SNESSETFUNCTION(TRUSTREGION_SOLVER%SNES,RESIDUAL_VECTOR%PETSC%VECTOR, &
-                        & PROBLEM_SOLVER_RESIDUAL_EVALUATE_PETSC,SOLVER,ERR,ERROR,*999)
+                      CALL Petsc_SnesSetFunction(TRUSTREGION_SOLVER%SNES,RESIDUAL_VECTOR%PETSC%VECTOR, &
+                        & Problem_SolverResidualEvaluatePetsc,SOLVER,ERR,ERROR,*999)
                       CALL FLAG_ERROR("The residual vector PETSc is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
@@ -16794,15 +16801,15 @@ CONTAINS
                   !Set the trust region delta ???
                   
                   !Set the trust region tolerance
-                  CALL PETSC_SNESSETTRUSTREGIONTOLERANCE(TRUSTREGION_SOLVER%SNES,TRUSTREGION_SOLVER%TRUSTREGION_TOLERANCE, &
+                  CALL Petsc_SnesSetTrustRegionTolerance(TRUSTREGION_SOLVER%SNES,TRUSTREGION_SOLVER%TRUSTREGION_TOLERANCE, &
                     & ERR,ERROR,*999)
                   !Set the tolerances for the SNES solver
-                  CALL PETSC_SNESSETTOLERANCES(TRUSTREGION_SOLVER%SNES,NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
+                  CALL Petsc_SnesSetTolerances(TRUSTREGION_SOLVER%SNES,NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
                     & NEWTON_SOLVER%RELATIVE_TOLERANCE,NEWTON_SOLVER%SOLUTION_TOLERANCE, &
                     & NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS,NEWTON_SOLVER%MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS, &
                     & ERR,ERROR,*999)
                   !Set any further SNES options from the command line options
-                  CALL PETSC_SNESSETFROMOPTIONS(TRUSTREGION_SOLVER%SNES,ERR,ERROR,*999)
+                  CALL Petsc_SnesSetFromOptions(TRUSTREGION_SOLVER%SNES,ERR,ERROR,*999)
                 ELSE
                   CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
                 ENDIF

@@ -195,33 +195,38 @@ MODULE BASE_ROUTINES
   INTERFACE EXTRACT_ERROR_MESSAGE
     MODULE PROCEDURE EXTRACT_ERROR_MESSAGE_C
     MODULE PROCEDURE EXTRACT_ERROR_MESSAGE_VS
-  END INTERFACE !EXTRACT_ERROR_MESSAGE
+  END INTERFACE EXTRACT_ERROR_MESSAGE
 
   !>Flags an error condition \see BASE_ROUTINES
   INTERFACE FLAG_ERROR
     MODULE PROCEDURE FLAG_ERROR_C
     MODULE PROCEDURE FLAG_ERROR_VS
-  END INTERFACE !FLAG_ERROR
+  END INTERFACE FLAG_ERROR
   
   !>Flags a warning to the user \see BASE_ROUTINES
   INTERFACE FLAG_WARNING
     MODULE PROCEDURE FLAG_WARNING_C
     MODULE PROCEDURE FLAG_WARNING_VS
-  END INTERFACE !FLAG_WARNING
+  END INTERFACE FLAG_WARNING
 
-  ! Allow using FlagError and FlagWarning as we shift to the new code style
+  ! Allow using FlagError and FlagWarning etc, as we shift to the new code style
 
   !>Flags an error condition \see BASE_ROUTINES
   INTERFACE FlagError
     MODULE PROCEDURE FLAG_ERROR_C
     MODULE PROCEDURE FLAG_ERROR_VS
-  END INTERFACE !FlagError
+  END INTERFACE FlagError
 
   !>Flags a warning to the user \see BASE_ROUTINES
   INTERFACE FlagWarning
     MODULE PROCEDURE FLAG_WARNING_C
     MODULE PROCEDURE FLAG_WARNING_VS
-  END INTERFACE !FlagWarning
+  END INTERFACE FlagWarning
+
+  !>Flags a warning to the user \see BASE_ROUTINES
+  INTERFACE WRITE_ERROR
+    MODULE PROCEDURE WriteError
+  END INTERFACE WRITE_ERROR
 
   PUBLIC GENERAL_OUTPUT_TYPE,DIAGNOSTIC_OUTPUT_TYPE,TIMING_OUTPUT_TYPE,ERROR_OUTPUT_TYPE,HELP_OUTPUT_TYPE,DIAGNOSTICS1, &
     & DIAGNOSTICS2,DIAGNOSTICS3,DIAGNOSTICS4,DIAGNOSTICS5,ALL_DIAG_TYPE,IN_DIAG_TYPE,FROM_DIAG_TYPE,OPEN_COMFILE_UNIT, &
@@ -255,6 +260,8 @@ MODULE BASE_ROUTINES
   PUBLIC TIMING_SUMMARY_OUTPUT
    
   PUBLIC WRITE_ERROR
+
+  PUBLIC WriteError
   
   PUBLIC WRITE_STR
 
@@ -1312,63 +1319,62 @@ CONTAINS
   !
 
   !>Writes the error string.
-  SUBROUTINE WRITE_ERROR(ERR,ERROR,*)
+  SUBROUTINE WriteError(err,error,*)
   
     !Argument variables
-    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(INOUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(INOUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(INOUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: END_POSITION,ERROR_STRING_LENGTH,INDENT,LAST_SPACE_POSITION,LOCAL_ERR,POSITION, &
-      & START_STRING_LENGTH
-    CHARACTER(LEN=MAXSTRLEN) :: INDENT_STRING=">>"
-    CHARACTER(LEN=MAXSTRLEN) :: START_STRING
-    TYPE(VARYING_STRING) :: LOCAL_ERROR,LOCAL_ERROR2
+    INTEGER(INTG) :: endPosition,errorStringLength,indent,lastSpacePosition,localErr,position,startStringLength
+    CHARACTER(LEN=MAXSTRLEN) :: indentString=">>"
+    CHARACTER(LEN=MAXSTRLEN) :: startString
+    TYPE(VARYING_STRING) :: localError,localError2
 
-    INDENT=2
+    indent=2
     IF(NUMBER_OF_COMPUTATIONAL_NODES>1) THEN
-      WRITE(START_STRING,'(A,A,I0,A,X,I0,A)') INDENT_STRING(1:INDENT),"ERROR (",MY_COMPUTATIONAL_NODE_NUMBER,"):", &
+      WRITE(startString,'(A,A,I0,A,X,I0,A)') indentString(1:indent),"ERROR (",MY_COMPUTATIONAL_NODE_NUMBER,"):", &
         & ERR,":"
-      START_STRING_LENGTH=LEN_TRIM(START_STRING)
+      startStringLength=LEN_TRIM(startString)
     ELSE
-      WRITE(START_STRING,'(A,A,X,I0,A)') INDENT_STRING(1:INDENT),"ERROR: ",ERR,":"
-      START_STRING_LENGTH=LEN_TRIM(START_STRING)
+      WRITE(startString,'(A,A,X,I0,A)') indentString(1:indent),"ERROR: ",ERR,":"
+      startStringLength=LEN_TRIM(startString)
     ENDIF
-    POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
-    ERROR_STRING_LENGTH=POSITION-1
-    LOCAL_ERROR=EXTRACT(ERROR,1,ERROR_STRING_LENGTH)
-    DO WHILE(ERROR_STRING_LENGTH+START_STRING_LENGTH+1>MAX_OUTPUT_WIDTH)
-      END_POSITION=MAX_OUTPUT_WIDTH-START_STRING_LENGTH-1
-      LAST_SPACE_POSITION=INDEX(EXTRACT(LOCAL_ERROR,1,END_POSITION)," ",BACK=.TRUE.)
-      IF(LAST_SPACE_POSITION/=0) END_POSITION=LAST_SPACE_POSITION-1
-      WRITE(OP_STRING,'(A,X,A)') START_STRING(1:START_STRING_LENGTH),CHAR(EXTRACT(LOCAL_ERROR,1,END_POSITION))
-      CALL WRITE_STR(ERROR_OUTPUT_TYPE,LOCAL_ERR,LOCAL_ERROR2,*999)
-      LOCAL_ERROR=ADJUSTL(EXTRACT(LOCAL_ERROR,END_POSITION+1,LEN_TRIM(LOCAL_ERROR)))
-      ERROR_STRING_LENGTH=LEN_TRIM(LOCAL_ERROR)
-      START_STRING=" "
+    position=INDEX(error,ERROR_SEPARATOR_CONSTANT)
+    errorStringLength=position-1
+    localError=EXTRACT(error,1,errorStringLength)
+    DO WHILE(errorStringLength+startStringLength+1>MAX_OUTPUT_WIDTH)
+      endPosition=MAX_OUTPUT_WIDTH-startStringLength-1
+      lastSpacePosition=INDEX(EXTRACT(localError,1,endPosition)," ",BACK=.TRUE.)
+      IF(lastSpacePosition/=0) endPosition=lastSpacePosition-1
+      WRITE(OP_STRING,'(A,X,A)') startString(1:startStringLength),CHAR(EXTRACT(localError,1,endPosition))
+      CALL WRITE_STR(ERROR_OUTPUT_TYPE,localErr,localError2,*999)
+      localError=ADJUSTL(EXTRACT(localError,endPosition+1,LEN_TRIM(localError)))
+      errorStringLength=LEN_TRIM(localError)
+      startString=" "
     ENDDO !not finished
-    WRITE(OP_STRING,'(A,X,A)') START_STRING(1:START_STRING_LENGTH),CHAR(LOCAL_ERROR)
-    CALL WRITE_STR(ERROR_OUTPUT_TYPE,LOCAL_ERR,LOCAL_ERROR2,*999)
+    WRITE(OP_STRING,'(A,X,A)') startString(1:startStringLength),CHAR(localError)
+    CALL WRITE_STR(ERROR_OUTPUT_TYPE,localErr,localError2,*999)
     !CPB 20/02/07 aix compiler does not like varying strings so split the remove statement up into two statements
-    LOCAL_ERROR=REMOVE(ERROR,1,POSITION)
-    ERROR=LOCAL_ERROR
-    POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
-    INDENT=INDENT+2
-    DO WHILE(POSITION/=0)
-      WRITE(OP_STRING,'(A)') INDENT_STRING(1:INDENT)//CHAR(EXTRACT(ERROR,1,POSITION-1))
-      CALL WRITE_STR(ERROR_OUTPUT_TYPE,LOCAL_ERR,LOCAL_ERROR2,*999)
+    localError=REMOVE(error,1,position)
+    error=localError
+    position=INDEX(error,ERROR_SEPARATOR_CONSTANT)
+    indent=indent+2
+    DO WHILE(position/=0)
+      WRITE(OP_STRING,'(A)') indentString(1:indent)//CHAR(EXTRACT(error,1,position-1))
+      CALL WRITE_STR(ERROR_OUTPUT_TYPE,localErr,localError2,*999)
       !CPB 20/02/07 aix compiler does not like varying strings so split the remove statement up into two statements
-      LOCAL_ERROR=REMOVE(ERROR,1,POSITION)
-      ERROR=LOCAL_ERROR
-      POSITION=INDEX(ERROR,ERROR_SEPARATOR_CONSTANT)
-      INDENT=INDENT+2
+      localError=REMOVE(error,1,position)
+      error=localError
+      position=INDEX(error,ERROR_SEPARATOR_CONSTANT)
+      indent=indent+2
     ENDDO
-    WRITE(OP_STRING,'(A)') INDENT_STRING(1:INDENT)//CHAR(ERROR)
-    CALL WRITE_STR(ERROR_OUTPUT_TYPE,LOCAL_ERR,LOCAL_ERROR2,*999)
+    WRITE(OP_STRING,'(A)') indentString(1:indent)//CHAR(error)
+    CALL WRITE_STR(ERROR_OUTPUT_TYPE,localErr,localError2,*999)
 
     RETURN
     !Don't return an error code here otherwise we will get into a circular loop
 999 RETURN 
-  END SUBROUTINE WRITE_ERROR
+  END SUBROUTINE WriteError
 
   !
   !================================================================================================================================
