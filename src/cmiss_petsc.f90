@@ -5559,7 +5559,11 @@ CONTAINS
 
     CALL ENTERS("PETSC_SNESSETJACOBIAN_SOLVER",ERR,ERROR,*999)
 
+    PRINT *, "@@@@@@@@@@@ SNESSetJac - CTX.Output type:", CTX%OUTPUT_TYPE
+    PRINT *, "@@@@@@@@@@@ SNESSetJac - CTX.Solver type:", CTX%SOLVE_TYPE
     CALL SNESSetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,CTX,ERR)
+    PRINT *, "@@@@@@@@@@@after SNESSetJac - CTX.Output type:", CTX%OUTPUT_TYPE
+    PRINT *, "@@@@@@@@@@@after SNESSetJac - CTX.Solver type:", CTX%SOLVE_TYPE
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)
