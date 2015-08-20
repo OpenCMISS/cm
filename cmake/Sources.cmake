@@ -12,6 +12,7 @@ set(IRON_HEADERS
 )
 set(IRON_Fortran_SRC
     advection_diffusion_equation_routines.f90
+    advection_equation_routines.f90
     analytic_analysis_routines.f90
     base_routines.f90
     basis_routines.f90
@@ -24,8 +25,8 @@ set(IRON_Fortran_SRC
     Burgers_equation_routines.f90
     characteristic_equation_routines.f90
     classical_field_routines.f90
-    cmiss_fortran_c.f90
     cmiss_cellml.f90
+    cmiss_fortran_c.f90
     cmiss_mpi.f90
     cmiss_parmetis.f90
     cmiss_petsc_types.f90
@@ -55,6 +56,10 @@ set(IRON_Fortran_SRC
     equations_set_routines.f90
     field_IO_routines.f90
     field_routines.f90
+    fieldml_input_routines.f90
+    fieldml_output_routines.f90
+    fieldml_types.f90
+    fieldml_util_routines.f90
     finite_elasticity_Darcy_routines.f90
     finite_elasticity_fluid_pressure_routines.f90
     finite_elasticity_routines.f90
@@ -104,6 +109,7 @@ set(IRON_Fortran_SRC
     solver_routines.f90
     sorting.f90
     Stokes_equations_routines.f90
+    stree_equation_routines.f90
     strings.f90
     test_framework_routines.f90
     timer_f.f90
@@ -119,9 +125,12 @@ ELSEIF(${OPERATING_SYSTEM} MATCHES darwin)
     list(APPEND IRON_Fortran_SRC machine_constants_linux.f90)
 ELSEIF(${OPERATING_SYSTEM} MATCHES aix)
     list(APPEND IRON_Fortran_SRC machine_constants_aix.f90)
-ELSE(${OPERATING_SYSTEM} MATCHES linux)
+ELSE(${OPERATING_SYSTEM} MATCHES windows)
     list(APPEND IRON_Fortran_SRC machine_constants_win32.f90)
 ENDIF()
+#machine_constants_irix.f90    
+#machine_constants_vms.f90
+    
 # 
 set(IRON_FIELDML_SRC)
 if (WITH_FIELDML)
