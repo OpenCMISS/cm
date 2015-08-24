@@ -94,10 +94,11 @@ foreach(irontarget ${IRON_TARGETS})
     endif()
 endforeach()
 target_link_libraries(iron PRIVATE ${LINK_LIBS})
-# On windows we (thus far) have only pre-compiled mpi implementations available (MPICH2 and MSMPI)
-# Hence, if using mingw's gfortran compiler, the created .mod files are incompatible
-# and we need to include mpif.h as fallback.
-if (MINGW)
+# Dont use "USE MPI" instructions if the percompiled mpi module files are incompatible.
+# This happens when the fortran compiler used to build mpi differs from the currently used one.
+# This holds on windows (only pre-compiled mpi implementations available; MPICH2 and MSMPI)
+# and on e.g. clusters with inappropriately configured toolchain environments.
+if (MINGW OR NOT MPI_Fortran_MODULE_COMPATIBLE)
     target_compile_definitions(iron PRIVATE NOMPIMOD)
 endif()
 
