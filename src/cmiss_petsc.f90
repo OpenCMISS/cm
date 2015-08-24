@@ -860,7 +860,7 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatGetArrayF90
     
-#if ( PETSC_VERSION_LT(3,6,0) )
+#if ( PETSC_VERSION_LT(3,5,0) )
     SUBROUTINE MatGetColoring(A,coloring_type,iscoloring,ierr)
       Mat A
       MatColoringType coloring_type
@@ -1811,8 +1811,8 @@ MODULE CMISS_PETSC
 #else
   PUBLIC PETSC_MATCREATEMPIAIJ,PETSC_MATCREATEMPIDENSE
 #endif
-#if ( PETSC_VERSION_LT(3,6,0) )
-  PUBLIC Petsc_MatGetColouring
+#if ( PETSC_VERSION_LT(3,5,0) )
+  PUBLIC Petsc_MatGetColoring
 #endif
   
 #if ( PETSC_VERSION_GE(3,2,0) )
@@ -3933,7 +3933,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-#if ( PETSC_VERSION_LT(3,6,0) )
+#if ( PETSC_VERSION_LT(3,5,0) )
   !>Buffer routine to the PETSc MatGetColoring routine.
   SUBROUTINE PETSC_MATGETCOLORING(A,COLORING_TYPE,iscoloring,ERR,ERROR,*)
 
@@ -3944,14 +3944,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-#if ( PETSC_VERSION_GE(3,5,0)
-    CALL MatColoringSetType(COLORING,COLORING_TYPE,ERR);
-    CALL MatColoringSetFromOptions(COLORING,ERR);
-    CALL MatColoringApply(COLORING,iscoloring%iscoloring,ERR);
-    CALL MatColoringDestroy(COLORING,ERR);
-#else
     CALL MatGetColoring(A%mat,COLORING_TYPE,iscoloring%iscoloring,ERR)
-#endif
     IF(ERR/=0) THEN
       IF(PETSC_HANDLE_ERROR) THEN
         CHKERRQ(ERR)

@@ -15602,7 +15602,8 @@ CONTAINS
                               CALL DISTRIBUTED_MATRIX_FORM(JACOBIAN_MATRIX,ERR,ERROR,*999)
                               SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                               CASE(SOLVER_SPARSE_MATRICES)
-#if ( PETSC_VERSION_GE(3,6,0) )
+! Daniel Wirtz: This new calling convention already holds for PETSc >= 3.5.0
+#if ( PETSC_VERSION_GE(3,5,0) )
                                 CALL Petsc_MatColoringCreate(JACOBIAN_MATRIX%petsc%matrix,LINESEARCH_SOLVER%jacobianMatColoring, &
                                   & err,error,*999)
                                 CALL Petsc_MatColoringSetType(LINESEARCH_SOLVER%jacobianMatColoring,PETSC_MATCOLORING_SL, &
