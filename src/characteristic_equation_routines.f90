@@ -75,6 +75,8 @@ MODULE CHARACTERISTIC_EQUATION_ROUTINES
   USE TIMER
   USE TYPES
 
+#include "macros.h"
+
   IMPLICIT NONE
 
   PRIVATE
@@ -104,7 +106,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: localError
     
-    CALL ENTERS("Characteristic_EquationsSet_SolutionMethodSet",err,error,*999)
+    ENTERS("Characteristic_EquationsSet_SolutionMethodSet",err,error,*999)
     
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
@@ -138,11 +140,11 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
        
-    CALL EXITS("Characteristic_EquationsSet_SolutionMethodSet")
+    EXITS("Characteristic_EquationsSet_SolutionMethodSet")
     RETURN
-999 CALL ERRORS("Characteristic_EquationsSet_SolutionMethodSet",err,error)
-    CALL EXITS("Characteristic_EquationsSet_SolutionMethodSet")
+999 ERRORSEXITS("Characteristic_EquationsSet_SolutionMethodSet",err,error)
     RETURN 1
+    
   END SUBROUTINE Characteristic_EquationsSet_SolutionMethodSet
 
 !
@@ -160,7 +162,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Characteristic_EquationsSet_SubtypeSet",err,error,*999)
+    ENTERS("Characteristic_EquationsSet_SubtypeSet",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSetSubtype)
@@ -177,11 +179,11 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("Characteristic_EquationsSet_SubtypeSet")
+    EXITS("Characteristic_EquationsSet_SubtypeSet")
     RETURN
-999 CALL ERRORS("Characteristic_EquationsSet_SubtypeSet",err,error)
-    CALL EXITS("Characteristic_EquationsSet_SubtypeSet")
+999 ERRORSEXITS("Characteristic_EquationsSet_SubtypeSet",err,error)
     RETURN 1
+    
   END SUBROUTINE Characteristic_EquationsSet_SubtypeSet
 
 !
@@ -204,13 +206,13 @@ CONTAINS
     TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: equationsMaterials
     TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: equationsEquationsSetField
     TYPE(FIELD_TYPE), POINTER :: equationsSetField
-    INTEGER(INTG) :: numberOfDimensions,componentIdx,geometricScalingType,geometricMeshComponent,geometricComponentNumber
+    INTEGER(INTG) :: componentIdx,geometricScalingType,geometricMeshComponent,geometricComponentNumber
     INTEGER(INTG) :: dependentFieldNumberOfVariables,dependentFieldNumberOfComponents
     INTEGER(INTG) :: independentFieldNumberOfVariables,independentFieldNumberOfComponents
     INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsFieldNumberOfComponents1,materialsFieldNumberOfComponents2
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Characteristic_EquationsSet_Setup",err,error,*999)
+    ENTERS("Characteristic_EquationsSet_Setup",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -800,11 +802,11 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("Characteristic_EquationsSet_Setup")
+    EXITS("Characteristic_EquationsSet_Setup")
     RETURN
-999 CALL ERRORS("Characteristic_EquationsSet_Setup",err,error)
-    CALL EXITS("Characteristic_EquationsSet_Setup")
+999 ERRORSEXITS("Characteristic_EquationsSet_Setup",err,error)
     RETURN 1
+    
   END SUBROUTINE Characteristic_EquationsSet_Setup
 
   !
@@ -833,12 +835,12 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: materialsField,dependentField,independentField
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: localError
-    REAL(DP), POINTER :: dependentParameters(:),independentParameters(:),materialsParameters(:),materialsParameters1(:)
+    REAL(DP), POINTER :: dependentParameters(:),independentParameters(:),materialsParameters(:)
     REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),SUM,rho
-    INTEGER(INTG) :: derivativeIdx,versionIdx,versionIdx2,componentIdx,rowIdx,columnIdx,componentIdx2,numberOfVersions,local_ny
+    INTEGER(INTG) :: derivativeIdx,versionIdx,versionIdx2,componentIdx,rowIdx,columnIdx,componentIdx2,numberOfVersions
     LOGICAL :: updateStiffnessMatrix,updateNonlinearResidual,boundaryNode
 
-    CALL ENTERS("Characteristic_NodalResidualEvaluate",err,error,*999)
+    ENTERS("Characteristic_NodalResidualEvaluate",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -1015,12 +1017,12 @@ CONTAINS
         & " is not valid for a characteristic equation type of a fluid mechanics equations set class."
       CALL FLAG_ERROR(localError,err,error,*999)
     END SELECT
-
-    CALL EXITS("Characteristic_NodalResidualEvaluate")
+    
+    EXITS("Characteristic_NodalResidualEvaluate")
     RETURN
-999 CALL ERRORS("Characteristic_NodalResidualEvaluate",err,error)
-    CALL EXITS("Characteristic_NodalResidualEvaluate")
+999 ERRORSEXITS("Characteristic_NodalResidualEvaluate",err,error)
     RETURN 1
+    
   END SUBROUTINE Characteristic_NodalResidualEvaluate
 
   !
@@ -1049,13 +1051,13 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: materialsField,dependentField,independentField
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: localError
-    REAL(DP), POINTER :: dependentParameters(:),independentParameters(:),materialsParameters(:),materialsParameters1(:)
+    REAL(DP), POINTER :: dependentParameters(:),independentParameters(:),materialsParameters(:)
     REAL(DP) :: Q_BIF(4),A_BIF(4),A0_PARAM(4),E_PARAM(4),H0_PARAM(4),Beta(4),W(2,4),normalWave(2,4),rho
     INTEGER(INTG) :: numberOfVersions,local_ny,startColumn2
     INTEGER(INTG) :: derivativeIdx,versionIdx,rowIdx,columnIdx,columnIdx2,startRow,endRow,componentIdx
     LOGICAL :: updateJacobianMatrix,boundaryNode
 
-    CALL ENTERS("Characteristic_NodalJacobianEvaluate",err,error,*999)
+    ENTERS("Characteristic_NodalJacobianEvaluate",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -1254,11 +1256,11 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END SELECT
        
-    CALL EXITS("Characteristic_NodalJacobianEvaluate")
+    EXITS("Characteristic_NodalJacobianEvaluate")
     RETURN
-999 CALL ERRORS("Characteristic_NodalJacobianEvaluate",err,error)
-    CALL EXITS("Characteristic_NodalJacobianEvaluate")
+999 ERRORSEXITS("Characteristic_NodalJacobianEvaluate",err,error)
     RETURN 1
+    
   END SUBROUTINE Characteristic_NodalJacobianEvaluate
 
   !
@@ -1282,17 +1284,15 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER ::  dependentField,materialsField,independentField,geometricField
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping
-    TYPE(VARYING_STRING) :: localError
     REAL(DP) :: W(2,4),Q_EX(4),A_EX(4),XI(1),A0_PARAM(4),H0_PARAM(4),E_PARAM(4),Beta(4),normalWave(2,4),elementLengths(4)
     REAL(DP) :: A0_EX(4),H0_EX(4),E_EX(4),Beta_EX(4),f(4),l,friction
     REAL(DP) :: QPrevious,APrevious,rho,lambda(4)
-    REAL(DP) :: elementLength,extrapolationDistance,W1,W2,WPrevious(2,4)
+    REAL(DP) :: elementLength,extrapolationDistance
     INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,elementIdx,elementNumber,versionElementNumber(4),lineNumber
     INTEGER(INTG) :: elementNodeIdx,elementNodeNumber,elementNodeVersion,numberOfVersions,componentIdx,numberOfLocalNodes
     LOGICAL :: overExtrapolated
 
-
-    CALL ENTERS("Characteristic_Extrapolate",ERR,ERROR,*999)
+    ENTERS("Characteristic_Extrapolate",ERR,ERROR,*999)
 
     NULLIFY(dependentBasis)
     NULLIFY(materialsBasis)
@@ -1507,11 +1507,11 @@ CONTAINS
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("Characteristic_Extrapolate")
+    EXITS("Characteristic_Extrapolate")
     RETURN
-999 CALL ERRORS("Characteristic_Extrapolate",ERR,ERROR)
-    CALL EXITS("Characteristic_Extrapolate")
+999 ERRORSEXITS("Characteristic_Extrapolate",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE Characteristic_Extrapolate
 
   !
@@ -1535,7 +1535,7 @@ CONTAINS
     REAL(DP) :: normalWave,A0_PARAM,E_PARAM,H0_PARAM,Beta
     LOGICAL :: boundaryNode
 
-    CALL ENTERS("Characteristic_PrimitiveToCharacteristic",ERR,ERROR,*999)
+    ENTERS("Characteristic_PrimitiveToCharacteristic",ERR,ERROR,*999)
 
     NULLIFY(dependentField)
     NULLIFY(independentField)
@@ -1604,11 +1604,11 @@ CONTAINS
       ENDIF ! branch check
     ENDDO ! Loop over nodes
 
-    CALL EXITS("Characteristic_PrimitiveToCharacteristic")
+    EXITS("Characteristic_PrimitiveToCharacteristic")
     RETURN
-999 CALL ERRORS("Characteristic_PrimitiveToCharacteristic",ERR,ERROR)
-    CALL EXITS("Characteristic_PrimitiveToCharacteristic")
+999 ERRORSEXITS("Characteristic_PrimitiveToCharacteristic",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE Characteristic_PrimitiveToCharacteristic
 
   !

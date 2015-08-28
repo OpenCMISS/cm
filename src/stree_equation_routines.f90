@@ -78,6 +78,8 @@ MODULE Stree_EQUATION_ROUTINES
   USE TIMER
   USE TYPES
 
+#include "macros.h"  
+
   IMPLICIT NONE
 
   PRIVATE
@@ -105,7 +107,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: localError
     
-    CALL ENTERS("Stree_EquationsSet_SolutionMethodSet",err,error,*999)
+    ENTERS("Stree_EquationsSet_SolutionMethodSet",err,error,*999)
     
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
@@ -139,11 +141,11 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
        
-    CALL EXITS("Stree_EquationsSet_SolutionMethodSet")
+    EXITS("Stree_EquationsSet_SolutionMethodSet")
     RETURN
-999 CALL ERRORS("Stree_EquationsSet_SolutionMethodSet",err,error)
-    CALL EXITS("Stree_EquationsSet_SolutionMethodSet")
+999 ERRORSEXITS("Stree_EquationsSet_SolutionMethodSet",err,error)
     RETURN 1
+    
   END SUBROUTINE Stree_EquationsSet_SolutionMethodSet
 
 !
@@ -161,7 +163,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Stree_EquationsSet_SubtypeSet",err,error,*999)
+    ENTERS("Stree_EquationsSet_SubtypeSet",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSetSubtype)
@@ -178,11 +180,11 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("Stree_EquationsSet_SubtypeSet")
+    EXITS("Stree_EquationsSet_SubtypeSet")
     RETURN
-999 CALL ERRORS("Stree_EquationsSet_SubtypeSet",err,error)
-    CALL EXITS("Stree_EquationsSet_SubtypeSet")
+999 ERRORSEXITS("Stree_EquationsSet_SubtypeSet",err,error)
     RETURN 1
+    
   END SUBROUTINE Stree_EquationsSet_SubtypeSet
 
 !
@@ -205,12 +207,12 @@ CONTAINS
     TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: equationsMaterials
     TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: equationsEquationsSetField
     TYPE(FIELD_TYPE), POINTER :: equationsSetField
-    INTEGER(INTG) :: I,numberOfDimensions,componentIdx,geometricScalingType,geometricMeshComponent,geometricComponentNumber
+    INTEGER(INTG) :: I,geometricScalingType,geometricMeshComponent,geometricComponentNumber
     INTEGER(INTG) :: dependentFieldNumberOfVariables,dependentFieldNumberOfComponents
     INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsFieldNumberOfComponents
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Stree_EquationsSet_Setup",err,error,*999)
+    ENTERS("Stree_EquationsSet_Setup",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -625,11 +627,11 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("Stree_EquationsSet_Setup")
+    EXITS("Stree_EquationsSet_Setup")
     RETURN
-999 CALL ERRORS("Stree_EquationsSet_Setup",err,error)
-    CALL EXITS("Stree_EquationsSet_Setup")
+999 ERRORSEXITS("Stree_EquationsSet_Setup",err,error)
     RETURN 1
+    
   END SUBROUTINE Stree_EquationsSet_Setup
 
   !
@@ -658,7 +660,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: localError
     REAL(DP), POINTER :: dependentParameters(:),materialsParameters(:)
 
-    CALL ENTERS("STREE_FINITE_ELEMENT_CALCULATE",err,error,*999)
+    ENTERS("STREE_FINITE_ELEMENT_CALCULATE",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -711,11 +713,11 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END SELECT
 
-    CALL EXITS("STREE_FINITE_ELEMENT_CALCULATE")
+    EXITS("STREE_FINITE_ELEMENT_CALCULATE")
     RETURN
-999 CALL ERRORS("STREE_FINITE_ELEMENT_CALCULATE",err,error)
-    CALL EXITS("STREE_FINITE_ELEMENT_CALCULATE")
+999 ERRORSEXITS("STREE_FINITE_ELEMENT_CALCULATE",err,error)
     RETURN 1
+    
   END SUBROUTINE STREE_FINITE_ELEMENT_CALCULATE
 
   !
@@ -735,21 +737,20 @@ CONTAINS
     TYPE(CONTROL_LOOP_TYPE), POINTER :: controlLoop,parentLoop,navierstokesLoop
     TYPE(DOMAIN_NODES_TYPE), POINTER :: domainNodes
     TYPE(DOMAIN_TYPE), POINTER :: domain
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet,navierstokesEquationsSet
     TYPE(EQUATIONS_TYPE), POINTER :: equations,navierstokesEquations
-    TYPE(FIELD_TYPE), POINTER :: equationsSetField,materialsField,geometricField,navierstokesDependentField
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable,geometricVariable,dependentVariable,dependentFieldVariable
+    TYPE(FIELD_TYPE), POINTER :: materialsField,navierstokesDependentField
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: dependentFieldVariable
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations,navierstokesSolverEquations
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping,navierstokesSolverMapping
     TYPE(SOLVERS_TYPE), POINTER :: solvers
     TYPE(SOLVER_TYPE), POINTER :: navierstokesSolver
     TYPE(VARYING_STRING) :: localError
-    INTEGER(INTG) :: nodeNumber,variableIdx,BOUNDARY_CONDITION_CHECK_VARIABLE,nodeIdx,componentIdx,derivativeIdx,versionIdx
+    INTEGER(INTG) :: variableIdx,BOUNDARY_CONDITION_CHECK_VARIABLE,nodeIdx,componentIdx,derivativeIdx,versionIdx
     INTEGER(INTG) :: dependentDof,dependentVariableType,userNodeNumber,m
     REAL(DP) :: currentTime,timeIncrement,flow
 
-    CALL ENTERS("Stree_PRE_SOLVE",err,error,*999)
+    ENTERS("Stree_PRE_SOLVE",err,error,*999)
 
     ! Some preliminary sanity checks
     IF(ASSOCIATED(SOLVER)) THEN
@@ -864,11 +865,11 @@ CONTAINS
       ENDIF
     ENDDO !variableIdx
 
-    CALL EXITS("Stree_PRE_SOLVE")
+    EXITS("Stree_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("Stree_PRE_SOLVE",err,error)
-    CALL EXITS("Stree_PRE_SOLVE")
+999 ERRORSEXITS("Stree_PRE_SOLVE",err,error)
     RETURN 1
+    
   END SUBROUTINE Stree_PRE_SOLVE
 
   !

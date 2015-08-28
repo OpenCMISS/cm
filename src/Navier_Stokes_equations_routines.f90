@@ -80,6 +80,8 @@ MODULE NAVIER_STOKES_EQUATIONS_ROUTINES
   USE TIMER
   USE TYPES
 
+#include "macros.h"  
+
   IMPLICIT NONE
 
   PRIVATE
@@ -122,7 +124,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
@@ -167,13 +169,13 @@ CONTAINS
       END SELECT
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    END IF
-       
-    CALL EXITS("NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    ENDIF
+
+    EXITS("NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET")
+999 ERRORSEXITS("NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET
 
 !
@@ -191,7 +193,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET_SUBTYPE)
@@ -262,10 +264,9 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     END IF
 
-    CALL EXITS("NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET")
+    EXITS("NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET")
+999 ERRORSEXITS("NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_EQUATIONS_SET_SUBTYPE_SET
 
@@ -298,7 +299,7 @@ CONTAINS
     INTEGER(INTG) :: elementBasedComponents,nodeBasedComponents,constantBasedComponents
     INTEGER(INTG) :: EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES,EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS
 
-    CALL ENTERS("NAVIER_STOKES_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
     NULLIFY(EQUATIONS)
     NULLIFY(EQUATIONS_MAPPING)
@@ -2503,11 +2504,11 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
     END IF
 
-    CALL EXITS("NAVIER_STOKES_EQUATIONS_SET_SETUP")
+    EXITS("NAVIER_STOKES_EQUATIONS_SET_SETUP")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_EQUATIONS_SET_SETUP",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_EQUATIONS_SET_SETUP")
+999 ERRORSEXITS("NAVIER_STOKES_EQUATIONS_SET_SETUP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE NAVIER_STOKES_EQUATIONS_SET_SETUP
 
   !
@@ -2538,9 +2539,9 @@ CONTAINS
     INTEGER(INTG) :: solver_matrix_idx,iteration
     REAL(DP) :: timeIncrement,currentTime
 
-    CALL ENTERS("NAVIER_STOKES_PRE_SOLVE",ERR,ERROR,*999)
-
     NULLIFY(SOLVER2)
+    
+    ENTERS("NAVIER_STOKES_PRE_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
@@ -2805,11 +2806,11 @@ CONTAINS
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     END IF
 
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE")
+    EXITS("NAVIER_STOKES_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE")
+999 ERRORSEXITS("NAVIER_STOKES_PRE_SOLVE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE NAVIER_STOKES_PRE_SOLVE
 
 ! 
@@ -2827,7 +2828,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("NAVIER_STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM_SUBTYPE)
@@ -2898,10 +2899,9 @@ CONTAINS
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
     END IF
 
-    CALL EXITS("NAVIER_STOKES_PROBLEM_SUBTYPE_SET")
+    EXITS("NAVIER_STOKES_PROBLEM_SUBTYPE_SET")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_PROBLEM_SUBTYPE_SET")
+999 ERRORSEXITS("NAVIER_STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_PROBLEM_SUBTYPE_SET
 
@@ -2926,7 +2926,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER, MESH_SOLVER,BIF_SOLVER,cellmlSolver
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("NAVIER_STOKES_PROBLEM_SETUP",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_PROBLEM_SETUP",ERR,ERROR,*999)
 
     NULLIFY(BIF_SOLVER)
     NULLIFY(BIF_SOLVER_EQUATIONS)
@@ -4390,10 +4390,9 @@ CONTAINS
       CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
     END IF
 
-    CALL EXITS("NAVIER_STOKES_PROBLEM_SETUP")
+    EXITS("NAVIER_STOKES_PROBLEM_SETUP")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_PROBLEM_SETUP",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_PROBLEM_SETUP")
+999 ERRORSEXITS("NAVIER_STOKES_PROBLEM_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_PROBLEM_SETUP
 
@@ -4414,7 +4413,6 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: EQUATIONS_EQUATIONS_SET_FIELD
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
@@ -4425,7 +4423,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     TYPE(EQUATIONS_MATRICES_RHS_TYPE), POINTER :: RHS_VECTOR
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX,DAMPING_MATRIX
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD,EQUATIONS_SET_FIELD_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
     INTEGER(INTG) :: ng,mh,mhs,mi,ms,nh,nhs,ni,ns,nhs_max,mhs_max,nhs_min,mhs_min,xv,out
@@ -4439,7 +4437,7 @@ CONTAINS
     LOGICAL :: UPDATE_STIFFNESS_MATRIX,UPDATE_DAMPING_MATRIX,UPDATE_RHS_VECTOR,UPDATE_NONLINEAR_RESIDUAL
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
 
     UPDATE_STIFFNESS_MATRIX=.FALSE.
     UPDATE_DAMPING_MATRIX=.FALSE.
@@ -5315,13 +5313,13 @@ CONTAINS
       END IF
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    END IF
-    
-    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+    ENDIF
+
+    EXITS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+999 ERRORSEXITS("NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE
 
   !
@@ -5341,7 +5339,6 @@ CONTAINS
     TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: ELEMENTS_TOPOLOGY
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE), POINTER :: EQUATIONS_EQUATIONS_SET_FIELD
     TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
     TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
     TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: DYNAMIC_MAPPING
@@ -5352,7 +5349,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
     TYPE(EQUATIONS_JACOBIAN_TYPE), POINTER :: JACOBIAN_MATRIX
     TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: STIFFNESS_MATRIX 
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD,EQUATIONS_SET_FIELD_FIELD
+    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,GEOMETRIC_FIELD,MATERIALS_FIELD,INDEPENDENT_FIELD
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
     TYPE(VARYING_STRING) :: LOCAL_ERROR
@@ -5365,8 +5362,8 @@ CONTAINS
     REAL(DP) :: MU_PARAM,RHO_PARAM,A0_PARAM,A0_DERIV,E_PARAM,E_DERIV,H_PARAM,H_DERIV,mass,momentum1,momentum2,muScale
     LOGICAL  :: UPDATE_JACOBIAN_MATRIX
 
-    CALL ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
-     
+    ENTERS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
+
     DXI_DX=0.0_DP
     UPDATE_JACOBIAN_MATRIX=.FALSE.
 
@@ -5852,13 +5849,13 @@ CONTAINS
       END IF
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    END IF
-       
-    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    ENDIF
+
+    EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+999 ERRORSEXITS("NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE
 
   !
@@ -5882,7 +5879,7 @@ CONTAINS
     INTEGER(INTG) :: iteration,timestep,outputIteration,equationsSetNumber
     REAL(DP) :: startTime,stopTime,currentTime,timeIncrement
 
-    CALL ENTERS("NAVIER_STOKES_POST_SOLVE",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_POST_SOLVE",ERR,ERROR,*999)
     NULLIFY(SOLVER2)
     NULLIFY(SOLVERS)
     NULLIFY(dependentField)
@@ -6145,10 +6142,9 @@ CONTAINS
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
     END IF
 
-    CALL EXITS("NAVIER_STOKES_POST_SOLVE")
+    EXITS("NAVIER_STOKES_POST_SOLVE")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_POST_SOLVE")
+999 ERRORSEXITS("NAVIER_STOKES_POST_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_POST_SOLVE
 
@@ -6232,7 +6228,7 @@ CONTAINS
     NULLIFY(independentParameters)
     NULLIFY(dependentParameters)
 
-    CALL ENTERS("NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
@@ -7652,10 +7648,9 @@ CONTAINS
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
     END IF
 
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
+    EXITS("NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
+999 ERRORSEXITS("NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR)
     RETURN 1
   END SUBROUTINE NAVIER_STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS
 
@@ -7691,7 +7686,7 @@ CONTAINS
     REAL(DP), POINTER :: MESH_DISPLACEMENT_VALUES(:)
     LOGICAL :: ALENavierStokesEquationsSetFound=.FALSE.
 
-    CALL ENTERS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
@@ -8085,12 +8080,13 @@ CONTAINS
       END IF
     ELSE
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    END IF
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH")
+    ENDIF
+    
+    EXITS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH")
+999 ERRORSEXITS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_MESH
 
   !
@@ -8119,7 +8115,7 @@ CONTAINS
     REAL(DP) :: CURRENT_TIME,TIME_INCREMENT
     REAL(DP), POINTER :: MESH_STIFF_VALUES(:)
 
-    CALL ENTERS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
@@ -8301,12 +8297,13 @@ CONTAINS
       END IF
     ELSE
       CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
-    END IF
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS")
+    ENDIF
+    
+    EXITS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS")
+999 ERRORSEXITS("NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE NAVIER_STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS
 
   !
@@ -8337,7 +8334,7 @@ CONTAINS
 
     NULLIFY(Fields) 
 
-    CALL ENTERS("NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
@@ -8532,12 +8529,13 @@ CONTAINS
       END IF
     ELSE
       CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
-    END IF
-    CALL EXITS("NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA")
+    ENDIF
+    
+    EXITS("NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA")
+999 ERRORSEXITS("NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE NAVIER_STOKES_POST_SOLVE_OUTPUT_DATA
 
   !
@@ -8568,7 +8566,7 @@ CONTAINS
     REAL(DP) :: TIME,VALUE,X(3),xiCoordinates(3),initialValue,T_COORDINATES(20,3),nodeAnalyticParameters(10)
     REAL(DP), POINTER :: analyticParameters(:),geometricParameters(:),materialsParameters(:)
 
-    CALL ENTERS("NavierStokes_AnalyticCalculate",err,error,*999)
+    ENTERS("NavierStokes_AnalyticCalculate",err,error,*999)
 
     boundaryCount=0
     xiCoordinates(3)=0.0_DP
@@ -9033,10 +9031,9 @@ CONTAINS
       CALL FLAG_ERROR("Boundary conditions is not associated.",err,error,*999)
     END IF
 
-    CALL EXITS("NavierStokes_AnalyticCalculate")
+    EXITS("NavierStokes_AnalyticCalculate")
     RETURN
-999 CALL ERRORS("NavierStokes_AnalyticCalculate",err,error)
-    CALL EXITS("NavierStokes_AnalyticCalculate")
+999 ERRORSEXITS("NavierStokes_AnalyticCalculate",err,error)
     RETURN 1    
   END SUBROUTINE NavierStokes_AnalyticCalculate
 
@@ -9068,968 +9065,969 @@ CONTAINS
     REAL(DP) :: componentCoeff(4),delta(300),t(300),q(300)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
+    ENTERS("NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
 
-!\todo: Introduce user-defined or default values instead for density and viscosity
-     INTERNAL_TIME=TIME
-     CURRENT_TIME=TIME
+    !\todo: Introduce user-defined or default values instead for density and viscosity
+    INTERNAL_TIME=TIME
+    CURRENT_TIME=TIME
 
-     SELECT CASE(ANALYTIC_FUNCTION_TYPE)
-
-     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE)
-       !For fully developed 2D laminar flow through a channel, NSE should yield a parabolic profile, 
-       !U = Umax(1-y^2/H^2), Umax = (-dP/dx)*(H^2/(2*MU)), Umax = (3/2)*Umean
-       !Note: assumes a flat inlet profile (U_PARAM = Umean).
-       !Nonlinear terms from NSE will effectively be 0 for Poiseuille flow 
-       IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-         MU_PARAM = MATERIALS_PARAMETERS(1)
-         RHO_PARAM = MATERIALS_PARAMETERS(2)
-         SELECT CASE(VARIABLE_TYPE)
-         CASE(FIELD_U_VARIABLE_TYPE)
-           L_PARAM = ANALYTIC_PARAMETERS(1) ! channel length in x-direction
-           H_PARAM = ANALYTIC_PARAMETERS(2) ! channel height in y-direction
-           U_PARAM = ANALYTIC_PARAMETERS(3) ! mean (inlet) velocity
-           P_PARAM = ANALYTIC_PARAMETERS(4) ! pressure value at outlet 
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE(NO_GLOBAL_DERIV)
-             IF(componentNumber==1) THEN
-               !calculate u
-               VALUE=(3.0_DP/2.0_DP)*U_PARAM*(1.0_DP-((X(2)-H_PARAM)**2)/(H_PARAM**2))
-             ELSE IF(componentNumber==2) THEN
-               !calculate v
-               VALUE=0.0_DP
-             ELSE IF(componentNumber==3) THEN
-               !calculate p
-               VALUE = (3.0_DP*MU_PARAM*U_PARAM*(X(1)-L_PARAM))/(H_PARAM**2)+P_PARAM
-             ELSE
-               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-             END IF
-           CASE(GLOBAL_DERIV_S1)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE(GLOBAL_DERIV_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE(GLOBAL_DERIV_S1_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-               & " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE( NO_GLOBAL_DERIV)
-             VALUE= 0.0_DP
-           CASE(GLOBAL_DERIV_S1)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE(GLOBAL_DERIV_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-           CASE(GLOBAL_DERIV_S1_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-               & " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE DEFAULT
-           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-             & " is invalid."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END SELECT      
-       ELSE 
-         LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-       END IF
-
-     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN)
-       !Exact solution to 2D laminar, dynamic, nonlinear Taylor-Green vortex decay  
-       IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-         MU_PARAM = MATERIALS_PARAMETERS(1)
-         RHO_PARAM = MATERIALS_PARAMETERS(2)
-         NU_PARAM = MU_PARAM/RHO_PARAM ! kinematic viscosity
-         SELECT CASE(VARIABLE_TYPE)
-         CASE(FIELD_U_VARIABLE_TYPE)
-           U_PARAM = ANALYTIC_PARAMETERS(1) ! characteristic velocity (initial amplitude)
-           L_PARAM = ANALYTIC_PARAMETERS(2) ! length scale for square
-           K_PARAM = 2.0_DP*PI/L_PARAM   ! scale factor for equations
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE(NO_GLOBAL_DERIV)
-             IF(componentNumber==1) THEN
-               !calculate u
-               VALUE=-1.0_DP*U_PARAM*COS(K_PARAM*X(1))*SIN(K_PARAM*X(2))*EXP(-2.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME)
-             ELSE IF(componentNumber==2) THEN
-               !calculate v
-               VALUE=U_PARAM*SIN(K_PARAM*X(1))*COS(K_PARAM*X(2))*EXP(-2.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME)
-             ELSE IF(componentNumber==3) THEN
-               !calculate p
-               VALUE =-1.0_DP*(U_PARAM**2)*(RHO_PARAM/4.0_DP)*(COS(2.0_DP*K_PARAM*X(1))+ &
-                 & COS(2.0_DP*K_PARAM*X(2)))*(EXP(-4.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME))
-             ELSE
-               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-             END IF
-           CASE(GLOBAL_DERIV_S1)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE(GLOBAL_DERIV_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE(GLOBAL_DERIV_S1_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-               & " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE( NO_GLOBAL_DERIV)
-             VALUE= 0.0_DP
-           CASE(GLOBAL_DERIV_S1)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE(GLOBAL_DERIV_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-           CASE(GLOBAL_DERIV_S1_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-               & " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE DEFAULT
-           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-             & " is invalid."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END SELECT      
-       ELSE 
-         LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-       END IF
-
-     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_AORTA)
-       SELECT CASE(NUMBER_OF_DIMENSIONS)
-       CASE(1)
-         SELECT CASE(VARIABLE_TYPE)
-         CASE(FIELD_U_VARIABLE_TYPE)
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE(NO_GLOBAL_DERIV)
-             IF(componentNumber==1) THEN
-               !Input function
-               period = 800
-               tt=MOD(TIME,period)
-               tmax=150.0_DP
-               Qo=100000.0_DP
-               VALUE=(Qo*tt/(tmax**2.0_DP))*EXP(-(tt**2.0_DP)/(2.0_DP*(tmax**2.0_DP)))
-             ELSE
-               CALL FLAG_ERROR("Incorrect component specification for Aorta flow rate waveform ",ERR,ERROR,*999)
-             END IF
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE(NO_GLOBAL_DERIV)
-             VALUE= 0.0_DP
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE(FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE)
-           ! Do nothing
-         CASE DEFAULT
-           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-             & " is invalid."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END SELECT
-       CASE DEFAULT
-         LOCAL_ERROR="Aorta flowrate waveform for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
-           & " dimension problem has not yet been implemented."
-         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-       END SELECT
-
-     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_OLUFSEN)
-       SELECT CASE(NUMBER_OF_DIMENSIONS)
-       CASE(1)
-         SELECT CASE(VARIABLE_TYPE)
-         CASE(FIELD_U_VARIABLE_TYPE)
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE(NO_GLOBAL_DERIV)
-             IF(componentNumber==1) THEN
-               !Olufsen Aorta
-               t(1)= 0.0011660 ; q(1)= 17.39051
-               t(2)= 0.0215840 ; q(2)= 10.41978
-               t(3)= 0.0340860 ; q(3)= 18.75892
-               t(4)= 0.0731370 ; q(4)= 266.3842
-               t(5)= 0.0857710 ; q(5)= 346.3755
-               t(6)= 0.1029220 ; q(6)= 413.8419
-               t(7)= 0.1154270 ; q(7)= 424.2680
-               t(8)= 0.1483530 ; q(8)= 429.1147
-               t(9)= 0.1698860 ; q(9)= 411.0127
-               t(10)= 0.220794 ; q(10)= 319.151
-               t(11)= 0.264856 ; q(11)= 207.816
-               t(12)= 0.295415 ; q(12)= 160.490
-               t(13)= 0.325895 ; q(13)= 70.0342
-               t(14)= 0.346215 ; q(14)= 10.1939
-               t(15)= 0.363213 ; q(15)= -5.1222
-               t(16)= 0.383666 ; q(16)= 6.68963
-               t(17)= 0.405265 ; q(17)= 24.0659
-               t(18)= 0.427988 ; q(18)= 35.8762
-               t(19)= 0.455272 ; q(19)= 58.8137
-               t(20)= 0.477990 ; q(20)= 67.8414
-               t(21)= 0.502943 ; q(21)= 57.3893
-               t(22)= 0.535816 ; q(22)= 33.7142
-               t(23)= 0.577789 ; q(23)= 20.4676
-               t(24)= 0.602753 ; q(24)= 16.2763
-               t(25)= 0.639087 ; q(25)= 22.5119
-               t(26)= 0.727616 ; q(26)= 18.9721
-               t(27)= 0.783235 ; q(27)= 18.9334
-               t(28)= 0.800000 ; q(28)= 16.1121
-
-               !Initialize variables
-               period = 800
-               m=1
-               n=28
-               !Compute derivation
-               DO i=1,n-1
-                 delta(i)=(q(i+1)-q(i))/(t(i+1)-t(i))
-               END DO
-               delta(n)=delta(n-1)+(delta(n-1)-delta(n-2))/(t(n-1)-t(n-2))*(t(n)-t(n-1))
-               !Find subinterval
-               DO j=1,n-1
-                 IF(t(j) <= (TIME/period)) THEN
-                   m=j
-                 END IF
-               END DO
-               !Evaluate interpolant
-               s=(TIME/period)-t(m)
-               VALUE=(q(m)+s*delta(m))
-             ELSE
-               CALL FLAG_ERROR("Incorrect component specification for Olufsen flow rate waveform ",ERR,ERROR,*999)
-             END IF
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE(NO_GLOBAL_DERIV)
-             VALUE= 0.0_DP
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE(FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE)
-           ! Do nothing
-         CASE DEFAULT
-           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-             & " is invalid."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END SELECT
-       CASE DEFAULT
-         LOCAL_ERROR="Olufsen flowrate waveform for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
-           & " dimension problem has not yet been implemented."
-         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-       END SELECT
-
-     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID)
-       ! Returns a sinusoidal value for boundary nodes
-       SELECT CASE(NUMBER_OF_DIMENSIONS)
-       CASE(2,3)
-         componentCoeff(1) = ANALYTIC_PARAMETERS(1) 
-         componentCoeff(2) = ANALYTIC_PARAMETERS(2) 
-         componentCoeff(3) = ANALYTIC_PARAMETERS(3) 
-         componentCoeff(4) = ANALYTIC_PARAMETERS(4) 
-         amplitude = ANALYTIC_PARAMETERS(5) 
-         yOffset = ANALYTIC_PARAMETERS(6) 
-         frequency = ANALYTIC_PARAMETERS(7) 
-         phaseShift = ANALYTIC_PARAMETERS(8) 
-         startTime = ANALYTIC_PARAMETERS(9) 
-         stopTime = ANALYTIC_PARAMETERS(10) 
-         SELECT CASE(VARIABLE_TYPE)
-         CASE(FIELD_U_VARIABLE_TYPE)
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE(NO_GLOBAL_DERIV)
-             IF(CURRENT_TIME > startTime - ZERO_TOLERANCE .AND. &
-               &  CURRENT_TIME < stopTime + ZERO_TOLERANCE) THEN
-               VALUE= componentCoeff(componentNumber)*(yOffset + amplitude*SIN(frequency*CURRENT_TIME+phaseShift))
-             ELSE
-               VALUE= componentCoeff(componentNumber)*(yOffset + amplitude*SIN(frequency*stopTime+phaseShift))
-             END IF
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE(NO_GLOBAL_DERIV)
-             VALUE= 0.0_DP
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE DEFAULT
-           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-             & " is invalid."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END SELECT
-       CASE DEFAULT
-         LOCAL_ERROR="Sinusoidal analytic types for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
-           & " dimensional problems have not yet been implemented."
-         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-       END SELECT
-
-     CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
-       IF(NUMBER_OF_DIMENSIONS==1.AND.NUMBER_OF_COMPONENTS==3) THEN
-         !Polynomial function
-         SELECT CASE(VARIABLE_TYPE)
-         CASE(FIELD_U_VARIABLE_TYPE)
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE(NO_GLOBAL_DERIV)
-             IF(componentNumber==1) THEN
-               !calculate Q
-               VALUE=X(1)**2/10.0_DP**2
-             ELSE IF(componentNumber==2) THEN
-               !calculate A
-               VALUE=X(1)**2/10.0_DP**2
-             ELSE IF(componentNumber==3) THEN
-               !calculate P
-               VALUE=X(1)**2/10.0_DP**2
-             ELSE
-               CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-             END IF
-           CASE(GLOBAL_DERIV_S1)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE(GLOBAL_DERIV_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE(GLOBAL_DERIV_S1_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
-           SELECT CASE(GLOBAL_DERIV_INDEX)
-           CASE(NO_GLOBAL_DERIV)
-             VALUE= 0.0_DP
-           CASE(GLOBAL_DERIV_S1)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE(GLOBAL_DERIV_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-           CASE(GLOBAL_DERIV_S1_S2)
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-           CASE DEFAULT
-             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-               & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-               & " is invalid."
-             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT
-         CASE DEFAULT
-           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-             & " is invalid."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END SELECT      
-       ELSE 
-         LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-       END IF
-
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
-         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-           !Polynomial function
-           MU_PARAM = MATERIALS_PARAMETERS(1)
-           RHO_PARAM = MATERIALS_PARAMETERS(2)
-           SELECT CASE(VARIABLE_TYPE)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE=X(2)**2/10.0_DP**2
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE=X(1)**2/10.0_DP**2
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate p
-                     VALUE=2.0_DP/3.0_DP*X(1)*(3.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(1)**2*X(2))/(10.0_DP ** 4)
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   VALUE= 0.0_DP
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END IF
-
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2)
-         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-           !Exponential function
-           MU_PARAM = MATERIALS_PARAMETERS(1)
-           RHO_PARAM = MATERIALS_PARAMETERS(2)
-           SELECT CASE(VARIABLE_TYPE)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE= EXP((X(1)-X(2))/10.0_DP)
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE= EXP((X(1)-X(2))/10.0_DP)
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate p
-                     VALUE= 2.0_DP*MU_PARAM/10.0_DP*EXP((X(1)-X(2))/10.0_DP)
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE= 0.0_DP
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE= 0.0_DP
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate p
-                     VALUE= 0.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END IF
-
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3)
-         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-           !Sine and cosine function
-           MU_PARAM = MATERIALS_PARAMETERS(1)
-           RHO_PARAM = MATERIALS_PARAMETERS(2)
-           SELECT CASE(VARIABLE_TYPE)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE=SIN(2.0_DP*PI*X(1)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE=COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(2)/10.0_DP)
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate p
-                     VALUE=4.0_DP*MU_PARAM*PI/10.0_DP*SIN(2.0_DP*PI*X(2)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)+ &
-                       & 0.5_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_index,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE=0.0_DP
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE=16.0_DP*MU_PARAM*PI**2/10.0_DP**2*cos(2.0_DP*PI*X(2)/ 10.0_DP)*cos(2.0_DP*PI*X(1)/10.0_DP)
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate p
-                     VALUE=0.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END IF
-
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4,EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5)
-         IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
-           !Taylor-Green vortex solution
-           MU_PARAM = MATERIALS_PARAMETERS(1)
-           RHO_PARAM = MATERIALS_PARAMETERS(2)
-           SELECT CASE(VARIABLE_TYPE)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE=SIN(X(1)/10.0_DP*2.0_DP*PI)*COS(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-                     VALUE=SIN(X(1)/10.0_DP*PI)*COS(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-!                      VALUE=SIN(X(1))*COS(X(2))
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE=-COS(X(1)/10.0_DP*2.0_DP*PI)*SIN(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-                     VALUE=-COS(X(1)/10.0_DP*PI)*SIN(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-!                      VALUE=-COS(X(1))*SIN(X(2))
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate p
-                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*2.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*2.0_DP*PI))* &
-                       & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
-                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*PI))* &
-                       & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
-!                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE=0.0_DP
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE=0.0_DP         
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate p
-                     VALUE=0.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END IF
-
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1)
-         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
-           !Polynomial function
-           MU_PARAM = MATERIALS_PARAMETERS(1)
-           RHO_PARAM = MATERIALS_PARAMETERS(2)
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE=X(2)**2/10.0_DP**2+X(3)**2/10.0_DP**2
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE=X(1)**2/10.0_DP**2+X(3)**2/10.0_DP** 2
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate w
-                     VALUE=X(1)**2/10.0_DP**2+X(2)**2/10.0_DP** 2
-                   ELSE IF(componentNumber==4) THEN
-                     !calculate p
-                     VALUE=2.0_DP/3.0_DP*X(1)*(6.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(2)*X(1)**2-3.0_DP* & 
-                       & RHO_PARAM*X(2)* &
-                       & X(3)**2-RHO_PARAM*X(3)*X(1)**2-3.0_DP*RHO_PARAM*X(3)*X(2)**2)/(10.0_DP**4)
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT   
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   VALUE=0.0_DP
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              CASE DEFAULT
-                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                  & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END IF
-
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2)
-         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
-           !Exponential function
-           MU_PARAM = MATERIALS_PARAMETERS(1)
-           RHO_PARAM = MATERIALS_PARAMETERS(2)
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(3)-X(1))/10.0_DP)
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate w
-                     VALUE=EXP((X(3)-X(1))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
-                   ELSE IF(componentNumber==4) THEN
-                     !calculate p
-                     VALUE=1.0_DP/10.0_DP*(2.0_DP*MU_PARAM*EXP((X(1)-X(2))/10.0_DP)- & 
-                       & 2.0_DP*MU_PARAM*EXP((X(3)-X(1))/10.0_DP)+RHO_PARAM*10.0_DP*EXP((X(1)-X(3))/10.0_DP)+ & 
-                       & RHO_PARAM*10.0_DP*EXP((X(2)-X(1))/10.0_DP))
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT   
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE=0.0_DP
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE=-2.0_DP*MU_PARAM*(2.0_DP*EXP(X(1)-X(2))+EXP(X(2)-X(3)))
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate w
-                     VALUE=-2.0_DP*MU_PARAM*(2.0_DP*EXP(X(3)-X(1))+EXP(X(2)-X(3)))
-                   ELSE IF(componentNumber==4) THEN
-                     !calculate p
-                     VALUE=0.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END IF
-
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3)
-         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
-           !Sine/cosine function
-           MU_PARAM = MATERIALS_PARAMETERS(1)
-           RHO_PARAM = MATERIALS_PARAMETERS(2)
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE=sin(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE=2.0_DP*cos(2.0_DP*PI*x(1)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)*cos(2.0_DP*PI*X(2)/10.0_DP)
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate w
-                     VALUE=-cos(2.0_DP*PI*X(1)/10.0_DP)*sin(2.0_DP*PI*X(2)/10.0_DP)*cos(2.0_DP*PI*X(3)/10.0_DP)
-                   ELSE IF(componentNumber==4) THEN
-                     !calculate p
-                     VALUE=-COS(2.0_DP*PI*X(1)/10.0_DP)*(-12.0_DP*MU_PARAM*PI*SIN(2.0_DP*PI*X(2)/10.0_DP)* & 
-                       & SIN(2.0_DP*PI*X(3)/10.0_DP)-RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP+ &
-                       & 2.0_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP*COS(2.0_DP*PI*X(3)/10.0_DP)**2- &
-                       & RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP*COS(2.0_DP*PI*X(2)/10.0_DP)**2)/10.0_DP/2.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT   
-              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-                SELECT CASE(GLOBAL_DERIV_INDEX)
-                  CASE(NO_GLOBAL_DERIV)
-                    IF(componentNumber==1) THEN
-                      !calculate u
-                      VALUE=0.0_DP
-                    ELSE IF(componentNumber==2) THEN
-                      !calculate v
-                      VALUE=36*MU_PARAM*PI**2/10.0_DP**2*cos(2.0_DP*PI*X(2)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)* & 
-                        & cos(2.0_DP*PI*X(1)/10.0_DP)
-                    ELSE IF(componentNumber==3) THEN
-                      !calculate w
-                      VALUE=0.0_DP
-                    ELSE IF(componentNumber==4) THEN
-                      !calculate p
-                      VALUE=0.0_DP
-                    ELSE
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                    END IF
-                  CASE(GLOBAL_DERIV_S1)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                  CASE(GLOBAL_DERIV_S2)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                  CASE(GLOBAL_DERIV_S1_S2)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                  CASE DEFAULT
-                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                      & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                END SELECT
-              CASE DEFAULT
-                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                  & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-            END SELECT      
-          ELSE 
-            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+    SELECT CASE(ANALYTIC_FUNCTION_TYPE)
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_POISEUILLE)
+      !For fully developed 2D laminar flow through a channel, NSE should yield a parabolic profile, 
+      !U = Umax(1-y^2/H^2), Umax = (-dP/dx)*(H^2/(2*MU)), Umax = (3/2)*Umean
+      !Note: assumes a flat inlet profile (U_PARAM = Umean).
+      !Nonlinear terms from NSE will effectively be 0 for Poiseuille flow 
+      IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
+        MU_PARAM = MATERIALS_PARAMETERS(1)
+        RHO_PARAM = MATERIALS_PARAMETERS(2)
+        SELECT CASE(VARIABLE_TYPE)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          L_PARAM = ANALYTIC_PARAMETERS(1) ! channel length in x-direction
+          H_PARAM = ANALYTIC_PARAMETERS(2) ! channel height in y-direction
+          U_PARAM = ANALYTIC_PARAMETERS(3) ! mean (inlet) velocity
+          P_PARAM = ANALYTIC_PARAMETERS(4) ! pressure value at outlet 
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=(3.0_DP/2.0_DP)*U_PARAM*(1.0_DP-((X(2)-H_PARAM)**2)/(H_PARAM**2))
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=0.0_DP
+            ELSE IF(componentNumber==3) THEN
+              !calculate p
+              VALUE = (3.0_DP*MU_PARAM*U_PARAM*(X(1)-L_PARAM))/(H_PARAM**2)+P_PARAM
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-          END IF
-
-       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4,EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5)
-         IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
-           !Taylor-Green vortex solution
-           MU_PARAM = MATERIALS_PARAMETERS(1)
-           RHO_PARAM = MATERIALS_PARAMETERS(2)
-           SELECT CASE(variable_type)
-             CASE(FIELD_U_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE=SIN(X(1)/10.0_DP*PI)*COS(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE=-COS(X(1)/10.0_DP*PI)*SIN(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate v
-                     VALUE=0.0_DP
-!                      VALUE=-COS(X(1))*SIN(X(2))
-                   ELSE IF(componentNumber==4) THEN
-                     !calculate p
-                     VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*PI))* &
-                       & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
-!                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE(FIELD_DELUDELN_VARIABLE_TYPE)
-               SELECT CASE(GLOBAL_DERIV_INDEX)
-                 CASE(NO_GLOBAL_DERIV)
-                   IF(componentNumber==1) THEN
-                     !calculate u
-                     VALUE=0.0_DP
-                   ELSE IF(componentNumber==2) THEN
-                     !calculate v
-                     VALUE=0.0_DP         
-                   ELSE IF(componentNumber==3) THEN
-                     !calculate p
-                     VALUE=0.0_DP
-                   ELSE IF(componentNumber==4) THEN
-                     !calculate p
-                     VALUE=0.0_DP
-                   ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                   END IF
-                 CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
-                 CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-                 CASE DEFAULT
-                   LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
-                     & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
-                     & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-               END SELECT
-             CASE DEFAULT
-               LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
-                 & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-           END SELECT      
-         ELSE 
-           LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-         END IF
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE( NO_GLOBAL_DERIV)
+            VALUE= 0.0_DP
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
         CASE DEFAULT
-          LOCAL_ERROR="The analytic function type of "// &
-            & TRIM(NUMBER_TO_VSTRING(ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
             & " is invalid."
           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE 
+        LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_TAYLOR_GREEN)
+      !Exact solution to 2D laminar, dynamic, nonlinear Taylor-Green vortex decay  
+      IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
+        MU_PARAM = MATERIALS_PARAMETERS(1)
+        RHO_PARAM = MATERIALS_PARAMETERS(2)
+        NU_PARAM = MU_PARAM/RHO_PARAM ! kinematic viscosity
+        SELECT CASE(VARIABLE_TYPE)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          U_PARAM = ANALYTIC_PARAMETERS(1) ! characteristic velocity (initial amplitude)
+          L_PARAM = ANALYTIC_PARAMETERS(2) ! length scale for square
+          K_PARAM = 2.0_DP*PI/L_PARAM   ! scale factor for equations
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=-1.0_DP*U_PARAM*COS(K_PARAM*X(1))*SIN(K_PARAM*X(2))*EXP(-2.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME)
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=U_PARAM*SIN(K_PARAM*X(1))*COS(K_PARAM*X(2))*EXP(-2.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME)
+            ELSE IF(componentNumber==3) THEN
+              !calculate p
+              VALUE =-1.0_DP*(U_PARAM**2)*(RHO_PARAM/4.0_DP)*(COS(2.0_DP*K_PARAM*X(1))+ &
+                & COS(2.0_DP*K_PARAM*X(2)))*(EXP(-4.0_DP*(K_PARAM**2)*NU_PARAM*CURRENT_TIME))
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE( NO_GLOBAL_DERIV)
+            VALUE= 0.0_DP
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE 
+        LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_AORTA)
+      SELECT CASE(NUMBER_OF_DIMENSIONS)
+      CASE(1)
+        SELECT CASE(VARIABLE_TYPE)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !Input function
+              period = 800
+              tt=MOD(TIME,period)
+              tmax=150.0_DP
+              Qo=100000.0_DP
+              VALUE=(Qo*tt/(tmax**2.0_DP))*EXP(-(tt**2.0_DP)/(2.0_DP*(tmax**2.0_DP)))
+            ELSE
+              CALL FLAG_ERROR("Incorrect component specification for Aorta flow rate waveform ",ERR,ERROR,*999)
+            END IF
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            VALUE= 0.0_DP
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE)
+          ! Do nothing
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      CASE DEFAULT
+        LOCAL_ERROR="Aorta flowrate waveform for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+          & " dimension problem has not yet been implemented."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
-    CALL EXITS("NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE")
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_FLOWRATE_OLUFSEN)
+      SELECT CASE(NUMBER_OF_DIMENSIONS)
+      CASE(1)
+        SELECT CASE(VARIABLE_TYPE)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !Olufsen Aorta
+              t(1)= 0.0011660 ; q(1)= 17.39051
+              t(2)= 0.0215840 ; q(2)= 10.41978
+              t(3)= 0.0340860 ; q(3)= 18.75892
+              t(4)= 0.0731370 ; q(4)= 266.3842
+              t(5)= 0.0857710 ; q(5)= 346.3755
+              t(6)= 0.1029220 ; q(6)= 413.8419
+              t(7)= 0.1154270 ; q(7)= 424.2680
+              t(8)= 0.1483530 ; q(8)= 429.1147
+              t(9)= 0.1698860 ; q(9)= 411.0127
+              t(10)= 0.220794 ; q(10)= 319.151
+              t(11)= 0.264856 ; q(11)= 207.816
+              t(12)= 0.295415 ; q(12)= 160.490
+              t(13)= 0.325895 ; q(13)= 70.0342
+              t(14)= 0.346215 ; q(14)= 10.1939
+              t(15)= 0.363213 ; q(15)= -5.1222
+              t(16)= 0.383666 ; q(16)= 6.68963
+              t(17)= 0.405265 ; q(17)= 24.0659
+              t(18)= 0.427988 ; q(18)= 35.8762
+              t(19)= 0.455272 ; q(19)= 58.8137
+              t(20)= 0.477990 ; q(20)= 67.8414
+              t(21)= 0.502943 ; q(21)= 57.3893
+              t(22)= 0.535816 ; q(22)= 33.7142
+              t(23)= 0.577789 ; q(23)= 20.4676
+              t(24)= 0.602753 ; q(24)= 16.2763
+              t(25)= 0.639087 ; q(25)= 22.5119
+              t(26)= 0.727616 ; q(26)= 18.9721
+              t(27)= 0.783235 ; q(27)= 18.9334
+              t(28)= 0.800000 ; q(28)= 16.1121
+              
+              !Initialize variables
+              period = 800
+              m=1
+              n=28
+              !Compute derivation
+              DO i=1,n-1
+                delta(i)=(q(i+1)-q(i))/(t(i+1)-t(i))
+              END DO
+              delta(n)=delta(n-1)+(delta(n-1)-delta(n-2))/(t(n-1)-t(n-2))*(t(n)-t(n-1))
+              !Find subinterval
+              DO j=1,n-1
+                IF(t(j) <= (TIME/period)) THEN
+                  m=j
+                END IF
+              END DO
+              !Evaluate interpolant
+              s=(TIME/period)-t(m)
+              VALUE=(q(m)+s*delta(m))
+            ELSE
+              CALL FLAG_ERROR("Incorrect component specification for Olufsen flow rate waveform ",ERR,ERROR,*999)
+            END IF
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            VALUE= 0.0_DP
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_V_VARIABLE_TYPE,FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE)
+          ! Do nothing
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      CASE DEFAULT
+        LOCAL_ERROR="Olufsen flowrate waveform for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+          & " dimension problem has not yet been implemented."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_SINUSOID)
+      ! Returns a sinusoidal value for boundary nodes
+      SELECT CASE(NUMBER_OF_DIMENSIONS)
+      CASE(2,3)
+        componentCoeff(1) = ANALYTIC_PARAMETERS(1) 
+        componentCoeff(2) = ANALYTIC_PARAMETERS(2) 
+        componentCoeff(3) = ANALYTIC_PARAMETERS(3) 
+        componentCoeff(4) = ANALYTIC_PARAMETERS(4) 
+        amplitude = ANALYTIC_PARAMETERS(5) 
+        yOffset = ANALYTIC_PARAMETERS(6) 
+        frequency = ANALYTIC_PARAMETERS(7) 
+        phaseShift = ANALYTIC_PARAMETERS(8) 
+        startTime = ANALYTIC_PARAMETERS(9) 
+        stopTime = ANALYTIC_PARAMETERS(10) 
+        SELECT CASE(VARIABLE_TYPE)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(CURRENT_TIME > startTime - ZERO_TOLERANCE .AND. &
+              &  CURRENT_TIME < stopTime + ZERO_TOLERANCE) THEN
+              VALUE= componentCoeff(componentNumber)*(yOffset + amplitude*SIN(frequency*CURRENT_TIME+phaseShift))
+            ELSE
+              VALUE= componentCoeff(componentNumber)*(yOffset + amplitude*SIN(frequency*stopTime+phaseShift))
+            END IF
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            VALUE= 0.0_DP
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      CASE DEFAULT
+        LOCAL_ERROR="Sinusoidal analytic types for "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DIMENSIONS,"*",ERR,ERROR))// &
+          & " dimensional problems have not yet been implemented."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END SELECT
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_ONE_DIM_1)
+      IF(NUMBER_OF_DIMENSIONS==1.AND.NUMBER_OF_COMPONENTS==3) THEN
+        !Polynomial function
+        SELECT CASE(VARIABLE_TYPE)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate Q
+              VALUE=X(1)**2/10.0_DP**2
+            ELSE IF(componentNumber==2) THEN
+              !calculate A
+              VALUE=X(1)**2/10.0_DP**2
+            ELSE IF(componentNumber==3) THEN
+              !calculate P
+              VALUE=X(1)**2/10.0_DP**2
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE) 
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            VALUE= 0.0_DP
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE 
+        LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_1)
+      IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
+        !Polynomial function
+        MU_PARAM = MATERIALS_PARAMETERS(1)
+        RHO_PARAM = MATERIALS_PARAMETERS(2)
+        SELECT CASE(VARIABLE_TYPE)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=X(2)**2/10.0_DP**2
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=X(1)**2/10.0_DP**2
+            ELSE IF(componentNumber==3) THEN
+              !calculate p
+              VALUE=2.0_DP/3.0_DP*X(1)*(3.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(1)**2*X(2))/(10.0_DP ** 4)
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            VALUE= 0.0_DP
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE 
+        LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_2)
+      IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
+        !Exponential function
+        MU_PARAM = MATERIALS_PARAMETERS(1)
+        RHO_PARAM = MATERIALS_PARAMETERS(2)
+        SELECT CASE(VARIABLE_TYPE)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE= EXP((X(1)-X(2))/10.0_DP)
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE= EXP((X(1)-X(2))/10.0_DP)
+            ELSE IF(componentNumber==3) THEN
+              !calculate p
+              VALUE= 2.0_DP*MU_PARAM/10.0_DP*EXP((X(1)-X(2))/10.0_DP)
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE= 0.0_DP
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE= 0.0_DP
+            ELSE IF(componentNumber==3) THEN
+              !calculate p
+              VALUE= 0.0_DP
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE 
+        LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_3)
+      IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
+        !Sine and cosine function
+        MU_PARAM = MATERIALS_PARAMETERS(1)
+        RHO_PARAM = MATERIALS_PARAMETERS(2)
+        SELECT CASE(VARIABLE_TYPE)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=SIN(2.0_DP*PI*X(1)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(2)/10.0_DP)
+            ELSE IF(componentNumber==3) THEN
+              !calculate p
+              VALUE=4.0_DP*MU_PARAM*PI/10.0_DP*SIN(2.0_DP*PI*X(2)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)+ &
+                & 0.5_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_index,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=0.0_DP
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=16.0_DP*MU_PARAM*PI**2/10.0_DP**2*COS(2.0_DP*PI*X(2)/ 10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)
+            ELSE IF(componentNumber==3) THEN
+              !calculate p
+              VALUE=0.0_DP
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE 
+        LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_4,EQUATIONS_SET_NAVIER_STOKES_EQUATION_TWO_DIM_5)
+      IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
+        !Taylor-Green vortex solution
+        MU_PARAM = MATERIALS_PARAMETERS(1)
+        RHO_PARAM = MATERIALS_PARAMETERS(2)
+        SELECT CASE(VARIABLE_TYPE)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=SIN(X(1)/10.0_DP*2.0_DP*PI)*COS(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+              VALUE=SIN(X(1)/10.0_DP*PI)*COS(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+              !                      VALUE=SIN(X(1))*COS(X(2))
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=-COS(X(1)/10.0_DP*2.0_DP*PI)*SIN(X(2)/10.0_DP*2.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+              VALUE=-COS(X(1)/10.0_DP*PI)*SIN(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+              !                      VALUE=-COS(X(1))*SIN(X(2))
+            ELSE IF(componentNumber==3) THEN
+              !calculate p
+              VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*2.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*2.0_DP*PI))* &
+                & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
+              VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*PI))* &
+                & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
+              !                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=0.0_DP
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=0.0_DP         
+            ELSE IF(componentNumber==3) THEN
+              !calculate p
+              VALUE=0.0_DP
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE 
+        LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1)
+      IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
+        !Polynomial function
+        MU_PARAM = MATERIALS_PARAMETERS(1)
+        RHO_PARAM = MATERIALS_PARAMETERS(2)
+        SELECT CASE(variable_type)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=X(2)**2/10.0_DP**2+X(3)**2/10.0_DP**2
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=X(1)**2/10.0_DP**2+X(3)**2/10.0_DP** 2
+            ELSE IF(componentNumber==3) THEN
+              !calculate w
+              VALUE=X(1)**2/10.0_DP**2+X(2)**2/10.0_DP** 2
+            ELSE IF(componentNumber==4) THEN
+              !calculate p
+              VALUE=2.0_DP/3.0_DP*X(1)*(6.0_DP*MU_PARAM*10.0_DP**2-RHO_PARAM*X(2)*X(1)**2-3.0_DP* & 
+                & RHO_PARAM*X(2)* &
+                & X(3)**2-RHO_PARAM*X(3)*X(1)**2-3.0_DP*RHO_PARAM*X(3)*X(2)**2)/(10.0_DP**4)
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            VALUE=0.0_DP
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE 
+        LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_2)
+      IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
+        !Exponential function
+        MU_PARAM = MATERIALS_PARAMETERS(1)
+        RHO_PARAM = MATERIALS_PARAMETERS(2)
+        SELECT CASE(variable_type)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(3)-X(1))/10.0_DP)
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=EXP((X(1)-X(2))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
+            ELSE IF(componentNumber==3) THEN
+              !calculate w
+              VALUE=EXP((X(3)-X(1))/10.0_DP)+EXP((X(2)-X(3))/10.0_DP)
+            ELSE IF(componentNumber==4) THEN
+              !calculate p
+              VALUE=1.0_DP/10.0_DP*(2.0_DP*MU_PARAM*EXP((X(1)-X(2))/10.0_DP)- & 
+                & 2.0_DP*MU_PARAM*EXP((X(3)-X(1))/10.0_DP)+RHO_PARAM*10.0_DP*EXP((X(1)-X(3))/10.0_DP)+ & 
+                & RHO_PARAM*10.0_DP*EXP((X(2)-X(1))/10.0_DP))
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=0.0_DP
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=-2.0_DP*MU_PARAM*(2.0_DP*EXP(X(1)-X(2))+EXP(X(2)-X(3)))
+            ELSE IF(componentNumber==3) THEN
+              !calculate w
+              VALUE=-2.0_DP*MU_PARAM*(2.0_DP*EXP(X(3)-X(1))+EXP(X(2)-X(3)))
+            ELSE IF(componentNumber==4) THEN
+              !calculate p
+              VALUE=0.0_DP
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE 
+        LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_3)
+      IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
+        !Sine/cosine function
+        MU_PARAM = MATERIALS_PARAMETERS(1)
+        RHO_PARAM = MATERIALS_PARAMETERS(2)
+        SELECT CASE(variable_type)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=SIN(2.0_DP*PI*X(1)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)*SIN(2.0_DP*PI*X(3)/10.0_DP)
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=2.0_DP*COS(2.0_DP*PI*x(1)/10.0_DP)*SIN(2.0_DP*PI*X(3)/10.0_DP)*COS(2.0_DP*PI*X(2)/10.0_DP)
+            ELSE IF(componentNumber==3) THEN
+              !calculate w
+              VALUE=-COS(2.0_DP*PI*X(1)/10.0_DP)*SIN(2.0_DP*PI*X(2)/10.0_DP)*COS(2.0_DP*PI*X(3)/10.0_DP)
+            ELSE IF(componentNumber==4) THEN
+              !calculate p
+              VALUE=-COS(2.0_DP*PI*X(1)/10.0_DP)*(-12.0_DP*MU_PARAM*PI*SIN(2.0_DP*PI*X(2)/10.0_DP)* & 
+                & SIN(2.0_DP*PI*X(3)/10.0_DP)-RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP+ &
+                & 2.0_DP*RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP*COS(2.0_DP*PI*X(3)/10.0_DP)**2- &
+                & RHO_PARAM*COS(2.0_DP*PI*X(1)/10.0_DP)*10.0_DP*COS(2.0_DP*PI*X(2)/10.0_DP)**2)/10.0_DP/2.0_DP
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=0.0_DP
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=36*MU_PARAM*PI**2/10.0_DP**2*COS(2.0_DP*PI*X(2)/10.0_DP)*SIN(2.0_DP*PI*X(3)/10.0_DP)* & 
+                & COS(2.0_DP*PI*X(1)/10.0_DP)
+            ELSE IF(componentNumber==3) THEN
+              !calculate w
+              VALUE=0.0_DP
+            ELSE IF(componentNumber==4) THEN
+              !calculate p
+              VALUE=0.0_DP
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE 
+        LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+      
+    CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4,EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5)
+      IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
+        !Taylor-Green vortex solution
+        MU_PARAM = MATERIALS_PARAMETERS(1)
+        RHO_PARAM = MATERIALS_PARAMETERS(2)
+        SELECT CASE(variable_type)
+        CASE(FIELD_U_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=SIN(X(1)/10.0_DP*PI)*COS(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=-COS(X(1)/10.0_DP*PI)*SIN(X(2)/10.0_DP*PI)*EXP(-2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)
+            ELSE IF(componentNumber==3) THEN
+              !calculate v
+              VALUE=0.0_DP
+              !                      VALUE=-COS(X(1))*SIN(X(2))
+            ELSE IF(componentNumber==4) THEN
+              !calculate p
+              VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1)/10.0_DP*PI)+COS(2.0_DP*X(2)/10.0_DP*PI))* &
+                & EXP(-4.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME)                      
+              !                      VALUE=RHO_PARAM/4.0_DP*(COS(2.0_DP*X(1))+COS(2.0_DP*X(2)))
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE(FIELD_DELUDELN_VARIABLE_TYPE)
+          SELECT CASE(GLOBAL_DERIV_INDEX)
+          CASE(NO_GLOBAL_DERIV)
+            IF(componentNumber==1) THEN
+              !calculate u
+              VALUE=0.0_DP
+            ELSE IF(componentNumber==2) THEN
+              !calculate v
+              VALUE=0.0_DP         
+            ELSE IF(componentNumber==3) THEN
+              !calculate p
+              VALUE=0.0_DP
+            ELSE IF(componentNumber==4) THEN
+              !calculate p
+              VALUE=0.0_DP
+            ELSE
+              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            END IF
+          CASE(GLOBAL_DERIV_S1)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE(GLOBAL_DERIV_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+          CASE(GLOBAL_DERIV_S1_S2)
+            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CASE DEFAULT
+            LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
+              & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
+              & " is invalid."
+            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          END SELECT
+        CASE DEFAULT
+          LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
+            & " is invalid."
+          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        END SELECT
+      ELSE 
+        LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      END IF
+    CASE DEFAULT
+      LOCAL_ERROR="The analytic function type of "// &
+        & TRIM(NUMBER_TO_VSTRING(ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
+        & " is invalid."
+      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+    END SELECT
+    
+    EXITS("NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE")
     RETURN
-999 CALL ERRORS("NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR)
-    CALL EXITS("NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE")
+999 ERRORSEXITS("NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR)
     RETURN 1
+   
   END SUBROUTINE NAVIER_STOKES_ANALYTIC_FUNCTIONS_EVALUATE
 
   !
@@ -10080,7 +10078,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: localError
     LOGICAL :: linearElement
 
-    CALL ENTERS("NavierStokes_ResidualBasedStabilisation",err,error,*999)
+    ENTERS("NavierStokes_ResidualBasedStabilisation",err,error,*999)
 
     ! Nullify all local pointers
     NULLIFY(basisVelocity)
@@ -10622,12 +10620,13 @@ CONTAINS
       END SELECT
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
-    END IF               
-    CALL EXITS("NavierStokes_ResidualBasedStabilisation")
+    END IF
+    
+    EXITS("NavierStokes_ResidualBasedStabilisation")
     RETURN
-999 CALL ERRORS("NavierStokes_ResidualBasedStabilisation",err,error)
-    CALL EXITS("NavierStokes_ResidualBasedStabilisation")
+999 ERRORSEXITS("NavierStokes_ResidualBasedStabilisation",err,error)
     RETURN 1
+    
   END SUBROUTINE NavierStokes_ResidualBasedStabilisation
 
   !
@@ -10670,7 +10669,7 @@ CONTAINS
     REAL(DP), ALLOCATABLE :: WORK(:)
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("NavierStokes_CalculateElementMetrics",err,error,*999)
+    ENTERS("NavierStokes_CalculateElementMetrics",err,error,*999)
 
     ! Nullify all local pointers
     NULLIFY(basisVelocity)
@@ -10895,12 +10894,13 @@ CONTAINS
       END SELECT
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
-    END IF               
-    CALL EXITS("NavierStokes_CalculateElementMetrics")
+    END IF
+    
+    EXITS("NavierStokes_CalculateElementMetrics")
     RETURN
-999 CALL ERRORS("NavierStokes_CalculateElementMetrics",err,error)
-    CALL EXITS("NavierStokes_CalculateElementMetrics")
+999 ERRORSEXITS("NavierStokes_CalculateElementMetrics",err,error)
     RETURN 1
+    
   END SUBROUTINE NavierStokes_CalculateElementMetrics
 
   !
@@ -10944,17 +10944,17 @@ CONTAINS
     INTEGER(INTG) :: elementBaseDofIdx, faceNodeIdx, elementNodeIdx
     INTEGER(INTG) :: faceNodeDerivativeIdx, meshComponentNumber, nodeDerivativeIdx,elementParameterIdx
     INTEGER(INTG) :: faceParameterIdx,elementDof,normalComponentIdx
-    INTEGER(INTG) :: numberOfDimensions,i,j,boundaryType
-    REAL(DP) :: pressure,viscosity,density,jacobianGaussWeights,beta,normalFlow
-    REAL(DP) :: velocity(3),normalProjection(3),unitNormal(3),normalViscousTerm(3),stabilisationTerm(3),boundaryNormal(3)
-    REAL(DP) :: boundaryValue,normalDifference,normalTolerance,SUM1,SUM2,boundaryPressure
-    REAL(DP) :: dUDXi(3,3),dXiDX(3,3),gradU(3,3)
+    INTEGER(INTG) :: numberOfDimensions,boundaryType
+    REAL(DP) :: pressure,density,jacobianGaussWeights,beta,normalFlow
+    REAL(DP) :: velocity(3),normalProjection(3),unitNormal(3),stabilisationTerm(3),boundaryNormal(3)
+    REAL(DP) :: boundaryValue,normalDifference,normalTolerance,boundaryPressure
+    REAL(DP) :: dUDXi(3,3)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     LOGICAL :: integratedBoundary
 
     REAL(DP), POINTER :: geometricParameters(:)
 
-    CALL ENTERS("NavierStokes_FiniteElementFaceIntegrate",err,error,*999)
+    ENTERS("NavierStokes_FiniteElementFaceIntegrate",err,error,*999)
 
     NULLIFY(decomposition)
     NULLIFY(decompElement)
@@ -11209,10 +11209,9 @@ CONTAINS
       ! Do nothing for other equation set subtypes
     END SELECT
 
-    CALL EXITS("NavierStokes_FiniteElementFaceIntegrate")
+    EXITS("NavierStokes_FiniteElementFaceIntegrate")
     RETURN
-999 CALL ERRORS("NavierStokes_FiniteElementFaceIntegrate",err,error)
-    CALL EXITS("NavierStokes_FiniteElementFaceIntegrate")
+999 ERRORSEXITS("NavierStokes_FiniteElementFaceIntegrate",err,error)
     RETURN 1
   END SUBROUTINE
 
@@ -11275,7 +11274,7 @@ CONTAINS
 
     REAL(DP), POINTER :: geometricParameters(:)
 
-    CALL ENTERS("NavierStokes_CalculateBoundaryFlux",err,error,*999)
+    ENTERS("NavierStokes_CalculateBoundaryFlux",err,error,*999)
 
     NULLIFY(decomposition)
     NULLIFY(geometricDecomposition)
@@ -11615,10 +11614,9 @@ CONTAINS
       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)     
     END SELECT
 
-    CALL EXITS("NavierStokes_CalculateBoundaryFlux")
+    EXITS("NavierStokes_CalculateBoundaryFlux")
     RETURN
-999 CALL ERRORS("NavierStokes_CalculateBoundaryFlux",err,error)
-    CALL EXITS("NavierStokes_CalculateBoundaryFlux")
+999 ERRORSEXITS("NavierStokes_CalculateBoundaryFlux",err,error)
     RETURN 1
   END SUBROUTINE
 
@@ -11654,7 +11652,7 @@ CONTAINS
     LOGICAL :: boundaryNode,boundaryConverged(30),localConverged,MPI_LOGICAL
     LOGICAL, ALLOCATABLE :: globalConverged(:)
 
-    CALL ENTERS("NavierStokes_Couple1D0D",ERR,ERROR,*999)
+    ENTERS("NavierStokes_Couple1D0D",ERR,ERROR,*999)
 
     !Get solvers based on the problem type
     SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
@@ -11859,10 +11857,9 @@ CONTAINS
       END IF
     END IF
 
-    CALL EXITS("NavierStokes_Couple1D0D")
+    EXITS("NavierStokes_Couple1D0D")
     RETURN
-999 CALL ERRORS("NavierStokes_Couple1D0D",err,error)
-    CALL EXITS("NavierStokes_Couple1D0D")
+999 ERRORSEXITS("NavierStokes_Couple1D0D",err,error)
     RETURN 1
 
   END SUBROUTINE
@@ -11901,7 +11898,7 @@ CONTAINS
     LOGICAL :: branchConverged(100),localConverged,MPI_LOGICAL,boundaryNode,fluxDiverged
     LOGICAL, ALLOCATABLE :: globalConverged(:)
 
-    CALL ENTERS("NavierStokes_CoupleCharacteristics",ERR,ERROR,*999)
+    ENTERS("NavierStokes_CoupleCharacteristics",ERR,ERROR,*999)
 
     SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
     CASE(PROBLEM_TRANSIENT1D_NAVIER_STOKES_SUBTYPE, &
@@ -12118,10 +12115,9 @@ CONTAINS
       END IF
     END IF
 
-    CALL EXITS("NavierStokes_CoupleCharacteristics")
+    EXITS("NavierStokes_CoupleCharacteristics")
     RETURN
-999 CALL ERRORS("NavierStokes_CoupleCharacteristics",err,error)
-    CALL EXITS("NavierStokes_CoupleCharacteristics")
+999 ERRORSEXITS("NavierStokes_CoupleCharacteristics",err,error)
     RETURN 1
 
   END SUBROUTINE NavierStokes_CoupleCharacteristics
@@ -12161,7 +12157,7 @@ CONTAINS
     REAL(DP) :: shearRateDefault
     LOGICAL :: ghostElement,elementExists,defaultUpdate
 
-    CALL ENTERS("NavierStokes_ShearRateCalculate",err,error,*999)
+    ENTERS("NavierStokes_ShearRateCalculate",err,error,*999)
 
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"...Calculating shear rate...",ERR,ERROR,*999)
 
@@ -12305,12 +12301,11 @@ CONTAINS
       CALL FLAG_ERROR(localError,ERR,ERROR,*999)
     END SELECT
 
-    CALL EXITS("NavierStokes_ShearRateCalculate")
+    EXITS("NavierStokes_ShearRateCalculate")
     RETURN
-
-999 CALL ERRORS("NavierStokes_ShearRateCalculate",ERR,ERROR)
-    CALL EXITS("NavierStokes_ShearRateCalculate")
+999 ERRORSEXITS("NavierStokes_ShearRateCalculate",ERR,ERROR)
     RETURN 1
+
   END SUBROUTINE NavierStokes_ShearRateCalculate
 
   !
@@ -12327,7 +12322,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("NavierStokes_FiniteElementPreResidualEvaluate",err,error,*999)
+    ENTERS("NavierStokes_FiniteElementPreResidualEvaluate",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%SUBTYPE)
@@ -12359,12 +12354,11 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     END IF
 
-    CALL EXITS("NavierStokes_FiniteElementPreResidualEvaluate")
+    EXITS("NavierStokes_FiniteElementPreResidualEvaluate")
     RETURN
-
-999 CALL ERRORS("NavierStokes_FiniteElementPreResidualEvaluate",err,error)
-    CALL EXITS("NavierStokes_FiniteElementPreResidualEvaluate")
+999 ERRORSEXITS("NavierStokes_FiniteElementPreResidualEvaluate",err,error)
     RETURN 1
+
   END SUBROUTINE NavierStokes_FiniteElementPreResidualEvaluate
 
   !
@@ -12384,7 +12378,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("NavierStokes_ControlLoopPostLoop",err,error,*999)
+    ENTERS("NavierStokes_ControlLoopPostLoop",err,error,*999)
 
     NULLIFY(dependentField)
     NULLIFY(fieldVariable)
@@ -12457,10 +12451,9 @@ CONTAINS
       CALL FLAG_ERROR("Control loop is not associated.",err,error,*999)
     END IF
 
-    CALL EXITS("NavierStokes_ControlLoopPostLoop")
+    EXITS("NavierStokes_ControlLoopPostLoop")
     RETURN
-999 CALL ERRORS("NavierStokes_ControlLoopPostLoop",err,error)
-    CALL EXITS("NavierStokes_ControlLoopPostLoop")
+999 ERRORSEXITS("NavierStokes_ControlLoopPostLoop",err,error)
     RETURN 1
     
   END SUBROUTINE NavierStokes_ControlLoopPostLoop
@@ -12496,7 +12489,7 @@ CONTAINS
     INTEGER(INTG) :: nodeIdx,versionIdx,derivativeIdx,componentIdx,numberOfVersions,numberOfLocalNodes
     INTEGER(INTG) :: dependentDof,boundaryConditionType,k
 
-    CALL ENTERS("NavierStokes_UpdateMultiscaleBoundary",err,error,*999)
+    ENTERS("NavierStokes_UpdateMultiscaleBoundary",err,error,*999)
 
     NULLIFY(dependentDomain)
     NULLIFY(equationsSet)
@@ -12805,11 +12798,11 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END SELECT
 
-    CALL EXITS("NavierStokes_UpdateMultiscaleBoundary")
+    EXITS("NavierStokes_UpdateMultiscaleBoundary")
     RETURN
-999 CALL ERRORS("NavierStokes_UpdateMultiscaleBoundary",err,error)
-    CALL EXITS("NavierStokes_UpdateMultiscaleBoundary")
+999 ERRORSEXITS("NavierStokes_UpdateMultiscaleBoundary",err,error)
     RETURN 1
+    
   END SUBROUTINE NavierStokes_UpdateMultiscaleBoundary
 
   !

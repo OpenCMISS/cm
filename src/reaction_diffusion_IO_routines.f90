@@ -55,6 +55,9 @@ MODULE REACTION_DIFFUSION_IO_ROUTINES
  USE KINDS   
  USE MESH_ROUTINES
  USE MPI
+
+#include "macros.h"  
+
   IMPLICIT NONE
 
   PUBLIC REACTION_DIFFUSION_IO_WRITE_CMGUI
@@ -79,11 +82,11 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(DOMAIN_TYPE), POINTER :: COMPUTATIONAL_DOMAIN
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD
-    REAL(DP) :: NodeXValue,NodeYValue,NodeZValue,NodeSourceValue,NodeUValue
+    REAL(DP) :: NodeXValue,NodeYValue,NodeZValue,NodeUValue
     INTEGER(INTG):: myComputationalNodeNumber,NumberOfOutputFields,NumberOfDimensions,NumberOfElements,NumberOfNodes
-    INTEGER(INTG):: NumberOfVariableComponents,NumberOfSourceComponents,I,J,K,MPI_IERROR,ValueIndex,NODE_GLOBAL_NUMBER
+    INTEGER(INTG):: NumberOfVariableComponents,NumberOfSourceComponents,I,J,K,ValueIndex,NODE_GLOBAL_NUMBER
     INTEGER(INTG) :: NodesInMeshComponent,BasisType,MaxNodesPerElement,NumberOfFieldComponents(3),ELEMENT_GLOBAL_NUMBER
-    INTEGER(INTG) :: NODE_LOCAL_NUMBER,NUMBER_DOMAIN_NODES
+    INTEGER(INTG) :: NODE_LOCAL_NUMBER
     INTEGER(INTG),ALLOCATABLE :: ElementNodes(:,:),SimplexOutputHelp(:)
     REAL(DP), ALLOCATABLE :: ElementNodesScales(:,:)
     LOGICAL :: OUTPUT_SOURCE
@@ -91,7 +94,7 @@ CONTAINS
     CHARACTER(50) :: INTG_STRING,INTG_STRING2
 
 
-    CALL ENTERS("REACTION_DIFFUSION_IO_WRITE_CMGUI",ERR,ERROR,*999)
+    ENTERS("REACTION_DIFFUSION_IO_WRITE_CMGUI",ERR,ERROR,*999)
 
     myComputationalNodeNumber = COMPUTATIONAL_NODE_NUMBER_GET(err,error)
 
@@ -103,7 +106,7 @@ CONTAINS
     myComputationalNodeNumber = COMPUTATIONAL_NODE_NUMBER_GET(ERR,ERROR)
     NumberOfDimensions = COMPUTATIONAL_DOMAIN%NUMBER_OF_DIMENSIONS
     NumberOfNodes = COMPUTATIONAL_DOMAIN%TOPOLOGY%NODES%NUMBER_OF_NODES
-    NodesInMeshComponent = REGION%meshes%meshes(1)%ptr%topology(1)%ptr%nodes%number_of_nodes
+    NodesInMeshComponent = REGION%meshes%meshes(1)%ptr%topology(1)%ptr%nodes%numberOfNodes
     NumberOfElements = COMPUTATIONAL_DOMAIN%TOPOLOGY%ELEMENTS%NUMBER_OF_ELEMENTS
     NumberOfVariableComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
       & variables(1)%number_of_components
@@ -581,10 +584,9 @@ CONTAINS
     ENDDO
     CLOSE(myComputationalNodeNumber)
 
-    CALL EXITS("REACTION_DIFFUSION_IO_WRITE_CMGUI")
+    EXITS("REACTION_DIFFUSION_IO_WRITE_CMGUI")
     RETURN     
-999 CALL ERRORS("REACTION_DIFFUSION_IO_WRITE_CMGUI",ERR,ERROR)    
-    CALL EXITS("REACTION_DIFFUSION_IO_WRITE_CMGUI")
+999 ERRORSEXITS("REACTION_DIFFUSION_IO_WRITE_CMGUI",ERR,ERROR)    
     RETURN 1
 
   END SUBROUTINE REACTION_DIFFUSION_IO_WRITE_CMGUI
