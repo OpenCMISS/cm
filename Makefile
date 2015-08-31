@@ -499,6 +499,7 @@ $(OBJECT_DIR)/cmiss_petsc.o	:	$(SOURCE_DIR)/cmiss_petsc.f90 \
 	$(OBJECT_DIR)/cmiss_petsc_types.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/cmiss_petsc_types.o	:	$(SOURCE_DIR)/cmiss_petsc_types.f90 \

@@ -60,6 +60,8 @@ MODULE INTERFACE_OPERATORS_ROUTINES
   USE TIMER
   USE TYPES
 
+#include "macros.h"  
+
   IMPLICIT NONE
 
   !Module types
@@ -118,7 +120,7 @@ CONTAINS
     INTEGER(INTG) :: dataPointIdx,localElementNumber,matrixElementIdx
     INTEGER(INTG) :: matrixCoefficients(2),interfaceelementnumber
 
-    CALL ENTERS("FieldContinuity_FiniteElementCalculate",err,error,*999)
+    ENTERS("FieldContinuity_FiniteElementCalculate",err,error,*999)
 
     IF(.NOT.ASSOCIATED(interfaceCondition)) CALL FLAG_error("Interface condition is not associated.",err,error,*999)
     IF(.NOT.ASSOCIATED(interfaceCondition%INTERFACE_EQUATIONS)) CALL FLAG_error("Interface equations is not associated." &
@@ -501,10 +503,9 @@ CONTAINS
       CALL FLAG_error(localError,err,error,*999)
     END SELECT
 
-    CALL EXITS("FieldContinuity_FiniteElementCalculate")
+    EXITS("FieldContinuity_FiniteElementCalculate")
     RETURN
-999 CALL ERRORS("FieldContinuity_FiniteElementCalculate",err,error)
-    CALL EXITS("FieldContinuity_FiniteElementCalculate")
+999 ERRORSEXITS("FieldContinuity_FiniteElementCalculate",err,error)
     RETURN 1
     
   END SUBROUTINE FieldContinuity_FiniteElementCalculate
@@ -549,7 +550,7 @@ CONTAINS
     
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("FrictionlessContact_FiniteElementCalculate",err,error,*999)
+    ENTERS("FrictionlessContact_FiniteElementCalculate",err,error,*999)
     
     IF(ASSOCIATED(interfaceCondition)) THEN
       interfaceEquations=>interfaceCondition%INTERFACE_EQUATIONS
@@ -832,10 +833,9 @@ CONTAINS
       CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("FrictionlessContact_FiniteElementCalculate")
+    EXITS("FrictionlessContact_FiniteElementCalculate")
     RETURN
-999 CALL ERRORS("FrictionlessContact_FiniteElementCalculate",err,error)
-    CALL EXITS("FrictionlessContact_FiniteElementCalculate")
+999 ERRORSEXITS("FrictionlessContact_FiniteElementCalculate",err,error)
     RETURN 1
     
   END SUBROUTINE FrictionlessContact_FiniteElementCalculate
@@ -869,10 +869,9 @@ CONTAINS
     INTEGER(INTG) :: connectedLine,decompositionLineNumber,localLineNodeIdx,connectedFace,decompositionFaceNumber,localFaceNodeIdx
     REAL(DP) :: XI(3),rwg,PGMSI,PGNSI,matrixCoefficient
     TYPE(BASIS_TYPE), POINTER :: interfaceDependentBasis,coupledMeshBasis,interfaceGeometricBasis, &
-      & interfacePenaltyBasis,interfaceConnectivityBasis
+      & interfaceConnectivityBasis
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: interfaceQuadratureScheme
-    TYPE(FIELD_TYPE), POINTER :: coupledMeshDependentField,interfaceDependentField,interfaceGeometricField, &
-      & interfacePenaltyField
+    TYPE(FIELD_TYPE), POINTER :: coupledMeshDependentField,interfaceDependentField,interfaceGeometricField
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: interfaceMatrixVariable,lagrangeVariable
     TYPE(ELEMENT_MATRIX_TYPE), POINTER :: interfaceElementMatrix
     TYPE(INTERFACE_EQUATIONS_DOMAIN_INTERPOLATION_TYPE), POINTER :: interfaceInterpolation
@@ -881,21 +880,7 @@ CONTAINS
     TYPE(DOMAIN_FACE_TYPE), POINTER :: coupledMeshDomainFace
     TYPE(VARYING_STRING) :: localError
 
-    TYPE(INTERFACE_TYPE), POINTER :: interface !<A pointer to the interface 
-    TYPE(InterfacePointsConnectivityType), POINTER :: pointsConnectivity !<A pointer to the interface points connectivity
-    TYPE(DecompositionElementDataPointsType), POINTER :: decompositionElementData !<A pointer to the decomposition data point topology
-    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoints(:)
-    TYPE(FIELD_INTERPOLATED_POINT_TYPE), POINTER :: interpolatedPoint
-    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
-    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: interpolatedPointsMetrics(:)
-    TYPE(BASIS_TYPE), POINTER :: coupledMeshDependentBasis
-    TYPE(FIELD_TYPE), POINTER :: coupledMeshGeometricField
-    INTEGER(INTG) :: meshComponentNumber,numberOfCoupledMeshGeoComp,numberOfInterfaceMeshXi,numberOfCoupledMeshXi, &
-      & numberOfMatrixCoupledElements
-    INTEGER(INTG) :: dataPointIdx,localElementNumber,localFaceLineNumber,matrixElementIdx
-    INTEGER(INTG) :: matrixCoefficients(2),interfaceelementnumber
-
-    CALL ENTERS("SolidFluidOperator_FiniteElementCalculate",err,error,*999)
+    ENTERS("SolidFluidOperator_FiniteElementCalculate",err,error,*999)
 
     IF(.NOT.ASSOCIATED(interfaceCondition)) CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
     IF(.NOT.ASSOCIATED(interfaceCondition%INTERFACE_EQUATIONS)) CALL FLAG_ERROR("Interface equations is not associated." &
@@ -1173,10 +1158,9 @@ CONTAINS
       CALL FLAG_ERROR(localError,err,error,*999)
     END SELECT
 
-    CALL EXITS("SolidFluidOperator_FiniteElementCalculate")
+    EXITS("SolidFluidOperator_FiniteElementCalculate")
     RETURN
-999 CALL ERRORS("SolidFluidOperator_FiniteElementCalculate",err,error)
-    CALL EXITS("SolidFluidOperator_FiniteElementCalculate")
+999 ERRORSEXITS("SolidFluidOperator_FiniteElementCalculate",err,error)
     RETURN 1
   
   END SUBROUTINE SolidFluidOperator_FiniteElementCalculate
@@ -1198,7 +1182,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: rowParameterIdx
 
-    CALL ENTERS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM",err,error,*999)
+    ENTERS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM",err,error,*999)
     
     INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM=0.0_DP
     DO rowParameterIdx = 1,interfaceConnectivityBasis%NUMBER_OF_ELEMENT_PARAMETERS
@@ -1208,10 +1192,9 @@ CONTAINS
         & elementConnectivity%XI(:,1,rowParameterIdx)
     ENDDO
      
-    CALL EXITS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM")
+    EXITS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM")
     RETURN
-999 CALL ERRORS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM",err,error)
-    CALL EXITS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM")
+999 ERRORSEXITS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM",err,error)
     RETURN
     
   END FUNCTION INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM
