@@ -4152,7 +4152,7 @@ CONTAINS
       !Assume directions: fibre f_0=[1 0 0], sheet s_0=[0 1 0], (sheet) normal n_0=[0 0 1]
       !Based on: Holzapfel, G. A., & Ogden, R. W. (2009). Constitutive modelling of passive myocardium: A structurally based
       !  framework for material characterization. Philosophical Transactions of the Royal Society A: Mathematical, Physical and
-      !  Engineering Sciences, 367(1902), 3445–3475. doi:10.1098/rsta.2009.0091
+      !  Engineering Sciences, 367(1902), 3445-3475. doi:10.1098/rsta.2009.0091
       C(1)=MATERIALS_INTERPOLATED_POINT%VALUES(1,1) !a
       C(2)=MATERIALS_INTERPOLATED_POINT%VALUES(2,1) !b
       C(3)=MATERIALS_INTERPOLATED_POINT%VALUES(3,1) !a_f

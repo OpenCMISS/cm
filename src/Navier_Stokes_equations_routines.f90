@@ -11118,7 +11118,7 @@ CONTAINS
             END IF
 
             ! Stabilisation term to correct for possible retrograde flow divergence.
-            ! See: Moghadam et al 2011 “A comparison of outlet boundary treatments for prevention of backflow divergence..." and
+            ! See: Moghadam et al 2011 A comparison of outlet boundary treatments for prevention of backflow divergence..." and
             !      Ismail et al 2014 "A stable approach for coupling multidimensional cardiovascular and pulmonary networks..."
             ! Note: beta is a relative scaling factor 0 <= beta <= 1; default 1.0
             stabilisationTerm = 0.0_DP
@@ -11832,7 +11832,7 @@ CONTAINS
         !allocate array for mpi communication
         ALLOCATE(globalConverged(numberOfComputationalNodes),STAT=ERR) 
         IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global convergence check array.",ERR,ERROR,*999)
-        CALL MPI_ALLGATHER(localConverged,1,MPI_LOGICAL,globalConverged,1,MPI_LOGICAL, &
+        CALL MPI_ALLGATHER(localConverged,1,MPI_INTEGER,globalConverged,1,MPI_INTEGER, &
          & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
         CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
         IF(ALL(globalConverged)) THEN
@@ -12104,7 +12104,7 @@ CONTAINS
       !allocate array for mpi communication
       ALLOCATE(globalConverged(numberOfComputationalNodes),STAT=ERR) 
       IF(ERR/=0) CALL FLAG_ERROR("Could not allocate global convergence check array.",ERR,ERROR,*999)
-      CALL MPI_ALLGATHER(localConverged,1,MPI_LOGICAL,globalConverged,1,MPI_LOGICAL, &
+      CALL MPI_ALLGATHER(localConverged,1,MPI_INTEGER,globalConverged,1,MPI_INTEGER, &
        & COMPUTATIONAL_ENVIRONMENT%MPI_COMM,MPI_IERROR)
       CALL MPI_ERROR_CHECK("MPI_ALLGATHER",MPI_IERROR,ERR,ERROR,*999)
       IF(ALL(globalConverged)) THEN
