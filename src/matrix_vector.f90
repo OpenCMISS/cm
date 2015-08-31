@@ -3137,7 +3137,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
-                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
                     ENDIF
                   ENDDO !i
                 ENDDO !j
@@ -3153,7 +3153,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
-                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
                     ENDIF
                   ENDDO !j
                 ENDDO !i
@@ -3168,7 +3168,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
-                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
                     ENDIF
                   ENDDO !i
                 ENDDO !j
@@ -3183,7 +3183,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
-                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
                     ENDIF
                   ENDDO !j
                 ENDDO !i
@@ -3223,7 +3223,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
-                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
                     ENDIF
                   ENDDO !j
                 ENDDO !i
@@ -3263,7 +3263,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
-                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
                     ENDIF
                   ENDDO !i
                 ENDDO !j
@@ -3295,7 +3295,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
-                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION)+VALUES(i,j)
+                      MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
                     ENDIF
                   ENDDO !j
                 ENDDO !i
