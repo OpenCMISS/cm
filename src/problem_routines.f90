@@ -4057,7 +4057,7 @@ END SUBROUTINE Problem_SolverJacobianEvaluatePetsc
 SUBROUTINE Problem_SolverJacobianFDCalculatePetsc(snes,x,A,B,ctx,err)
 
   USE BASE_ROUTINES
-  USE CMISS_PETSC
+  USE CmissPetsc
   USE CmissPetscTypes
   USE DISTRIBUTED_MATRIX_VECTOR
   USE ISO_VARYING_STRING
@@ -4312,6 +4312,7 @@ END SUBROUTINE Problem_SolverResidualEvaluatePetsc
 SUBROUTINE Problem_SolverConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,fnorm,reason,ctx,err)
 
   USE BASE_ROUTINES
+  USE CmissPetsc
   USE CmissPetscTypes
   USE DISTRIBUTED_MATRIX_VECTOR
   USE INPUT_OUTPUT
@@ -4320,8 +4321,7 @@ SUBROUTINE Problem_SolverConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
   USE SOLVER_ROUTINES
   USE STRINGS
   USE TYPES
-  USE CMISS_PETSC
-
+ 
   IMPLICIT NONE
   
   !Argument variables
@@ -4354,11 +4354,7 @@ SUBROUTINE Problem_SolverConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
           CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
             IF(iterationNumber>0) THEN
               CALL Petsc_SnesLineSearchInitialise(lineSearch,err,error,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR == 3 )
-              CALL Petsc_SnesGetSnesLineSearch(snes,lineSearch,err,error,*999)
-#elif ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
               CALL Petsc_SnesGetLineSearch(snes,lineSearch,err,error,*999)
-#endif
               CALL Petsc_VecInitialise(x,err,error,*999)
               CALL Petsc_VecInitialise(f,err,error,*999)
               CALL Petsc_VecInitialise(y,err,error,*999)
@@ -4405,11 +4401,7 @@ SUBROUTINE Problem_SolverConvergenceTestPetsc(snes,iterationNumber,xnorm,gnorm,f
           CASE(SOLVER_NEWTON_CONVERGENCE_ENERGY_NORM)
             IF(iterationNumber>0) THEN
               CALL Petsc_SnesLineSearchInitialise(lineSearch,err,error,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR == 3 )
-              CALL Petsc_SnesGetSnesLineSearch(snes,lineSearch,err,error,*999)
-#elif ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
               CALL Petsc_SnesGetLineSearch(snes,lineSearch,err,error,*999)
-#endif
               CALL Petsc_VecInitialise(x,err,error,*999)
               CALL Petsc_VecInitialise(f,err,error,*999)
               CALL Petsc_VecInitialise(y,err,error,*999)

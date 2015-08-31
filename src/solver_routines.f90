@@ -50,7 +50,7 @@ MODULE SOLVER_ROUTINES
   USE CELLML_MODEL_DEFINITION
 #endif
   USE CMISS_CELLML
-  USE CMISS_PETSC
+  USE CmissPetsc
   USE CmissPetscTypes
   USE COMP_ENVIRONMENT
   USE CONSTANTS
@@ -136,11 +136,7 @@ MODULE SOLVER_ROUTINES
   !> \see SOLVER_ROUTINES
   !>@{
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_RICHARDSON=1 !<Richardson iterative solver type \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_CHEBYSHEV=2 !<Chebyshev iterative solver type \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
-#else
-  INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_CHEBYCHEV=2 !<Chebychev iterative solver type \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
-#endif
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_CONJUGATE_GRADIENT=3 !<Conjugate gradient iterative solver type \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_BICONJUGATE_GRADIENT=4 !<Bi-conjugate gradient iterative solver type \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_ITERATIVE_GMRES=5 !<Generalised minimum residual iterative solver type \see SOLVER_ROUTINES_IterativeLinearSolverTypes,SOLVER_ROUTINES
@@ -224,7 +220,6 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_TRUSTREGION=2 !<Newton trust region nonlinear solver type \see SOLVER_ROUTINES_NewtonSolverTypes,SOLVER_ROUTINES
   !>@}
 
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   !> \addtogroup SOLVER_ROUTINES_NewtonLineSearchTypes SOLVER_ROUTINES::NewtonLineSearchTypes
   !> \brief The types line search techniques for Newton line search nonlinear solvers
   !> \see SOLVER_ROUTINES
@@ -234,17 +229,6 @@ MODULE SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_QUADRATIC=3 !<Quadratic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
   INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_CUBIC=4!<Cubic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
   !>@}
-#else
-  !> \addtogroup SOLVER_ROUTINES_NewtonLineSearchTypes SOLVER_ROUTINES::NewtonLineSearchTypes
-  !> \brief The types line search techniques for Newton line search nonlinear solvers
-  !> \see SOLVER_ROUTINES
-  !>@{
-  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_NONORMS=1 !<No norms line search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_NONE=2 !<No line search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_QUADRATIC=3 !<Quadratic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
-  INTEGER(INTG), PARAMETER :: SOLVER_NEWTON_LINESEARCH_CUBIC=4!<Cubic search for Newton line search nonlinear solves \see SOLVER_ROUTINES_NewtonLineSearchTypes,SOLVER_ROUTINES
-  !>@}
-#endif
   
   !> \addtogroup SOLVER_ROUTINES_JacobianCalculationTypes SOLVER_ROUTINES::JacobianCalculationTypes
   !> \brief The Jacobian calculation types for a nonlinear solver 
@@ -436,13 +420,8 @@ MODULE SOLVER_ROUTINES
  
   PUBLIC SOLVER_DIRECT_LU,SOLVER_DIRECT_CHOLESKY,SOLVER_DIRECT_SVD
 
-  PUBLIC SOLVER_ITERATIVE_RICHARDSON,SOLVER_ITERATIVE_CONJUGATE_GRADIENT, &
+  PUBLIC SOLVER_ITERATIVE_RICHARDSON,SOLVER_ITERATIVE_CONJUGATE_GRADIENT,SOLVER_ITERATIVE_CHEBYSHEV, &
     & SOLVER_ITERATIVE_BICONJUGATE_GRADIENT,SOLVER_ITERATIVE_GMRES,SOLVER_ITERATIVE_BiCGSTAB,SOLVER_ITERATIVE_CONJGRAD_SQUARED
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  PUBLIC SOLVER_ITERATIVE_CHEBYSHEV
-#else
-  PUBLIC SOLVER_ITERATIVE_CHEBYCHEV
-#endif
   
   PUBLIC SOLVER_ITERATIVE_NO_PRECONDITIONER,SOLVER_ITERATIVE_JACOBI_PRECONDITIONER,SOLVER_ITERATIVE_BLOCK_JACOBI_PRECONDITIONER, &
     & SOLVER_ITERATIVE_SOR_PRECONDITIONER,SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER, &
@@ -466,13 +445,8 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_QUASI_NEWTON_SCALE_NONE,SOLVER_QUASI_NEWTON_SCALE_SHANNO, &
     & SOLVER_QUASI_NEWTON_SCALE_LINESEARCH,SOLVER_QUASI_NEWTON_SCALE_JACOBIAN
 
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
   PUBLIC SOLVER_NEWTON_LINESEARCH_NONORMS,SOLVER_NEWTON_LINESEARCH_LINEAR,SOLVER_NEWTON_LINESEARCH_QUADRATIC, &
     & SOLVER_NEWTON_LINESEARCH_CUBIC
-#else
-  PUBLIC SOLVER_NEWTON_LINESEARCH_NONORMS,SOLVER_NEWTON_LINESEARCH_NONE,SOLVER_NEWTON_LINESEARCH_QUADRATIC, &
-    & SOLVER_NEWTON_LINESEARCH_CUBIC
-#endif  
 
   PUBLIC SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED,SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED, &
     & SOLVER_NEWTON_JACOBIAN_FD_CALCULATED
@@ -3666,38 +3640,38 @@ CONTAINS
                       ENDDO
                       
                       !create PETSC states vector to initialize solver
-                      CALL PETSC_VECCREATESEQ(PETSC_COMM_SELF, &
+                      CALL Petsc_VecCreateSeq(PETSC_COMM_SELF, &
                         & NUMBER_STATES,PETSC_CURRENT_STATES,ERR,ERROR,*999)
-                      !CALL PETSC_VECSETSIZES(PETSC_CURRENT_STATES, &
+                      !CALL Petsc_VecSetSizes(PETSC_CURRENT_STATES, &
                       !  & PETSC_DECIDE,(NUMBER_STATES),ERR,ERROR,*999)
-                      !CALL PETSC_VECSETFROMOPTIONS(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                      !CALL Petsc_VecSetFromOptions(PETSC_CURRENT_STATES,ERR,ERROR,*999)
                       
                       !create PETSC rates vector to return values from evaluating rhs routine
-                      CALL PETSC_VECCREATESEQ(PETSC_COMM_SELF, &
+                      CALL Petsc_VecCreateSeq(PETSC_COMM_SELF, &
                         & NUMBER_STATES,PETSC_RATES,ERR,ERROR,*999)
-                      !CALL PETSC_VECSETSIZES(PETSC_RATES, &
+                      !CALL Petsc_VecSetSizes(PETSC_RATES, &
                       !  & PETSC_DECIDE,(NUMBER_STATES),ERR,ERROR,*999)
-                      !CALL PETSC_VECSETFROMOPTIONS(PETSC_RATES,ERR,ERROR,*999)
+                      !CALL Petsc_VecSetFromOptions(PETSC_RATES,ERR,ERROR,*999)
                       
                       !Set up PETSC TS context for sundials BDF solver
-                      CALL PETSC_TSCREATE(PETSC_COMM_SELF,ts,ERR,ERROR,*999)
-                      CALL PETSC_TSSETPROBLEMTYPE(ts,PETSC_TS_NONLINEAR,ERR,ERROR,*999)
-                      CALL PETSC_TSSETTYPE(ts,PETSC_TS_SUNDIALS,ERR,ERROR,*999)
-                      CALL PETSC_TSSUNDIALSSETTYPE(ts,PETSC_SUNDIALS_BDF,ERR,ERROR,*999)
-                      CALL PETSC_TSSUNDIALSSETTOLERANCE(ts,0.0000001_DP, &
+                      CALL Petsc_TSCreate(PETSC_COMM_SELF,ts,ERR,ERROR,*999)
+                      CALL Petsc_TSSetProblemType(ts,PETSC_TS_NONLINEAR,ERR,ERROR,*999)
+                      CALL Petsc_TSSetType(ts,PETSC_TS_SUNDIALS,ERR,ERROR,*999)
+                      CALL Petsc_TSSundialsSetType(ts,PETSC_SUNDIALS_BDF,ERR,ERROR,*999)
+                      CALL Petsc_TSSundialsSetTolerance(ts,0.0000001_DP, &
                         & 0.0000001_DP,ERR,ERROR,*999)
                       !set the initial solution to the current state
-                      CALL PETSC_VECSETVALUES(PETSC_CURRENT_STATES,(NUMBER_STATES), &
+                      CALL Petsc_VecSetValues(PETSC_CURRENT_STATES,(NUMBER_STATES), &
                         & ARRAY_INDICES,STATES_TEMP, &
                         & PETSC_INSERT_VALUES,ERR,ERROR,*999)
-                      CALL PETSC_VECASSEMBLYBEGIN(PETSC_CURRENT_STATES,ERR,ERROR,*999)
-                      CALL PETSC_VECASSEMBLYEND(PETSC_CURRENT_STATES,ERR,ERROR,*999)
-                      CALL PETSC_TSSETSOLUTION(TS,PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                      CALL Petsc_VecAssemblyBegin(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                      CALL Petsc_VecAssemblyEnd(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                      CALL Petsc_TSSetSolution(TS,PETSC_CURRENT_STATES,ERR,ERROR,*999)
                       
                       !set up the time data
-                      CALL PETSC_TSSETINITIALTIMESTEP(ts,START_TIME,TIME_INCREMENT,ERR,ERROR,*999)
-                      CALL PETSC_TSSETDURATION(ts,5000,END_TIME,ERR,ERROR,*999)
-                      CALL PETSC_TSSETEXACTFINALTIME(ts,PETSC_TRUE,ERR,ERROR,*999)
+                      CALL Petsc_TSSetInitialTimeStep(ts,START_TIME,TIME_INCREMENT,ERR,ERROR,*999)
+                      CALL Petsc_TSSetDuration(ts,5000,END_TIME,ERR,ERROR,*999)
+                      CALL Petsc_TSSetExactFinalTime(ts,.TRUE.,ERR,ERROR,*999)
                       
                       IF(DIAGNOSTICS1) THEN
                         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  DAE START TIME = ",START_TIME,ERR,ERROR,*999)
@@ -3707,9 +3681,9 @@ CONTAINS
                       !set rhs function and pass through the cellml model context 
                       CALL SOLVER_DAE_CELLML_PETSC_CONTEXT_SET(CTX, &
                         & BDF_SOLVER%DAE_SOLVER%SOLVER,dof_idx,ERR,ERROR,*999)
-                      CALL PETSC_TSSETRHSFUNCTION(TS,PETSC_RATES,CELLML_DAE_RHS,CTX,ERR,ERROR,*999)
+                      CALL Petsc_TSSetRHSFunction(TS,PETSC_RATES,CELLML_DAE_RHS,CTX,ERR,ERROR,*999)
                       
-                      CALL PETSC_TSSolve(TS,PETSC_CURRENT_STATES,FINALSOLVEDTIME,ERR,ERROR,*999) 
+                      CALL Petsc_TSSolve(TS,PETSC_CURRENT_STATES,FINALSOLVEDTIME,ERR,ERROR,*999) 
                       IF(DIAGNOSTICS1) THEN
                         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"  FINAL SOLVED TIME = ", &
                           & FINALSOLVEDTIME,ERR,ERROR,*999)
@@ -3717,9 +3691,9 @@ CONTAINS
                       
                       
                       !update the states to new integrated values
-                      CALL PETSC_VECASSEMBLYBEGIN(PETSC_CURRENT_STATES,ERR,ERROR,*999)
-                      CALL PETSC_VECASSEMBLYEND(PETSC_CURRENT_STATES,ERR,ERROR,*999)
-                      CALL PETSC_VECGETVALUES(PETSC_CURRENT_STATES, &
+                      CALL Petsc_VecAssemblyBegin(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                      CALL Petsc_VecAssemblyEnd(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                      CALL Petsc_VecGetValues(PETSC_CURRENT_STATES, &
                         & NUMBER_STATES, ARRAY_INDICES, &
                         & STATES_TEMP, &
                         & ERR,ERROR,*999)
@@ -3728,10 +3702,10 @@ CONTAINS
                         STATE_DATA(STATE_START_DOF+state_idx-1)=  & 
                           & STATES_TEMP(state_idx-1)
                       ENDDO
-                      CALL PETSC_TSFINALISE(TS,ERR,ERROR,*999) 
+                      CALL Petsc_TSFinalise(TS,ERR,ERROR,*999) 
                     ENDIF !model_idx
-                    CALL PETSC_VECDESTROY(PETSC_CURRENT_STATES,ERR,ERROR,*999)
-                    CALL PETSC_VECDESTROY(PETSC_RATES,ERR,ERROR,*999)
+                    CALL Petsc_VecDestroy(PETSC_CURRENT_STATES,ERR,ERROR,*999)
+                    CALL Petsc_VecDestroy(PETSC_RATES,ERR,ERROR,*999)
                   ENDDO !dof_idx
                   
                 ELSE
@@ -9058,22 +9032,17 @@ CONTAINS
               !Nothing else to do
             CASE(SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_PASTIX_LIBRARY,SOLVER_LAPACK_LIBRARY)
               !Set up solver through PETSc
-              CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+              CALL Petsc_KSPCreate(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
 
               !Set any further KSP options from the command line options
-              CALL PETSC_KSPSETFROMOPTIONS(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+              CALL Petsc_KSPSetFromOptions(LINEAR_DIRECT_SOLVER%KSP,ERR,ERROR,*999)
               !Set the solver matrix to be the KSP matrix
               IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
                 SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
                 IF(ASSOCIATED(SOLVER_MATRIX)) THEN
                   IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                    CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
+                    CALL Petsc_KSPSetOperators(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
                       & ERR,ERROR,*999)
-#else
-                    CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
-                      & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif                    
                     !Check that the solver supports the matrix sparsity type
                     SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                     CASE(SOLVER_FULL_MATRICES)
@@ -9089,53 +9058,26 @@ CONTAINS
                             & "or select another solver library type for the linear direct solver.",ERR,ERROR,*999)
                       END SELECT
                     END SELECT
-#if ( PETSC_VERSION_MAJOR == 3 )
                     !Set the KSP type to preonly
-                    CALL PETSC_KSPSETTYPE(LINEAR_DIRECT_SOLVER%KSP,PETSC_KSPPREONLY,ERR,ERROR,*999)
+                    CALL Petsc_KSPSetType(LINEAR_DIRECT_SOLVER%KSP,PETSC_KSPPREONLY,ERR,ERROR,*999)
                     !Get the pre-conditioner
-                    CALL PETSC_KSPGETPC(LINEAR_DIRECT_SOLVER%KSP,LINEAR_DIRECT_SOLVER%PC,ERR,ERROR,*999)
+                    CALL Petsc_KSPGetPC(LINEAR_DIRECT_SOLVER%KSP,LINEAR_DIRECT_SOLVER%PC,ERR,ERROR,*999)
                     !Set the PC type to LU
-                    CALL PETSC_PCSETTYPE(LINEAR_DIRECT_SOLVER%PC,PETSC_PCLU,ERR,ERROR,*999)
+                    CALL Petsc_PCSetType(LINEAR_DIRECT_SOLVER%PC,PETSC_PCLU,ERR,ERROR,*999)
                     SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
                     CASE(SOLVER_MUMPS_LIBRARY)
                       !Set the PC factorisation package to MUMPS
-                      CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_MUMPS,ERR,ERROR,*999)
+                      CALL Petsc_PCFactorSetMatSolverPackage(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_MUMPS,ERR,ERROR,*999)
                     CASE(SOLVER_SUPERLU_LIBRARY)
                       !Set the PC factorisation package to SuperLU_DIST
-                      CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_SUPERLU_DIST, &
+                      CALL Petsc_PCFactorSetMatSolverPackage(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_SUPERLU_DIST, &
                         & ERR,ERROR,*999)
-
                     CASE(SOLVER_LAPACK_LIBRARY)
-#if ( PETSC_VERSION_MINOR < 4 )
-                      !PETSc will default to LAPACK for seqdense matrix, for mpidense, set to parallel LAPACK
-                      IF(COMPUTATIONAL_NODES_NUMBER_GET(ERR,ERROR)>1) THEN
-                        CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PLAPACK, &
-                          & ERR,ERROR,*999)
-                      ENDIF
-#else
                       CALL FLAG_ERROR("LAPACK not available in this version of PETSc.",ERR,ERROR,*999)
-#endif
                     CASE(SOLVER_PASTIX_LIBRARY)
-#if ( PETSC_VERSION_MINOR >= 1 )
                       !Set the PC factorisation package to PaStiX
-                      CALL PETSC_PCFACTORSETMATSOLVERPACKAGE(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PASTIX,ERR,ERROR,*999)
-#else
-                      CALL FLAG_ERROR("PaStiX not available in this version of PETSc.",ERR,ERROR,*999)
-#endif
+                      CALL Petsc_PCFactorSetMatSolverPackage(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PASTIX,ERR,ERROR,*999)
                     END SELECT
-#else
-                    SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
-                    CASE(SOLVER_MUMPS_LIBRARY)
-                      !Set the matrix type to MUMPS
-                      CALL PETSC_MATSETTYPE(SOLVER_MATRIX%PETSC%MATRIX,PETSC_AIJMUMPS,ERR,ERROR,*999)
-                    CASE(SOLVER_SUPERLU_LIBRARY)
-                      CALL FLAG_ERROR("SuperLU not available in this version of PETSc.",ERR,ERROR,*999)
-                    CASE(SOLVER_PASTIX_LIBRARY)
-                      CALL FLAG_ERROR("PaStiX not available in this version of PETSc.",ERR,ERROR,*999)
-                    CASE(SOLVER_LAPACK_LIBRARY)
-                      !Use PETSc default
-                    END SELECT
-#endif
                   ELSE
                     CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -9391,12 +9333,12 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_MUMPS_LIBRARY)
         !Call MUMPS through PETSc
-        CALL PETSC_PCFINALISE(DIRECT_SOLVER%PC,ERR,ERROR,*999)
-        CALL PETSC_KSPFINALISE(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+        CALL Petsc_PCFinalise(DIRECT_SOLVER%PC,ERR,ERROR,*999)
+        CALL Petsc_KSPFinalise(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
       CASE(SOLVER_SUPERLU_LIBRARY)
         !Call SuperLU through PETSc
-        CALL PETSC_PCFINALISE(DIRECT_SOLVER%PC,ERR,ERROR,*999)
-        CALL PETSC_KSPFINALISE(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+        CALL Petsc_PCFinalise(DIRECT_SOLVER%PC,ERR,ERROR,*999)
+        CALL Petsc_KSPFinalise(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
       CASE(SOLVER_SPOOLES_LIBRARY)
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_UMFPACK_LIBRARY)
@@ -9407,12 +9349,12 @@ CONTAINS
         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_LAPACK_LIBRARY)
         !Call SuperLU through PETSc
-        CALL PETSC_PCFINALISE(DIRECT_SOLVER%PC,ERR,ERROR,*999)
-        CALL PETSC_KSPFINALISE(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+        CALL Petsc_PCFinalise(DIRECT_SOLVER%PC,ERR,ERROR,*999)
+        CALL Petsc_KSPFinalise(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
       CASE(SOLVER_PASTIX_LIBRARY)
         !Call PaStiX through PETSc
-        CALL PETSC_PCFINALISE(DIRECT_SOLVER%PC,ERR,ERROR,*999)
-        CALL PETSC_KSPFINALISE(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+        CALL Petsc_PCFinalise(DIRECT_SOLVER%PC,ERR,ERROR,*999)
+        CALL Petsc_KSPFinalise(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The solver library type of "// &
           & TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
@@ -9450,8 +9392,8 @@ CONTAINS
       DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_MUMPS_LIBRARY
       !Call MUMPS through PETSc
       DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
-      CALL PETSC_PCINITIALISE(DIRECT_SOLVER%PC,ERR,ERROR,*999)
-      CALL PETSC_KSPINITIALISE(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
+      CALL Petsc_PCInitialise(DIRECT_SOLVER%PC,ERR,ERROR,*999)
+      CALL Petsc_KSPInitialise(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
     ELSE
       CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*998)
     ENDIF
@@ -9553,16 +9495,11 @@ CONTAINS
                       solverMatrix=>solverMatrices%MATRICES(1)%PTR%MATRIX
                       IF(ASSOCIATED(solverMatrix)) THEN
                         IF(ASSOCIATED(solverMatrix%PETSC)) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 1 )
                           !Call MatGetFactor to create matrix petscFactoredMatrix from preconditioner context
                           CALL Petsc_PCFactorSetUpMatSolverPackage(linearDirectSolver%pc,err,error,*999)
                           CALL Petsc_PCFactorGetMatrix(linearDirectSolver%pc,petscFactoredMatrix,err,error,*999)
                           !Set ICNTL(icntl)=ivalue
                           CALL Petsc_MatMumpsSetIcntl(petscFactoredMatrix,icntl,ivalue,err,error,*999)
-#else
-                          CALL FlagError("MatMumpsSetIcntl not available in this version of PETSc. "// &
-                            & "Use version 3.1 or greater.",ERR,ERROR,*999)
-#endif
                         ELSE
                           CALL FlagError("Solver matrix PETSc is not associated.",err,error,*999)
                         ENDIF
@@ -9675,16 +9612,11 @@ CONTAINS
                   solverMatrix=>solverMatrices%MATRICES(1)%PTR%MATRIX
                   IF(ASSOCIATED(solverMatrix)) THEN
                     IF(ASSOCIATED(solverMatrix%PETSC)) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
                       !Call MatGetFactor to create matrix petscFactoredMatrix from preconditioner context
                       CALL Petsc_PCFactorSetUpMatSolverPackage(linearDirectSolver%PC,err,error,*999)
                       CALL Petsc_PCFactorGetMatrix(linearDirectSolver%PC,petscFactoredMatrix,err,error,*999)
                       !Set CNTL(icntl)=val
                       CALL Petsc_MatMumpsSetCntl(petscFactoredMatrix,icntl,val,err,error,*999)
-#else
-                      CALL FLAG_ERROR("MatMumpsSetCntl not available in this version of PETSc. "// &
-                        & "Use version 3.4 or greater.",ERR,ERROR,*999)
-#endif
                     ELSE
                       CALL FLAG_ERROR("Solver matrix PETSc is not associated.",err,error,*999)
                     ENDIF
@@ -9815,23 +9747,13 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                      CALL Petsc_KSPSetOperators(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
-#else
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif
                                     ELSE
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_PCSETREUSEPRECONDITIONER(LINEAR_DIRECT_SOLVER%PC,PETSC_TRUE,ERR,ERROR,*999)
-#else
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
-#endif
+                                      CALL Petsc_PCSetReusePreconditioner(LINEAR_DIRECT_SOLVER%PC,.TRUE.,ERR,ERROR,*999)
                                     ENDIF
                                     !Solve the linear system
-                                    CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
+                                    CALL Petsc_KSPSolve(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
                                       & SOLVER_VECTOR%PETSC%VECTOR,ERR,ERROR,*999) 
                                   ELSE
                                     CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
@@ -9852,23 +9774,13 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                      CALL Petsc_KSPSetOperators(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
-#else
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif
                                     ELSE
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_PCSETREUSEPRECONDITIONER(LINEAR_DIRECT_SOLVER%PC,PETSC_TRUE,ERR,ERROR,*999)
-#else
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
-#endif
+                                      CALL Petsc_PCSetReusePreconditioner(LINEAR_DIRECT_SOLVER%PC,PETSC_TRUE,ERR,ERROR,*999)
                                     ENDIF
                                     !Solve the linear system
-                                    CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
+                                    CALL Petsc_KSPSolve(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
                                       & SOLVER_VECTOR%PETSC%VECTOR,ERR,ERROR,*999) 
                                   ELSE
                                     CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
@@ -9897,23 +9809,13 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                      CALL Petsc_KSPSetOperators(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
-#else
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif
                                     ELSE
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_PCSETREUSEPRECONDITIONER(LINEAR_DIRECT_SOLVER%PC,PETSC_TRUE,ERR,ERROR,*999)
-#else
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
-#endif
+                                      CALL Petsc_PCSetReusePreconditioner(LINEAR_DIRECT_SOLVER%PC,.TRUE.,ERR,ERROR,*999)
                                     ENDIF
                                     !Solve the linear system
-                                    CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
+                                    CALL Petsc_KSPSolve(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
                                       & SOLVER_VECTOR%PETSC%VECTOR,ERR,ERROR,*999) 
                                   ELSE
                                     CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
@@ -9934,23 +9836,13 @@ CONTAINS
                                 IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) THEN
                                   IF(ASSOCIATED(SOLVER_MATRIX%MATRIX%PETSC)) THEN
                                     IF(SOLVER_MATRIX%UPDATE_MATRIX) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
+                                      CALL Petsc_KSPSetOperators(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
                                         & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,ERR,ERROR,*999)
-#else
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif
                                     ELSE
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                                      CALL PETSC_PCSETREUSEPRECONDITIONER(LINEAR_DIRECT_SOLVER%PC,PETSC_TRUE,ERR,ERROR,*999)
-#else
-                                      CALL PETSC_KSPSETOPERATORS(LINEAR_DIRECT_SOLVER%KSP,SOLVER_MATRIX%MATRIX%PETSC%MATRIX, &
-                                        & SOLVER_MATRIX%MATRIX%PETSC%MATRIX,PETSC_SAME_PRECONDITIONER,ERR,ERROR,*999)
-#endif
+                                      CALL Petsc_PCSetReusePreconditioner(LINEAR_DIRECT_SOLVER%PC,.TRUE.,ERR,ERROR,*999)
                                     ENDIF
                                     !Solve the linear system
-                                    CALL PETSC_KSPSOLVE(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
+                                    CALL Petsc_KSPSolve(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
                                       & SOLVER_VECTOR%PETSC%VECTOR,ERR,ERROR,*999) 
                                   ELSE
                                     CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
@@ -10363,14 +10255,14 @@ CONTAINS
                       CASE(SOLVER_NEWTON_LINESEARCH)
                         NEWTON_LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
                         IF(ASSOCIATED(NEWTON_LINESEARCH_SOLVER)) THEN
-                          CALL PETSC_SNESGETKSP(NEWTON_LINESEARCH_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
+                          CALL Petsc_SnesGetKSP(NEWTON_LINESEARCH_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
                         ELSE
                           CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE(SOLVER_NEWTON_TRUSTREGION)
                         NEWTON_TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
                         IF(ASSOCIATED(NEWTON_TRUSTREGION_SOLVER)) THEN
-                          CALL PETSC_SNESGETKSP(NEWTON_TRUSTREGION_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
+                          CALL Petsc_SnesGetKSP(NEWTON_TRUSTREGION_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
                         ELSE
                           CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                         ENDIF
@@ -10389,14 +10281,14 @@ CONTAINS
                       CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
                         QUASI_NEWTON_LINESEARCH_SOLVER=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
                         IF(ASSOCIATED(QUASI_NEWTON_LINESEARCH_SOLVER)) THEN
-                          CALL PETSC_SNESGETKSP(QUASI_NEWTON_LINESEARCH_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
+                          CALL Petsc_SnesGetKSP(QUASI_NEWTON_LINESEARCH_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
                         ELSE
                           CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
                         QUASI_NEWTON_TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
                         IF(ASSOCIATED(QUASI_NEWTON_TRUSTREGION_SOLVER)) THEN
-                          CALL PETSC_SNESGETKSP(QUASI_NEWTON_TRUSTREGION_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
+                          CALL Petsc_SnesGetKSP(QUASI_NEWTON_TRUSTREGION_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
                         ELSE
                           CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                         ENDIF
@@ -10416,76 +10308,66 @@ CONTAINS
                 CALL FLAG_ERROR("Solver linking solve is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL PETSC_KSPCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
+              CALL Petsc_KSPCreate(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
             ENDIF
             !Set the iterative solver type
             SELECT CASE(LINEAR_ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE)
             CASE(SOLVER_ITERATIVE_RICHARDSON)
-              CALL PETSC_KSPSETTYPE(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPRICHARDSON,ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+              CALL Petsc_KSPSetType(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPRICHARDSON,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_CHEBYSHEV)
-              CALL PETSC_KSPSETTYPE(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPCHEBYSHEV,ERR,ERROR,*999)
-#else
-            CASE(SOLVER_ITERATIVE_CHEBYCHEV)
-              CALL PETSC_KSPSETTYPE(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPCHEBYCHEV,ERR,ERROR,*999)
-#endif              
+              CALL Petsc_KSPSetType(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPCHEBYSHEV,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_CONJUGATE_GRADIENT)
-              CALL PETSC_KSPSETTYPE(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPCG,ERR,ERROR,*999)
+              CALL Petsc_KSPSetType(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPCG,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_BICONJUGATE_GRADIENT)
-              CALL PETSC_KSPSETTYPE(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPBICG,ERR,ERROR,*999)
+              CALL Petsc_KSPSetType(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPBICG,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_GMRES)
-              CALL PETSC_KSPSETTYPE(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPGMRES,ERR,ERROR,*999)
-              CALL PETSC_KSPGMRESSETRESTART(LINEAR_ITERATIVE_SOLVER%KSP,LINEAR_ITERATIVE_SOLVER%GMRES_RESTART,ERR,ERROR,*999)
+              CALL Petsc_KSPSetType(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPGMRES,ERR,ERROR,*999)
+              CALL Petsc_KSPGMRESSetRestart(LINEAR_ITERATIVE_SOLVER%KSP,LINEAR_ITERATIVE_SOLVER%GMRES_RESTART,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_BiCGSTAB)
-              CALL PETSC_KSPSETTYPE(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPBCGS,ERR,ERROR,*999)
+              CALL Petsc_KSPSetType(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPBCGS,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_CONJGRAD_SQUARED)
-              CALL PETSC_KSPSETTYPE(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPCGS,ERR,ERROR,*999)
+              CALL Petsc_KSPSetType(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPCGS,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The iterative solver type of "// &
                 & TRIM(NUMBER_TO_VSTRING(LINEAR_ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
             !Get the pre-conditioner
-            CALL PETSC_KSPGETPC(LINEAR_ITERATIVE_SOLVER%KSP,LINEAR_ITERATIVE_SOLVER%PC,ERR,ERROR,*999)
+            CALL Petsc_KSPGetPC(LINEAR_ITERATIVE_SOLVER%KSP,LINEAR_ITERATIVE_SOLVER%PC,ERR,ERROR,*999)
             !Set the pre-conditioner type
             SELECT CASE(LINEAR_ITERATIVE_SOLVER%ITERATIVE_PRECONDITIONER_TYPE)
             CASE(SOLVER_ITERATIVE_NO_PRECONDITIONER)
-              CALL PETSC_PCSETTYPE(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCNONE,ERR,ERROR,*999)
+              CALL Petsc_PCSetType(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCNONE,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_JACOBI_PRECONDITIONER)
-              CALL PETSC_PCSETTYPE(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCJACOBI,ERR,ERROR,*999)
+              CALL Petsc_PCSetType(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCJACOBI,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_BLOCK_JACOBI_PRECONDITIONER)
-              CALL PETSC_PCSETTYPE(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCBJACOBI,ERR,ERROR,*999)
+              CALL Petsc_PCSetType(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCBJACOBI,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_SOR_PRECONDITIONER)
-              CALL PETSC_PCSETTYPE(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCSOR,ERR,ERROR,*999)
+              CALL Petsc_PCSetType(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCSOR,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_INCOMPLETE_CHOLESKY_PRECONDITIONER)
-              CALL PETSC_PCSETTYPE(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCICC,ERR,ERROR,*999)
+              CALL Petsc_PCSetType(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCICC,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_INCOMPLETE_LU_PRECONDITIONER)
-              CALL PETSC_PCSETTYPE(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCILU,ERR,ERROR,*999)
+              CALL Petsc_PCSetType(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCILU,ERR,ERROR,*999)
             CASE(SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER)
-              CALL PETSC_PCSETTYPE(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCASM,ERR,ERROR,*999)
+              CALL Petsc_PCSetType(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCASM,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The iterative preconditioner type of "// &
                 & TRIM(NUMBER_TO_VSTRING(LINEAR_ITERATIVE_SOLVER%ITERATIVE_PRECONDITIONER_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
             !Set the tolerances for the KSP solver
-            CALL PETSC_KSPSETTOLERANCES(LINEAR_ITERATIVE_SOLVER%KSP,LINEAR_ITERATIVE_SOLVER%RELATIVE_TOLERANCE, &
+            CALL Petsc_KSPSetTolerances(LINEAR_ITERATIVE_SOLVER%KSP,LINEAR_ITERATIVE_SOLVER%RELATIVE_TOLERANCE, &
               & LINEAR_ITERATIVE_SOLVER%ABSOLUTE_TOLERANCE,LINEAR_ITERATIVE_SOLVER%DIVERGENCE_TOLERANCE, &
               & LINEAR_ITERATIVE_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
             !Set any further KSP options from the command line options
-            CALL PETSC_KSPSETFROMOPTIONS(LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
+            CALL Petsc_KSPSetFromOptions(LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
             !Set the solver matrix to be the KSP matrix
             IF(SOLVER_MATRICES%NUMBER_OF_MATRICES==1) THEN
               SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(1)%PTR%MATRIX
               IF(ASSOCIATED(SOLVER_MATRIX)) THEN
                 IF(ASSOCIATED(SOLVER_MATRIX%PETSC)) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                  CALL PETSC_KSPSETOPERATORS(LINEAR_ITERATIVE_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
+                  CALL Petsc_KSPSetOperators(LINEAR_ITERATIVE_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
                     & ERR,ERROR,*999)
-#else
-                  CALL PETSC_KSPSETOPERATORS(LINEAR_ITERATIVE_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
-                    & PETSC_DIFFERENT_NONZERO_PATTERN,ERR,ERROR,*999)
-#endif                  
                 ELSE
                   CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
                 ENDIF
@@ -10597,8 +10479,8 @@ CONTAINS
       LINEAR_SOLVER=>LINEAR_ITERATIVE_SOLVER%LINEAR_SOLVER
       IF(ASSOCIATED(LINEAR_SOLVER)) THEN
         IF(.NOT.LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER) THEN
-          CALL PETSC_PCFINALISE(LINEAR_ITERATIVE_SOLVER%PC,ERR,ERROR,*999)
-          CALL PETSC_KSPFINALISE(LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
+          CALL Petsc_PCFinalise(LINEAR_ITERATIVE_SOLVER%PC,ERR,ERROR,*999)
+          CALL Petsc_KSPFinalise(LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
         ENDIF
       ENDIF
       DEALLOCATE(LINEAR_ITERATIVE_SOLVER)
@@ -10710,8 +10592,8 @@ CONTAINS
         LINEAR_SOLVER%ITERATIVE_SOLVER%ABSOLUTE_TOLERANCE=1.0E-10_DP
         LINEAR_SOLVER%ITERATIVE_SOLVER%DIVERGENCE_TOLERANCE=1.0E5_DP
         LINEAR_SOLVER%ITERATIVE_SOLVER%GMRES_RESTART=30
-        CALL PETSC_PCINITIALISE(LINEAR_SOLVER%ITERATIVE_SOLVER%PC,ERR,ERROR,*999)
-        CALL PETSC_KSPINITIALISE(LINEAR_SOLVER%ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
+        CALL Petsc_PCInitialise(LINEAR_SOLVER%ITERATIVE_SOLVER%PC,ERR,ERROR,*999)
+        CALL Petsc_KSPInitialise(LINEAR_SOLVER%ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*998)
@@ -10746,13 +10628,8 @@ CONTAINS
       SELECT CASE(ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE)
       CASE(SOLVER_ITERATIVE_RICHARDSON)
         SOLVER_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_LIBRARY
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
       CASE(SOLVER_ITERATIVE_CHEBYSHEV)
         SOLVER_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_LIBRARY
-#else
-      CASE(SOLVER_ITERATIVE_CHEBYCHEV)
-        SOLVER_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_LIBRARY
-#endif        
       CASE(SOLVER_ITERATIVE_CONJUGATE_GRADIENT)
         SOLVER_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_LIBRARY
       CASE(SOLVER_ITERATIVE_GMRES)
@@ -10808,11 +10685,7 @@ CONTAINS
             & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a Richardson iterative linear solver."
         END SELECT
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
       CASE(SOLVER_ITERATIVE_CHEBYSHEV)
-#else
-      CASE(SOLVER_ITERATIVE_CHEBYCHEV)
-#endif        
         SELECT CASE(SOLVER_LIBRARY_TYPE)
         CASE(SOLVER_CMISS_LIBRARY)
           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
@@ -11256,12 +11129,12 @@ CONTAINS
                                 !Zero the solution vector
                                 CALL DISTRIBUTED_VECTOR_ALL_VALUES_SET(SOLVER_VECTOR,0.0_DP,ERR,ERROR,*999)
                                 !Tell PETSc that the solution vector is zero
-                                CALL PETSC_KSPSETINITIALGUESSNONZERO(LINEAR_ITERATIVE_SOLVER%KSP,.FALSE.,ERR,ERROR,*999)
+                                CALL Petsc_KSPSetInitialGuessNonZero(LINEAR_ITERATIVE_SOLVER%KSP,.FALSE.,ERR,ERROR,*999)
                               CASE(SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD)
                                 !Make sure the solver vector contains the current dependent field values
                                 CALL SOLVER_SOLUTION_UPDATE(SOLVER,ERR,ERROR,*999)
                                 !Tell PETSc that the solution vector is nonzero
-                                CALL PETSC_KSPSETINITIALGUESSNONZERO(LINEAR_ITERATIVE_SOLVER%KSP,.TRUE.,ERR,ERROR,*999)
+                                CALL Petsc_KSPSetInitialGuessNonZero(LINEAR_ITERATIVE_SOLVER%KSP,.TRUE.,ERR,ERROR,*999)
                               CASE(SOLVER_SOLUTION_INITIALISE_NO_CHANGE)
                                 !Do nothing
                               CASE DEFAULT
@@ -11274,13 +11147,13 @@ CONTAINS
 #ifdef TAUPROF
                               CALL TAU_STATIC_PHASE_START("KSPSOLVE")
 #endif
-                              CALL PETSC_KSPSOLVE(LINEAR_ITERATIVE_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
+                              CALL Petsc_KSPSolve(LINEAR_ITERATIVE_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
                                 & ERR,ERROR,*999)
 #ifdef TAUPROF
                               CALL TAU_STATIC_PHASE_STOP("KSPSOLVE")
 #endif
                               !Check for convergence
-                              CALL PETSC_KSPGETCONVERGEDREASON(LINEAR_ITERATIVE_SOLVER%KSP,CONVERGED_REASON,ERR,ERROR,*999)
+                              CALL Petsc_KSPGetConvergedReason(LINEAR_ITERATIVE_SOLVER%KSP,CONVERGED_REASON,ERR,ERROR,*999)
                               SELECT CASE(CONVERGED_REASON)
                               CASE(PETSC_KSP_DIVERGED_NULL)
                                 CALL FLAG_WARNING("Linear iterative solver did not converge. PETSc diverged null.",ERR,ERROR,*999)
@@ -11300,8 +11173,9 @@ CONTAINS
                               CASE(PETSC_KSP_DIVERGED_INDEFINITE_PC)
                                 CALL FLAG_WARNING("Linear iterative solver did not converge. PETSc diverged indefinite PC.", &
                                   & ERR,ERROR,*999)
-                              CASE(PETSC_KSP_DIVERGED_NAN)
-                                CALL FLAG_WARNING("Linear iterative solver did not converge. PETSc diverged NaN.",ERR,ERROR,*999)
+                              CASE(PETSC_KSP_DIVERGED_NANORINF)
+                                CALL FLAG_WARNING("Linear iterative solver did not converge. PETSc diverged NaN or Inf.", &
+                                  & ERR,ERROR,*999)
                               CASE(PETSC_KSP_DIVERGED_INDEFINITE_MAT)
                                 CALL FLAG_WARNING("Linear iterative solver did not converge. PETSc diverged indefinite mat.", &
                                   & ERR,ERROR,*999)
@@ -11310,10 +11184,10 @@ CONTAINS
                                 !Output solution characteristics
                                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
                                 CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Linear iterative solver parameters:",ERR,ERROR,*999)
-                                CALL PETSC_KSPGETITERATIONNUMBER(LINEAR_ITERATIVE_SOLVER%KSP,NUMBER_ITERATIONS,ERR,ERROR,*999)
+                                CALL Petsc_KSPGetIterationNumber(LINEAR_ITERATIVE_SOLVER%KSP,NUMBER_ITERATIONS,ERR,ERROR,*999)
                                 CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Final number of iterations = ",NUMBER_ITERATIONS, &
                                   & ERR,ERROR,*999)
-                                CALL PETSC_KSPGETRESIDUALNORM(LINEAR_ITERATIVE_SOLVER%KSP,RESIDUAL_NORM,ERR,ERROR,*999)
+                                CALL Petsc_KSPGetResidualNorm(LINEAR_ITERATIVE_SOLVER%KSP,RESIDUAL_NORM,ERR,ERROR,*999)
                                 CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Final residual norm = ",RESIDUAL_NORM, &
                                   & ERR,ERROR,*999)
                                 SELECT CASE(CONVERGED_REASON)
@@ -11422,13 +11296,8 @@ CONTAINS
                     SELECT CASE(ITERATIVE_SOLVER_TYPE)
                     CASE(SOLVER_ITERATIVE_RICHARDSON)
                       SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE=SOLVER_ITERATIVE_RICHARDSON
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
                     CASE(SOLVER_ITERATIVE_CHEBYSHEV)
                       SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE=SOLVER_ITERATIVE_CHEBYSHEV
-#else
-                    CASE(SOLVER_ITERATIVE_CHEBYCHEV)
-                      SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE=SOLVER_ITERATIVE_CHEBYCHEV
-#endif                      
                     CASE(SOLVER_ITERATIVE_CONJUGATE_GRADIENT)
                       SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE=SOLVER_ITERATIVE_CONJUGATE_GRADIENT
                     CASE(SOLVER_ITERATIVE_BICONJUGATE_GRADIENT)
@@ -15429,15 +15298,14 @@ CONTAINS
                   !Set the nonlinear solver type to be a Quasi-Newton line search solver
                   CALL Petsc_SnesSetType(LINESEARCH_SOLVER%snes,PETSC_SNESQN,ERR,ERROR,*999)
                   !Following routines don't work for petsc version < 3.5.
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
-                  !Set the nonlinear Quasi-Newton type
+                 !Set the nonlinear Quasi-Newton type
                   SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE)
                   CASE(SOLVER_QUASI_NEWTON_LBFGS)
-                    CALL PETSC_SNESQNSETTYPE(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_LBFGS,ERR,ERROR,*999)
+                    CALL Petsc_SnesQNSetType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_LBFGS,ERR,ERROR,*999)
                   CASE(SOLVER_QUASI_NEWTON_GOODBROYDEN)
-                    CALL PETSC_SNESQNSETTYPE(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_BROYDEN,ERR,ERROR,*999)
+                    CALL Petsc_SnesQNSetType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_BROYDEN,ERR,ERROR,*999)
                   CASE(SOLVER_QUASI_NEWTON_BADBROYDEN)
-                    CALL PETSC_SNESQNSETTYPE(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_BADBROYDEN,ERR,ERROR,*999)
+                    CALL Petsc_SnesQNSetType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_BADBROYDEN,ERR,ERROR,*999)
                   CASE DEFAULT
                       LOCAL_ERROR="The specified nonlinear Quasi-Newton type of "// &
                         & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -15446,11 +15314,11 @@ CONTAINS
                   !Set the nonlinear Quasi-Newton restart type
                   SELECT CASE(QUASI_NEWTON_SOLVER%RESTART_TYPE)
                   CASE(SOLVER_QUASI_NEWTON_RESTART_NONE)
-                    CALL PETSC_SNESQNSETRESTARTTYPE(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_RESTART_NONE,ERR,ERROR,*999)
+                    CALL Petsc_SnesQNSetRestartType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_RESTART_NONE,ERR,ERROR,*999)
                   CASE(SOLVER_QUASI_NEWTON_RESTART_POWELL)
-                    CALL PETSC_SNESQNSETRESTARTTYPE(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_RESTART_POWELL,ERR,ERROR,*999)
+                    CALL Petsc_SnesQNSetRestartType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_RESTART_POWELL,ERR,ERROR,*999)
                   CASE(SOLVER_QUASI_NEWTON_RESTART_PERIODIC)
-                    CALL PETSC_SNESQNSETRESTARTTYPE(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_RESTART_PERIODIC,ERR,ERROR,*999)
+                    CALL Petsc_SnesQNSetRestartType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_RESTART_PERIODIC,ERR,ERROR,*999)
                   CASE DEFAULT
                       LOCAL_ERROR="The specified nonlinear Quasi-Newton restart type of "// &
                         & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%RESTART_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -15459,13 +15327,13 @@ CONTAINS
                   !Set the nonlinear Quasi-Newton scale type
                   SELECT CASE(QUASI_NEWTON_SOLVER%SCALE_TYPE)
                   CASE(SOLVER_QUASI_NEWTON_SCALE_NONE)
-                    CALL PETSC_SNESQNSETSCALETYPE(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_SCALE_NONE,ERR,ERROR,*999)
+                    CALL Petsc_SnesQNSetScaleType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_SCALE_NONE,ERR,ERROR,*999)
                   CASE(SOLVER_QUASI_NEWTON_SCALE_SHANNO)
-                    CALL PETSC_SNESQNSETSCALETYPE(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_SCALE_SHANNO,ERR,ERROR,*999)
+                    CALL Petsc_SnesQNSetScaleType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_SCALE_SHANNO,ERR,ERROR,*999)
                   CASE(SOLVER_QUASI_NEWTON_SCALE_LINESEARCH)
-                    CALL PETSC_SNESQNSETSCALETYPE(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_SCALE_LINESEARCH,ERR,ERROR,*999)
+                    CALL Petsc_SnesQNSetScaleType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_SCALE_LINESEARCH,ERR,ERROR,*999)
                   CASE(SOLVER_QUASI_NEWTON_SCALE_JACOBIAN)
-                    CALL PETSC_SNESQNSETSCALETYPE(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_SCALE_JACOBIAN,ERR,ERROR,*999)
+                    CALL Petsc_SnesQNSetScaleType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_SCALE_JACOBIAN,ERR,ERROR,*999)
                   CASE DEFAULT
                       LOCAL_ERROR="The specified nonlinear Quasi-Newton scale type of "// &
                         & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%SCALE_TYPE,"*",ERR,ERROR))//" is invalid."
@@ -15474,7 +15342,6 @@ CONTAINS
 
                   !Set the Quasi-Newton restart
                   !Not implemented yet, as there is currently no routine in PETSc for this. If need be, this can be set in your petscrc file.
-#endif
                   !Create the solver matrices and vectors
                   LINEAR_SOLVER=>QUASI_NEWTON_SOLVER%LINEAR_SOLVER
                   IF(ASSOCIATED(LINEAR_SOLVER)) THEN
@@ -15622,30 +15489,22 @@ CONTAINS
                       CALL FlagError(local_error,err,error,*999)
                     END SELECT
                     ! Set step tolerances, leave iterative line search options as defaults
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
                     CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
                       & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
                       & PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL, &
                       & PETSC_DEFAULT_INTEGER,err,error,*999)
-#else
-                    CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
-                      & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
-                      & PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION, &
-                      & PETSC_DEFAULT_INTEGER,err,error,*999)
-#endif
                     IF(linesearch_solver%linesearchMonitorOutput) THEN
                       CALL Petsc_SnesLineSearchSetMonitor(linesearch_solver%snesLineSearch,PETSC_TRUE,err,error,*999)
                     ELSE
                       CALL Petsc_SnesLineSearchSetMonitor(linesearch_solver%snesLineSearch,PETSC_FALSE,err,error,*999)
                     ENDIF
                     !Set the tolerances for the SNES solver
-                    CALL PETSC_SNESSETTOLERANCES(LINESEARCH_SOLVER%snes,QUASI_NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
+                    CALL Petsc_SnesSetTolerances(LINESEARCH_SOLVER%snes,QUASI_NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
                       & QUASI_NEWTON_SOLVER%RELATIVE_TOLERANCE,QUASI_NEWTON_SOLVER%SOLUTION_TOLERANCE, &
                       & QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS, &
                       & QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS,ERR,ERROR,*999)
-
                     !Set any further SNES options from the command line options
-                    CALL PETSC_SNESSETFROMOPTIONS(LINESEARCH_SOLVER%snes,ERR,ERROR,*999)
+                    CALL Petsc_SnesSetFromOptions(LINESEARCH_SOLVER%snes,ERR,ERROR,*999)
                   ELSE
                     CALL FLAG_ERROR("Quasi-Newton linesearch solver linear solver is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -15893,10 +15752,10 @@ CONTAINS
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                         !Solve the nonlinear equations
-                        CALL PETSC_SNESSOLVE(LINESEARCH_SOLVER%snes,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
+                        CALL Petsc_SnesSolve(LINESEARCH_SOLVER%snes,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
                           & ERR,ERROR,*999)
                         !Check for convergence
-                        CALL PETSC_SNESGETCONVERGEDREASON(LINESEARCH_SOLVER%snes,CONVERGED_REASON,ERR,ERROR,*999)
+                        CALL Petsc_SnesGetConvergedReason(LINESEARCH_SOLVER%snes,CONVERGED_REASON,ERR,ERROR,*999)
                         SELECT CASE(CONVERGED_REASON)
                         CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
                           CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged function count.", &
@@ -15910,8 +15769,8 @@ CONTAINS
                         CASE(PETSC_SNES_DIVERGED_MAX_IT)
                           CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged maximum iterations.", &
                             & ERR,ERROR,*999)
-                        CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
-                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged line search failure.", &
+                        CASE(PETSC_SNES_DIVERGED_LINE_SEARCH)
+                          CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged line search.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
                           CALL FLAG_WARNING("Nonlinear line search solver did not converge. PETSc diverged local minimum.", &
@@ -16643,14 +16502,14 @@ CONTAINS
 !!TODO: set up the matrix structure if using an analytic Jacobian
                   CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
                   !Create the PETSc SNES solver
-                  CALL PETSC_SNESCREATE(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
+                  CALL Petsc_SnesCreate(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
                   !Set the nonlinear solver type to be a Quasi-Newton trust region solver
-                  CALL PETSC_SNESSETTYPE(TRUSTREGION_SOLVER%snes,PETSC_SNESTR,ERR,ERROR,*999)
+                  CALL Petsc_SnesSetType(TRUSTREGION_SOLVER%snes,PETSC_SNESNEWTONTR,ERR,ERROR,*999)
                   !Set the nonlinear function
                   RESIDUAL_VECTOR=>SOLVER_MATRICES%RESIDUAL
                   IF(ASSOCIATED(RESIDUAL_VECTOR)) THEN
                     IF(ASSOCIATED(RESIDUAL_VECTOR%PETSC)) THEN
-                      CALL PETSC_SNESSETFUNCTION(TRUSTREGION_SOLVER%snes,RESIDUAL_VECTOR%PETSC%VECTOR, &
+                      CALL Petsc_SnesSetFunction(TRUSTREGION_SOLVER%snes,RESIDUAL_VECTOR%PETSC%VECTOR, &
                         & Problem_SolverResidualEvaluatePetsc,SOLVER,ERR,ERROR,*999)
                       CALL FLAG_ERROR("The residual vector PETSc is not associated.",ERR,ERROR,*999)
                     ENDIF
@@ -16661,15 +16520,15 @@ CONTAINS
                   !Set the trust region delta ???
                   
                   !Set the trust region tolerance
-                  CALL PETSC_SNESSETTRUSTREGIONTOLERANCE(TRUSTREGION_SOLVER%snes,TRUSTREGION_SOLVER%TRUSTREGION_TOLERANCE, &
+                  CALL Petsc_SnesSetTrustRegionTolerance(TRUSTREGION_SOLVER%snes,TRUSTREGION_SOLVER%TRUSTREGION_TOLERANCE, &
                     & ERR,ERROR,*999)
                   !Set the tolerances for the SNES solver
-                  CALL PETSC_SNESSETTOLERANCES(TRUSTREGION_SOLVER%snes,QUASI_NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
+                  CALL Petsc_SnesSetTolerances(TRUSTREGION_SOLVER%snes,QUASI_NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
                     & QUASI_NEWTON_SOLVER%RELATIVE_TOLERANCE,QUASI_NEWTON_SOLVER%SOLUTION_TOLERANCE, &
                     & QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS,QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS, &
                     & ERR,ERROR,*999)
                   !Set any further SNES options from the command line options
-                  CALL PETSC_SNESSETFROMOPTIONS(TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
+                  CALL Petsc_SnesSetFromOptions(TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
                 ELSE
                   CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
@@ -16788,7 +16647,7 @@ CONTAINS
     ENTERS("SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN      
-      CALL PETSC_SNESFINALISE(TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
+      CALL Petsc_SnesFinalise(TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
       DEALLOCATE(TRUSTREGION_SOLVER)
     ENDIF
     
@@ -16827,7 +16686,7 @@ CONTAINS
         QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
 !!TODO: set this properly
         QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%TRUSTREGION_DELTA0=0.01_DP
-        CALL PETSC_SNESINITIALISE(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
+        CALL Petsc_SnesInitialise(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*998)
@@ -18237,7 +18096,7 @@ CONTAINS
                   !Create the PETSc SNES solver
                   CALL Petsc_SnesCreate(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINESEARCH_SOLVER%snes,ERR,ERROR,*999)
                   !Set the nonlinear solver type to be a Newton line search solver
-                  CALL Petsc_SnesSetType(LINESEARCH_SOLVER%snes,PETSC_SNESLS,ERR,ERROR,*999)
+                  CALL Petsc_SnesSetType(LINESEARCH_SOLVER%snes,PETSC_SNESNEWTONLS,ERR,ERROR,*999)
                   
                   !Create the solver matrices and vectors
                   LINEAR_SOLVER=>NEWTON_SOLVER%LINEAR_SOLVER
@@ -18321,7 +18180,6 @@ CONTAINS
                               CALL DISTRIBUTED_MATRIX_FORM(JACOBIAN_MATRIX,ERR,ERROR,*999)
                               SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
                               CASE(SOLVER_SPARSE_MATRICES)
-#if ( PETSC_VERSION_GE(3,6,0) )
                                 CALL Petsc_MatColoringCreate(JACOBIAN_MATRIX%petsc%matrix,LINESEARCH_SOLVER%jacobianMatColoring, &
                                   & err,error,*999)
                                 CALL Petsc_MatColoringSetType(LINESEARCH_SOLVER%jacobianMatColoring,PETSC_MATCOLORING_SL, &
@@ -18330,23 +18188,13 @@ CONTAINS
                                 CALL Petsc_MatColoringApply(LINESEARCH_SOLVER%jacobianMatColoring,LINESEARCH_SOLVER% &
                                   & jacobianISColoring,err,error,*999)
                                 CALL Petsc_MatColoringDestroy(LINESEARCH_SOLVER%jacobianMatColoring,err,error,*999)
-#else                                
-                                CALL Petsc_MatGetColoring(JACOBIAN_MATRIX%PETSC%MATRIX,PETSC_MATCOLORING_SL,LINESEARCH_SOLVER% &
-                                  & jacobianISColoring,ERR,ERROR,*999)
-#endif                                
                                 !Compute SNESComputeJacobianDefaultColor data structure
                                 CALL Petsc_MatFDColoringCreate(JACOBIAN_MATRIX%petsc%matrix,LINESEARCH_SOLVER%jacobianISColoring, &
                                   & LINESEARCH_SOLVER%jacobianMatFDColoring,err,error,*999)
-#if ( PETSC_VERSION_GE(3,0,0) )
                                 !Pass the linesearch solver object rather than the temporary solver
                                 CALL Petsc_MatFDColoringSetFunction(LINESEARCH_SOLVER%jacobianMatFDColoring, &
                                   & Problem_SolverResidualEvaluatePetsc,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER% &
                                   & SOLVER,ERR,ERROR,*999)
-#else
-                                CALL Petsc_MatFDColoringSetFunctionSnes(LINESEARCH_SOLVER%jacobianMatFDColoring, &
-                                  & Problem_SolverResidualEvaluatePetsc,LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER% &
-                                  & SOLVER,ERR,ERROR,*999)
-#endif
                                 CALL Petsc_MatFDColoringSetFromOptions(LINESEARCH_SOLVER%jacobianMatFDColoring,err,error,*999)
                                 CALL Petsc_MatFDColoringSetup(JACOBIAN_MATRIX%petsc%matrix,LINESEARCH_SOLVER%jacobianISColoring, &
                                   & LINESEARCH_SOLVER%jacobianMatFDColoring,err,error,*999)
@@ -18387,48 +18235,23 @@ CONTAINS
                       CALL Petsc_SnesMonitorSet(LINESEARCH_SOLVER%snes,Problem_SolverNonlinearMonitorPETSC, &
                         & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                     ENDIF
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-                    !Set the line search type
-                    SELECT CASE(LINESEARCH_SOLVER%LINESEARCH_TYPE)
-                    CASE(SOLVER_NEWTON_LINESEARCH_NONORMS)
-                      CALL PETSC_SNESLINESEARCHSET(LINESEARCH_SOLVER%snes,PETSC_SNES_LINESEARCH_NONORMS,ERR,ERROR,*999)
-                    CASE(SOLVER_NEWTON_LINESEARCH_NONE)
-                      CALL PETSC_SNESLINESEARCHSET(LINESEARCH_SOLVER%snes,PETSC_SNES_LINESEARCH_NO,ERR,ERROR,*999)
-                    CASE(SOLVER_NEWTON_LINESEARCH_QUADRATIC)
-                      CALL PETSC_SNESLINESEARCHSET(LINESEARCH_SOLVER%snes,PETSC_SNES_LINESEARCH_QUADRATIC,ERR,ERROR,*999)
-                    CASE(SOLVER_NEWTON_LINESEARCH_CUBIC)
-                      CALL PETSC_SNESLINESEARCHSET(LINESEARCH_SOLVER%snes,PETSC_SNES_LINESEARCH_CUBIC,ERR,ERROR,*999)
-                    CASE DEFAULT
-                      LOCAL_ERROR="The nonlinear Newton line search type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER%LINESEARCH_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-                    !Set line search parameters
-                    CALL PETSC_SNESLINESEARCHSETPARAMS(LINESEARCH_SOLVER%snes,LINESEARCH_SOLVER%LINESEARCH_ALPHA, &
-                      & LINESEARCH_SOLVER%LINESEARCH_MAXSTEP,LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE, &
-                      & ERR,ERROR,*999)
-#else
-#if ( PETSC_VERSION_MAJOR == 3 && PETSC_VERSION_MINOR == 3 )
-                    CALL Petsc_SnesGetSnesLineSearch(linesearch_solver%snes,linesearch_solver%snesLineSearch,err,error,*999)
-#else
                     CALL Petsc_SnesGetLineSearch(linesearch_solver%snes,linesearch_solver%snesLineSearch,err,error,*999)
-#endif
                     !Set the line search type and order where applicable
                     SELECT CASE(linesearch_solver%linesearch_type)
                     CASE(SOLVER_NEWTON_LINESEARCH_NONORMS)
                       CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_BASIC,err,error,*999)
-                      CALL Petsc_SnesLineSearchSetComputeNorms(linesearch_solver%snesLineSearch,PETSC_FALSE,err,error,*999)
+                      CALL Petsc_SnesLineSearchSetComputeNorms(linesearch_solver%snesLineSearch,.FALSE.,err,error,*999)
                     CASE(SOLVER_NEWTON_LINESEARCH_LINEAR)
                       CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_CP,err,error,*999)
-                      CALL Petsc_SnesLineSearchSetOrder(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_LINEAR, &
+                      CALL Petsc_SnesLineSearchSetOrder(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_ORDER_LINEAR, &
                         & err,error,*999)
                     CASE(SOLVER_NEWTON_LINESEARCH_QUADRATIC)
                       CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_BT,err,error,*999)
-                      CALL Petsc_SnesLineSearchSetOrder(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_QUADRATIC, &
+                      CALL Petsc_SnesLineSearchSetOrder(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_ORDER_QUADRATIC, &
                         & err,error,*999)
                     CASE(SOLVER_NEWTON_LINESEARCH_CUBIC)
                       CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_BT,err,error,*999)
-                      CALL Petsc_SnesLineSearchSetOrder(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_CUBIC, &
+                      CALL Petsc_SnesLineSearchSetOrder(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_ORDER_CUBIC, &
                         & err,error,*999)
                     CASE DEFAULT
                       local_error="The nonlinear Newton line search type of "// &
@@ -18443,31 +18266,21 @@ CONTAINS
                     END SELECT
                     !Set step tolerances, leave iterative line search options as defaults.
 !!TODO: set the rtol, atol, ltol and maxits properly.
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 5 )
                     CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
                       & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
                       & PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_REAL,PETSC_DEFAULT_INTEGER,err,error,*999)
-#else
-                    CALL Petsc_SnesLineSearchSetTolerances(linesearch_solver%snesLineSearch, &
-                      & LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE,LINESEARCH_SOLVER%LINESEARCH_MAXSTEP, &
-                      & PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_DEFAULT_DOUBLE_PRECISION, &
-                      & PETSC_DEFAULT_INTEGER,err,error,*999)
-#endif                    
-#endif
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
                     IF(linesearch_solver%linesearchMonitorOutput) THEN
                       CALL Petsc_SnesLineSearchSetMonitor(linesearch_solver%snesLineSearch,PETSC_TRUE,err,error,*999)
                     ELSE
                       CALL Petsc_SnesLineSearchSetMonitor(linesearch_solver%snesLineSearch,PETSC_FALSE,err,error,*999)
                     ENDIF
-#endif
                     !Set the tolerances for the SNES solver
-                    CALL PETSC_SNESSETTOLERANCES(LINESEARCH_SOLVER%snes,NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
+                    CALL Petsc_SnesSetTolerances(LINESEARCH_SOLVER%snes,NEWTON_SOLVER%ABSOLUTE_TOLERANCE, &
                       & NEWTON_SOLVER%RELATIVE_TOLERANCE,NEWTON_SOLVER%SOLUTION_TOLERANCE, &
                       & NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS, &
                       & NEWTON_SOLVER%MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS,ERR,ERROR,*999)            
                     !Set any further SNES options from the command line options
-                    CALL PETSC_SNESSETFROMOPTIONS(LINESEARCH_SOLVER%snes,ERR,ERROR,*999)
+                    CALL Petsc_SnesSetFromOptions(LINESEARCH_SOLVER%snes,ERR,ERROR,*999)
                   ELSE
                     CALL FLAG_ERROR("Newton linesearch solver linear solver is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -18715,11 +18528,14 @@ CONTAINS
                           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                         !Solve the nonlinear equations
-                        CALL PETSC_SNESSOLVE(LINESEARCH_SOLVER%snes,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
+                        CALL Petsc_SnesSolve(LINESEARCH_SOLVER%snes,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
                           & ERR,ERROR,*999)
                         !Check for convergence
-                        CALL PETSC_SNESGETCONVERGEDREASON(LINESEARCH_SOLVER%snes,CONVERGED_REASON,ERR,ERROR,*999)
+                        CALL Petsc_SnesGetConvergedReason(LINESEARCH_SOLVER%snes,CONVERGED_REASON,ERR,ERROR,*999)
                         SELECT CASE(CONVERGED_REASON)
+                        CASE(PETSC_SNES_DIVERGED_FUNCTION_DOMAIN)
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged function domain.", &
+                            & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
                           CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged function count.", &
                             & ERR,ERROR,*999)
@@ -18732,23 +18548,22 @@ CONTAINS
                         CASE(PETSC_SNES_DIVERGED_MAX_IT)
                           CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged maximum iterations.", &
                             & ERR,ERROR,*999)
-                        CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
-                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged line search failure.", &
+                        CASE(PETSC_SNES_DIVERGED_LINE_SEARCH)
+                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged line search.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
                           CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged local minimum.", &
                             & ERR,ERROR,*999)
                         END SELECT
-                         IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
+                        IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
                           !Output solution characteristics
                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"",ERR,ERROR,*999)
                           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Newton linesearch solver parameters:",ERR,ERROR,*999)
-                          CALL PETSC_SNESGETITERATIONNUMBER(LINESEARCH_SOLVER%snes,NUMBER_ITERATIONS,ERR,ERROR,*999)
+                          CALL Petsc_SnesGetIterationNumber(LINESEARCH_SOLVER%snes,NUMBER_ITERATIONS,ERR,ERROR,*999)
                           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Final number of iterations = ",NUMBER_ITERATIONS, &
                             & ERR,ERROR,*999)
-                          CALL PETSC_SNESGETFUNCTION(LINESEARCH_SOLVER%snes,FUNCTION_VECTOR, &
-                            & ERR,ERROR,*999)
-                          CALL PETSC_VECNORM(FUNCTION_VECTOR,PETSC_NORM_2,FUNCTION_NORM,ERR,ERROR,*999)
+                          CALL Petsc_SnesGetFunction(LINESEARCH_SOLVER%snes,FUNCTION_VECTOR,ERR,ERROR,*999)
+                          CALL Petsc_VecNorm(FUNCTION_VECTOR,PETSC_NORM_2,FUNCTION_NORM,ERR,ERROR,*999)
                           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"Final function norm = ",FUNCTION_NORM, &
                             & ERR,ERROR,*999)
                           SELECT CASE(CONVERGED_REASON)
@@ -18758,11 +18573,9 @@ CONTAINS
                           CASE(PETSC_SNES_CONVERGED_FNORM_RELATIVE)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged F Norm relative.", &
                               & ERR,ERROR,*999)
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-                          CASE(PETSC_SNES_CONVERGED_PNORM_RELATIVE)
-                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged P Norm relative.", &
+                          CASE(PETSC_SNES_CONVERGED_SNORM_RELATIVE)
+                            CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged S Norm relative.", &
                               & ERR,ERROR,*999)
-#endif
                           CASE(PETSC_SNES_CONVERGED_ITS)
                             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Converged Reason = PETSc converged its.",ERR,ERROR,*999)
                           CASE(PETSC_SNES_CONVERGED_ITERATING)
@@ -18916,7 +18729,6 @@ CONTAINS
                 IF(NEWTON_SOLVER%NEWTON_SOLVE_TYPE==SOLVER_NEWTON_LINESEARCH) THEN
                   LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
                   IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
                     SELECT CASE(LINESEARCH_TYPE)
                     CASE(SOLVER_NEWTON_LINESEARCH_NONORMS)
                       LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_NEWTON_LINESEARCH_NONORMS
@@ -18931,22 +18743,6 @@ CONTAINS
                         & " is invalid."
                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
-#else
-                    SELECT CASE(LINESEARCH_TYPE)
-                    CASE(SOLVER_NEWTON_LINESEARCH_NONORMS)
-                      LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_NEWTON_LINESEARCH_NONORMS
-                    CASE(SOLVER_NEWTON_LINESEARCH_NONE)
-                      LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_NEWTON_LINESEARCH_NONE
-                    CASE(SOLVER_NEWTON_LINESEARCH_QUADRATIC)
-                      LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_NEWTON_LINESEARCH_QUADRATIC
-                    CASE(SOLVER_NEWTON_LINESEARCH_CUBIC)
-                      LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_NEWTON_LINESEARCH_CUBIC
-                    CASE DEFAULT
-                      LOCAL_ERROR="The specified line search type of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_TYPE,"*",ERR,ERROR))// &
-                        & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-                    END SELECT
-#endif                    
                   ELSE
                     CALL FLAG_ERROR("The Newton solver line search solver is not associated.",ERR,ERROR,*999)
                   ENDIF
@@ -19492,7 +19288,7 @@ CONTAINS
                   !Create the PETSc SNES solver
                   CALL Petsc_SnesCreate(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
                   !Set the nonlinear solver type to be a Newton trust region solver
-                  CALL Petsc_SnesSetType(TRUSTREGION_SOLVER%snes,PETSC_SNESTR,ERR,ERROR,*999)
+                  CALL Petsc_SnesSetType(TRUSTREGION_SOLVER%snes,PETSC_SNESNEWTONTR,ERR,ERROR,*999)
                   !Set the solver as the SNES application context
                   CALL Petsc_SnesSetApplicationContext(TRUSTREGION_SOLVER%snes,solver,err,error,*999)
                   !Set the nonlinear function
@@ -19637,7 +19433,7 @@ CONTAINS
     ENTERS("SOLVER_NEWTON_TRUSTREGION_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN      
-      CALL PETSC_SNESFINALISE(TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
+      CALL Petsc_SnesFinalise(TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
       DEALLOCATE(TRUSTREGION_SOLVER)
     ENDIF
     
@@ -19676,7 +19472,7 @@ CONTAINS
         NEWTON_SOLVER%TRUSTREGION_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
 !!TODO: set this properly
         NEWTON_SOLVER%TRUSTREGION_SOLVER%TRUSTREGION_DELTA0=0.01_DP
-        CALL PETSC_SNESINITIALISE(NEWTON_SOLVER%TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
+        CALL Petsc_SnesInitialise(NEWTON_SOLVER%TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
       ENDIF
     ELSE
       CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*998)
@@ -19992,7 +19788,7 @@ CONTAINS
           CASE(SOLVER_NEWTON_LINESEARCH)
             NEWTON_LINESEARCH_SOLVER=>NEWTON_SOLVER%LINESEARCH_SOLVER
             IF(ASSOCIATED(NEWTON_LINESEARCH_SOLVER)) THEN
-              CALL PETSC_SNESGETCONVERGEDREASON(NEWTON_LINESEARCH_SOLVER%snes,CONVERGED_REASON,ERR,ERROR,*999)
+              CALL Petsc_SnesGetConvergedReason(NEWTON_LINESEARCH_SOLVER%snes,CONVERGED_REASON,ERR,ERROR,*999)
                 SELECT CASE(CONVERGED_REASON)
                 CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
                   CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
@@ -20006,8 +19802,8 @@ CONTAINS
                 CASE(PETSC_SNES_DIVERGED_MAX_IT)
                   CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged maximum iterations.", &
                     & ERR,ERROR,*999)
-                CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search fail.", &
+                CASE(PETSC_SNES_DIVERGED_LINE_SEARCH)
+                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search.", &
                     & ERR,ERROR,*999)
                 CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
                   CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged local minimum.", &
@@ -20031,7 +19827,7 @@ CONTAINS
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
           QUASI_NEWTON_LINESEARCH_SOLVER=>QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER
           IF(ASSOCIATED(QUASI_NEWTON_LINESEARCH_SOLVER)) THEN
-            CALL PETSC_SNESGETCONVERGEDREASON(QUASI_NEWTON_LINESEARCH_SOLVER%snes,CONVERGED_REASON,ERR,ERROR,*999)
+            CALL Petsc_SnesGetConvergedReason(QUASI_NEWTON_LINESEARCH_SOLVER%snes,CONVERGED_REASON,ERR,ERROR,*999)
             SELECT CASE(CONVERGED_REASON)
             CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
               CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
@@ -20045,8 +19841,8 @@ CONTAINS
             CASE(PETSC_SNES_DIVERGED_MAX_IT)
               CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged maximum iterations.", &
                 & ERR,ERROR,*999)
-            CASE(PETSC_SNES_DIVERGED_LS_FAILURE)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search fail.", &
+            CASE(PETSC_SNES_DIVERGED_LINE_SEARCH)
+              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search.", &
                 & ERR,ERROR,*999)
             CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
               CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged local minimum.", &

@@ -51,18 +51,6 @@ MODULE CmissPetscTypes
   PRIVATE
 
 #include "petsc/finclude/petsc.h"
-#if ( PETSC_VERSION_LT(3,1,0) )
-#include "finclude/petscis.h"
-#include "finclude/petscksp.h"
-#include "finclude/petscmat.h"
-#include "finclude/petscpc.h"
-#include "finclude/petscsnes.h"
-#include "finclude/petscvec.h"
-#include "finclude/petscviewer.h"
-#endif
-#if ( PETSC_VERSION_LT(3,3,0) )
-#include "finclude/petscts.h"
-#endif
 
   !Module parameters
   
@@ -85,8 +73,6 @@ MODULE CmissPetscTypes
   END TYPE PetscKspType
 
   TYPE PetscMatType
-    !PetscScalar :: MAT_DATA(1)
-    !PetscOffset :: MAT_OFFSET
     Mat :: mat
   END TYPE PetscMatType
   
@@ -106,23 +92,15 @@ MODULE CmissPetscTypes
     SNES :: snes
   END TYPE PetscSnesType
 
-#if ( PETSC_VERSION_GE(3,3,0) )
   TYPE PetscSnesLineSearchType
     SNESLineSearch :: snesLineSearch
   END TYPE PetscSnesLineSearchType
-#else
-  TYPE PetscSnesLineSearchType
-    !Empty type here to avoid adding mess in types.f90
-  END TYPE PetscSnesLineSearchType
-#endif
   
   TYPE PetscTSType
     TS :: ts
   END TYPE PetscTSType
   
   TYPE PetscVecType
-    !PetscScalar :: VEC_DATA(1)
-    !PetscOffset :: VEC_OFFSET
     Vec :: vec
   END TYPE PetscVecType
   

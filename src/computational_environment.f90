@@ -47,7 +47,7 @@ MODULE COMP_ENVIRONMENT
 
   USE BASE_ROUTINES
   USE CMISS_MPI
-  USE CMISS_PETSC
+  USE CmissPetsc
   USE CONSTANTS
   USE KINDS
   USE MPI
@@ -57,7 +57,6 @@ MODULE COMP_ENVIRONMENT
 #include "macros.h"
 
   IMPLICIT NONE
- 
 
   !Module parameters
 
@@ -520,8 +519,8 @@ CONTAINS
     !Finalise PetSc
     !Call this after MPI_COMM_FREE as PETSc routines are called when some
     !MPI comm attributes are freed.
-    !CALL PETSC_LOGPRINTSUMMARY(PETSC_COMM_WORLD,"OpenCMISSTest.petsc",ERR,ERROR,*999)
-    CALL PETSC_FINALIZE(ERR,ERROR,*999)
+    !CALL Petsc_LogView(PETSC_COMM_WORLD,"OpenCMISSTest.petsc",ERR,ERROR,*999)
+    CALL Petsc_Finalise(ERR,ERROR,*999)
 
     CALL MPI_FINALIZE(MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_FINALIZE",MPI_IERROR,ERR,ERROR,*999)
@@ -595,7 +594,7 @@ CONTAINS
       & NUMBER_COMPUTATIONAL_NODES,ERR,ERROR,*999)
     
     !Initialise PETSc
-    CALL PETSC_INITIALIZE(PETSC_NULL_CHARACTER,ERR,ERROR,*999)
+    CALL Petsc_Initialise(PETSC_NULL_CHARACTER,ERR,ERROR,*999)
     
     IF(DIAGNOSTICS1) THEN
       !Just let the master node write out this information
