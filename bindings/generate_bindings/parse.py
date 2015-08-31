@@ -445,7 +445,7 @@ class Interface(CodeObject):
             max_number = -1
             for routine in routine_groups[group]:
                 try:
-                    number = int(filter(str.isdigit, routine))
+                    number = int(''.join([c for c in routine if str.isdigit(c)]))
                     if number > max_number:
                         array_routine = routine
                 except ValueError:
