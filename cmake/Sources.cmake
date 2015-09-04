@@ -56,10 +56,6 @@ set(IRON_Fortran_SRC
     equations_set_routines.f90
     field_IO_routines.f90
     field_routines.f90
-    fieldml_input_routines.f90
-    fieldml_output_routines.f90
-    fieldml_types.f90
-    fieldml_util_routines.f90
     finite_elasticity_Darcy_routines.f90
     finite_elasticity_fluid_pressure_routines.f90
     finite_elasticity_routines.f90
