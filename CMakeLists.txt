@@ -11,6 +11,7 @@ option(WITH_PETSC "Build iron with PETSC integration" ON)
 option(BUILD_TESTS "${PROJECT_NAME} - Build tests" ON)
 option(WITH_PROFILING "${PROJECT_NAME} - Build with profiling flags" OFF)
 option(WITH_C_BINDINGS "Build iron C bindings" ON)
+option(WITH_Python_BINDINGS "Build iron Python bindings" ON)
 set(PACKAGE_CONFIG_DIR "cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX)")
 
 # Config
@@ -36,10 +37,7 @@ if (WITH_FIELDML)
     message(STATUS "Building with FIELDML (${FIELDML-API_DIR})")
     find_package(FIELDML-API REQUIRED)
 endif()
-if (WITH_C_BINDINGS)
-    message(STATUS "Configuring to create C bindings")
-    include(IronCBindings)
-endif()
+
 # This include file is in the main "manage" directory.
 # We can include this here as iron is an integrated part of the overall build system.
 SET(IRON_UPSTREAM_DEPS PETSC SUNDIALS HYPRE MUMPS SCALAPACK PARMETIS)
@@ -115,6 +113,9 @@ if (WITH_FIELDML)
     add_dependencies(iron iron-fieldml)
     target_link_libraries(iron PUBLIC iron-fieldml)
 endif()
+
+# Build bindings as selected
+include(IronBindings)
 
 # Install steps
 INSTALL(TARGETS iron

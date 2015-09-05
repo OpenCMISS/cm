@@ -34,9 +34,10 @@ def generate(cm_path, args):
 
     This wraps the lower level extension module created by SWIG
     """
-
-    module = open(os.sep.join((cm_path, 'bindings', 'python', 'opencmiss',
-        'CMISS.py')), 'w')
+    CMISS_py_path = args[0]
+    #module = open(os.sep.join((cm_path, 'bindings', 'python', 'opencmiss',
+    #    'CMISS.py')), 'w')
+    module = open(os.sep.join((CMISS_py_path, 'CMISS.py')), 'w')
 
     library = LibrarySource(cm_path)
 
