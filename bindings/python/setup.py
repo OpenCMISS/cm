@@ -9,8 +9,8 @@ setup(
     name='OpenCMISS-Iron',
     version='0.4.0',
     description=('Python bindings for the OpenCMISS computational '
-            'modelling library.'),
-    long_description=('Python bindings to OpenCMISS. '
+            'modelling library Iron.'),
+    long_description=('Python bindings to OpenCMISS-Iron. '
             'OpenCMISS (Open Continuum Mechanics, Imaging, Signal processing '
             'and System identification) is a mathematical modelling '
             'environment that enables the application of finite element '

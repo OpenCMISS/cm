@@ -104,7 +104,7 @@ if (MINGW OR NOT MPI_Fortran_MODULE_COMPATIBLE)
 endif()
 
 # Build bindings as selected
-include(IronBindings)
+add_subdirectory(bindings)
 
 # Install steps
 INSTALL(TARGETS iron

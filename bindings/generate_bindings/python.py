@@ -27,9 +27,11 @@ signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 """
 
 PREFIX = 'CMISS'
+python_module_output_name = 'Iron'
+iron_python_library_name = 'iron_python'
 
 
-def generate(cm_path, args):
+def generate(iron_source_dir, args):
     """Generate the OpenCMISS Python module
 
     This wraps the lower level extension module created by SWIG
@@ -40,7 +42,7 @@ def generate(cm_path, args):
     #    'CMISS.py')), 'w')
     module = open(os.sep.join((CMISS_py_path, 'CMISS.py')), 'w')
 
-    library = LibrarySource(cm_path)
+    library = LibrarySource(iron_source_dir)
 
     module.write('"""%s"""\n\n' % MODULE_DOCSTRING)
     module.write("import _%s\n" %(swig_module_name))
@@ -76,7 +78,7 @@ def generate(cm_path, args):
         module.write('\n')
 
     # Add any extra Python code
-    extra_content_path = os.sep.join((cm_path, 'bindings', 'python',
+    extra_content_path = os.sep.join((iron_source_dir, 'bindings', 'python',
         'extra_content.py'))
     with open(extra_content_path, 'r') as extra_content:
         module.write(extra_content.read())
