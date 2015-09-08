@@ -1,5 +1,5 @@
 /* Python specific typemaps for SWIG */
-%module opencmiss
+%module iron_python
 %{
 #include "stdlib.h"
 #include "opencmiss.h"
@@ -219,4 +219,4 @@
     free($3);
 }
 
-%include "opencmiss.i"
+%include "iron_generated.i"

@@ -151,9 +151,9 @@ endforeach()
 # Any files added hereafter must already have complete paths!
 
 # Add generated c interface code
-if (HAVE_C_BINDINGS)
-    list(APPEND IRON_Fortran_SRC ${OPENCMISS_C_F90})
-endif()
+#if (HAVE_C_BINDINGS)
+#    list(APPEND IRON_Fortran_SRC ${OPENCMISS_C_F90})
+#endif()
 
 # Set combined sources variable
 set(IRON_SRC ${IRON_C_SRC} ${IRON_Fortran_SRC})

@@ -27,22 +27,22 @@ signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 """
 
 PREFIX = 'CMISS'
+python_module_output_name = 'Iron'
+iron_python_library_name = 'iron_python'
 
 
-def generate(cm_path, args):
+def generate(iron_source_dir, args):
     """Generate the OpenCMISS Python module
 
     This wraps the lower level extension module created by SWIG
     """
-    CMISS_py_path = args[0]
-    #module = open(os.sep.join((cm_path, 'bindings', 'python', 'opencmiss',
-    #    'CMISS.py')), 'w')
-    module = open(os.sep.join((CMISS_py_path, 'CMISS.py')), 'w')
+    output_dir = args[0]
+    module = open(os.path.join(output_dir, "%s.py" % python_module_output_name), 'w')
 
-    library = LibrarySource(cm_path)
+    library = LibrarySource(iron_source_dir)
 
     module.write('"""%s"""\n\n' % MODULE_DOCSTRING)
-    module.write("import _opencmiss_swig\n")
+    module.write("import {}\n".format(iron_python_library_name))
     module.write("import signal\n")
     module.write("from _utils import (CMISSError, CMISSType, Enum,\n"
         "    wrap_cmiss_routine as _wrap_routine)\n\n\n")
@@ -75,7 +75,7 @@ def generate(cm_path, args):
         module.write('\n')
 
     # Add any extra Python code
-    extra_content_path = os.sep.join((cm_path, 'bindings', 'python',
+    extra_content_path = os.sep.join((iron_source_dir, 'bindings', 'python',
         'extra_content.py'))
     with open(extra_content_path, 'r') as extra_content:
         module.write(extra_content.read())
@@ -107,7 +107,7 @@ def type_to_py(type):
     py_class.append("    def __init__(self):")
     py_class.append('        """Initialise a null %s"""\n' % type.name)
     py_class.append("        self.cmiss_type = "
-        "_wrap_routine(_opencmiss_swig.%s, None)\n" % initialise_method)
+        "_wrap_routine(%s.%s, None)\n" % (iron_python_library_name,initialise_method))
 
     for method in type.methods:
         if (not method.name.endswith('TypeInitialise') and
@@ -221,8 +221,8 @@ def py_method(type, routine):
     method.append("        %s = self" % self_parameter.name)
     for line in pre_code:
         method.append("        %s" % line)
-    method.append("        return _wrap_routine(_opencmiss_swig.%s, [%s])" %
-        (c_name, ', '.join(swig_args)))
+    method.append("        return _wrap_routine(%s.%s, [%s])" %
+        (iron_python_library_name,c_name, ', '.join(swig_args)))
 
     return '\n'.join(method)
 
@@ -243,8 +243,8 @@ def routine_to_py(routine):
     py_routine.append('    """%s\n    """\n' % docstring)
     for line in pre_code:
         py_routine.append("    %s" % line)
-    py_routine.append('    return _wrap_routine(_opencmiss_swig.%s, [%s])' %
-                      (c_name, ', '.join(swig_args)))
+    py_routine.append('    return _wrap_routine(%s.%s, [%s])' %
+                      (iron_python_library_name,c_name, ', '.join(swig_args)))
 
     return '\n'.join(py_routine)
 

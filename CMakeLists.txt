@@ -115,7 +115,7 @@ if (WITH_FIELDML)
 endif()
 
 # Build bindings as selected
-include(IronBindings)
+add_subdirectory(bindings)
 
 # Install steps
 INSTALL(TARGETS iron

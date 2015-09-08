@@ -9,8 +9,8 @@ setup(
     name='OpenCMISS',
     version='0.3',
     description=('Python bindings for the OpenCMISS computational '
-            'modelling library.'),
-    long_description=('Python bindings to OpenCMISS. '
+            'modelling library Iron.'),
+    long_description=('Python bindings to OpenCMISS-Iron. '
             'OpenCMISS (Open Continuum Mechanics, Imaging, Signal processing '
             'and System identification) is a mathematical modelling '
             'environment that enables the application of finite element '
@@ -21,5 +21,5 @@ setup(
     author_email='aree035@aucklanduni.ac.nz',
     url='http://www.opencmiss.org/',
     packages=['opencmiss'],
-    package_data={'opencmiss': ['_opencmiss_swig.so']}
+    package_data={'opencmiss': ['iron_python.so']}
 )
