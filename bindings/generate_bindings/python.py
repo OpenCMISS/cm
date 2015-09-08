@@ -42,7 +42,7 @@ def generate(iron_source_dir, args):
     library = LibrarySource(iron_source_dir)
 
     module.write('"""%s"""\n\n' % MODULE_DOCSTRING)
-    module.write("import {}\n".format(iron_python_library_name))
+    module.write("import %s\n" % iron_python_library_name)
     module.write("import signal\n")
     module.write("from _utils import (CMISSError, CMISSType, Enum,\n"
         "    wrap_cmiss_routine as _wrap_routine)\n\n\n")
