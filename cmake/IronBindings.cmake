@@ -40,10 +40,10 @@ else()
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bindings)
             
             #Generate module
-            #set(CMISS_PY ${BINDINGS_DIR}/CMISS.py)
-            #add_custom_command(OUTPUT ${CMISS_PY}
-            #    COMMAND ${PYTHON_EXECUTABLE} generate_bindings ${CMAKE_CURRENT_SOURCE_DIR} Python ${CMAKE_CURRENT_BINARY_DIR}
-            #    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bindings)
+            set(CMISS_PY ${BINDINGS_DIR}/CMISS.py)
+            add_custom_command(OUTPUT ${CMISS_PY}
+                COMMAND ${PYTHON_EXECUTABLE} generate_bindings ${CMAKE_CURRENT_SOURCE_DIR} Python ${BINDINGS_DIR}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bindings)
             
             set(SWIG_OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/opencmiss/iron")
             # Generate C wrapper
@@ -51,6 +51,7 @@ else()
             add_custom_command(OUTPUT ${PYTHON_WRAPPER}
                 DEPENDS ${SWIG_IFACE}
                 DEPENDS ${SWIG_INTERFACE_SRCS}
+                DEPENDS ${CMISS_PY}
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${SWIG_OUTDIR}
                 COMMAND ${SWIG_EXECUTABLE} -python -o ${PYTHON_WRAPPER}
                     -module iron -outdir ${SWIG_OUTDIR} opencmiss_py.i
@@ -81,7 +82,6 @@ else()
             endif()
             set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
                 "${SWIG_IFACE};${CMISS_PY};${PYTHON_WRAPPER};${OPENCMISS_C_F90};${OPENCMISS_H};${SWIG_INTERFACE_SRCS};${SWIG_OUTDIR}/iron.py")
-           message(STATUS "====${SWIG_IFACE};${CMISS_PY};${PYTHON_WRAPPER};${OPENCMISS_C_F90};${OPENCMISS_H};${SWIG_INTERFACE_SRCS}") 
             set(HAVE_Python_BINDINGS TRUE)
         else()
             message(WARNING "No SWIG or Python libraries found or no C bindings built. Unable to generate Python bindings for Iron.")            
