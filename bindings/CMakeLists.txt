@@ -6,6 +6,7 @@ find_package(PythonInterp QUIET)
 if (NOT PYTHONINTERP_FOUND)
     message(WARNING "No Python interpreter found. Unable to generate any Iron bindings")
 else()
+    set(_CLEANUP)
     if (WITH_C_BINDINGS OR WITH_Python_BINDINGS)
         # Generate the c files in each case, as swig wraps again around the C interface
         set(OPENCMISS_H "${CMAKE_CURRENT_BINARY_DIR}/opencmiss.h")
@@ -13,6 +14,7 @@ else()
         add_custom_command(OUTPUT ${OPENCMISS_C_F90} ${OPENCMISS_H}
                 COMMAND "${PYTHON_EXECUTABLE}" generate_bindings "${Iron_SOURCE_DIR}" C "${OPENCMISS_H}" "${OPENCMISS_C_F90}"
                 WORKING_DIRECTORY ${Iron_SOURCE_DIR}/bindings)
+        list(APPEND _CLEANUP ${OPENCMISS_H} ${OPENCMISS_C_F90}) 
     endif()
     
     # C-Bindings extra target
@@ -60,6 +62,7 @@ else()
                     -module ${IRON_PYTHON_MODULE} -outdir . iron.i
                 COMMENT "Generating python wrapper for Iron with swig"
             )
+            list(APPEND _CLEANUP ${SWIG_IFACE} ${PYTHON_WRAPPER})
             
             #Generate wrapper object
             execute_process(COMMAND "${PYTHON_EXECUTABLE}" "${Iron_SOURCE_DIR}/utils/numpy_include.py"
@@ -102,6 +105,7 @@ else()
                     ${CMAKE_CURRENT_BINARY_DIR}/${IRON_PYTHON_MODULE}.py
                     DESTINATION python/opencmiss
                 )
+                list(APPEND _CLEANUP ${IRON_PY})
             else()
                 message(FATAL_ERROR "Could not detect NumPy includes")
             endif()
@@ -110,5 +114,6 @@ else()
         else()
             message(WARNING "No SWIG or Python libraries found or no C bindings built. Unable to generate Python bindings for Iron.")            
         endif()
-    endif()   
+    endif()
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${_CLEANUP})
 endif()
