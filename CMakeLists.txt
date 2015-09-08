@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.0 FATAL_ERROR)
 project(Iron VERSION 0.4.0 LANGUAGES C CXX Fortran)# Need all languages as iron's deps cover all (link phase) 
 
 option(WITH_CELLML "Build iron with CellML support" ON)
-option(WITH_FIELDML "Build iron with FieldML support" OFF)
+option(WITH_FIELDML "Build iron with FieldML support" ON)
 option(WITH_HYPRE "Build iron with HYPRE integration" ON)
 option(WITH_SUNDIALS "Build iron with SUNDIALS integration" ON)
 option(WITH_MUMPS "Build iron with MUMPS integration" ON)
@@ -66,17 +66,15 @@ endforeach()
 
 # Populates the IRON_XX_SRC variables
 include(Sources)
-IF(WIN32 AND NOT MINGW)
+if(MSVC)
     # Need separate C/Fortran code due to Project natures in VS
-    add_library(iron_Fortran OBJECT ${IRON_Fortran_SRC})
+    add_library(iron_Fortran OBJECT ${IRON_Fortran_SRC} ${IRON_FIELML_SRC})
     add_library(iron_C OBJECT ${IRON_C_SRC})
-    target_compile_options(iron_Fortran PRIVATE -cpp)
     set(IRON_TARGETS iron_Fortran iron_C) 
     # Add joining library to have the "iron" target in each case 
     add_library(iron $<TARGET_OBJECTS:iron_Fortran> $<TARGET_OBJECTS:iron_C>)
 ELSE()
-    add_library(iron ${IRON_SRC})
-    target_compile_options(iron PRIVATE -cpp)
+    add_library(iron ${IRON_SRC} ${IRON_FIELDML_SRC})
     set(IRON_TARGETS iron)
 ENDIF()
 # Set the same stuff for either the separate targets (windows) or one target (else)
@@ -91,27 +89,18 @@ foreach(irontarget ${IRON_TARGETS})
         target_compile_definitions(${irontarget} PUBLIC USEFIELDML)
     endif()
 endforeach()
+set_source_files_properties(${IRON_Fortran_SRC} ${IRON_FIELDML_SRC} PROPERTIES
+    COMPILE_FLAGS -cpp)
 target_link_libraries(iron PRIVATE ${LINK_LIBS})
+if(WITH_FIELDML)
+     target_link_libraries(iron PRIVATE fieldml-api)
+endif()
 # Dont use "USE MPI" instructions if the percompiled mpi module files are incompatible.
 # This happens when the fortran compiler used to build mpi differs from the currently used one.
 # This holds on windows (only pre-compiled mpi implementations available; MPICH2 and MSMPI)
 # and on e.g. clusters with inappropriately configured toolchain environments.
 if (MINGW OR NOT MPI_Fortran_MODULE_COMPATIBLE)
     target_compile_definitions(iron PRIVATE NOMPIMOD)
-endif()
-
-# Fieldml extra library - some source of iron include the module files,
-# but the cmake dependency parser doesnt get the USE declarations if wrapped in preprocessor #ifdefs
-# hence the build breaks if those files are compiled before the fieldml-module files.
-if (WITH_FIELDML)
-    add_library(iron-fieldml ${IRON_FIELDML_SRC})
-    target_link_libraries(iron-fieldml fieldml-api)
-    target_compile_definitions(iron-fieldml PUBLIC USEFIELDML)
-    install(TARGETS iron-fieldml EXPORT iron-config DESTINATION lib)
-    
-    # Let the iron lib know what's going on
-    add_dependencies(iron iron-fieldml)
-    target_link_libraries(iron PUBLIC iron-fieldml)
 endif()
 
 # Build bindings as selected
