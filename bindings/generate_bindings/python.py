@@ -34,7 +34,8 @@ def generate(cm_path, args):
 
     This wraps the lower level extension module created by SWIG
     """
-    CMISS_py_path = args[0]
+    swig_module_name = args[0]
+    CMISS_py_path = args[1]
     #module = open(os.sep.join((cm_path, 'bindings', 'python', 'opencmiss',
     #    'CMISS.py')), 'w')
     module = open(os.sep.join((CMISS_py_path, 'CMISS.py')), 'w')
@@ -42,19 +43,19 @@ def generate(cm_path, args):
     library = LibrarySource(cm_path)
 
     module.write('"""%s"""\n\n' % MODULE_DOCSTRING)
-    module.write("import _opencmiss_swig\n")
+    module.write("import _%s\n" %(swig_module_name))
     module.write("import signal\n")
     module.write("from _utils import (CMISSError, CMISSType, Enum,\n"
         "    wrap_cmiss_routine as _wrap_routine)\n\n\n")
 
     types = sorted(library.lib_source.types.values(), key=attrgetter('name'))
     for type in types:
-        module.write(type_to_py(type))
+        module.write(type_to_py(swig_module_name, type))
         module.write('\n' * 3)
 
     for routine in library.unbound_routines:
         try:
-            module.write(routine_to_py(routine))
+            module.write(routine_to_py(swig_module_name, routine))
             module.write('\n' * 3)
         except UnsupportedParameterError:
             sys.stderr.write("Skipping routine with unsupported "
@@ -84,7 +85,7 @@ def generate(cm_path, args):
     module.close()
 
 
-def type_to_py(type):
+def type_to_py(swig_module_name, type):
     """Convert CMISS type to Python class"""
 
     cmiss_type = type.name[len(PREFIX):-len('Type')]
@@ -107,13 +108,13 @@ def type_to_py(type):
     py_class.append("    def __init__(self):")
     py_class.append('        """Initialise a null %s"""\n' % type.name)
     py_class.append("        self.cmiss_type = "
-        "_wrap_routine(_opencmiss_swig.%s, None)\n" % initialise_method)
+        "_wrap_routine(_%s.%s, None)\n" % (swig_module_name, initialise_method))
 
     for method in type.methods:
         if (not method.name.endswith('TypeInitialise') and
                 not method.name.endswith('_Initialise')):
             try:
-                py_class.append(py_method(type, method))
+                py_class.append(py_method(swig_module_name, type, method))
                 py_class.append('')
             except UnsupportedParameterError:
                 sys.stderr.write("Skipping routine with unsupported "
@@ -191,7 +192,7 @@ def method_name(type, routine):
     return name
 
 
-def py_method(type, routine):
+def py_method(swig_module_name, type, routine):
     """Write subroutine as method of Python class"""
 
     name = method_name(type, routine)
@@ -221,13 +222,13 @@ def py_method(type, routine):
     method.append("        %s = self" % self_parameter.name)
     for line in pre_code:
         method.append("        %s" % line)
-    method.append("        return _wrap_routine(_opencmiss_swig.%s, [%s])" %
-        (c_name, ', '.join(swig_args)))
+    method.append("        return _wrap_routine(_%s.%s, [%s])" %
+        (swig_module_name, c_name, ', '.join(swig_args)))
 
     return '\n'.join(method)
 
 
-def routine_to_py(routine):
+def routine_to_py(swig_module_name, routine):
     c_name = subroutine_c_names(routine)[0]
     name = c_name[len(PREFIX):]
 
@@ -243,8 +244,8 @@ def routine_to_py(routine):
     py_routine.append('    """%s\n    """\n' % docstring)
     for line in pre_code:
         py_routine.append("    %s" % line)
-    py_routine.append('    return _wrap_routine(_opencmiss_swig.%s, [%s])' %
-                      (c_name, ', '.join(swig_args)))
+    py_routine.append('    return _wrap_routine(_%s.%s, [%s])' %
+                      (swig_module_name, c_name, ', '.join(swig_args)))
 
     return '\n'.join(py_routine)
 

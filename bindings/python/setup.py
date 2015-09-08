@@ -6,8 +6,8 @@ from distutils.core import setup
 #additional file after building it from the main OpenCMISS Makefile
 
 setup(
-    name='OpenCMISS',
-    version='0.3',
+    name='OpenCMISS-Iron',
+    version='0.4.0',
     description=('Python bindings for the OpenCMISS computational '
             'modelling library.'),
     long_description=('Python bindings to OpenCMISS. '
@@ -20,6 +20,6 @@ setup(
     license='Mozilla Tri-license',
     author_email='aree035@aucklanduni.ac.nz',
     url='http://www.opencmiss.org/',
-    packages=['opencmiss'],
-    package_data={'opencmiss': ['_opencmiss_swig.so']}
+    packages=['opencmiss', 'opencmiss.iron'],
+    package_data={'opencmiss.iron': ['_@IRON_MODULE_NAME@.so']}
 )
