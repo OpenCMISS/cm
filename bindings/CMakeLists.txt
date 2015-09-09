@@ -72,7 +72,12 @@ else()
                 )
                 if (NOT RES_NUMPY_INC)
                     # MODULE: See http://www.cmake.org/cmake/help/v3.3/command/add_library.html
-                    add_library(${IRON_PYTHON_MODULE} MODULE ${PYTHON_WRAPPER} ${OPENCMISS_H} ${OPENCMISS_C_F90})
+                    if (HAVE_C_BINDINGS)
+                        set(C_BINDIGS_SRC $<TARGET_OBJECTS:iron_c>)
+                    else()
+                        set(C_BINDIGS_SRC ${OPENCMISS_C_F90})
+                    endif()
+                    add_library(${IRON_PYTHON_MODULE} MODULE ${PYTHON_WRAPPER} ${OPENCMISS_H} )
                     target_link_libraries(${IRON_PYTHON_MODULE} PUBLIC iron)
                     target_include_directories(${IRON_PYTHON_MODULE} PRIVATE
                         ${CMAKE_CURRENT_BINARY_DIR}
