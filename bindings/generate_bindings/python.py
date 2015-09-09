@@ -27,9 +27,6 @@ signal.signal(signal.SIGPIPE, signal.SIG_IGN)
 """
 
 PREFIX = 'CMISS'
-python_module_output_name = 'Iron'
-iron_python_library_name = 'iron_python'
-
 
 def generate(iron_source_dir, args):
     """Generate the OpenCMISS Python module
