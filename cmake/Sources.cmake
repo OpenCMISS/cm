@@ -130,16 +130,18 @@ ENDIF()
 # 
 set(IRON_FIELDML_SRC)
 if (WITH_FIELDML)
-    set(IRON_FIELDML_SRC
+    list(APPEND IRON_Fortran_SRC
+    #set(IRON_FIELDML_SRC
         fieldml_input_routines.f90
         fieldml_output_routines.f90
         fieldml_types.f90
         fieldml_util_routines.f90
     )
+    #list(APPEND IRON_Fortran_SRC ${IRON_FIELDML_SRC})
 endif()
 
 # Fix paths to files
-set(FIXPATH_VARS IRON_C_SRC IRON_Fortran_SRC IRON_FIELDML_SRC)
+set(FIXPATH_VARS IRON_C_SRC IRON_Fortran_SRC)#IRON_FIELDML_SRC
 foreach(varname ${FIXPATH_VARS})
     set(_TMP )
     foreach(filename ${${varname}})

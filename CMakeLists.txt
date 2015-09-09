@@ -67,17 +67,25 @@ endforeach()
 
 # Populates the IRON_XX_SRC variables
 include(Sources)
+
 if(MSVC)
     # Need separate C/Fortran code due to Project natures in VS
-    add_library(iron_Fortran OBJECT ${IRON_Fortran_SRC} ${IRON_FIELDML_SRC})
+    add_library(iron_Fortran OBJECT ${IRON_Fortran_SRC})
+    target_include_directories(iron_Fortran 
+        PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH}
+        PRIVATE ${CMAKE_Fortran_MODULE_DIRECTORY})
+    
     add_library(iron_C OBJECT ${IRON_C_SRC})
-    set(IRON_TARGETS iron_Fortran iron_C) 
-    # Add joining library to have the "iron" target in each case 
+    target_include_directories(iron_C 
+        PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH})
+     
+    # Add joining library to have the "iron" target in each case
     add_library(iron $<TARGET_OBJECTS:iron_Fortran> $<TARGET_OBJECTS:iron_C>)
-ELSE()
-    add_library(iron ${IRON_SRC} ${IRON_FIELDML_SRC})
+else()
+    add_library(iron ${IRON_SRC})
     set(IRON_TARGETS iron)
 ENDIF()
+
 # Set the same stuff for either the separate targets (windows) or one target (else)
 foreach(irontarget ${IRON_TARGETS})
     target_include_directories(${irontarget} 
@@ -90,7 +98,7 @@ foreach(irontarget ${IRON_TARGETS})
         target_compile_definitions(${irontarget} PUBLIC USEFIELDML)
     endif()
 endforeach()
-set_source_files_properties(${IRON_Fortran_SRC} ${IRON_FIELDML_SRC} PROPERTIES
+set_source_files_properties(${IRON_Fortran_SRC} PROPERTIES
     COMPILE_FLAGS -cpp)
 target_link_libraries(iron PRIVATE ${LINK_LIBS})
 if(WITH_FIELDML)
