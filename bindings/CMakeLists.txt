@@ -27,6 +27,8 @@ else()
                     EXPORT iron-config
                     DESTINATION lib
                     INCLUDES DESTINATION include/iron)
+        install(FILES ${OPENCMISS_H}
+            DESTINATION include/iron)
         set(HAVE_C_BINDINGS TRUE)
     endif()
     
