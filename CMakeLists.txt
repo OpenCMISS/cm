@@ -13,6 +13,7 @@ option(WITH_PROFILING "${PROJECT_NAME} - Build with profiling flags" OFF)
 option(WITH_C_BINDINGS "Build iron C bindings" ON)
 option(WITH_Python_BINDINGS "Build iron Python bindings" ON)
 set(PACKAGE_CONFIG_DIR "cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX)")
+set(WITH_FIELDML ON)
 
 # Config
 # See http://cmake.3232098.n2.nabble.com/How-to-install-Fortran-module-files-td7584399.html
@@ -28,14 +29,14 @@ find_package(MPI REQUIRED)
 # Collect libraries to configure for/link against
 SET(LINK_LIBS )
 if (WITH_CELLML)
-    find_package(LIBCELLML CONFIG REQUIRED)
-    find_package(CELLML CONFIG REQUIRED)
+    find_package(LIBCELLML ${LIBCELLML_VERSION} CONFIG REQUIRED)
+    find_package(CELLML ${CELLML_VERSION} CONFIG REQUIRED)
     message(STATUS "Building with CELLML (${LIBCELLML_DIR})")
     LIST(APPEND LINK_LIBS cellml cellml_model_definition)
 endif()
 if (WITH_FIELDML)
     message(STATUS "Building with FIELDML (${FIELDML-API_DIR})")
-    find_package(FIELDML-API REQUIRED)
+    find_package(FIELDML-API ${FIELDML-API_VERSION} CONFIG REQUIRED)
 endif()
 
 # This include file is in the main "manage" directory.
@@ -68,7 +69,7 @@ endforeach()
 include(Sources)
 if(MSVC)
     # Need separate C/Fortran code due to Project natures in VS
-    add_library(iron_Fortran OBJECT ${IRON_Fortran_SRC} ${IRON_FIELML_SRC})
+    add_library(iron_Fortran OBJECT ${IRON_Fortran_SRC} ${IRON_FIELDML_SRC})
     add_library(iron_C OBJECT ${IRON_C_SRC})
     set(IRON_TARGETS iron_Fortran iron_C) 
     # Add joining library to have the "iron" target in each case 
@@ -95,6 +96,7 @@ target_link_libraries(iron PRIVATE ${LINK_LIBS})
 if(WITH_FIELDML)
      target_link_libraries(iron PRIVATE fieldml-api)
 endif()
+
 # Dont use "USE MPI" instructions if the percompiled mpi module files are incompatible.
 # This happens when the fortran compiler used to build mpi differs from the currently used one.
 # This holds on windows (only pre-compiled mpi implementations available; MPICH2 and MSMPI)
