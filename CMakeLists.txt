@@ -68,35 +68,22 @@ endforeach()
 # Populates the IRON_XX_SRC variables
 include(Sources)
 
-# Fieldml extra library - some source of iron include the module files,
-# but the cmake dependency parser doesnt get the USE declarations if wrapped in preprocessor #ifdefs
-# hence the build breaks if those files are compiled before the fieldml-module files.
-set(FIELDML_OBJ )
-if (WITH_FIELDML)
-    add_library(iron-fieldml OBJECT ${IRON_FIELDML_SRC})
-    target_include_directories(iron-fieldml PRIVATE $<TARGET_PROPERTY:fieldml-api,INTERFACE_INCLUDE_DIRECTORIES>)
-    target_compile_definitions(iron-fieldml PUBLIC USEFIELDML)
-    target_compile_options(iron-fieldml PRIVATE -cpp)
-    set(FIELDML_OBJ $<TARGET_OBJECTS:iron-fieldml>)
-endif()
-
 if(MSVC)
     # Need separate C/Fortran code due to Project natures in VS
     add_library(iron_Fortran OBJECT ${IRON_Fortran_SRC})
-    target_include_directories(iron 
+    target_include_directories(iron_Fortran 
         PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH}
         PRIVATE ${CMAKE_Fortran_MODULE_DIRECTORY})
     target_compile_options(iron_Fortran PRIVATE -cpp)
     
     add_library(iron_C OBJECT ${IRON_C_SRC})
-    target_include_directories(iron 
-        PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH}
-        PRIVATE ${CMAKE_Fortran_MODULE_DIRECTORY})
+    target_include_directories(iron_C 
+        PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH})
      
-    # Add joining library to have the "iron" target in each case 
-    add_library(iron $<TARGET_OBJECTS:iron_Fortran> $<TARGET_OBJECTS:iron_C> ${FIELDML_OBJ})
+    # Add joining library to have the "iron" target in each case
+    add_library(iron $<TARGET_OBJECTS:iron_Fortran> $<TARGET_OBJECTS:iron_C>)
 else()
-    add_library(iron ${IRON_SRC} ${FIELDML_OBJ})
+    add_library(iron ${IRON_SRC})
     target_compile_options(iron PRIVATE -cpp)
     set(IRON_TARGETS iron)
 endif()
