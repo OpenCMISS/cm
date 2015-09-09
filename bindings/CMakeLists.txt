@@ -74,18 +74,19 @@ else()
                 )
                 if (NOT RES_NUMPY_INC)
                     # MODULE: See http://www.cmake.org/cmake/help/v3.3/command/add_library.html
-                    if (HAVE_C_BINDINGS)
-                        set(C_BINDIGS_SRC $<TARGET_OBJECTS:iron_c>)
-                    else()
-                        set(C_BINDIGS_SRC ${OPENCMISS_C_F90})
-                    endif()
-                    add_library(${IRON_PYTHON_MODULE} MODULE ${PYTHON_WRAPPER} ${OPENCMISS_H} )
+                    add_library(${IRON_PYTHON_MODULE} MODULE ${PYTHON_WRAPPER} ${OPENCMISS_H} ${OPENCMISS_C_F90})
                     target_link_libraries(${IRON_PYTHON_MODULE} PUBLIC iron)
                     target_include_directories(${IRON_PYTHON_MODULE} PRIVATE
                         ${CMAKE_CURRENT_BINARY_DIR}
                         ${PYTHON_INCLUDE_DIRS}
                         ${NUMPY_INCLUDES}
                     )
+                    # "Bugfix": If we use the same source file name, there will be two processes messing with
+                    # the same fortran module file which can lead to errors using -j parallel builds.
+                    # By this we simply force to have iron_c build before the python module.
+                    if (HAVE_C_BINDINGS)
+                        add_dependencies(${IRON_PYTHON_MODULE} iron_c)
+                    endif()
                     
                     # We dont want any libXX or .dll - see UseSWIG.cmake
                     set_target_properties(${IRON_PYTHON_MODULE} PROPERTIES PREFIX "_")
@@ -112,7 +113,7 @@ else()
                         ${CMAKE_CURRENT_BINARY_DIR}/${IRON_PYTHON_MODULE}.py
                         DESTINATION python/opencmiss
                     )
-                    list(APPEND _CLEANUP ${IRON_PY})
+                    list(APPEND _CLEANUP ${IRON_PY})#${OPENCMISS_PYTHON_F90}
                 else()
                     message(FATAL_ERROR "Could not detect NumPy includes")
                 endif()

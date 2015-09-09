@@ -2,7 +2,7 @@ cmake_minimum_required (VERSION 3.0 FATAL_ERROR)
 project(Iron VERSION 0.4.0 LANGUAGES C CXX Fortran)# Need all languages as iron's deps cover all (link phase) 
 
 option(WITH_CELLML "Build iron with CellML support" ON)
-option(WITH_FIELDML "Build iron with FieldML support" OFF)
+option(WITH_FIELDML "Build iron with FieldML support" ON)
 option(WITH_HYPRE "Build iron with HYPRE integration" ON)
 option(WITH_SUNDIALS "Build iron with SUNDIALS integration" ON)
 option(WITH_MUMPS "Build iron with MUMPS integration" ON)
@@ -13,6 +13,7 @@ option(WITH_PROFILING "${PROJECT_NAME} - Build with profiling flags" OFF)
 option(WITH_C_BINDINGS "Build iron C bindings" ON)
 option(WITH_Python_BINDINGS "Build iron Python bindings" ON)
 set(PACKAGE_CONFIG_DIR "cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX)")
+set(WITH_FIELDML ON)
 
 # Config
 # See http://cmake.3232098.n2.nabble.com/How-to-install-Fortran-module-files-td7584399.html
@@ -28,14 +29,14 @@ find_package(MPI REQUIRED)
 # Collect libraries to configure for/link against
 SET(LINK_LIBS )
 if (WITH_CELLML)
-    find_package(LIBCELLML CONFIG REQUIRED)
-    find_package(CELLML CONFIG REQUIRED)
+    find_package(LIBCELLML ${LIBCELLML_VERSION} CONFIG REQUIRED)
+    find_package(CELLML ${CELLML_VERSION} CONFIG REQUIRED)
     message(STATUS "Building with CELLML (${LIBCELLML_DIR})")
     LIST(APPEND LINK_LIBS cellml cellml_model_definition)
 endif()
 if (WITH_FIELDML)
     message(STATUS "Building with FIELDML (${FIELDML-API_DIR})")
-    find_package(FIELDML-API REQUIRED)
+    find_package(FIELDML-API ${FIELDML-API_VERSION} CONFIG REQUIRED)
 endif()
 
 # This include file is in the main "manage" directory.
@@ -66,52 +67,53 @@ endforeach()
 
 # Populates the IRON_XX_SRC variables
 include(Sources)
-IF(WIN32 AND NOT MINGW)
+
+# Fieldml extra library - some source of iron include the module files,
+# but the cmake dependency parser doesnt get the USE declarations if wrapped in preprocessor #ifdefs
+# hence the build breaks if those files are compiled before the fieldml-module files.
+set(FIELDML_OBJ )
+if (WITH_FIELDML)
+    add_library(iron-fieldml OBJECT ${IRON_FIELDML_SRC})
+    target_include_directories(iron-fieldml PRIVATE $<TARGET_PROPERTY:fieldml-api,INTERFACE_INCLUDE_DIRECTORIES>)
+    target_compile_definitions(iron-fieldml PUBLIC USEFIELDML)
+    target_compile_options(iron-fieldml PRIVATE -cpp)
+    set(FIELDML_OBJ $<TARGET_OBJECTS:iron-fieldml>)
+endif()
+
+if(MSVC)
     # Need separate C/Fortran code due to Project natures in VS
     add_library(iron_Fortran OBJECT ${IRON_Fortran_SRC})
-    add_library(iron_C OBJECT ${IRON_C_SRC})
-    target_compile_options(iron_Fortran PRIVATE -cpp)
-    set(IRON_TARGETS iron_Fortran iron_C) 
-    # Add joining library to have the "iron" target in each case 
-    add_library(iron $<TARGET_OBJECTS:iron_Fortran> $<TARGET_OBJECTS:iron_C>)
-ELSE()
-    add_library(iron ${IRON_SRC})
-    target_compile_options(iron PRIVATE -cpp)
-    set(IRON_TARGETS iron)
-ENDIF()
-# Set the same stuff for either the separate targets (windows) or one target (else)
-foreach(irontarget ${IRON_TARGETS})
-    target_include_directories(${irontarget} 
+    target_include_directories(iron 
         PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH}
         PRIVATE ${CMAKE_Fortran_MODULE_DIRECTORY})
-    if (WITH_CELLML)
-        target_compile_definitions(${irontarget} PUBLIC USECELLML)
-    endif()
-    if (WITH_FIELDML)
-        target_compile_definitions(${irontarget} PUBLIC USEFIELDML)
-    endif()
-endforeach()
-target_link_libraries(iron PRIVATE ${LINK_LIBS})
+    target_compile_options(iron_Fortran PRIVATE -cpp)
+    
+    add_library(iron_C OBJECT ${IRON_C_SRC})
+    target_include_directories(iron 
+        PUBLIC ${MPI_C_INCLUDE_PATH} ${MPI_Fortran_INCLUDE_PATH}
+        PRIVATE ${CMAKE_Fortran_MODULE_DIRECTORY})
+     
+    # Add joining library to have the "iron" target in each case 
+    add_library(iron $<TARGET_OBJECTS:iron_Fortran> $<TARGET_OBJECTS:iron_C> ${FIELDML_OBJ})
+else()
+    add_library(iron ${IRON_SRC} ${FIELDML_OBJ})
+    target_compile_options(iron PRIVATE -cpp)
+    set(IRON_TARGETS iron)
+endif()
+if (WITH_CELLML)
+    target_compile_definitions(iron PUBLIC USECELLML)
+endif()
+if (WITH_FIELDML)
+    target_compile_definitions(iron PUBLIC USEFIELDML)
+    target_link_libraries(iron PUBLIC fieldml-api)
+endif()
+target_link_libraries(iron PUBLIC ${LINK_LIBS})
 # Dont use "USE MPI" instructions if the percompiled mpi module files are incompatible.
 # This happens when the fortran compiler used to build mpi differs from the currently used one.
 # This holds on windows (only pre-compiled mpi implementations available; MPICH2 and MSMPI)
 # and on e.g. clusters with inappropriately configured toolchain environments.
 if (MINGW OR NOT MPI_Fortran_MODULE_COMPATIBLE)
     target_compile_definitions(iron PRIVATE NOMPIMOD)
-endif()
-
-# Fieldml extra library - some source of iron include the module files,
-# but the cmake dependency parser doesnt get the USE declarations if wrapped in preprocessor #ifdefs
-# hence the build breaks if those files are compiled before the fieldml-module files.
-if (WITH_FIELDML)
-    add_library(iron-fieldml ${IRON_FIELDML_SRC})
-    target_link_libraries(iron-fieldml fieldml-api)
-    target_compile_definitions(iron-fieldml PUBLIC USEFIELDML)
-    install(TARGETS iron-fieldml EXPORT iron-config DESTINATION lib)
-    
-    # Let the iron lib know what's going on
-    add_dependencies(iron iron-fieldml)
-    target_link_libraries(iron PUBLIC iron-fieldml)
 endif()
 
 # Build bindings as selected
