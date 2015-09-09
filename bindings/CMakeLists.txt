@@ -41,11 +41,17 @@ else()
         if (SWIG_FOUND AND PYTHONLIBS_FOUND AND HAVE_C_BINDINGS)
             
             set(IRON_PYTHON_MODULE iron_python)
+            set(IRON_OPENCMISS_DIR ${CMAKE_CURRENT_BINARY_DIR}/opencmiss)
         
             # Copy interface files to binary dir
-            file(GLOB SWIG_INTERFACES "${CMAKE_CURRENT_SOURCE_DIR}/python/*.i")
-            file(COPY ${SWIG_INTERFACES} DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-            
+            set(SWIG_INTERFACE_FILES ${CMAKE_CURRENT_BINARY_DIR}/numpy.i ${CMAKE_CURRENT_BINARY_DIR}/numpy_extra.i ${CMAKE_CURRENT_BINARY_DIR}/iron.i)
+            add_custom_command(OUTPUT ${SWIG_INTERFACE_FILES}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/python/numpy.i ${CMAKE_CURRENT_BINARY_DIR}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/python/numpy_extra.i ${CMAKE_CURRENT_BINARY_DIR}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/python/iron.i ${CMAKE_CURRENT_BINARY_DIR}
+            )
+            list(APPEND _CLEANUP ${SWIG_INTERFACE_FILES})
+ 
             # iron_generated.i is included by iron.i later
             set(SWIG_IFACE "${CMAKE_CURRENT_BINARY_DIR}/iron_generated.i")
             add_custom_command(OUTPUT ${SWIG_IFACE}
@@ -53,17 +59,29 @@ else()
                 COMMENT "Generating swig interface file for Iron"
                 WORKING_DIRECTORY ${Iron_SOURCE_DIR}/bindings
             )
-                                    
+
+            set(SWIG_OUTDIR "${IRON_OPENCMISS_DIR}/iron")
             # Generate C wrapper
             set(PYTHON_WRAPPER "${CMAKE_CURRENT_BINARY_DIR}/iron_python_wrapper.c")
             add_custom_command(OUTPUT ${PYTHON_WRAPPER}
                 DEPENDS ${SWIG_IFACE}
+                DEPENDS ${SWIG_INTERFACE_FILES}
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${SWIG_OUTDIR}
                 COMMAND ${SWIG_EXECUTABLE} -python -o "${PYTHON_WRAPPER}"
-                    -module ${IRON_PYTHON_MODULE} -outdir . iron.i
+                    -module ${IRON_PYTHON_MODULE} -outdir ${SWIG_OUTDIR} iron.i
                 COMMENT "Generating python wrapper for Iron with swig"
             )
             list(APPEND _CLEANUP ${SWIG_IFACE} ${PYTHON_WRAPPER})
-            
+
+            # Configure _utils.py
+            #set(UTILS_PY ${SWIG_OUTDIR}/_utils.py)
+            #configure_file(${CMAKE_CURRENT_SOURCE_DIR}/python/opencmiss/iron/_utils.py
+            #    ${UTILS_PY} @ONLY)
+
+            # Copy over setup.py
+            #configure_file(${CMAKE_CURRENT_SOURCE_DIR}/python/setup.py ${SETUP_PY})
+            #list(APPEND _CLEANUP ${SETUP_PY})
+
             #Generate wrapper object
             execute_process(COMMAND "${PYTHON_EXECUTABLE}" "${Iron_SOURCE_DIR}/utils/numpy_include.py"
                 OUTPUT_VARIABLE NUMPY_INCLUDES
@@ -73,13 +91,16 @@ else()
             if (NOT RES_NUMPY_INC)
                 # MODULE: See http://www.cmake.org/cmake/help/v3.3/command/add_library.html
                 add_library(${IRON_PYTHON_MODULE} MODULE ${PYTHON_WRAPPER} ${OPENCMISS_H} ${OPENCMISS_C_F90})
-                target_link_libraries(${IRON_PYTHON_MODULE} PUBLIC iron)
+                target_link_libraries(${IRON_PYTHON_MODULE} PUBLIC iron ${PYTHON_LIBRARIES})
                 target_include_directories(${IRON_PYTHON_MODULE} PRIVATE
                     ${CMAKE_CURRENT_BINARY_DIR}
                     ${PYTHON_INCLUDE_DIRS}
                     ${NUMPY_INCLUDES}
                 )
-                
+                set_target_properties(${IRON_PYTHON_MODULE} PROPERTIES PREFIX ""
+                    LIBRARY_OUTPUT_DIRECTORY ${SWIG_OUTDIR}
+                    RUNTIME_OUTPUT_DIRECTORY ${SWIG_OUTDIR})
+
                 # We dont want any libXX or .dll - see UseSWIG.cmake
                 set_target_properties(${IRON_PYTHON_MODULE} PROPERTIES PREFIX "_")
                 if(WIN32 AND NOT CYGWIN)
@@ -87,12 +108,21 @@ else()
                 endif()
                     
                 # Generate Python module
-                set(IRON_PY ${CMAKE_CURRENT_BINARY_DIR}/Iron.py)
+                set(IRON_PY ${CMAKE_CURRENT_BINARY_DIR}/iron.py)
+
+                set(PKGUTIL_INIT_PY ${IRON_OPENCMISS_DIR}/__init__.py)
+                set(INIT_PY ${SWIG_OUTDIR}/__init__.py)
+                set(UTILS_PY ${SWIG_OUTDIR}/_utils.py)
+                set(SETUP_PY ${CMAKE_CURRENT_BINARY_DIR}/setup.py)
                 add_custom_command(TARGET ${IRON_PYTHON_MODULE} POST_BUILD
-                    COMMAND "${PYTHON_EXECUTABLE}" generate_bindings "${Iron_SOURCE_DIR}" Python "${CMAKE_CURRENT_BINARY_DIR}"
+                    COMMAND ${CMAKE_COMMAND} -DIRON_PYTHON_MODULE=${IRON_PYTHON_MODULE} -DUTILS_PY=${UTILS_PY} -DSETUP_PY=${SETUP_PY} -P ${CMAKE_CURRENT_SOURCE_DIR}/configurefiles.cmake
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/python/opencmiss/__init__.py ${PKGUTIL_INIT_PY}
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/python/opencmiss/iron/__init__.py ${INIT_PY}
+                    COMMAND "${PYTHON_EXECUTABLE}" generate_bindings "${Iron_SOURCE_DIR}" Python ${IRON_PYTHON_MODULE} "${SWIG_OUTDIR}"
                     COMMENT "Generating Python top-level module"
                     WORKING_DIRECTORY "${Iron_SOURCE_DIR}/bindings"
                 )
+                list(APPEND _CLEANUP ${UTILS_PY} ${SETUP_PY} ${PKGUTIL_INIT_PY} ${INIT_PY})
                 install(TARGETS ${IRON_PYTHON_MODULE}
                     EXPORT iron-config
                     DESTINATION python/opencmiss
@@ -105,7 +135,7 @@ else()
                     ${CMAKE_CURRENT_BINARY_DIR}/${IRON_PYTHON_MODULE}.py
                     DESTINATION python/opencmiss
                 )
-                list(APPEND _CLEANUP ${IRON_PY})
+                list(APPEND _CLEANUP ${IRON_PY} ${SWIG_OUTDIR} ${IRON_OPENCMISS_DIR})
             else()
                 message(FATAL_ERROR "Could not detect NumPy includes")
             endif()
@@ -115,5 +145,5 @@ else()
             message(WARNING "No SWIG or Python libraries found or no C bindings built. Unable to generate Python bindings for Iron.")            
         endif()
     endif()
-    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${_CLEANUP})
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${_CLEANUP}")
 endif()

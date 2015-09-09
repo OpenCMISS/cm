@@ -21,5 +21,5 @@ setup(
     author_email='aree035@aucklanduni.ac.nz',
     url='http://www.opencmiss.org/',
     packages=['opencmiss', 'opencmiss.iron'],
-    package_data={'opencmiss.iron': ['_@IRON_MODULE_NAME@.so']}
+    package_data={'opencmiss.iron': ['_@IRON_PYTHON_MODULE@.so']}
 )
