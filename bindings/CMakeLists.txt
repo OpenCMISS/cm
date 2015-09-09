@@ -109,7 +109,7 @@ else()
                     set(UTILS_PY ${SWIG_OUTDIR}/_utils.py)
                     set(SETUP_PY ${CMAKE_CURRENT_BINARY_DIR}/setup.py)
                     add_custom_command(TARGET ${IRON_PYTHON_MODULE} POST_BUILD
-                        COMMAND ${CMAKE_COMMAND} -DIRON_PYTHON_MODULE=${IRON_PYTHON_MODULE} -DUTILS_PY=${UTILS_PY} -DSETUP_PY=${SETUP_PY} -P ${CMAKE_CURRENT_SOURCE_DIR}/configurefiles.cmake
+                        COMMAND ${CMAKE_COMMAND} -DIRON_TARGET_FILE="$<TARGET_FILE:iron>" -DIRON_PYTHON_MODULE=${IRON_PYTHON_MODULE} -DUTILS_PY=${UTILS_PY} -DSETUP_PY=${SETUP_PY} -P ${CMAKE_CURRENT_SOURCE_DIR}/configurefiles.cmake
                         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/python/opencmiss/__init__.py ${PKGUTIL_INIT_PY}
                         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/python/opencmiss/iron/__init__.py ${INIT_PY}
                         COMMAND "${PYTHON_EXECUTABLE}" generate_bindings "${Iron_SOURCE_DIR}" Python ${IRON_PYTHON_MODULE} "${SWIG_OUTDIR}"
