@@ -68,7 +68,7 @@ MODULE FIELDML_UTIL_ROUTINES
   !Interfaces
   
   INTERFACE FIELDML_UTIL_CHECK_FIELDML_ERROR
-    MODULE PROCEDURE FIELDML_UTIL_CHECK_FIELDML_SESSION_ERRORVS
+    MODULE PROCEDURE FieldMLUtil_CheckFieldMLSessionErrorVS
     MODULE PROCEDURE FIELDML_UTIL_CHECK_FIELDML_SESSION_ERRORC
   END INTERFACE FIELDML_UTIL_CHECK_FIELDML_ERROR
 
@@ -80,7 +80,7 @@ CONTAINS
   !================================================================================================================================
   !
   
-  SUBROUTINE FIELDML_UTIL_CHECK_FIELDML_SESSION_ERRORVS( ERROR_DESCRIPTION, FML_HANDLE, ERR, ERROR, * )
+  SUBROUTINE FieldMLUtil_CheckFieldMLSessionErrorVS( ERROR_DESCRIPTION, FML_HANDLE, ERR, ERROR, * )
     TYPE(VARYING_STRING), INTENT(IN) :: ERROR_DESCRIPTION
     INTEGER(INTG), INTENT(IN) :: FML_HANDLE !<The FieldML session handle.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code.
@@ -88,21 +88,21 @@ CONTAINS
     
     INTEGER(INTG) :: FML_ERR
     
-    ENTERS( "FIELDML_UTIL_CHECK_FIELDML_SESSION_ERRORVS", ERR, ERROR, *999 )
+    ENTERS( "FieldMLUtil_CheckFieldMLSessionErrorVS", ERR, ERROR, *999 )
     FML_ERR = Fieldml_GetLastError( FML_HANDLE )
 
     IF( FML_ERR == FML_ERR_NO_ERROR ) THEN
-      EXITS( "FIELDML_UTIL_CHECK_FIELDML_SESSION_ERRORVS" )
+      EXITS( "FieldMLUtil_CheckFieldMLSessionErrorVS" )
       RETURN
     ENDIF
     
-    CALL FLAG_ERROR( ERROR_DESCRIPTION // " (error number " // TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) // ")", &
+    CALL FlagError( ERROR_DESCRIPTION // " (error number " // TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) // ")", &
       & ERR, ERROR, *999 )
 
-999 ERRORSEXITS( "FIELDML_UTIL_CHECK_FIELDML_SESSION_ERRORVS", ERR, ERROR )
+999 ERRORSEXITS( "FieldMLUtil_CheckFieldMLSessionErrorVS", ERR, ERROR )
     RETURN 1
     
-  END SUBROUTINE FIELDML_UTIL_CHECK_FIELDML_SESSION_ERRORVS
+  END SUBROUTINE FieldMLUtil_CheckFieldMLSessionErrorVS
   
   !
   !================================================================================================================================
@@ -124,7 +124,7 @@ CONTAINS
       RETURN
     ENDIF
     
-    CALL FLAG_ERROR( ERROR_DESCRIPTION // " (error number " // TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) // ")", &
+    CALL FlagError( ERROR_DESCRIPTION // " (error number " // TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) // ")", &
       & ERR, ERROR, *999 )
 
 999 ERRORSEXITS( "FIELDML_UTIL_CHECK_FIELDML_SESSION_ERRORC", ERR, ERROR )

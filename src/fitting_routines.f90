@@ -183,28 +183,28 @@ CONTAINS
 ! ! !                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
 ! ! !                                       DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
 ! ! !                                       & " is invalid."
-! ! !                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                   END SELECT
 ! ! !                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
 ! ! !                                  SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
 ! ! !                                   CASE(NO_GLOBAL_DERIV)
 ! ! !                                     VALUE=0.0_DP !!TODO
 ! ! !                                   CASE(GLOBAL_DERIV_S1)
-! ! !                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S2)
-! ! !                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+! ! !                                     CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
 ! ! !                                   CASE(GLOBAL_DERIV_S1_S2)
-! ! !                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE DEFAULT
 ! ! !                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
 ! ! !                                       DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
 ! ! !                                       & " is invalid."
-! ! !                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                   END SELECT
 ! ! !                                 CASE DEFAULT
 ! ! !                                   LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
 ! ! !                                     & " is invalid."
-! ! !                                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                 END SELECT                                
 ! ! !                               CASE(EQUATIONS_SET_FITTING_TWO_DIM_2)
 ! ! !                                 !u=cos(x).cosh(y)
@@ -223,28 +223,28 @@ CONTAINS
 ! ! !                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
 ! ! !                                       DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
 ! ! !                                       & " is invalid."
-! ! !                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                   END SELECT
 ! ! !                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
 ! ! !                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
 ! ! !                                   CASE(NO_GLOBAL_DERIV)
 ! ! !                                     VALUE=0.0_DP !!TODO
 ! ! !                                   CASE(GLOBAL_DERIV_S1)
-! ! !                                     !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     !CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S2)
-! ! !                                     !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+! ! !                                     !CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
 ! ! !                                   CASE(GLOBAL_DERIV_S1_S2)
-! ! !                                     !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     !CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE DEFAULT
 ! ! !                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
 ! ! !                                       DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
 ! ! !                                       & " is invalid."
-! ! !                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                   END SELECT
 ! ! !                                 CASE DEFAULT
 ! ! !                                   LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
 ! ! !                                     & " is invalid."
-! ! !                                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                 END SELECT                                
 ! ! !                               CASE(EQUATIONS_SET_FITTING_THREE_DIM_1)
 ! ! !                                 !u=x^2+y^2-2.z^2
@@ -271,36 +271,36 @@ CONTAINS
 ! ! !                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
 ! ! !                                       DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
 ! ! !                                       & " is invalid."
-! ! !                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                   END SELECT
 ! ! !                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
 ! ! !                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
 ! ! !                                   CASE(NO_GLOBAL_DERIV)
 ! ! !                                     VALUE=0.0_DP !!TODO
 ! ! !                                   CASE(GLOBAL_DERIV_S1)
-! ! !                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S2)
-! ! !                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+! ! !                                     CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
 ! ! !                                   CASE(GLOBAL_DERIV_S1_S2)
-! ! !                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S3)
-! ! !                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S1_S3)
-! ! !                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S2_S3)
-! ! !                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S1_S2_S3)
-! ! !                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE DEFAULT
 ! ! !                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
 ! ! !                                       DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
 ! ! !                                       & " is invalid."
-! ! !                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                   END SELECT
 ! ! !                                 CASE DEFAULT
 ! ! !                                   LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
 ! ! !                                     & " is invalid."
-! ! !                                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                 END SELECT                                
 ! ! !                               CASE(EQUATIONS_SET_FITTING_THREE_DIM_2)
 ! ! !                                 !u=cos(x).cosh(y).z
@@ -327,42 +327,42 @@ CONTAINS
 ! ! !                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
 ! ! !                                       DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
 ! ! !                                       & " is invalid."
-! ! !                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                   END SELECT
 ! ! !                                 CASE(FIELD_DELUDELN_VARIABLE_TYPE)
 ! ! !                                   SELECT CASE(DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx))
 ! ! !                                   CASE(NO_GLOBAL_DERIV)
 ! ! !                                     VALUE=0.0_DP !!TODO
 ! ! !                                   CASE(GLOBAL_DERIV_S1)
-! ! !                                     !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     !CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S2)
-! ! !                                     !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+! ! !                                     !CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
 ! ! !                                   CASE(GLOBAL_DERIV_S1_S2)
-! ! !                                     !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     !CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S3)
-! ! !                                     !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     !CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S1_S3)
-! ! !                                     !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     !CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S2_S3)
-! ! !                                     !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     !CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE(GLOBAL_DERIV_S1_S2_S3)
-! ! !                                     !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+! ! !                                     !CALL FlagError("Not implemented.",ERR,ERROR,*999)
 ! ! !                                   CASE DEFAULT
 ! ! !                                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
 ! ! !                                       DOMAIN_NODES%NODES(node_idx)%GLOBAL_DERIVATIVE_INDEX(deriv_idx),"*",ERR,ERROR))// &
 ! ! !                                       & " is invalid."
-! ! !                                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                   END SELECT
 ! ! !                                 CASE DEFAULT
 ! ! !                                   LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
 ! ! !                                     & " is invalid."
-! ! !                                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                                 END SELECT                                
 ! ! !                               CASE DEFAULT
 ! ! !                                 LOCAL_ERROR="The analytic function type of "// &
 ! ! !                                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                                   & " is invalid."
-! ! !                                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                               END SELECT
 ! ! !                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
 ! ! !                                 & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
@@ -378,16 +378,16 @@ CONTAINS
 ! ! !                             ENDDO !deriv_idx
 ! ! !                           ENDDO !node_idx
 ! ! !                         ELSE
-! ! !                           CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+! ! !                           CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
 ! ! !                         ENDIF
 ! ! !                       ELSE
-! ! !                         CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+! ! !                         CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
 ! ! !                       ENDIF
 ! ! !                     ELSE
-! ! !                       CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+! ! !                       CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                   ELSE
-! ! !                     CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+! ! !                     CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
 ! ! !                   ENDIF
 ! ! !                 ENDDO !component_idx
 ! ! !                 CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
@@ -395,7 +395,7 @@ CONTAINS
 ! ! !                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
 ! ! !                   & ERR,ERROR,*999)
 ! ! !               ELSE
-! ! !                 CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+! ! !                 CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
 ! ! !               ENDIF
 ! ! ! 
 ! ! !             ENDDO !variable_idx
@@ -403,16 +403,16 @@ CONTAINS
 ! ! !             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
 ! ! !               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
 ! ! !           ELSE
-! ! !             CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+! ! !             CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
 ! ! !           ENDIF            
 ! ! !         ELSE
-! ! !           CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+! ! !           CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
 ! ! !         ENDIF
 ! ! !       ELSE
-! ! !         CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+! ! !         CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
 ! ! !       ENDIF
 ! ! !     ELSE
-! ! !       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+! ! !       CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
 ! ! !     ENDIF
 ! ! !     
 ! ! !     EXITS("FITTING_ANALYTIC_CALCULATE")
@@ -515,18 +515,18 @@ CONTAINS
           dataProjection=>independentField%dataProjection
           IF(.NOT.ASSOCIATED(dataProjection)) THEN
             localError="Data projection is not associated on independent field."
-            CALL FLAG_ERROR(localError,err,error,*999)
+            CALL FlagError(localError,err,error,*999)
           ENDIF
           decompositionTopology=>independentField%decomposition%topology
           IF(ASSOCIATED(decompositionTopology)) THEN
             dataPoints=>decompositionTopology%dataPoints
             IF(.NOT.ASSOCIATED(dataPoints)) THEN
               localError="Data points are not associated on the decomposition topology of the independent field."
-              CALL FLAG_ERROR(localError,err,error,*999)
+              CALL FlagError(localError,err,error,*999)
             ENDIF
           ELSE
             localError="Decomposition topology is not associated on the independent field."
-            CALL FLAG_ERROR(localError,err,error,*999)
+            CALL FlagError(localError,err,error,*999)
           ENDIF
           GEOMETRIC_FIELD=>EQUATIONS%INTERPOLATION%GEOMETRIC_FIELD
           MATERIALS_FIELD=>EQUATIONS%INTERPOLATION%MATERIALS_FIELD
@@ -721,7 +721,7 @@ CONTAINS
 
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            CALL Field_InterpolationParametersScaleFactorsElementGet(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             mhs=0          
             DO mh=1,mappingVariable%NUMBER_OF_COMPONENTS
@@ -811,7 +811,7 @@ CONTAINS
           
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            CALL Field_InterpolationParametersScaleFactorsElementGet(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             mhs=0          
             DO mh=1,fieldVariable%NUMBER_OF_COMPONENTS
@@ -917,7 +917,7 @@ CONTAINS
               POROSITY = 1.0_DP - ( 1.0_DP - POROSITY_0 ) / Jxy
             ELSE
               localError="Jacobian Jxy is smaller than 1.0E-10_DP."
-              CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+              CALL FlagError(localError,ERR,ERROR,*999)
             END IF
 
             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE) THEN
@@ -1015,7 +1015,7 @@ CONTAINS
           
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            CALL Field_InterpolationParametersScaleFactorsElementGet(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             mhs=0          
             DO mh=1,fieldVariable%NUMBER_OF_COMPONENTS
@@ -1247,7 +1247,7 @@ CONTAINS
           ENDDO !ng
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            CALL Field_InterpolationParametersScaleFactorsElementGet(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             mhs=0          
             DO mh=1,fieldVariable%NUMBER_OF_COMPONENTS
@@ -1278,18 +1278,18 @@ CONTAINS
             ENDDO !mh
           ENDIF
         CASE(EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
             & " is not valid for a Galerkin projection type of a data fitting equations set class."
-          CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+          CALL FlagError(localError,ERR,ERROR,*999)
         END SELECT
         
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_FINITE_ELEMENT_CALCULATE")
@@ -1348,7 +1348,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an update-materials Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -1428,19 +1428,19 @@ CONTAINS
                   & ERR,ERROR,*999)
                 !Other solutions not defined yet
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
             !Check the user specified field
@@ -1472,19 +1472,19 @@ CONTAINS
                 CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
                   & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -1495,7 +1495,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an update-materials Galerkin projection"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -1574,7 +1574,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an update-materials Galerkin projection"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -1642,7 +1642,7 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
               ENDIF              
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             END IF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -1655,13 +1655,13 @@ CONTAINS
                   & FIELD_VALUES_SET_TYPE,1,1.0_DP,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an update-materials Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -1677,7 +1677,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an update-materials Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 ! ! !         CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
 ! ! !           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -1697,7 +1697,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 2 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -1710,7 +1710,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 2 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -1723,7 +1723,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 3 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -1736,7 +1736,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 3 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -1745,16 +1745,16 @@ CONTAINS
 ! ! !                     LOCAL_ERROR="The specified analytic function type of "// &
 ! ! !                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                       & " is invalid for a moving mesh Galerkin projection."
-! ! !                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                   END SELECT
 ! ! !                 ELSE
-! ! !                   CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+! ! !                   CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
 ! ! !                 ENDIF
 ! ! !              ELSE
-! ! !                 CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+! ! !                 CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
 ! ! !               ENDIF
 ! ! !             ELSE
-! ! !               CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+! ! !               CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
 ! ! !             ENDIF
 ! ! !           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
 ! ! !             IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -1765,7 +1765,7 @@ CONTAINS
 ! ! !                 ENDIF
 ! ! !               ENDIF
 ! ! !             ELSE
-! ! !               CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+! ! !               CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
 ! ! !             ENDIF
 ! ! !           CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
 ! ! !             IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
@@ -1773,19 +1773,19 @@ CONTAINS
 ! ! !                 IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
 ! ! !                   CALL FITTING_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
 ! ! !                 ELSE
-! ! !                   CALL FLAG_ERROR("Equations set analtyic has not been finished.",ERR,ERROR,*999)
+! ! !                   CALL FlagError("Equations set analtyic has not been finished.",ERR,ERROR,*999)
 ! ! !                 ENDIF
 ! ! !               ELSE
-! ! !                 CALL FLAG_ERROR("Equations set analtyic is not associated.",ERR,ERROR,*999)
+! ! !                 CALL FlagError("Equations set analtyic is not associated.",ERR,ERROR,*999)
 ! ! !               ENDIF
 ! ! !             ELSE
-! ! !               CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
+! ! !               CALL FlagError("Equations set dependent has not been finished.",ERR,ERROR,*999)
 ! ! !             ENDIF
 ! ! !           CASE DEFAULT
 ! ! !             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
 ! ! !               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
 ! ! !               & " is invalid for an update-materials Galerkin projection."
-! ! !             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !           END SELECT
 
         !-----------------------------------------------------------------
@@ -1799,7 +1799,7 @@ CONTAINS
               CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
               CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_QUASISTATIC,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -1809,8 +1809,8 @@ CONTAINS
               CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
               !Create the equations mapping.
               CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
+              CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+              CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
                 & ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -1823,34 +1823,34 @@ CONTAINS
               CASE(EQUATIONS_MATRICES_SPARSE_MATRICES) 
                 CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
                   & ERR,ERROR,*999)
-                CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
+                CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
                   & ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The equations matrices sparsity type of "// &
                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
             CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                 & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an update-materials Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -1859,15 +1859,15 @@ CONTAINS
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for an update-materials Galerkin projection."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
         LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " does not equal an update-materials Galerkin projection subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_EQUATIONS_SET_MAT_PROPERTIES_SETUP")
@@ -1908,14 +1908,14 @@ CONTAINS
         & EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE)
         CALL FITTING_EQUATIONS_SET_MAT_PROPERTIES_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a Galerkin projection type of a data fitting equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_EQUATIONS_SET_SETUP")
@@ -1948,18 +1948,18 @@ CONTAINS
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE(EQUATIONS_SET_MAT_PROPERTIES_DATA_FITTING_SUBTYPE, &
         & EQUATIONS_SET_MAT_PROPERTIES_INRIA_MODEL_DATA_FITTING_SUBTYPE)        
@@ -1967,36 +1967,36 @@ CONTAINS
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE(EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE)        
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE(EQUATIONS_SET_VECTOR_DATA_FITTING_SUBTYPE,EQUATIONS_SET_VECTOR_DATA_PRE_FITTING_SUBTYPE, &
         & EQUATIONS_SET_DIVFREE_VECTOR_DATA_FITTING_SUBTYPE,EQUATIONS_SET_DIVFREE_VECTOR_DATA_PRE_FITTING_SUBTYPE, &
@@ -2005,26 +2005,26 @@ CONTAINS
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a Galerkin projection type of an data fitting equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_EQUATIONS_SET_SOLUTION_METHOD_SET")
@@ -2055,10 +2055,10 @@ CONTAINS
         EQUATIONS_TYPE=EQUATIONS_SET%TYPE
         EQUATIONS_SUBTYPE=EQUATIONS_SET%SUBTYPE
       ELSE
-        CALL FLAG_ERROR("Equations set is not the data fitting type",ERR,ERROR,*999)
+        CALL FlagError("Equations set is not the data fitting type",ERR,ERROR,*999)
       END IF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_EQUATIONS_SET_CLASS_TYPE_GET")
@@ -2092,10 +2092,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a data fitting equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_EQUATIONS_SET_CLASS_TYPE_SET")
@@ -2160,14 +2160,14 @@ CONTAINS
         EQUATIONS_SET%TYPE=EQUATIONS_SET_DATA_FITTING_EQUATION_TYPE
         EQUATIONS_SET%SUBTYPE=EquationsSet_DataPointVectorQuasistaticFittingSubtype
       CASE(EQUATIONS_SET_GENERALISED_DATA_FITTING_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a Galerkin projection type of a data fitting equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_EQUATIONS_SET_SUBTYPE_SET")
@@ -2224,7 +2224,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -2289,19 +2289,19 @@ CONTAINS
                 CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                 CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
               !Check the user specified field
@@ -2324,19 +2324,19 @@ CONTAINS
                 CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
                   & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -2347,7 +2347,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Galerkin projection"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -2363,7 +2363,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -2379,7 +2379,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 ! ! !         CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
 ! ! !           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -2399,7 +2399,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 2 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -2412,7 +2412,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 2 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -2425,7 +2425,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 3 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -2438,7 +2438,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 3 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -2447,16 +2447,16 @@ CONTAINS
 ! ! !                     LOCAL_ERROR="The specified analytic function type of "// &
 ! ! !                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                       & " is invalid for a standard Galerkin projection."
-! ! !                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                   END SELECT
 ! ! !                 ELSE
-! ! !                   CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+! ! !                   CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
 ! ! !                 ENDIF
 ! ! !              ELSE
-! ! !                 CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+! ! !                 CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
 ! ! !               ENDIF
 ! ! !             ELSE
-! ! !               CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+! ! !               CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
 ! ! !             ENDIF
 ! ! !           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
 ! ! !             IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -2467,7 +2467,7 @@ CONTAINS
 ! ! !                 ENDIF
 ! ! !               ENDIF
 ! ! !             ELSE
-! ! !               CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+! ! !               CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
 ! ! !             ENDIF
 ! ! !           CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
 ! ! !             IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
@@ -2475,19 +2475,19 @@ CONTAINS
 ! ! !                 IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
 ! ! !                   CALL FITTING_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
 ! ! !                 ELSE
-! ! !                   CALL FLAG_ERROR("Equations set analtyic has not been finished.",ERR,ERROR,*999)
+! ! !                   CALL FlagError("Equations set analtyic has not been finished.",ERR,ERROR,*999)
 ! ! !                 ENDIF
 ! ! !               ELSE
-! ! !                 CALL FLAG_ERROR("Equations set analtyic is not associated.",ERR,ERROR,*999)
+! ! !                 CALL FlagError("Equations set analtyic is not associated.",ERR,ERROR,*999)
 ! ! !               ENDIF
 ! ! !             ELSE
-! ! !               CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
+! ! !               CALL FlagError("Equations set dependent has not been finished.",ERR,ERROR,*999)
 ! ! !             ENDIF
 ! ! !           CASE DEFAULT
 ! ! !             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
 ! ! !               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
 ! ! !               & " is invalid for a standard Galerkin projection."
-! ! !             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !           END SELECT
 
         !-----------------------------------------------------------------
@@ -2501,7 +2501,7 @@ CONTAINS
               CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
               CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -2511,8 +2511,8 @@ CONTAINS
               CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
               !Create the equations mapping.
               CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
+              CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+              CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
                 & ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -2525,34 +2525,34 @@ CONTAINS
               CASE(EQUATIONS_MATRICES_SPARSE_MATRICES) 
                 CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
                   & ERR,ERROR,*999)
-                CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
+                CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
                   & ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The equations matrices sparsity type of "// &
                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
             CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                 & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -2561,15 +2561,15 @@ CONTAINS
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a standard Galerkin projection."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
         LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " does not equal a standard Galerkin projection subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_EQUATIONS_SET_STANDARD_SETUP")
@@ -2634,7 +2634,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a vector data Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -2738,19 +2738,19 @@ CONTAINS
                   & ERR,ERROR,*999)
                 !Other solutions not defined yet
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
             !Check the user specified field
@@ -2798,19 +2798,19 @@ CONTAINS
                 CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
                   & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -2821,7 +2821,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an update-materials Galerkin projection"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -2900,7 +2900,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an update-materials Galerkin projection"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -2965,7 +2965,7 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
               ENDIF              
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             END IF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -2980,13 +2980,13 @@ CONTAINS
                   & FIELD_VALUES_SET_TYPE,2,0.0_DP,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an update-materials Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -3051,7 +3051,7 @@ CONTAINS
                 CASE DEFAULT
                   LOCAL_ERROR="The solution method of " &
                     & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
                 !Check the user specified field
@@ -3076,7 +3076,7 @@ CONTAINS
                 CASE DEFAULT
                   LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
                     &"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ENDIF
               !Specify finish action
@@ -3098,13 +3098,13 @@ CONTAINS
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard PEE problem"
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
               & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
               & " is invalid for a PPE equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 ! ! !         CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
 ! ! !           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -3124,7 +3124,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 2 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -3137,7 +3137,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 2 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -3150,7 +3150,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 3 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -3163,7 +3163,7 @@ CONTAINS
 ! ! !                         & " is invalid. The analytic function type of "// &
 ! ! !                         & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                         & " requires that there be 3 geometric dimensions."
-! ! !                       CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                     ENDIF
 ! ! !                     !Create analytic field if required
 ! ! !                     !Set analtyic function type
@@ -3172,16 +3172,16 @@ CONTAINS
 ! ! !                     LOCAL_ERROR="The specified analytic function type of "// &
 ! ! !                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
 ! ! !                       & " is invalid for a standard Galerkin projection."
-! ! !                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !                   END SELECT
 ! ! !                 ELSE
-! ! !                   CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+! ! !                   CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
 ! ! !                 ENDIF
 ! ! !              ELSE
-! ! !                 CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+! ! !                 CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
 ! ! !               ENDIF
 ! ! !             ELSE
-! ! !               CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+! ! !               CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
 ! ! !             ENDIF
 ! ! !           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
 ! ! !             IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -3192,7 +3192,7 @@ CONTAINS
 ! ! !                 ENDIF
 ! ! !               ENDIFstandard
 ! ! !             ELSE
-! ! !               CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+! ! !               CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
 ! ! !             ENDIF
 ! ! !           CASE(EQUATIONS_SET_SETUP_GENERATE_ACTION)
 ! ! !             IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
@@ -3200,19 +3200,19 @@ CONTAINS
 ! ! !                 IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
 ! ! !                   CALL FITTING_ANALYTIC_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
 ! ! !                 ELSE
-! ! !                   CALL FLAG_ERROR("Equations set analtyic has not been finished.",ERR,ERROR,*999)
+! ! !                   CALL FlagError("Equations set analtyic has not been finished.",ERR,ERROR,*999)
 ! ! !                 ENDIF
 ! ! !               ELSE
-! ! !                 CALL FLAG_ERROR("Equations set analtyic is not associated.",ERR,ERROR,*999)
+! ! !                 CALL FlagError("Equations set analtyic is not associated.",ERR,ERROR,*999)
 ! ! !               ENDIF
 ! ! !             ELSE
-! ! !               CALL FLAG_ERROR("Equations set dependent has not been finished.",ERR,ERROR,*999)
+! ! !               CALL FlagError("Equations set dependent has not been finished.",ERR,ERROR,*999)
 ! ! !             ENDIF
 ! ! !           CASE DEFAULT
 ! ! !             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
 ! ! !               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
 ! ! !               & " is invalid for a standard Galerkin projection."
-! ! !             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+! ! !             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 ! ! !           END SELECT
 
         !-----------------------------------------------------------------
@@ -3226,7 +3226,7 @@ CONTAINS
               CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
               CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_QUASISTATIC,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -3236,8 +3236,8 @@ CONTAINS
               CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
               !Create the equations mapping.
               CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
+              CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+              CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
                 & ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_SOURCE_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
@@ -3251,39 +3251,39 @@ CONTAINS
               CASE(EQUATIONS_MATRICES_SPARSE_MATRICES) 
                 CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
                   & ERR,ERROR,*999)
-                CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
+                CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
                   & ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The equations matrices sparsity type of "// &
                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
             CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                 & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a vector data Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a vector data Galerkin projection."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       CASE(EquationsSet_DataPointVectorStaticFittingSubtype, &
@@ -3303,7 +3303,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a vector data Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! g e o m e t r y   f i e l d
@@ -3387,19 +3387,19 @@ CONTAINS
                   & ERR,ERROR,*999)
                 !Other solutions not defined yet
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
             !Check the user specified field
@@ -3417,19 +3417,19 @@ CONTAINS
                 CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
                   & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -3440,7 +3440,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an update-materials Galerkin projection"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         !   m a t e r i a l   f i e l d
@@ -3503,7 +3503,7 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
               ENDIF              
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             END IF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -3518,13 +3518,13 @@ CONTAINS
                   & FIELD_VALUES_SET_TYPE,2,0.0_DP,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an update-materials Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! I n d e p e n d e n t   t y p e  
@@ -3603,7 +3603,7 @@ CONTAINS
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of " &
                   & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
               !Check the user specified field
@@ -3631,7 +3631,7 @@ CONTAINS
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
                   &"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
             !Specify finish action
@@ -3643,7 +3643,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard PEE problem"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         !   e q u a t i o n s   t y p e   
@@ -3660,7 +3660,7 @@ CONTAINS
                 CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_QUASISTATIC,ERR,ERROR,*999)                
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -3670,8 +3670,8 @@ CONTAINS
               CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
               !Create the equations mapping.
               CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
+              CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+              CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
                 & ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -3684,47 +3684,47 @@ CONTAINS
               CASE(EQUATIONS_MATRICES_SPARSE_MATRICES) 
                 CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
                   & ERR,ERROR,*999)
-                CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
+                CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
                   & ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The equations matrices sparsity type of "// &
                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
             CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                 & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a vector data Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a vector data Galerkin projection."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
         LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " does not equal a vector data Galerkin projection subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_EQUATIONS_SET_VECTORDATA_SETUP")
@@ -3763,14 +3763,14 @@ CONTAINS
       CASE(Problem_DataPointVectorQuasistaticFittingSubtype)
         CALL FITTING_PROBLEM_VECTORDATA_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a Galerkin projection type of a data fitting problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_PROBLEM_SETUP")
@@ -3819,14 +3819,14 @@ CONTAINS
         PROBLEM%TYPE=PROBLEM_DATA_FITTING_TYPE
         PROBLEM%SUBTYPE=Problem_DataPointVectorQuasistaticFittingSubtype     
       CASE(PROBLEM_GENERALISED_DATA_FITTING_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a Galerkin projection type of a data fitting problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_PROBLEM_SUBTYPE_SET")
@@ -3873,7 +3873,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3889,7 +3889,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -3914,7 +3914,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3944,20 +3944,20 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
        CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a standard Galerkin projection."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
         LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
           & " does not equal a standard Galerkin projection subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_PROBLEM_STANDARD_SETUP")
@@ -4007,7 +4007,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a vector data Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -4028,7 +4028,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a vector data Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -4053,7 +4053,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a vector data Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -4087,20 +4087,20 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a vector data Galerkin projection."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
        CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a vector data Galerkin projection."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
         LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
           & " does not equal a vector data Galerkin projection subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_PROBLEM_VECTORDATA_SETUP")
@@ -4131,10 +4131,10 @@ CONTAINS
         PROBLEM_EQUATION_TYPE=PROBLEM%TYPE
         PROBLEM_SUBTYPE=PROBLEM%SUBTYPE
       ELSE
-        CALL FLAG_ERROR("Problem is not data fitting class",ERR,ERROR,*999)
+        CALL FlagError("Problem is not data fitting class",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_PROBLEM_CLASS_TYPE_GET")
@@ -4167,10 +4167,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a data fitting problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_PROBLEM_CLASS_TYPE_SET")
@@ -4267,16 +4267,16 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a data fitting problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FITTING_PRE_SOLVE")
@@ -4320,13 +4320,13 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a fitting type of a classical field problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
       ENDIF
     ENDIF   
     EXITS("FITTING_POST_SOLVE")
@@ -4417,16 +4417,16 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a fitting equation of a classical field problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     EXITS("FITTING_POST_SOLVE_OUTPUT_DATA")
     RETURN
@@ -4548,31 +4548,31 @@ CONTAINS
 ! ! !                       CALL FLUID_MECHANICS_IO_READ_DATA(SOLVER_LINEAR_TYPE,INPUT_VEL_W_DATA, & 
 ! ! !                         & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_TIME_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                   END IF                
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF 
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a vector data type of a fitting field problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
           CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
              & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
           CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET%SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, & 
              & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     EXITS("FITTING_PRE_SOLVE_UPDATE_INPUT_DATA")
     RETURN

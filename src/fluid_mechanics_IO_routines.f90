@@ -2876,7 +2876,7 @@ CONTAINS
 ! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
 
     IF(ALLOC_ERROR.NE.0) THEN
-      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+      CALL FlagError("Error during allocation.",ERR,ERROR,*999)
     END IF
 
     ALLOCATE(TMP%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
@@ -2921,7 +2921,7 @@ CONTAINS
     EXPORT=TMP
 
     IF(ALLOC_ERROR.NE.0) THEN
-      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+      CALL FlagError("Error during allocation.",ERR,ERROR,*999)
     END IF
 
     EXITS("FLUID_MECHANICS_IO_READ_CMHEART1")
@@ -2991,7 +2991,7 @@ CONTAINS
 ! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
 
     IF(ALLOC_ERROR.NE.0) THEN
-      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+      CALL FlagError("Error during allocation.",ERR,ERROR,*999)
     END IF
 
     ALLOCATE(TMP%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
@@ -3036,7 +3036,7 @@ CONTAINS
     EXPORT=TMP
 
     IF(ALLOC_ERROR.NE.0) THEN
-      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+      CALL FlagError("Error during allocation.",ERR,ERROR,*999)
     END IF
 
     !Now read boundary information from CMHEART
@@ -3125,7 +3125,7 @@ CONTAINS
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
 
       IF(ALLOC_ERROR.NE.0) THEN
-        CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+        CALL FlagError("Error during allocation.",ERR,ERROR,*999)
       END IF
 
       ALLOCATE(TMP%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
@@ -3176,7 +3176,7 @@ CONTAINS
       ENDIF
 
       IF(ALLOC_ERROR.NE.0) THEN
-        CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+        CALL FlagError("Error during allocation.",ERR,ERROR,*999)
       END IF
 
     ENDDO

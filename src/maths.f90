@@ -90,12 +90,6 @@ MODULE Maths
     MODULE PROCEDURE D_CROSS_PRODUCT_DP
   END INTERFACE dCrossProduct
 
-  !>Calculates and returns the MATRIX-VECTOR-prouct of the double precision VECTOR A*B in C.
-  INTERFACE MATRIX_VECTOR_PRODUCT
-    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_SP
-    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_DP
-  END INTERFACE !MATRIX_VECTOR_PRODUCT
-
   !>Returns the determinant of a matrix
   INTERFACE Determinant
     MODULE PROCEDURE DETERMINANT_FULL_INTG
@@ -169,30 +163,42 @@ MODULE Maths
     MODULE PROCEDURE L2NORM_DP
   END INTERFACE L2Norm
 
-  !>Calculates and returns the matrix-prouct of the single precision matrix A*B in C.
+  !>Calculates and returns the matrix-prouct A*B in the matrix C.
   INTERFACE MATRIX_PRODUCT
     MODULE PROCEDURE MATRIX_PRODUCT_SP
     MODULE PROCEDURE MATRIX_PRODUCT_DP
   END INTERFACE MATRIX_PRODUCT
   
-  !>Calculates and returns the matrix-prouct of the single precision matrix A*B in C.
+  !>Calculates and returns the matrix-prouct A*B in the matrix C.
   INTERFACE MatrixProduct
     MODULE PROCEDURE MATRIX_PRODUCT_SP
     MODULE PROCEDURE MATRIX_PRODUCT_DP
   END INTERFACE MatrixProduct
   
-  !>Returns the transpose of a matrix A in AT.
+  !>Returns the transpose of a matrix A in A^T.
   INTERFACE MATRIX_TRANSPOSE
     MODULE PROCEDURE MATRIX_TRANSPOSE_SP
     MODULE PROCEDURE MATRIX_TRANSPOSE_DP
   END INTERFACE MATRIX_TRANSPOSE
 
- !>Returns the transpose of a matrix A in AT.
+  !>Returns the transpose of a matrix A in A^T.
   INTERFACE MatrixTranspose
     MODULE PROCEDURE MATRIX_TRANSPOSE_SP
     MODULE PROCEDURE MATRIX_TRANSPOSE_DP
   END INTERFACE MatrixTranspose
 
+  !>Calculates and returns the matrix-vector-prouct A*b in the vector c.
+  INTERFACE MATRIX_VECTOR_PRODUCT
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_SP
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_DP
+  END INTERFACE MATRIX_VECTOR_PRODUCT
+
+  !>Calculates and returns the matrix-vector-prouct A*b in the vector c.
+  INTERFACE MatrixVectorProduct
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_SP
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_DP
+  END INTERFACE MatrixVectorProduct
+  
   !>Normalises a vector
   INTERFACE Normalise
     MODULE PROCEDURE NORMALISE_SP
@@ -227,11 +233,12 @@ MODULE Maths
   INTERFACE COTH
     MODULE PROCEDURE COTH_SP
     MODULE PROCEDURE COTH_DP
-  END INTERFACE !COTH
+  END INTERFACE COTH 
 
   PUBLIC CROSS_PRODUCT,CrossProduct,D_CROSS_PRODUCT,dCrossProduct,Determinant,Eigenvalue,Eigenvector,IdentityMatrix,Invert, &
     & L2Norm,MATRIX_PRODUCT,MatrixProduct,MATRIX_TRANSPOSE,MatrixTranspose,Normalise,NORM_CROSS_PRODUCT,NormCrossProduct, &
-    & SOLVE_SMALL_LINEAR_SYSTEM,SolveSmallLinearSystem,Coth,spline_cubic_set,s3_fs,spline_cubic_val,MATRIX_VECTOR_PRODUCT
+    & SOLVE_SMALL_LINEAR_SYSTEM,SolveSmallLinearSystem,Coth,spline_cubic_set,s3_fs,spline_cubic_val,MATRIX_VECTOR_PRODUCT, &
+    & MatrixVectorProduct
   
   
 CONTAINS
@@ -261,13 +268,13 @@ CONTAINS
           C(2)=A(3)*B(1)-A(1)*B(3)
           C(3)=A(1)*B(2)-A(2)*B(1)
         CASE DEFAULT
-          CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+          CALL FlagError("Invalid vector size",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+        CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors A and B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors A and B are not the same size",ERR,ERROR,*999)
     ENDIF
 
     EXITS("CROSS_PRODUCT_INTG")
@@ -302,13 +309,13 @@ CONTAINS
           C(2)=A(3)*B(1)-A(1)*B(3)
           C(3)=A(1)*B(2)-A(2)*B(1)
         CASE DEFAULT
-          CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+          CALL FlagError("Invalid vector size",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+        CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors A and B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors A and B are not the same size",ERR,ERROR,*999)
     ENDIF
 
     EXITS("CROSS_PRODUCT_SP")
@@ -343,13 +350,13 @@ CONTAINS
           C(2)=A(3)*B(1)-A(1)*B(3)
           C(3)=A(1)*B(2)-A(2)*B(1)
         CASE DEFAULT
-          CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+          CALL FlagError("Invalid vector size",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+        CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors A and B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors A and B are not the same size",ERR,ERROR,*999)
     ENDIF
 
     EXITS("CROSS_PRODUCT_DP")
@@ -394,16 +401,16 @@ CONTAINS
               D_C(3,ni)=D_A(1,ni)*B(2)-D_A(2,ni)*B(1)+A(1)*D_B(2,ni)-A(2)*D_B(1,ni)
             ENDDO !ni
           CASE DEFAULT
-            CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+            CALL FlagError("Invalid vector size",ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+          CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The number of derivative vectors is too small",ERR,ERROR,*999)
+        CALL FlagError("The number of derivative vectors is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
     ENDIF
 
     EXITS("D_CROSS_PRODUCT_INTG")
@@ -448,16 +455,16 @@ CONTAINS
               D_C(3,ni)=D_A(1,ni)*B(2)-D_A(2,ni)*B(1)+A(1)*D_B(2,ni)-A(2)*D_B(1,ni)
             ENDDO !ni
           CASE DEFAULT
-            CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+            CALL FlagError("Invalid vector size",ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+          CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The number of derivative vectors is too small",ERR,ERROR,*999)
+        CALL FlagError("The number of derivative vectors is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
     ENDIF
 
     EXITS("D_CROSS_PRODUCT_SP")
@@ -502,16 +509,16 @@ CONTAINS
               D_C(3,ni)=D_A(1,ni)*B(2)-D_A(2,ni)*B(1)+A(1)*D_B(2,ni)-A(2)*D_B(1,ni)
             ENDDO !ni
           CASE DEFAULT
-            CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+            CALL FlagError("Invalid vector size",ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+          CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The number of derivative vectors is too small",ERR,ERROR,*999)
+        CALL FlagError("The number of derivative vectors is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
     ENDIF
 
     EXITS("D_CROSS_PRODUCT_DP")
@@ -549,10 +556,10 @@ CONTAINS
          C(2)=A(2,1)*B(1)+A(2,2)*B(2)+A(2,3)*B(3)
          C(3)=A(3,1)*B(1)+A(3,2)*B(2)+A(3,3)*B(3)
        CASE DEFAULT
-         CALL FLAG_ERROR("Invalid matrix and/or vector size.",err,error,*999)
+         CALL FlagError("Invalid matrix and/or vector size.",err,error,*999)
        END SELECT
      ELSE
-       CALL FLAG_ERROR("Invalid matrix sizes.",err,error,*999)
+       CALL FlagError("Invalid matrix sizes.",err,error,*999)
      ENDIF
 
      EXITS("MATRIX_VECTOR_PRODUCT_SP")
@@ -590,10 +597,10 @@ CONTAINS
          C(2)=A(2,1)*B(1)+A(2,2)*B(2)+A(2,3)*B(3)
          C(3)=A(3,1)*B(1)+A(3,2)*B(2)+A(3,3)*B(3)
        CASE DEFAULT
-         CALL FLAG_ERROR("Invalid matrix and/or vector size.",err,error,*999)
+         CALL FlagError("Invalid matrix and/or vector size.",err,error,*999)
        END SELECT
      ELSE
-       CALL FLAG_ERROR("Invalid matrix sizes.",err,error,*999)
+       CALL FlagError("Invalid matrix sizes.",err,error,*999)
      ENDIF
 
      EXITS("MATRIX_VECTOR_PRODUCT_DP")
@@ -631,10 +638,10 @@ CONTAINS
         DETERMINANT_FULL_INTG=A(1,1)*A(2,2)*A(3,3)+A(1,2)*A(2,3)*A(3,1)+A(1,3)*A(2,1)*A(3,2)-A(1,1)*A(3,2)*A(2,3)- &
           A(2,1)*A(1,2)*A(3,3)-A(3,1)*A(2,2)*A(1,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+        CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DETERMINANT_FULL_INTG")
@@ -672,10 +679,10 @@ CONTAINS
         DETERMINANT_FULL_SP=A(1,1)*A(2,2)*A(3,3)+A(1,2)*A(2,3)*A(3,1)+A(1,3)*A(2,1)*A(3,2)-A(1,1)*A(3,2)*A(2,3)- &
           A(2,1)*A(1,2)*A(3,3)-A(3,1)*A(2,2)*A(1,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+        CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DETERMINANT_FULL_SP")
@@ -713,10 +720,10 @@ CONTAINS
         DETERMINANT_FULL_DP=A(1,1)*A(2,2)*A(3,3)+A(1,2)*A(2,3)*A(3,1)+A(1,3)*A(2,1)*A(3,2)-A(1,1)*A(3,2)*A(2,3)- &
           A(2,1)*A(1,2)*A(3,3)-A(3,1)*A(2,2)*A(1,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+        CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DETERMINANT_FULL_DP")
@@ -819,7 +826,7 @@ CONTAINS
             B2=RI1/2.0_SP
             C1=RI1*RI1
             C2=4.0_SP*RI2
-            IF(C2>C1) CALL FLAG_ERROR("Complex roots found in quadratic equation",ERR,ERROR,*999)
+            IF(C2>C1) CALL FlagError("Complex roots found in quadratic equation",ERR,ERROR,*999)
             B3=SQRT(C1-C2)/2.0_SP
             EVALUES(1)=B2+B3
             EVALUES(2)=B2-B3
@@ -842,7 +849,7 @@ CONTAINS
           R=RI4*(RI4*RI4-RI2/2.0_SP)+RI3/2.0_SP
           Q3=Q*Q*Q
           D=R*R-Q3
-          IF(ABS(D)>ZERO_TOLERANCE_SP) CALL FLAG_ERROR("Complex roots found in solution of cubic equation",ERR,ERROR,*999)
+          IF(ABS(D)>ZERO_TOLERANCE_SP) CALL FlagError("Complex roots found in solution of cubic equation",ERR,ERROR,*999)
           RQ=SQRT(ABS(Q))
           IF(ABS(Q)<ZERO_TOLERANCE_SP) THEN
             THETA=0.0_SP
@@ -861,13 +868,13 @@ CONTAINS
             ENDIF
           ENDDO !i
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Evalues is too small",ERR,ERROR,*999)
+        CALL FlagError("Evalues is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
     EXITS("EIGENVALUE_FULL_SP")
@@ -907,7 +914,7 @@ CONTAINS
             B2=RI1/2.0_DP
             C1=RI1*RI1
             C2=4.0_DP*RI2
-            IF(C2>C1) CALL FLAG_ERROR("Complex roots found in quadratic equation",ERR,ERROR,*999)
+            IF(C2>C1) CALL FlagError("Complex roots found in quadratic equation",ERR,ERROR,*999)
             B3=SQRT(C1-C2)/2.0_DP
             EVALUES(1)=B2+B3
             EVALUES(2)=B2-B3
@@ -930,7 +937,7 @@ CONTAINS
           R=RI4*(RI4*RI4-RI2/2.0_DP)+RI3/2.0_DP
           Q3=Q*Q*Q
           D=R*R-Q3
-          IF(ABS(D)>ZERO_TOLERANCE) CALL FLAG_ERROR("Complex roots found in solution of cubic equation",ERR,ERROR,*999)
+          IF(ABS(D)>ZERO_TOLERANCE) CALL FlagError("Complex roots found in solution of cubic equation",ERR,ERROR,*999)
           RQ=SQRT(ABS(Q))
           IF(ABS(Q)<ZERO_TOLERANCE) THEN
             THETA=0.0_DP
@@ -949,13 +956,13 @@ CONTAINS
             ENDIF
           ENDDO !i
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Evalues is too small",ERR,ERROR,*999)
+        CALL FlagError("Evalues is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
     EXITS("EIGENVALUE_FULL_DP")
@@ -1014,7 +1021,7 @@ CONTAINS
         CASE(3)
           IF(ABS(A(1,2))<ZERO_TOLERANCE_SP.AND.ABS(A(1,3))<ZERO_TOLERANCE_SP.AND.ABS(A(2,3))<ZERO_TOLERANCE_SP) THEN
             EVECTOR=0.0_SP
-            CALL FLAG_ERROR("Zero matrix?? Eigenvectors undetermined",ERR,ERROR,*999)
+            CALL FlagError("Zero matrix?? Eigenvectors undetermined",ERR,ERROR,*999)
           ELSE
             DO i=1,3
               U(i,:)=A(i,:)
@@ -1036,13 +1043,13 @@ CONTAINS
             ENDDO !i
           ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Evector is too small",ERR,ERROR,*999)
+        CALL FlagError("Evector is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
     EXITS("EIGENVECTOR_FULL_SP")
@@ -1101,7 +1108,7 @@ CONTAINS
         CASE(3)
           IF(ABS(A(1,2))<ZERO_TOLERANCE.AND.ABS(A(1,3))<ZERO_TOLERANCE.AND.ABS(A(2,3))<ZERO_TOLERANCE) THEN
             EVECTOR=0.0_DP
-            CALL FLAG_ERROR("Zero matrix?? Eigenvectors undetermined",ERR,ERROR,*999)
+            CALL FlagError("Zero matrix?? Eigenvectors undetermined",ERR,ERROR,*999)
           ELSE
             DO i=1,3
               U(i,:)=A(i,:)
@@ -1123,13 +1130,13 @@ CONTAINS
             ENDDO !i
           ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Evector is too small",ERR,ERROR,*999)
+        CALL FlagError("Evector is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
     EXITS("EIGENVECTOR_FULL_DP")
@@ -1424,13 +1431,13 @@ CONTAINS
             B=0.0_DP
           ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size is not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size is not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Matrix B is not the same size as matrix A",ERR,ERROR,*999)
+        CALL FlagError("Matrix B is not the same size as matrix A",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix A is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix A is not square",ERR,ERROR,*999)
     ENDIF
 
     EXITS("INVERT_FULL_SP")
@@ -1497,13 +1504,13 @@ CONTAINS
             B=0.0_DP
           ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size is not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size is not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Matrix B is not the same size as matrix A",ERR,ERROR,*999)
+        CALL FlagError("Matrix B is not the same size as matrix A",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix A is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix A is not square",ERR,ERROR,*999)
     ENDIF
 
     EXITS("INVERT_FULL_DP")
@@ -1850,10 +1857,10 @@ CONTAINS
         C(3,2)=A(3,1)*B(1,2)+A(3,2)*B(2,2)+A(3,3)*B(3,2)
         C(3,3)=A(3,1)*B(1,3)+A(3,2)*B(2,3)+A(3,3)*B(3,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+        CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Invalid matrix sizes.",ERR,ERROR,*999)
+      CALL FlagError("Invalid matrix sizes.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("MATRIX_PRODUCT_SP")
@@ -1900,10 +1907,10 @@ CONTAINS
         C(3,2)=A(3,1)*B(1,2)+A(3,2)*B(2,2)+A(3,3)*B(3,2)
         C(3,3)=A(3,1)*B(1,3)+A(3,2)*B(2,3)+A(3,3)*B(3,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+        CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Invalid matrix sizes.",ERR,ERROR,*999)
+      CALL FlagError("Invalid matrix sizes.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("MATRIX_PRODUCT_DP")
@@ -1949,10 +1956,10 @@ CONTAINS
         AT(3,2)=A(2,3)
         AT(3,3)=A(3,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+        CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+      CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
     ENDIF
  
     EXITS("MATRIX_TRANSPOSE_SP")
@@ -1998,10 +2005,10 @@ CONTAINS
         AT(3,2)=A(2,3)
         AT(3,3)=A(3,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+        CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+      CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("MATRIX_TRANSPOSE_DP")
@@ -2032,7 +2039,7 @@ CONTAINS
     LENGTH=L2NORM(A)
     IF(ABS(LENGTH)<ZERO_TOLERANCE_SP) THEN
         NORMALISE_SP=A
-        CALL FLAG_ERROR("Length of vector to normalise is zero",ERR,ERROR,*999)
+        CALL FlagError("Length of vector to normalise is zero",ERR,ERROR,*999)
     ELSE
         NORMALISE_SP=A/LENGTH
     ENDIF
@@ -2065,7 +2072,7 @@ CONTAINS
     LENGTH=L2NORM(A)
     IF(ABS(LENGTH)<ZERO_TOLERANCE) THEN
       NORMALISE_DP=A
-      CALL FLAG_ERROR("Length of vector to normalise is zero",ERR,ERROR,*999)
+      CALL FlagError("Length of vector to normalise is zero",ERR,ERROR,*999)
     ELSE
       NORMALISE_DP=A/LENGTH
     ENDIF
@@ -2159,16 +2166,16 @@ CONTAINS
             CALL INVERT(A,AINV,ADET,ERR,ERROR,*999)
             x=MATMUL(AINV,b)
           CASE DEFAULT
-            CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+            CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("x is too small",ERR,ERROR,*999)
+          CALL FlagError("x is too small",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Size of b is not the same as the number of rows in A",ERR,ERROR,*999)
+        CALL FlagError("Size of b is not the same as the number of rows in A",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
     EXITS("SOLVE_SMALL_LINEAR_SYSTEM_SP")
@@ -2204,16 +2211,16 @@ CONTAINS
             CALL INVERT(A,AINV,ADET,ERR,ERROR,*999)
             x=MATMUL(AINV,b)
           CASE DEFAULT
-            CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+            CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("x is too small",ERR,ERROR,*999)
+          CALL FlagError("x is too small",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Size of b is not the same as the number of rows in A",ERR,ERROR,*999)
+        CALL FlagError("Size of b is not the same as the number of rows in A",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
     EXITS("SOLVE_SMALL_LINEAR_SYSTEM_DP")
@@ -2289,13 +2296,13 @@ CONTAINS
 
     ! Sanity checks
     IF ( n <= 1 ) then
-      localError="spline interpolation requires at least 2 knots- user supplied "//TRIM(NUMBER_TO_VSTRING(n,"*",ERR,ERROR))
-      CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+      localError="spline interpolation requires at least 2 knots- user supplied "//TRIM(NumberToVString(n,"*",ERR,ERROR))
+      CALL FlagError(localError,ERR,ERROR,*999)
     ENDIF
     DO i = 1, n-1
       IF ( t(i) >= t(i+1) ) then
         localError="Non-increasing knots supplied for cubic spline interpolation."
-        CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+        CALL FlagError(localError,ERR,ERROR,*999)
       ENDIF
     ENDDO
 
@@ -2314,7 +2321,7 @@ CONTAINS
       sup(1) = 0.0E+00_DP
     ELSE
       localError="The boundary flag IBCBEG must be 0, 1 or 2."
-      CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+      CALL FlagError(localError,ERR,ERROR,*999)
     ENDIF
 
     !  Set the intermediate equations.
@@ -2341,7 +2348,7 @@ CONTAINS
       diag(n) = 1.0E+00_DP
     ELSE
       localError="The boundary flag IBCEND must be 0, 1 or 2."
-      CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+      CALL FlagError(localError,ERR,ERROR,*999)
     ENDIF
 
     !  Special case:
@@ -2390,7 +2397,7 @@ CONTAINS
     DO i = 1, n
       IF ( ABS(a2(i)) < ZERO_TOLERANCE ) then
         localError="Zero diagonal entry in tridiagonal linear system."
-        CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+        CALL FlagError(localError,ERR,ERROR,*999)
       ENDIF
     ENDDO
 

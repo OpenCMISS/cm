@@ -151,7 +151,7 @@ CONTAINS
 
     IF(ASSOCIATED(DISTRIBUTED_VECTOR)) THEN
     ELSE
-      CALL FLAG_ERROR("Distributed vector is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Distributed vector is not associated.",ERR,ERROR,*999)
     ENDIF    
      
     EXITS("DISTRIBUTED_VECTOR_IO_WRITE")

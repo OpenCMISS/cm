@@ -107,14 +107,77 @@ MODULE TREES
   
   !Interfaces
 
+  INTERFACE Tree_CreateFinish
+    MODULE PROCEDURE TREE_CREATE_FINISH
+  END INTERFACE Tree_CreateFinish
+  
+  INTERFACE Tree_CreateStart
+    MODULE PROCEDURE TREE_CREATE_START
+  END INTERFACE Tree_CreateStart
+
+  INTERFACE Tree_DetachAndDestroy
+    MODULE PROCEDURE TREE_DETACH_AND_DESTROY
+  END INTERFACE Tree_DetachAndDestroy
+  
+  INTERFACE Tree_InsertTypeSet
+    MODULE PROCEDURE TREE_INSERT_TYPE_SET
+  END INTERFACE Tree_InsertTypeSet
+  
+  INTERFACE Tree_ItemDelete
+    MODULE PROCEDURE TREE_ITEM_DELETE
+  END INTERFACE Tree_ItemDelete
+  
+  INTERFACE Tree_ItemInsert
+    MODULE PROCEDURE TREE_ITEM_INSERT
+  END INTERFACE Tree_ItemInsert
+  
+  INTERFACE Tree_NodeKeyGet
+    MODULE PROCEDURE TREE_NODE_KEY_GET
+  END INTERFACE Tree_NodeKeyGet
+  
+  INTERFACE Tree_NodeValueGet
+    MODULE PROCEDURE TREE_NODE_VALUE_GET
+  END INTERFACE Tree_NodeValueGet
+  
+  INTERFACE Tree_NodeValueSet
+    MODULE PROCEDURE TREE_NODE_VALUE_SET
+  END INTERFACE Tree_NodeValueSet
+  
   PUBLIC TREE_TYPE,TREE_NODE_TYPE
 
   PUBLIC TREE_NODE_INSERT_SUCESSFUL,TREE_NODE_DUPLICATE_KEY
 
   PUBLIC TREE_DUPLICATES_ALLOWED_TYPE,TREE_NO_DUPLICATES_ALLOWED
   
-  PUBLIC TREE_CREATE_FINISH,TREE_CREATE_START,TREE_DESTROY,TREE_DETACH,TREE_DETACH_AND_DESTROY,TREE_INSERT_TYPE_SET, &
-    & TREE_ITEM_DELETE,TREE_ITEM_INSERT,TREE_NODE_KEY_GET,TREE_NODE_VALUE_GET,TREE_NODE_VALUE_SET,TREE_OUTPUT,TREE_SEARCH 
+  PUBLIC TREE_CREATE_FINISH,TREE_CREATE_START
+
+  PUBLIC Tree_CreateFinish,Tree_CreateStart
+
+  PUBLIC Tree_Destroy
+
+  PUBLIC TREE_DETACH_AND_DESTROY
+
+  PUBLIC Tree_Detach,Tree_DetachAndDestroy
+
+  PUBLIC TREE_INSERT_TYPE_SET
+
+  PUBLIC Tree_InsertTypeSet
+
+  PUBLIC TREE_ITEM_DELETE,TREE_ITEM_INSERT
+
+  PUBLIC Tree_ItemDelete,Tree_ItemInsert
+
+  PUBLIC TREE_NODE_KEY_GET
+
+  PUBLIC Tree_NodeKeyGet
+
+  PUBLIC TREE_NODE_VALUE_GET,TREE_NODE_VALUE_SET
+
+  PUBLIC Tree_NodeValueGet,Tree_NodeValueSet
+
+  PUBLIC Tree_Output
+
+  PUBLIC Tree_Search 
 
 CONTAINS
   
@@ -135,11 +198,11 @@ CONTAINS
 
     IF(ASSOCIATED(TREE)) THEN
       IF(TREE%TREE_FINISHED) THEN
-        CALL FLAG_ERROR("Tree is already finished",ERR,ERROR,*998)
+        CALL FlagError("Tree is already finished",ERR,ERROR,*998)
       ELSE
         !Allocate the nil tree node
         ALLOCATE(TREE%NIL,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate NIL tree node",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate NIL tree node",ERR,ERROR,*999)
         CALL TREE_NODE_INITIALISE(TREE,TREE%NIL,ERR,ERROR,*999)
         TREE%NIL%KEY=-99999999 !Set it to something identifiable for debugging
         TREE%NIL%LEFT=>TREE%NIL
@@ -151,7 +214,7 @@ CONTAINS
         TREE%TREE_FINISHED=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*998)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*998)
     ENDIF
 
     EXITS("TREE_CREATE_FINISH")
@@ -177,10 +240,10 @@ CONTAINS
     ENTERS("TREE_CREATE_START",ERR,ERROR,*998)
 
     IF(ASSOCIATED(TREE)) THEN
-      CALL FLAG_ERROR("Tree is already associated",ERR,ERROR,*998)
+      CALL FlagError("Tree is already associated",ERR,ERROR,*998)
     ELSE
       ALLOCATE(TREE,STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate tree",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate tree",ERR,ERROR,*999)
       CALL TREE_INITIALISE(TREE,ERR,ERROR,*999)
       !Set Defaults
       TREE%INSERT_TYPE=TREE_DUPLICATES_ALLOWED_TYPE
@@ -211,7 +274,7 @@ CONTAINS
     IF(ASSOCIATED(TREE)) THEN
       CALL TREE_FINALISE(TREE,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_DESTROY")
@@ -240,19 +303,19 @@ CONTAINS
     IF(ASSOCIATED(TREE)) THEN
       IF(TREE%TREE_FINISHED) THEN
         IF(ASSOCIATED(TREE_VALUES)) THEN
-          CALL FLAG_ERROR("Tree values is already associated.",ERR,ERROR,*998)
+          CALL FlagError("Tree values is already associated.",ERR,ERROR,*998)
         ELSE
           NULLIFY(TREE_VALUES)
           ALLOCATE(TREE_VALUES(TREE%NUMBER_IN_TREE),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate tree values.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate tree values.",ERR,ERROR,*999)
           NUMBER_IN_TREE=0
           CALL TREE_DETACH_IN_ORDER(TREE,TREE%ROOT,NUMBER_IN_TREE,TREE_VALUES,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Tree has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Tree has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Tree is not associated.",ERR,ERROR,*998)
     ENDIF
 
     EXITS("TREE_DETACH")
@@ -283,20 +346,20 @@ CONTAINS
     IF(ASSOCIATED(TREE)) THEN
       IF(TREE%TREE_FINISHED) THEN
         IF(ASSOCIATED(TREE_VALUES)) THEN
-          CALL FLAG_ERROR("Tree values is associated",ERR,ERROR,*998)
+          CALL FlagError("Tree values is associated",ERR,ERROR,*998)
         ELSE
           NULLIFY(TREE_VALUES)
           ALLOCATE(TREE_VALUES(TREE%NUMBER_IN_TREE),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate tree values",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate tree values",ERR,ERROR,*999)
           NUMBER_IN_TREE=0
           CALL TREE_DETACH_IN_ORDER(TREE,TREE%ROOT,NUMBER_IN_TREE,TREE_VALUES,ERR,ERROR,*999)
           CALL TREE_FINALISE(TREE,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Tree has not been finished",ERR,ERROR,*999)
+        CALL FlagError("Tree has not been finished",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*998)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*998)
     ENDIF
 
     EXITS("TREE_DETACH_AND_DESTROY")
@@ -336,12 +399,12 @@ CONTAINS
           LOCAL_ERROR="The current count of the tree values ("//TRIM(NUMBER_TO_VSTRING(COUNT,"*",ERR,ERROR))// &
             & ") is greater than the size of the tree values array ("// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(TREE_VALUES,1),"*",ERR,ERROR))//")"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
         CALL TREE_DETACH_IN_ORDER(TREE,X%RIGHT,COUNT,TREE_VALUES,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_DETACH_IN_ORDER")
@@ -399,7 +462,7 @@ CONTAINS
       NULLIFY(TREE%ROOT)
       NULLIFY(TREE%NIL)
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_INITIALISE")
@@ -427,7 +490,7 @@ CONTAINS
 
     IF(ASSOCIATED(TREE)) THEN
       IF(TREE%TREE_FINISHED) THEN
-        CALL FLAG_ERROR("Tree has been finished",ERR,ERROR,*999)
+        CALL FlagError("Tree has been finished",ERR,ERROR,*999)
       ELSE
         SELECT CASE(INSERT_TYPE)
         CASE(TREE_DUPLICATES_ALLOWED_TYPE)
@@ -436,11 +499,11 @@ CONTAINS
           TREE%INSERT_TYPE=TREE_NO_DUPLICATES_ALLOWED
         CASE DEFAULT
           LOCAL_ERROR="The insert type of "//TRIM(NUMBER_TO_VSTRING(INSERT_TYPE,"*",ERR,ERROR))//" is invalid"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_INSERT_TYPE_SET")
@@ -679,16 +742,16 @@ CONTAINS
             TREE%NUMBER_IN_TREE=TREE%NUMBER_IN_TREE-1
           ELSE
             LOCAL_ERROR="Could not find the key "//TRIM(NUMBER_TO_VSTRING(KEY,"*",ERR,ERROR))//" in the tree"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The tree root is NIL. Can not delete the key",ERR,ERROR,*999)
+          CALL FlagError("The tree root is NIL. Can not delete the key",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The tree has not been finished",ERR,ERROR,*999)
+        CALL FlagError("The tree has not been finished",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
     
     EXITS("TREE_ITEM_DELETE")
@@ -741,7 +804,7 @@ CONTAINS
         ELSE
           !Allocate the new tree node and set its key and value
           ALLOCATE(NEW_TREE_NODE,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new tree node",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate new tree node",ERR,ERROR,*999)
           CALL TREE_NODE_INITIALISE(TREE,NEW_TREE_NODE,ERR,ERROR,*999)
           NEW_TREE_NODE%KEY=KEY
           NEW_TREE_NODE%VALUE=VALUE
@@ -868,10 +931,10 @@ CONTAINS
           INSERT_STATUS=TREE_NODE_INSERT_SUCESSFUL
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The tree has not been finished",ERR,ERROR,*998)
+        CALL FlagError("The tree has not been finished",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*998)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*998)
     ENDIF
 
     EXITS("TREE_ITEM_INSERT")
@@ -904,7 +967,7 @@ CONTAINS
         DEALLOCATE(TREE_NODE)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_NODE_FINALISE")
@@ -938,10 +1001,10 @@ CONTAINS
         NULLIFY(TREE_NODE%RIGHT)
         NULLIFY(TREE_NODE%PARENT)
       ELSE
-        CALL FLAG_ERROR("Tree node is not associated",ERR,ERROR,*999)
+        CALL FlagError("Tree node is not associated",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_NODE_INITIALISE")
@@ -972,13 +1035,13 @@ CONTAINS
         IF(ASSOCIATED(TREE_NODE)) THEN
           KEY=TREE_NODE%KEY
         ELSE
-          CALL FLAG_ERROR("Tree node is not associated",ERR,ERROR,*999)
+          CALL FlagError("Tree node is not associated",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Tree has not been finished",ERR,ERROR,*999)
+        CALL FlagError("Tree has not been finished",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_NODE_KEY_GET")
@@ -1009,13 +1072,13 @@ CONTAINS
         IF(ASSOCIATED(TREE_NODE)) THEN
           VALUE=TREE_NODE%VALUE
         ELSE
-          CALL FLAG_ERROR("Tree node is not associated",ERR,ERROR,*999)
+          CALL FlagError("Tree node is not associated",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Tree has not been finished",ERR,ERROR,*999)
+        CALL FlagError("Tree has not been finished",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_NODE_VALUE_GET")
@@ -1046,13 +1109,13 @@ CONTAINS
         IF(ASSOCIATED(TREE_NODE)) THEN
           TREE_NODE%VALUE=VALUE
         ELSE
-          CALL FLAG_ERROR("Tree node is not associated",ERR,ERROR,*999)
+          CALL FlagError("Tree node is not associated",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Tree has not been finished",ERR,ERROR,*999)
+        CALL FlagError("Tree has not been finished",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_NODE_VALUE_SET")
@@ -1084,10 +1147,10 @@ CONTAINS
         CALL WRITE_STRING_VALUE(ID,"Tree insert type = ",TREE%INSERT_TYPE,ERR,ERROR,*999)
         CALL TREE_OUTPUT_IN_ORDER(ID,TREE,TREE%ROOT,ERR,ERROR,*999)
       ELSE
-        CALL FLAG_ERROR("The tree has not been finished",ERR,ERROR,*999)
+        CALL FlagError("The tree has not been finished",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_OUTPUT")
@@ -1141,7 +1204,7 @@ CONTAINS
         CALL TREE_OUTPUT_IN_ORDER(ID,TREE,X%RIGHT,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_OUTPUT_IN_ORDER")
@@ -1193,10 +1256,10 @@ CONTAINS
           IF(.NOT.ASSOCIATED(TREE_PREDECESSOR)) TREE_PREDECESSOR=>Y
         ENDIF
        ELSE
-        CALL FLAG_ERROR("Tree node X is not associated",ERR,ERROR,*999)
+        CALL FlagError("Tree node X is not associated",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_PREDECESSOR")
@@ -1227,7 +1290,7 @@ CONTAINS
     IF(ASSOCIATED(TREE)) THEN
       IF(TREE%TREE_FINISHED) THEN
         IF(ASSOCIATED(X)) THEN
-          CALL FLAG_ERROR("The tree node X is already associated",ERR,ERROR,*999)
+          CALL FlagError("The tree node X is already associated",ERR,ERROR,*999)
         ELSE
           NULLIFY(X)
           Y=>TREE%ROOT
@@ -1249,10 +1312,10 @@ CONTAINS
           ENDIF          
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The tree has not been finished",ERR,ERROR,*999)
+        CALL FlagError("The tree has not been finished",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_SEARCH")
@@ -1304,10 +1367,10 @@ CONTAINS
           ENDIF
         ENDIF
        ELSE
-        CALL FLAG_ERROR("Tree node X is not associated",ERR,ERROR,*999)
+        CALL FlagError("Tree node X is not associated",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Tree is not associated",ERR,ERROR,*999)
+      CALL FlagError("Tree is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("TREE_SUCCESSOR")

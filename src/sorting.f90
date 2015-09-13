@@ -143,7 +143,7 @@ CONTAINS
         ENDDO
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Size of input vectors does not match",ERR,ERROR,*999)
+      CALL FlagError("Size of input vectors does not match",ERR,ERROR,*999)
     ENDIF      
 
     EXITS("BUBBLE_ISORT_INTG")
@@ -197,7 +197,7 @@ CONTAINS
         ENDDO
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Size of input vectors does not match",ERR,ERROR,*999)
+      CALL FlagError("Size of input vectors does not match",ERR,ERROR,*999)
     ENDIF      
 
     EXITS("BUBBLE_ISORT_SP")
@@ -251,7 +251,7 @@ CONTAINS
         ENDDO
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Size of input vectors does not match",ERR,ERROR,*999)
+      CALL FlagError("Size of input vectors does not match",ERR,ERROR,*999)
     ENDIF
 
     EXITS("BUBBLE_ISORT_DP")

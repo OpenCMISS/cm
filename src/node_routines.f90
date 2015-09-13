@@ -135,7 +135,7 @@ CONTAINS
         NODE_EXISTS=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("NODE_CHECK_EXISTS")
@@ -187,12 +187,12 @@ CONTAINS
 
     IF(ASSOCIATED(NODES)) THEN
       IF(NODES%NODES_FINISHED) THEN
-        CALL FLAG_ERROR("Nodes have already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Nodes have already been finished.",ERR,ERROR,*999)
       ELSE
         NODES%NODES_FINISHED=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
@@ -238,7 +238,7 @@ CONTAINS
     IF(ASSOCIATED(NODES)) THEN
       IF(NUMBER_OF_NODES>0) THEN
         ALLOCATE(NODES%NODES(NUMBER_OF_NODES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodes nodes.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate nodes nodes.",ERR,ERROR,*999)
         NODES%NUMBER_OF_NODES=NUMBER_OF_NODES
         CALL TREE_CREATE_START(NODES%NODES_TREE,ERR,ERROR,*999)
         CALL TREE_INSERT_TYPE_SET(NODES%NODES_TREE,TREE_NO_DUPLICATES_ALLOWED,ERR,ERROR,*999)
@@ -253,10 +253,10 @@ CONTAINS
       ELSE
         LOCAL_ERROR="The specified number of nodes of "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_NODES,"*",ERR,ERROR))// &
           & " is invalid. The number of nodes must be > 0."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODES_CREATE_GENERIC")
@@ -287,10 +287,10 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE)) THEN
       IF(ASSOCIATED(NODES)) THEN
-        CALL FLAG_ERROR("Nodes is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Nodes is already associated.",ERR,ERROR,*999)
       ELSE
         IF(ASSOCIATED(INTERFACE%NODES)) THEN
-          CALL FLAG_ERROR("Interface already has nodes associated.",ERR,ERROR,*998)
+          CALL FlagError("Interface already has nodes associated.",ERR,ERROR,*998)
         ELSE
           !Initialise the nodes for the interface
           CALL NODES_INITIALISE(INTERFACE,ERR,ERROR,*999)
@@ -301,7 +301,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Interface is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("NODES_CREATE_START_INTERFACE")
@@ -334,10 +334,10 @@ CONTAINS
     NULLIFY(NODES)
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%NODES)) THEN
-        CALL FLAG_ERROR("Region already has nodes associated.",ERR,ERROR,*998)
+        CALL FlagError("Region already has nodes associated.",ERR,ERROR,*998)
       ELSE
         IF(ASSOCIATED(NODES)) THEN
-          CALL FLAG_ERROR("Nodes is already associated.",ERR,ERROR,*998)
+          CALL FlagError("Nodes is already associated.",ERR,ERROR,*998)
         ELSE
           !Initialise the nodes for the region
           CALL NODES_INITIALISE(REGION,ERR,ERROR,*999)
@@ -348,7 +348,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("NODES_CREATE_START_REGION")
@@ -381,12 +381,12 @@ CONTAINS
         IF(ASSOCIATED(NODES%INTERFACE)) THEN
           NULLIFY(NODES%INTERFACE%NODES)
         ELSE
-          CALL FLAG_ERROR("Nodes region and interface are not associated.",ERR,ERROR,*999)
+          CALL FlagError("Nodes region and interface are not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
       CALL NODES_FINALISE(NODES,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODES_DESTROY")
@@ -451,7 +451,7 @@ CONTAINS
       NODES%NUMBER_OF_NODES=0
       NULLIFY(NODES%NODES_TREE)
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODES_INITIALISE_GENERIC")
@@ -477,15 +477,15 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE)) THEN
       IF(ASSOCIATED(INTERFACE%NODES)) THEN
-        CALL FLAG_ERROR("Interface already has associated nodes.",ERR,ERROR,*999)
+        CALL FlagError("Interface already has associated nodes.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(INTERFACE%NODES,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface nodes.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate interface nodes.",ERR,ERROR,*999)
         CALL NODES_INITIALISE_GENERIC(INTERFACE%NODES,ERR,ERROR,*999)
         INTERFACE%NODES%INTERFACE=>INTERFACE
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODES_INITIALISE_INTERFACE")
@@ -512,15 +512,15 @@ CONTAINS
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%NODES)) THEN
-        CALL FLAG_ERROR("Region has associated nodes.",ERR,ERROR,*999)
+        CALL FlagError("Region has associated nodes.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(REGION%NODES,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate region nodes.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate region nodes.",ERR,ERROR,*999)
         CALL NODES_INITIALISE_GENERIC(REGION%NODES,ERR,ERROR,*999)
         REGION%NODES%REGION=>REGION
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODES_INITIALISE_REGION")
@@ -562,13 +562,13 @@ CONTAINS
           LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global node number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Nodes have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Nodes have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODES_LABEL_GET_C")
@@ -604,13 +604,13 @@ CONTAINS
           LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global node number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Nodes have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Nodes have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODES_LABEL_GET_VS")
@@ -640,7 +640,7 @@ CONTAINS
 
     IF(ASSOCIATED(NODES)) THEN
       IF(NODES%NODES_FINISHED) THEN
-        CALL FLAG_ERROR("Nodes have been finished.",ERR,ERROR,*999)
+        CALL FlagError("Nodes have been finished.",ERR,ERROR,*999)
       ELSE
         IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=NODES%NUMBER_OF_NODES) THEN
           NODES%NODES(GLOBAL_NUMBER)%LABEL=LABEL
@@ -648,11 +648,11 @@ CONTAINS
           LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global node number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODES_LABEL_SET_C")
@@ -682,7 +682,7 @@ CONTAINS
 
     IF(ASSOCIATED(NODES)) THEN
       IF(NODES%NODES_FINISHED) THEN
-        CALL FLAG_ERROR("Nodes have been finished.",ERR,ERROR,*999)
+        CALL FlagError("Nodes have been finished.",ERR,ERROR,*999)
       ELSE
         IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=NODES%NUMBER_OF_NODES) THEN
           NODES%NODES(GLOBAL_NUMBER)%LABEL=LABEL
@@ -690,11 +690,11 @@ CONTAINS
           LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global node number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODES_LABEL_SET_VS")
@@ -724,10 +724,10 @@ CONTAINS
       IF(NODES%NODES_FINISHED) THEN
         NUMBER_OF_NODES=NODES%NUMBER_OF_NODES
       ELSE
-        CALL FLAG_ERROR("Nodes have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Nodes have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODES_NUMBER_OF_NODES_GET")
@@ -763,13 +763,13 @@ CONTAINS
           LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global node number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Nodes have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Nodes have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODES_USER_NUMBER_GET")
@@ -801,7 +801,7 @@ CONTAINS
 
     IF(ASSOCIATED(NODES)) THEN
       IF(NODES%NODES_FINISHED) THEN
-        CALL FLAG_ERROR("Nodes have been finished.",ERR,ERROR,*999)
+        CALL FlagError("Nodes have been finished.",ERR,ERROR,*999)
       ELSE
         IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=NODES%NUMBER_OF_NODES) THEN
           !Check the node user number is not already used
@@ -811,23 +811,23 @@ CONTAINS
               LOCAL_ERROR="The specified node user number of "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
                 & " is already used by global node number "//TRIM(NUMBER_TO_VSTRING(OLD_GLOBAL_NUMBER,"*",ERR,ERROR))// &
                 & ". User node numbers must be unique."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL TREE_ITEM_DELETE(NODES%NODES_TREE,NODES%NODES(GLOBAL_NUMBER)%USER_NUMBER,ERR,ERROR,*999)
             CALL TREE_ITEM_INSERT(NODES%NODES_TREE,USER_NUMBER,GLOBAL_NUMBER,INSERT_STATUS,ERR,ERROR,*999)
-            IF(INSERT_STATUS/=TREE_NODE_INSERT_SUCESSFUL) CALL FLAG_ERROR("Unsucessful nodes tree insert.",ERR,ERROR,*999)
+            IF(INSERT_STATUS/=TREE_NODE_INSERT_SUCESSFUL) CALL FlagError("Unsucessful nodes tree insert.",ERR,ERROR,*999)
             NODES%NODES(GLOBAL_NUMBER)%USER_NUMBER=USER_NUMBER
           ENDIF
         ELSE
           LOCAL_ERROR="The specified global node number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global node number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(NODES%NUMBER_OF_NODES,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("NODE_USER_NUMBER_SET")

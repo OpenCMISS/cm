@@ -98,7 +98,7 @@ MODULE DATA_POINT_ROUTINES
 
   PUBLIC DATA_POINTS_CREATE_FINISH,DATA_POINTS_CREATE_START,DATA_POINTS_DESTROY
   
-  PUBLIC DATA_POINTS_DATA_PROJECTION_GET,DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET
+  PUBLIC DATA_POINTS_DATA_PROJECTION_GET,DataPoints_DataProjectionGlobalNumberGet
 
   PUBLIC DATA_POINTS_GLOBAL_NUMBER_GET,DATA_POINTS_LABEL_GET,DATA_POINTS_LABEL_SET
   
@@ -141,7 +141,7 @@ CONTAINS
         DATA_POINT_EXISTS=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DATA_POINT_CHECK_EXISTS")
@@ -196,12 +196,12 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        CALL FLAG_ERROR("Data points have already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have already been finished.",ERR,ERROR,*999)
       ELSE
         DATA_POINTS%DATA_POINTS_FINISHED=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN !<TODO Still Diagnostics 1??
@@ -249,7 +249,7 @@ CONTAINS
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(NUMBER_OF_DATA_POINTS>0) THEN
         ALLOCATE(DATA_POINTS%DATA_POINTS(NUMBER_OF_DATA_POINTS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate data points data points.",ERR,ERROR,*999)
         DATA_POINTS%NUMBER_OF_DATA_POINTS=NUMBER_OF_DATA_POINTS
         DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS=0
         IF(ALLOCATED(DATA_POINTS%DATA_PROJECTIONS)) DEALLOCATE(DATA_POINTS%DATA_PROJECTIONS)
@@ -266,10 +266,10 @@ CONTAINS
           DATA_POINTS%DATA_POINTS(data_point_idx)%LABEL=""
           ! initialise data points values to 0.0 and weights to 1.0
           ALLOCATE(DATA_POINTS%DATA_POINTS(data_point_idx)%position(NUMBER_OF_DIMENSIONS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points("//TRIM(NUMBER_TO_VSTRING &
+          IF(ERR/=0) CALL FlagError("Could not allocate data points data points("//TRIM(NUMBER_TO_VSTRING &
             & (data_point_idx,"*",ERR,ERROR))//") values.",ERR,ERROR,*999)
           ALLOCATE(DATA_POINTS%DATA_POINTS(data_point_idx)%WEIGHTS(NUMBER_OF_DIMENSIONS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate data points data points("//TRIM(NUMBER_TO_VSTRING &
+          IF(ERR/=0) CALL FlagError("Could not allocate data points data points("//TRIM(NUMBER_TO_VSTRING &
             & (data_point_idx,"*",ERR,ERROR))//") weights.",ERR,ERROR,*999)              
           DO coord_idx=1,NUMBER_OF_DIMENSIONS
             DATA_POINTS%DATA_POINTS(data_point_idx)%position(coord_idx)=0.0_DP
@@ -280,10 +280,10 @@ CONTAINS
       ELSE
         LOCAL_ERROR="The specified number of data points of "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))// &
           & " is invalid. The number of data points must be > 0."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DATA_POINTS_CREATE_START_GENERIC")
@@ -314,10 +314,10 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE)) THEN
       IF(ASSOCIATED(DATA_POINTS)) THEN
-        CALL FLAG_ERROR("Data points is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Data points is already associated.",ERR,ERROR,*999)
       ELSE
         IF(ASSOCIATED(INTERFACE%DATA_POINTS)) THEN
-          CALL FLAG_ERROR("Interface already has data points associated.",ERR,ERROR,*998)
+          CALL FlagError("Interface already has data points associated.",ERR,ERROR,*998)
         ELSE
           !Initialise the data points for the interface
           CALL DATA_POINTS_INITIALISE(INTERFACE,ERR,ERROR,*999)
@@ -329,7 +329,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Interface is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("DATA_POINTS_CREATE_START_INTERFACE")
@@ -361,10 +361,10 @@ CONTAINS
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(DATA_POINTS)) THEN
-        CALL FLAG_ERROR("Data points is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Data points is already associated.",ERR,ERROR,*999)
       ELSE
         IF(ASSOCIATED(REGION%DATA_POINTS)) THEN
-          CALL FLAG_ERROR("Region already has data points associated.",ERR,ERROR,*998)
+          CALL FlagError("Region already has data points associated.",ERR,ERROR,*998)
         ELSE
           !Initialise the data points for the region
           CALL DATA_POINTS_INITIALISE(REGION,ERR,ERROR,*999)
@@ -376,7 +376,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("DATA_POINTS_CREATE_START_REGION")
@@ -406,7 +406,7 @@ CONTAINS
     IF(ASSOCIATED(DATA_POINTS)) THEN
      CALL DATA_POINTS_FINALISE(DATA_POINTS,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_DESTROY")
@@ -482,7 +482,7 @@ CONTAINS
       DATA_POINTS%NUMBER_OF_DATA_PROJECTIONS=0
       NULLIFY(DATA_POINTS%DATA_PROJECTIONS_TREE)
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_INITIALISE_GENERIC")
@@ -508,15 +508,15 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE)) THEN
       IF(ASSOCIATED(INTERFACE%DATA_POINTS)) THEN
-        CALL FLAG_ERROR("Interface already has associated data points.",ERR,ERROR,*999)
+        CALL FlagError("Interface already has associated data points.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(INTERFACE%DATA_POINTS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface data points.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate interface data points.",ERR,ERROR,*999)
         CALL DATA_POINTS_INITIALISE_GENERIC(INTERFACE%DATA_POINTS,ERR,ERROR,*999)
         INTERFACE%DATA_POINTS%INTERFACE=>INTERFACE
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_INITIALISE_INTERFACE")
@@ -543,15 +543,15 @@ CONTAINS
 
     IF(ASSOCIATED(REGION)) THEN
       IF(ASSOCIATED(REGION%DATA_POINTS)) THEN
-        CALL FLAG_ERROR("Region has associated data points.",ERR,ERROR,*999)
+        CALL FlagError("Region has associated data points.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(REGION%DATA_POINTS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate region data points.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate region data points.",ERR,ERROR,*999)
         CALL DATA_POINTS_INITIALISE_GENERIC(REGION%DATA_POINTS,ERR,ERROR,*999)
         REGION%DATA_POINTS%REGION=>REGION
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_INITIALISE_REGION")
@@ -587,10 +587,10 @@ CONTAINS
       ELSE
         LOCAL_ERROR="Tree node is not associates (cannot find the user number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR, &
           & ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_GLOBAL_NUMBER_GET")
@@ -633,13 +633,13 @@ CONTAINS
           LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global data point number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Data points have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_LABEL_GET_C")
@@ -675,13 +675,13 @@ CONTAINS
           LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global data point number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Data points have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_LABEL_GET_VS")
@@ -711,7 +711,7 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        CALL FLAG_ERROR("Data points have been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have been finished.",ERR,ERROR,*999)
       ELSE
         IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
           DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%LABEL=LABEL
@@ -719,11 +719,11 @@ CONTAINS
           LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global data point number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_LABEL_SET_C")
@@ -754,7 +754,7 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        CALL FLAG_ERROR("Data points have been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have been finished.",ERR,ERROR,*999)
       ELSE
         IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
           DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%LABEL=LABEL
@@ -762,11 +762,11 @@ CONTAINS
           LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global data point number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_LABEL_SET_VS")
@@ -801,7 +801,7 @@ CONTAINS
           IF(SIZE(VALUES,1)==SIZE(DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%position,1)) THEN
             VALUES=DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%position
           ELSE
-            CALL FLAG_ERROR("array values has size of "//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))// &
+            CALL FlagError("array values has size of "//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))// &
               & "but it needs to have size of "// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%position,1),"*",ERR,ERROR))// &
               & "." ,ERR,ERROR,*999)
@@ -810,13 +810,13 @@ CONTAINS
           LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global data point number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Data points have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_VALUES_GET")
@@ -846,7 +846,7 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN   
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        CALL FLAG_ERROR("Data points have been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have been finished.",ERR,ERROR,*999)
       ELSE
         IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
           IF(SIZE(VALUES,1)==SIZE(DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%position,1)) THEN
@@ -855,17 +855,17 @@ CONTAINS
             !CALL COORDINATE_CONVERT_COORDINATE_SYSTEMS(DATA_POINTS%INTERFACE%COORDINATE_SYSTEM, &
             !& DATA_POINTS%INTERFACE%PARENT_REGION%COORDINATE_SYSTEM,VALUES,Y,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("The dimension of the input values does not match.",ERR,ERROR,*999)    
+            CALL FlagError("The dimension of the input values does not match.",ERR,ERROR,*999)    
           ENDIF
         ELSE
           LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global data point number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_VALUES_SET")
@@ -895,10 +895,10 @@ CONTAINS
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
         NUMBER_OF_DATA_POINTS=DATA_POINTS%NUMBER_OF_DATA_POINTS
       ELSE
-        CALL FLAG_ERROR("Data points have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_NUMBER_OF_DATA_POINTS_GET")
@@ -934,13 +934,13 @@ CONTAINS
           LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global data point number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Data points have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_USER_NUMBER_GET")
@@ -972,7 +972,7 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        CALL FLAG_ERROR("Data points have been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have been finished.",ERR,ERROR,*999)
       ELSE
         IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
           !Check the data point user number is not already used
@@ -982,23 +982,23 @@ CONTAINS
               LOCAL_ERROR="The specified data point user number of "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
                 & " is already used by global data point number "//TRIM(NUMBER_TO_VSTRING(OLD_GLOBAL_NUMBER,"*",ERR,ERROR))// &
                 & ". User data point numbers must be unique."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             CALL TREE_ITEM_DELETE(DATA_POINTS%DATA_POINTS_TREE,DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%USER_NUMBER,ERR,ERROR,*999)
             CALL TREE_ITEM_INSERT(DATA_POINTS%DATA_POINTS_TREE,USER_NUMBER,GLOBAL_NUMBER,INSERT_STATUS,ERR,ERROR,*999)
-            IF(INSERT_STATUS/=TREE_NODE_INSERT_SUCESSFUL) CALL FLAG_ERROR("Unsucessful data points tree insert.",ERR,ERROR,*999)
+            IF(INSERT_STATUS/=TREE_NODE_INSERT_SUCESSFUL) CALL FlagError("Unsucessful data points tree insert.",ERR,ERROR,*999)
             DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%USER_NUMBER=USER_NUMBER
           ENDIF
         ELSE
           LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global data point number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_USER_NUMBER_SET")
@@ -1033,7 +1033,7 @@ CONTAINS
           IF(SIZE(WEIGHTS,1)==SIZE(DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%WEIGHTS,1)) THEN
             WEIGHTS=DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%WEIGHTS
           ELSE
-            CALL FLAG_ERROR("array weights has size of "//TRIM(NUMBER_TO_VSTRING(SIZE(WEIGHTS,1),"*",ERR,ERROR))// &
+            CALL FlagError("array weights has size of "//TRIM(NUMBER_TO_VSTRING(SIZE(WEIGHTS,1),"*",ERR,ERROR))// &
               & "but it needs to have size of "// &
               & TRIM(NUMBER_TO_VSTRING(SIZE(DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%WEIGHTS,1),"*",ERR,ERROR))// &
               & "." ,ERR,ERROR,*999)
@@ -1042,13 +1042,13 @@ CONTAINS
           LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global data point number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF        
       ELSE
-        CALL FLAG_ERROR("Data points have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_WEIGHTS_GET")
@@ -1078,23 +1078,23 @@ CONTAINS
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
-        CALL FLAG_ERROR("Data points have been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have been finished.",ERR,ERROR,*999)
       ELSE
         IF(GLOBAL_NUMBER>=1.AND.GLOBAL_NUMBER<=DATA_POINTS%NUMBER_OF_DATA_POINTS) THEN
           IF(SIZE(WEIGHTS,1)==SIZE(DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%WEIGHTS,1)) THEN
             DATA_POINTS%DATA_POINTS(GLOBAL_NUMBER)%WEIGHTS(1:SIZE(WEIGHTS,1))=WEIGHTS(1:SIZE(WEIGHTS,1))
           ELSE
-            CALL FLAG_ERROR("The dimension of the input weights does not match.",ERR,ERROR,*999)    
+            CALL FlagError("The dimension of the input weights does not match.",ERR,ERROR,*999)    
           ENDIF
         ELSE
           LOCAL_ERROR="The specified global data point number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
             & " is invalid. The global data point number should be between 1 and "// &
             & TRIM(NUMBER_TO_VSTRING(DATA_POINTS%NUMBER_OF_DATA_POINTS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DATA_POINTS_WEIGHTS_SET")
@@ -1123,17 +1123,17 @@ CONTAINS
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN 
         IF(ASSOCIATED(DATA_PROJECTION)) THEN
-          CALL FLAG_ERROR("Data projection is already associated.",ERR,ERROR,*999)
+          CALL FlagError("Data projection is already associated.",ERR,ERROR,*999)
         ELSE
           DATA_PROJECTION=>DATA_POINTS%DATA_PROJECTIONS(GLOBAL_NUMBER)%PTR
-          IF(.NOT.ASSOCIATED(DATA_PROJECTION)) CALL FLAG_ERROR("Data points data projections("//TRIM(NUMBER_TO_VSTRING( &
+          IF(.NOT.ASSOCIATED(DATA_PROJECTION)) CALL FlagError("Data points data projections("//TRIM(NUMBER_TO_VSTRING( &
             & GLOBAL_NUMBER,"*",ERR,ERROR))//") ptr is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Data points has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF    
     
     EXITS("DATA_POINTS_DATA_PROJECTION_GET")
@@ -1148,7 +1148,7 @@ CONTAINS
   !  
 
   !>Gets the user number for a data point identified by a given global number. 
-  SUBROUTINE DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET(DATA_POINTS,USER_NUMBER,GLOBAL_NUMBER,ERR,ERROR,*)
+  SUBROUTINE DataPoints_DataProjectionGlobalNumberGet(DATA_POINTS,USER_NUMBER,GLOBAL_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(DATA_POINTS_TYPE), POINTER :: DATA_POINTS !<A pointer to the data points to get the number for
@@ -1160,7 +1160,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(TREE_NODE_TYPE), POINTER :: TREE_NODE
     
-    ENTERS("DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET",ERR,ERROR,*999)
+    ENTERS("DataPoints_DataProjectionGlobalNumberGet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DATA_POINTS)) THEN
       IF(DATA_POINTS%DATA_POINTS_FINISHED) THEN
@@ -1171,22 +1171,22 @@ CONTAINS
         ELSE
           LOCAL_ERROR="Tree node is not associates (cannot find the user number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR, &
             & ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
 
       ELSE
-        CALL FLAG_ERROR("Data points have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Data points have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET")
+    EXITS("DataPoints_DataProjectionGlobalNumberGet")
     RETURN
-999 ERRORSEXITS("DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET",ERR,ERROR)    
+999 ERRORSEXITS("DataPoints_DataProjectionGlobalNumberGet",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE DATA_POINTS_DATA_PROJECTION_GLOBAL_NUMBER_GET
+  END SUBROUTINE DataPoints_DataProjectionGlobalNumberGet
 
 
   !

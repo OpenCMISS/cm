@@ -125,15 +125,15 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       IF(REGION%REGION_FINISHED) THEN
         IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
-          CALL FLAG_ERROR("Coordinate system is already associated.",ERR,ERROR,*999)
+          CALL FlagError("Coordinate system is already associated.",ERR,ERROR,*999)
         ELSE
           COORDINATE_SYSTEM=>REGION%COORDINATE_SYSTEM
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Region has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Region has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("REGION_COORDINATE_SYSTEM_GET")
@@ -160,20 +160,20 @@ CONTAINS
 
     IF(ASSOCIATED(REGION)) THEN
       IF(REGION%REGION_FINISHED) THEN
-        CALL FLAG_ERROR("Region has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Region has been finished.",ERR,ERROR,*999)
       ELSE
         IF(ASSOCIATED(COORDINATE_SYSTEM)) THEN
           IF(COORDINATE_SYSTEM%COORDINATE_SYSTEM_FINISHED) THEN
             REGION%COORDINATE_SYSTEM=>COORDINATE_SYSTEM
           ELSE
-            CALL FLAG_ERROR("Coordinate system has not been finished.",ERR,ERROR,*999)
+            CALL FlagError("Coordinate system has not been finished.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Coordinate system is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Coordinate system is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("REGION_COORDINATE_SYSTEM_SET")
@@ -199,12 +199,12 @@ CONTAINS
 
     IF(ASSOCIATED(REGION)) THEN
       IF(REGION%REGION_FINISHED) THEN
-        CALL FLAG_ERROR("Region has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Region has already been finished.",ERR,ERROR,*999)
       ELSE
         REGION%REGION_FINISHED=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     IF(DIAGNOSTICS1) THEN
@@ -263,10 +263,10 @@ CONTAINS
     IF(ASSOCIATED(NEW_REGION)) THEN
       LOCAL_ERROR="Region number "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*",ERR,ERROR))// &
         & " has already been created."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*997)
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*997)
     ELSE
       IF(ASSOCIATED(REGION)) THEN
-        CALL FLAG_ERROR("Region is already associated.",ERR,ERROR,*997)
+        CALL FlagError("Region is already associated.",ERR,ERROR,*997)
       ELSE
         NULLIFY(REGION)
         IF(ASSOCIATED(PARENT_REGION)) THEN
@@ -284,7 +284,7 @@ CONTAINS
               REGION%COORDINATE_SYSTEM=>PARENT_REGION%COORDINATE_SYSTEM
               !Adjust the parent region to include this new daughter
               ALLOCATE(NEW_SUB_REGIONS(PARENT_REGION%NUMBER_OF_SUB_REGIONS+1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new sub-regions.",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate new sub-regions.",ERR,ERROR,*999)
               DO region_idx=1,PARENT_REGION%NUMBER_OF_SUB_REGIONS
                 NEW_SUB_REGIONS(region_idx)%PTR=>PARENT_REGION%SUB_REGIONS(region_idx)%PTR
               ENDDO !region_no
@@ -295,13 +295,13 @@ CONTAINS
               !Set the new regions parent region to the parent region
               REGION%PARENT_REGION=>PARENT_REGION
             ELSE
-              CALL FLAG_ERROR("Parent region does not have an associated coordinate system.",ERR,ERROR,*997)
+              CALL FlagError("Parent region does not have an associated coordinate system.",ERR,ERROR,*997)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Parent region has not been finished.",ERR,ERROR,*997)
+            CALL FlagError("Parent region has not been finished.",ERR,ERROR,*997)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Parent region is not associated.",ERR,ERROR,*997)
+          CALL FlagError("Parent region is not associated.",ERR,ERROR,*997)
         ENDIF
       ENDIF
     ENDIF
@@ -333,16 +333,16 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       IF(REGION%REGION_FINISHED) THEN 
         IF(ASSOCIATED(DATA_POINTS)) THEN
-          CALL FLAG_ERROR("Data points is already associated.",ERR,ERROR,*998)
+          CALL FlagError("Data points is already associated.",ERR,ERROR,*998)
         ELSE
           DATA_POINTS=>REGION%DATA_POINTS
-          IF(.NOT.ASSOCIATED(DATA_POINTS)) CALL FLAG_ERROR("Data points is not associated.",ERR,ERROR,*999)
+          IF(.NOT.ASSOCIATED(DATA_POINTS)) CALL FlagError("Data points is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Region has not been finished.",ERR,ERROR,*998)
+        CALL FlagError("Region has not been finished.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*998)
     ENDIF
        
     EXITS("REGION_DATA_POINTS_GET")
@@ -388,7 +388,7 @@ CONTAINS
           IF(REGION%PARENT_REGION%NUMBER_OF_SUB_REGIONS>1) THEN
             !If the parent region has more than one sub regions then remove this instance from its sub-regions list 
             ALLOCATE(NEW_SUB_REGIONS(REGION%PARENT_REGION%NUMBER_OF_SUB_REGIONS-1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new sub-regions.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate new sub-regions.",ERR,ERROR,*999)
             count=0
             DO nr=1,REGION%PARENT_REGION%NUMBER_OF_SUB_REGIONS
               IF(REGION%PARENT_REGION%SUB_REGIONS(nr)%PTR%USER_NUMBER/=REGION%USER_NUMBER) THEN
@@ -403,7 +403,7 @@ CONTAINS
           !Finalise the region
           CALL REGION_FINALISE(REGION,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Parent region is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Parent region is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
         !Recursively delete sub regions first
@@ -414,7 +414,7 @@ CONTAINS
         CALL REGION_DESTROY_NUMBER(REGION%USER_NUMBER,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region number does not exist.",ERR,ERROR,*999)
+      CALL FlagError("Region number does not exist.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("REGION_DESTROY_NUMBER")
@@ -443,7 +443,7 @@ CONTAINS
       USER_NUMBER=REGION%USER_NUMBER
       CALL REGION_DESTROY_NUMBER(USER_NUMBER,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("REGION_DESTROY")
@@ -505,10 +505,10 @@ CONTAINS
     ENTERS("REGION_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(REGION)) THEN
-      CALL FLAG_ERROR("Region is already associated.",ERR,ERROR,*998)
+      CALL FlagError("Region is already associated.",ERR,ERROR,*998)
     ELSE
       ALLOCATE(REGION,STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate region.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate region.",ERR,ERROR,*999)
       REGION%USER_NUMBER=0
       REGION%REGION_FINISHED=.FALSE.
       REGION%LABEL=""
@@ -566,7 +566,7 @@ CONTAINS
         LABEL=CHAR(REGION%LABEL,C_LENGTH)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("REGION_LABEL_GET_C")
@@ -596,7 +596,7 @@ CONTAINS
       !CPB 20/2/07 The following line crashes the AIX compiler unless it has a VAR_STR(CHAR()) around it
       LABEL=VAR_STR(CHAR(REGION%LABEL))
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("REGION_LABEL_GET_VS")
@@ -624,12 +624,12 @@ CONTAINS
 
     IF(ASSOCIATED(REGION)) THEN
       IF(REGION%REGION_FINISHED) THEN
-        CALL FLAG_ERROR("Region has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Region has been finished.",ERR,ERROR,*999)
       ELSE
         REGION%LABEL=LABEL
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("REGION_LABEL_SET_C")
@@ -656,12 +656,12 @@ CONTAINS
 
     IF(ASSOCIATED(REGION)) THEN
       IF(REGION%REGION_FINISHED) THEN
-        CALL FLAG_ERROR("Region has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Region has been finished.",ERR,ERROR,*999)
       ELSE
         REGION%LABEL=LABEL
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("REGION_LABEL_SET_VS")
@@ -689,16 +689,16 @@ CONTAINS
     IF(ASSOCIATED(REGION)) THEN
       IF(REGION%REGION_FINISHED) THEN 
         IF(ASSOCIATED(NODES)) THEN
-          CALL FLAG_ERROR("Nodes is already associated.",ERR,ERROR,*998)
+          CALL FlagError("Nodes is already associated.",ERR,ERROR,*998)
         ELSE
           NODES=>REGION%NODES
-          IF(.NOT.ASSOCIATED(NODES)) CALL FLAG_ERROR("Nodes is not associated.",ERR,ERROR,*999)
+          IF(.NOT.ASSOCIATED(NODES)) CALL FlagError("Nodes is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Region has not been finished.",ERR,ERROR,*998)
+        CALL FlagError("Region has not been finished.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Region is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Region is not associated.",ERR,ERROR,*998)
     ENDIF
        
     EXITS("REGION_NODES_GET")
@@ -729,7 +729,7 @@ CONTAINS
     ENTERS("REGION_USER_NUMBER_FIND",ERR,ERROR,*999)
 
     IF(ASSOCIATED(REGION)) THEN
-      CALL FLAG_ERROR("Region is already associated.",ERR,ERROR,*999)
+      CALL FlagError("Region is already associated.",ERR,ERROR,*999)
     ELSE
       NULLIFY(REGION)
       WORLD_REGION=>REGIONS%WORLD_REGION
@@ -744,7 +744,7 @@ CONTAINS
           END DO
         ENDIF
       ELSE
-        CALL FLAG_ERROR("World region is not associated.",ERR,ERROR,*999)
+        CALL FlagError("World region is not associated.",ERR,ERROR,*999)
       ENDIF
     ENDIF
   
@@ -786,7 +786,7 @@ CONTAINS
         END DO
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Start region is not associated",ERR,ERROR,*999)
+      CALL FlagError("Start region is not associated",ERR,ERROR,*999)
     ENDIF
     
     EXITS("REGION_USER_NUMBER_FIND_PTR")
@@ -844,7 +844,7 @@ CONTAINS
     ENTERS("REGIONS_INITIALISE",ERR,ERROR,*999)
     
     IF(ASSOCIATED(WORLD_REGION)) THEN
-      CALL FLAG_ERROR("World region is already associated.",ERR,ERROR,*999)
+      CALL FlagError("World region is already associated.",ERR,ERROR,*999)
     ELSE
       CALL COORDINATE_SYSTEM_USER_NUMBER_FIND(0,WORLD_COORDINATE_SYSTEM,ERR,ERROR,*999)
       IF(ASSOCIATED(WORLD_COORDINATE_SYSTEM)) THEN        
@@ -856,7 +856,7 @@ CONTAINS
         !Return the pointer
         WORLD_REGION=>REGIONS%WORLD_REGION
       ELSE
-        CALL FLAG_ERROR("World coordinate system has not been created.",ERR,ERROR,*999)
+        CALL FlagError("World coordinate system has not been created.",ERR,ERROR,*999)
       ENDIF
     ENDIF
    
@@ -887,7 +887,7 @@ CONTAINS
     CALL REGION_USER_NUMBER_FIND( USER_NUMBER, REGION, ERR, ERROR, *999 )
     IF( .NOT.ASSOCIATED( REGION ) ) THEN
       LOCAL_ERROR = "A region with an user number of "//TRIM(NUMBER_TO_VSTRING(USER_NUMBER,"*", ERR, ERROR ) )//" does not exist."
-      CALL FLAG_ERROR( LOCAL_ERROR, ERR, ERROR, *999 )
+      CALL FlagError( LOCAL_ERROR, ERR, ERROR, *999 )
     ENDIF
 
     EXITS( "REGION_USER_NUMBER_TO_REGION" )

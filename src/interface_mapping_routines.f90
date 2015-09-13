@@ -69,11 +69,11 @@ MODULE INTERFACE_MAPPING_ROUTINES
 
   PUBLIC INTERFACE_MAPPING_DESTROY
 
-  PUBLIC INTERFACE_MAPPING_LAGRANGE_VARIABLE_TYPE_SET
+  PUBLIC InterfaceMapping_LagrangeVariableSet
 
   PUBLIC INTERFACE_MAPPING_MATRICES_COEFFS_SET
 
-  PUBLIC INTERFACE_MAPPING_MATRICES_COLUMN_MESH_INDICES_SET,INTERFACE_MAPPING_MATRICES_ROW_MESH_INDICES_SET
+  PUBLIC InterfaceMapping_MatricesColumnMeshIndicesSet,InterfaceMapping_MatricesRowMeshIndicesSet
 
   PUBLIC INTERFACE_MAPPING_MATRICES_NUMBER_SET
 
@@ -137,7 +137,7 @@ CONTAINS
                 !Set the column dofs mapping
                 INTERFACE_MAPPING%COLUMN_DOFS_MAPPING=>LAGRANGE_VARIABLE%DOMAIN_MAPPING
                 ALLOCATE(INTERFACE_MAPPING%LAGRANGE_DOF_TO_COLUMN_MAP(LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Lagrange dof to column map.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate Lagrange dof to column map.",ERR,ERROR,*999)
                 !1-1 mapping for now
                 DO dof_idx=1,LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS
                   column_idx=LAGRANGE_VARIABLE%DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(dof_idx)
@@ -147,7 +147,7 @@ CONTAINS
                 INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES=CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES
                 ALLOCATE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES), &
                   & STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface matrix rows to variable maps.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate interface matrix rows to variable maps.",ERR,ERROR,*999)
                 !Loop over the interface matrices and calculate the row mappings
                 !The pointers below have been checked for association above.
                 SELECT CASE(INTERFACE_CONDITION%METHOD)
@@ -159,7 +159,7 @@ CONTAINS
                 ENDSELECT
                 DO matrix_idx=1,number_of_interface_matrices
                   !Initialise and setup the interface matrix
-                  CALL INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE(INTERFACE_MAPPING,matrix_idx,ERR,ERROR,*999)
+                  CALL InterfaceMapping_MatrixToVarMapInitialise(INTERFACE_MAPPING,matrix_idx,ERR,ERROR,*999)
                   mesh_idx=CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)
                   NULLIFY(EQUATIONS_SET)
                   NULLIFY(FIELD_VARIABLE)
@@ -191,7 +191,7 @@ CONTAINS
                         & FIELD_VARIABLE%DOMAIN_MAPPING
                       ALLOCATE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_DOF_TO_ROW_MAP( &
                         & FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable dof to row map.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate variable dof to row map.",ERR,ERROR,*999)
                       !1-1 mapping for now
                       DO dof_idx=1,FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS
                         INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_DOF_TO_ROW_MAP(dof_idx)=dof_idx
@@ -199,12 +199,12 @@ CONTAINS
                     ELSE
                       LOCAL_ERROR="Dependent variable for mesh index "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
                         & " could not be found."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     LOCAL_ERROR="Equations set for mesh index "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
                       & " could not be found."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ENDDO !matrix_idx
 
@@ -214,7 +214,7 @@ CONTAINS
                   !Sets up the Lagrange-(Penalty) interface matrix mapping and calculate the row mappings
                   matrix_idx = INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES !last of the interface matrices
                   !Initialise and setup the interface matrix
-                  CALL INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE(INTERFACE_MAPPING,matrix_idx,ERR,ERROR,*999)
+                  CALL InterfaceMapping_MatrixToVarMapInitialise(INTERFACE_MAPPING,matrix_idx,ERR,ERROR,*999)
                   mesh_idx=CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)
                   NULLIFY(LAGRANGE_VARIABLE)
                   CALL FIELD_VARIABLE_GET(LAGRANGE_FIELD,CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE,LAGRANGE_VARIABLE, &
@@ -244,7 +244,7 @@ CONTAINS
                         & FIELD_VARIABLE%DOMAIN_MAPPING
                       ALLOCATE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_DOF_TO_ROW_MAP( &
                         & FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable dof to row map.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate variable dof to row map.",ERR,ERROR,*999)
                       !1-1 mapping for now
                       DO dof_idx=1,FIELD_VARIABLE%TOTAL_NUMBER_OF_DOFS
                         INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx)%VARIABLE_DOF_TO_ROW_MAP(dof_idx)=dof_idx
@@ -252,12 +252,12 @@ CONTAINS
                     ELSE
                       LOCAL_ERROR="Lagrange variable for mesh index "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
                         & " could not be found."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     LOCAL_ERROR="Interface Equations for mesh index "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
                       & " could not be found."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ENDSELECT
 
@@ -273,9 +273,9 @@ CONTAINS
                     RHS_MAPPING%RHS_COEFFICIENT=CREATE_VALUES_CACHE%RHS_COEFFICIENT
                     !Allocate and set up the row mappings
                     ALLOCATE(RHS_MAPPING%RHS_DOF_TO_INTERFACE_ROW_MAP(LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate rhs dof to interface row map.",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FlagError("Could not allocate rhs dof to interface row map.",ERR,ERROR,*999)
                     ALLOCATE(RHS_MAPPING%INTERFACE_ROW_TO_RHS_DOF_MAP(INTERFACE_MAPPING%TOTAL_NUMBER_OF_COLUMNS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface row to dof map.",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FlagError("Could not allocate interface row to dof map.",ERR,ERROR,*999)
                     DO dof_idx=1,LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS
                       !1-1 mapping for now
                       column_idx=dof_idx
@@ -287,32 +287,32 @@ CONTAINS
                       RHS_MAPPING%INTERFACE_ROW_TO_RHS_DOF_MAP(column_idx)=dof_idx
                     ENDDO !column_idx
                   ELSE
-                    CALL FLAG_ERROR("RHS mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("RHS mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Interface condition dependent is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Interface condition dependent is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The interface condition method of "// &
               & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface equations interface condition is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("INTERFACE_MAPPING_CALCULATE")
@@ -339,15 +339,15 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Interface mapping has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface mapping has already been finished.",ERR,ERROR,*999)
       ELSE
         !Calculate the equations mapping and clean up
         CALL INTERFACE_MAPPING_CALCULATE(INTERFACE_MAPPING,ERR,ERROR,*999)
-        CALL INTERFACE_MAPPING_CREATE_VALUES_CACHE_FINALISE(INTERFACE_MAPPING%CREATE_VALUES_CACHE,ERR,ERROR,*999)
+        CALL InterfaceMapping_CreateValuesCacheFinalise(INTERFACE_MAPPING%CREATE_VALUES_CACHE,ERR,ERROR,*999)
         INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED=.TRUE.
       ENDIF
    ELSE
-      CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("INTERFACE_MAPPING_CREATE_FINISH")
@@ -376,17 +376,17 @@ CONTAINS
     IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
       IF(INTERFACE_EQUATIONS%INTERFACE_EQUATIONS_FINISHED) THEN
         IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
-          CALL FLAG_ERROR("Interface mapping is already associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface mapping is already associated.",ERR,ERROR,*999)
         ELSE
           NULLIFY(INTERFACE_MAPPING)
           CALL INTERFACE_MAPPING_INITIALISE(INTERFACE_EQUATIONS,ERR,ERROR,*999)
           INTERFACE_MAPPING=>INTERFACE_EQUATIONS%INTERFACE_MAPPING
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface equations have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface equations have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface equations is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("INTERFACE_MAPPING_CREATE_START")
@@ -401,7 +401,7 @@ CONTAINS
   !
 
   !>Finalises an interface mapping create values cache and deallocates all memory
-  SUBROUTINE INTERFACE_MAPPING_CREATE_VALUES_CACHE_FINALISE(CREATE_VALUES_CACHE,ERR,ERROR,*)
+  SUBROUTINE InterfaceMapping_CreateValuesCacheFinalise(CREATE_VALUES_CACHE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE !<A pointer to the create values cache to finalise
@@ -409,7 +409,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("INTERFACE_MAPPING_CREATE_VALUES_CACHE_FINALISE",ERR,ERROR,*999)
+    ENTERS("InterfaceMapping_CreateValuesCacheFinalise",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
       IF(ALLOCATED(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)) DEALLOCATE(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS)
@@ -421,18 +421,18 @@ CONTAINS
       DEALLOCATE(CREATE_VALUES_CACHE)
     ENDIF
        
-    EXITS("INTERFACE_MAPPING_CREATE_VALUES_CACHE_FINALISE")
+    EXITS("InterfaceMapping_CreateValuesCacheFinalise")
     RETURN
-999 ERRORSEXITS("INTERFACE_MAPPING_CREATE_VALUES_CACHE_FINALISE",ERR,ERROR)
+999 ERRORSEXITS("InterfaceMapping_CreateValuesCacheFinalise",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE INTERFACE_MAPPING_CREATE_VALUES_CACHE_FINALISE
+  END SUBROUTINE InterfaceMapping_CreateValuesCacheFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an interface mapping create values cache 
-  SUBROUTINE INTERFACE_MAPPING_CREATE_VALUES_CACHE_INITIALISE(INTERFACE_MAPPING,ERR,ERROR,*)
+  SUBROUTINE InterfaceMapping_CreateValuesCacheInitialise(INTERFACE_MAPPING,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface mapping to create the create values cache for.
@@ -447,11 +447,11 @@ CONTAINS
     TYPE(INTERFACE_LAGRANGE_TYPE), POINTER :: LAGRANGE
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
 
-    ENTERS("INTERFACE_MAPPING_CREATE_VALUES_CACHE_INITIALISE",ERR,ERROR,*998)
+    ENTERS("InterfaceMapping_CreateValuesCacheInitialise",ERR,ERROR,*998)
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(ASSOCIATED(INTERFACE_MAPPING%CREATE_VALUES_CACHE)) THEN
-        CALL FLAG_ERROR("Interface mapping create values cache is already associated.",ERR,ERROR,*998)
+        CALL FlagError("Interface mapping create values cache is already associated.",ERR,ERROR,*998)
       ELSE
         INTERFACE_EQUATIONS=>INTERFACE_MAPPING%INTERFACE_EQUATIONS
         IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
@@ -459,7 +459,7 @@ CONTAINS
           IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
             !Allocate and initialise the create values cache
             ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface mapping create values cache.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate interface mapping create values cache.",ERR,ERROR,*999)
             INTERFACE_MAPPING%CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES=0
             INTERFACE_MAPPING%CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE=0
             INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE=0
@@ -494,7 +494,7 @@ CONTAINS
                       ENDIF
                     ENDDO !variable_type_idx
                     IF(INTERFACE_MAPPING%CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE==0) &
-                      & CALL FLAG_ERROR("Could not find a Lagrange variable type in the Lagrange field.",ERR,ERROR,*999)
+                      & CALL FlagError("Could not find a Lagrange variable type in the Lagrange field.",ERR,ERROR,*999)
                     !Default the RHS Lagrange variable to the second Lagrange variable
                     DO variable_type_idx2=variable_type_idx+1,FIELD_NUMBER_OF_VARIABLE_TYPES
                       IF(ASSOCIATED(LAGRANGE_FIELD%VARIABLE_TYPE_MAP(variable_type_idx2)%PTR)) THEN
@@ -503,21 +503,21 @@ CONTAINS
                       ENDIF
                     ENDDO !variable_type_idx2
                     IF(INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE==0) &
-                      & CALL FLAG_ERROR("Could not find a RHS Lagrange variable type in the Lagrange field.",ERR,ERROR,*999)
+                      & CALL FlagError("Could not find a RHS Lagrange variable type in the Lagrange field.",ERR,ERROR,*999)
                     ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(INTERFACE_MAPPING% &
                       & CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache matrix coefficients.",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FlagError("Could not allocate create values cache matrix coefficients.",ERR,ERROR,*999)
                     !Default the interface matrices coefficients to add.
                     INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS=1.0_DP
                     INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_COEFFICIENT=1.0_DP
                     ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%HAS_TRANSPOSE(INTERFACE_MAPPING% &
                       & CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache has transpose.",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FlagError("Could not allocate create values cache has transpose.",ERR,ERROR,*999)
                     !Default the interface matrices to all have a transpose
                     INTERFACE_MAPPING%CREATE_VALUES_CACHE%HAS_TRANSPOSE=.TRUE.
                     ALLOCATE(INTERFACE_MAPPING%CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(INTERFACE_MAPPING% &
                       & CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate create values cache matrix row field variable indexes.", &
+                    IF(ERR/=0) CALL FlagError("Could not allocate create values cache matrix row field variable indexes.", &
                       & ERR,ERROR,*999)
                     !Default the interface matrices to be in mesh index order.
                     DO variable_idx=1,INTERFACE_DEPENDENT%NUMBER_OF_DEPENDENT_VARIABLES
@@ -534,41 +534,43 @@ CONTAINS
                         & NUMBER_OF_DEPENDENT_VARIABLES+1)=1
                     END SELECT
                   ELSE
-                    CALL FLAG_ERROR("Interface condition depdendent is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Interface condition depdendent is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Interface condition Lagrange field is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Interface condition Lagrange field is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The interface equations method of "// &
                 & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
                 & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Interface equations interface condition is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping interface equations is not associated.",ERR,ERROR,*998)
+          CALL FlagError("Interface mapping interface equations is not associated.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*998)
     ENDIF
        
-    EXITS("INTERFACE_MAPPING_CREATE_VALUES_CACHE_INITIALISE")
+    EXITS("InterfaceMapping_CreateValuesCacheInitialise")
     RETURN
-999 CALL INTERFACE_MAPPING_CREATE_VALUES_CACHE_FINALISE(INTERFACE_MAPPING%CREATE_VALUES_CACHE,DUMMY_ERR,DUMMY_ERROR,*998)
-998 ERRORSEXITS("INTERFACE_MAPPING_CREATE_VALUES_CACHE_INITIALISE",ERR,ERROR)
+999 CALL InterfaceMapping_CreateValuesCacheFinalise(INTERFACE_MAPPING%CREATE_VALUES_CACHE,DUMMY_ERR,DUMMY_ERROR,*998)
+998 ERRORS("InterfaceMapping_CreateValuesCacheInitialise",ERR,ERROR)
+    EXITS("InterfaceMapping_CreateValuesCacheInitialise")
     RETURN 1
-  END SUBROUTINE INTERFACE_MAPPING_CREATE_VALUES_CACHE_INITIALISE
+    
+  END SUBROUTINE InterfaceMapping_CreateValuesCacheInitialise
 
   !
   !================================================================================================================================
@@ -588,7 +590,7 @@ CONTAINS
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       CALL INTERFACE_MAPPING_FINALISE(INTERFACE_MAPPING,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations mapping is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("INTERFACE_MAPPING_DESTROY")
@@ -618,13 +620,13 @@ CONTAINS
       IF(ALLOCATED(INTERFACE_MAPPING%LAGRANGE_DOF_TO_COLUMN_MAP)) DEALLOCATE(INTERFACE_MAPPING%LAGRANGE_DOF_TO_COLUMN_MAP)
       IF(ALLOCATED(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS)) THEN
         DO matrix_idx=1,SIZE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS,1)
-          CALL INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_FINALISE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx), &
+          CALL InterfaceMapping_MatrixToVarMapFinalise(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(matrix_idx), &
             & ERR,ERROR,*999)
         ENDDO !matrix_idx
         DEALLOCATE(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS)
       ENDIF
       CALL INTERFACE_MAPPING_RHS_MAPPING_FINALISE(INTERFACE_MAPPING%RHS_MAPPING,ERR,ERROR,*999)
-      CALL INTERFACE_MAPPING_CREATE_VALUES_CACHE_FINALISE(INTERFACE_MAPPING%CREATE_VALUES_CACHE,ERR,ERROR,*999)
+      CALL InterfaceMapping_CreateValuesCacheFinalise(INTERFACE_MAPPING%CREATE_VALUES_CACHE,ERR,ERROR,*999)
       DEALLOCATE(INTERFACE_MAPPING)
     ENDIF
        
@@ -654,10 +656,10 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
       IF(ASSOCIATED(INTERFACE_EQUATIONS%INTERFACE_MAPPING)) THEN
-        CALL FLAG_ERROR("Interface mapping is already associated.",ERR,ERROR,*998)
+        CALL FlagError("Interface mapping is already associated.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(INTERFACE_EQUATIONS%INTERFACE_MAPPING,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface equations interface mapping.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate interface equations interface mapping.",ERR,ERROR,*999)
         INTERFACE_EQUATIONS%INTERFACE_MAPPING%INTERFACE_EQUATIONS=>INTERFACE_EQUATIONS
         INTERFACE_EQUATIONS%INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED=.FALSE.
         INTERFACE_EQUATIONS%INTERFACE_MAPPING%LAGRANGE_VARIABLE_TYPE=0
@@ -669,10 +671,10 @@ CONTAINS
         INTERFACE_EQUATIONS%INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES=0
         NULLIFY(INTERFACE_EQUATIONS%INTERFACE_MAPPING%RHS_MAPPING)
         NULLIFY(INTERFACE_EQUATIONS%INTERFACE_MAPPING%CREATE_VALUES_CACHE)
-        CALL INTERFACE_MAPPING_CREATE_VALUES_CACHE_INITIALISE(INTERFACE_EQUATIONS%INTERFACE_MAPPING,ERR,ERROR,*999)
+        CALL InterfaceMapping_CreateValuesCacheInitialise(INTERFACE_EQUATIONS%INTERFACE_MAPPING,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface equations is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Interface equations is not associated.",ERR,ERROR,*998)
     ENDIF
        
     EXITS("INTERFACE_MAPPING_INITIALISE")
@@ -688,7 +690,7 @@ CONTAINS
   !
 
   !>Sets the Lagrange variable type for the interface mapping. 
-  SUBROUTINE INTERFACE_MAPPING_LAGRANGE_VARIABLE_TYPE_SET(INTERFACE_MAPPING,LAGRANGE_VARIABLE_TYPE,ERR,ERROR,*)
+  SUBROUTINE InterfaceMapping_LagrangeVariableSet(INTERFACE_MAPPING,LAGRANGE_VARIABLE_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface mapping.
@@ -704,11 +706,11 @@ CONTAINS
     TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("INTERFACE_MAPPING_LAGRANGE_VARIABLE_TYPE_SET",ERR,ERROR,*999)
+    ENTERS("InterfaceMapping_LagrangeVariableSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Interface mapping has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface mapping has been finished.",ERR,ERROR,*999)
       ELSE
         CREATE_VALUES_CACHE=>INTERFACE_MAPPING%CREATE_VALUES_CACHE
         IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
@@ -726,46 +728,47 @@ CONTAINS
                     CALL FIELD_VARIABLE_GET(LAGRANGE_FIELD,LAGRANGE_VARIABLE_TYPE,LAGRANGE_VARIABLE,ERR,ERROR,*999)
                     CREATE_VALUES_CACHE%LAGRANGE_VARIABLE_TYPE=LAGRANGE_VARIABLE_TYPE
                   ELSE
-                    CALL FLAG_ERROR("Interface condition Lagrange field has not been finished.",ERR,ERROR,*999)
+                    CALL FlagError("Interface condition Lagrange field has not been finished.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The interface condition method of "// &
                   & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface equations interface condition is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("INTERFACE_MAPPING_LAGRANGE_VARIABLE_TYPE_SET")
+    EXITS("InterfaceMapping_LagrangeVariableSet")
     RETURN
-999 ERRORSEXITS("INTERFACE_MAPPING_LAGRANGE_VARIABLE_TYPE_SET",ERR,ERROR)
+999 ERRORSEXITS("InterfaceMapping_LagrangeVariableSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE INTERFACE_MAPPING_LAGRANGE_VARIABLE_TYPE_SET
+    
+  END SUBROUTINE InterfaceMapping_LagrangeVariableSet
 
   !
   !================================================================================================================================
   !
 
   !>Finalises an interface matrix to variable map and deallocates all memory.
-  SUBROUTINE INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_FINALISE(INTERFACE_MATRIX_TO_VAR_MAP,ERR,ERROR,*)
+  SUBROUTINE InterfaceMapping_MatrixToVarMapFinalise(INTERFACE_MATRIX_TO_VAR_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_MATRIX_TO_VAR_MAP_TYPE) :: INTERFACE_MATRIX_TO_VAR_MAP !<The interface matrix to var map to finalise
@@ -773,23 +776,24 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
   
-    ENTERS("INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("InterfaceMapping_MatrixToVarMapFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(INTERFACE_MATRIX_TO_VAR_MAP%VARIABLE_DOF_TO_ROW_MAP)) &
       & DEALLOCATE(INTERFACE_MATRIX_TO_VAR_MAP%VARIABLE_DOF_TO_ROW_MAP)
     
-    EXITS("INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_FINALISE")
+    EXITS("InterfaceMapping_MatrixToVarMapFinalise")
     RETURN
-999 ERRORSEXITS("INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_FINALISE",ERR,ERROR)
+999 ERRORSEXITS("InterfaceMapping_MatrixToVarMapFinalise",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_FINALISE
+    
+  END SUBROUTINE InterfaceMapping_MatrixToVarMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an interface matrix to variable map.
-  SUBROUTINE INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE(INTERFACE_MAPPING,matrix_idx,ERR,ERROR,*)
+  SUBROUTINE InterfaceMapping_MatrixToVarMapInitialise(INTERFACE_MAPPING,matrix_idx,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface mapping to initialise the matrix to variable map for a given matrix index.
@@ -799,7 +803,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
   
-    ENTERS("INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("InterfaceMapping_MatrixToVarMapInitialise",ERR,ERROR,*999)
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(ALLOCATED(INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS)) THEN
@@ -820,20 +824,21 @@ CONTAINS
           LOCAL_ERROR="The specified matrix index of "//TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))// &
             & " is invalid. The index must be > 0 and <= "// &
             & TRIM(NUMBER_TO_VSTRING(INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface mapping matrix rows to var maps is not allocated.",ERR,ERROR,*999)
+        CALL FlagError("Interface mapping matrix rows to var maps is not allocated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE")
+    EXITS("InterfaceMapping_MatrixToVarMapInitialise")
     RETURN
-999 ERRORSEXITS("INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE",ERR,ERROR)
+999 ERRORSEXITS("InterfaceMapping_MatrixToVarMapInitialise",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE INTERFACE_MAPPING_MATRIX_TO_VAR_MAP_INITIALISE
+    
+  END SUBROUTINE InterfaceMapping_MatrixToVarMapInitialise
 
   !
   !================================================================================================================================
@@ -857,7 +862,7 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Interface mapping has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface mapping has been finished.",ERR,ERROR,*999)
       ELSE
         CREATE_VALUES_CACHE=>INTERFACE_MAPPING%CREATE_VALUES_CACHE
         IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN          
@@ -876,29 +881,29 @@ CONTAINS
                     & TRIM(NUMBER_TO_VSTRING(SIZE(MATRIX_COEFFICIENTS,1),"*",ERR,ERROR))// &
                     & ") must match the number of interface matrices ("// &
                     & TRIM(NUMBER_TO_VSTRING(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))//")."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The interface condition method of "// &
                   & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface equations interface condition is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("INTERFACE_MAPPING_MATRICES_COEFFS_SET")
@@ -912,7 +917,7 @@ CONTAINS
   !
 
   !>Sets the column mesh indices for the interface matrices. 
-  SUBROUTINE INTERFACE_MAPPING_MATRICES_COLUMN_MESH_INDICES_SET(INTERFACE_MAPPING,COLUMN_MESH_INDICES,ERR,ERROR,*)
+  SUBROUTINE InterfaceMapping_MatricesColumnMeshIndicesSet(INTERFACE_MAPPING,COLUMN_MESH_INDICES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface mapping.
@@ -925,11 +930,11 @@ CONTAINS
     TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("INTERFACE_MAPPING_MATRICES_COLUMN_MESH_INDICES_SET",ERR,ERROR,*999)
+    ENTERS("InterfaceMapping_MatricesColumnMeshIndicesSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Interface mapping has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface mapping has been finished.",ERR,ERROR,*999)
       ELSE
         CREATE_VALUES_CACHE=>INTERFACE_MAPPING%CREATE_VALUES_CACHE
         IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
@@ -939,45 +944,47 @@ CONTAINS
             IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
               SELECT CASE(INTERFACE_CONDITION%METHOD)
               CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
-                CALL FLAG_ERROR("Can not set the column mesh indices when using the Lagrange multipliers "// &
+                CALL FlagError("Can not set the column mesh indices when using the Lagrange multipliers "// &
                   "interface condition method.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_PENALTY_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The interface condition method of "// &
                   & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface equations interface condition is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("INTERFACE_MAPPING_MATRICES_COLUMN_MESH_INDICES_SET")
+    EXITS("InterfaceMapping_MatricesColumnMeshIndicesSet")
     RETURN
-999 ERRORSEXITS("INTERFACE_MAPPING_MATRICES_COLUMN_MESH_INDICES_SET",ERR,ERROR)
+999 ERRORS("InterfaceMapping_MatricesColumnMeshIndicesSet",ERR,ERROR)
+    EXITS("InterfaceMapping_MatricesColumnMeshIndicesSet")
     RETURN 1
-  END SUBROUTINE INTERFACE_MAPPING_MATRICES_COLUMN_MESH_INDICES_SET
+    
+  END SUBROUTINE InterfaceMapping_MatricesColumnMeshIndicesSet
 
   !
   !================================================================================================================================
   !
 
   !>Sets the row mesh indices for the interface matrices. 
-  SUBROUTINE INTERFACE_MAPPING_MATRICES_ROW_MESH_INDICES_SET(INTERFACE_MAPPING,ROW_MESH_INDICES,ERR,ERROR,*)
+  SUBROUTINE InterfaceMapping_MatricesRowMeshIndicesSet(INTERFACE_MAPPING,ROW_MESH_INDICES,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface mapping.
@@ -993,11 +1000,11 @@ CONTAINS
     TYPE(INTERFACE_MAPPING_CREATE_VALUES_CACHE_TYPE), POINTER :: CREATE_VALUES_CACHE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("INTERFACE_MAPPING_MATRICES_ROW_MESH_INDICES_SET",ERR,ERROR,*999)
+    ENTERS("InterfaceMapping_MatricesRowMeshIndicesSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Interface mapping has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface mapping has been finished.",ERR,ERROR,*999)
       ELSE
         CREATE_VALUES_CACHE=>INTERFACE_MAPPING%CREATE_VALUES_CACHE
         IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
@@ -1028,7 +1035,7 @@ CONTAINS
                               & TRIM(NUMBER_TO_VSTRING(ROW_MESH_INDICES(mesh_idx),"*",ERR,ERROR))// &
                               & " at position "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
                               & " has been repeated at position "//TRIM(NUMBER_TO_VSTRING(mesh_idx3,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           ENDIF
                         ENDDO !mesh_idx3
                         !Set the mesh indices
@@ -1039,47 +1046,48 @@ CONTAINS
                           & TRIM(NUMBER_TO_VSTRING(ROW_MESH_INDICES(mesh_idx),"*",ERR,ERROR))// &
                           & " at position "//TRIM(NUMBER_TO_VSTRING(mesh_idx,"*",ERR,ERROR))// &
                           & " has not been added as a dependent variable to the interface condition."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ENDDO !mesh_idx
                   ELSE
-                    CALL FLAG_ERROR("Interface condition dependent is not assocaited.",ERR,ERROR,*999)
+                    CALL FlagError("Interface condition dependent is not assocaited.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   LOCAL_ERROR="Invalid size of mesh indices. The size of the supplied array ("// &
                     & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_MESH_INDICES,1),"*",ERR,ERROR))// &
                     & ") must match the number of interface matrices ("// &
                     & TRIM(NUMBER_TO_VSTRING(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))//")."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The interface condition method of "// &
                   & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface equations interface condition is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("INTERFACE_MAPPING_MATRICES_ROW_MESH_INDICES_SET")
+    EXITS("InterfaceMapping_MatricesRowMeshIndicesSet")
     RETURN
-999 ERRORSEXITS("INTERFACE_MAPPING_MATRICES_ROW_MESH_INDICES_SET",ERR,ERROR)
+999 ERRORSEXITS("InterfaceMapping_MatricesRowMeshIndicesSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE INTERFACE_MAPPING_MATRICES_ROW_MESH_INDICES_SET
+    
+  END SUBROUTINE InterfaceMapping_MatricesRowMeshIndicesSet
 
   !
   !================================================================================================================================
@@ -1109,7 +1117,7 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Interface mapping has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface mapping has already been finished.",ERR,ERROR,*999)
       ELSE
         CREATE_VALUES_CACHE=>INTERFACE_MAPPING%CREATE_VALUES_CACHE
         IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
@@ -1133,11 +1141,11 @@ CONTAINS
                       !If we need to reallocate and reset all the create values cache arrays and change the number of matrices
                       IF(NUMBER_OF_INTERFACE_MATRICES/=CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
                         ALLOCATE(OLD_MATRIX_COEFFICIENTS(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix coefficients.",ERR,ERROR,*999)
+                        IF(ERR/=0) CALL FlagError("Could not allocate old matrix coefficients.",ERR,ERROR,*999)
                         ALLOCATE(OLD_MATRIX_TRANSPOSE(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix transpose.",ERR,ERROR,*999)
+                        IF(ERR/=0) CALL FlagError("Could not allocate old matrix transpose.",ERR,ERROR,*999)
                         ALLOCATE(OLD_MATRIX_ROW_FIELD_VARIABLE_INDICES(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix row field indexes.",ERR,ERROR,*999)
+                        IF(ERR/=0) CALL FlagError("Could not allocate old matrix row field indexes.",ERR,ERROR,*999)
                         OLD_MATRIX_COEFFICIENTS(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)= &
                           CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)
                         OLD_MATRIX_TRANSPOSE(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)= &
@@ -1152,11 +1160,11 @@ CONTAINS
                         IF(ALLOCATED(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES)) &
                           & DEALLOCATE(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES)
                         ALLOCATE(CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix coefficients.",ERR,ERROR,*999)
+                        IF(ERR/=0) CALL FlagError("Could not allocate matrix coefficients.",ERR,ERROR,*999)
                         ALLOCATE(CREATE_VALUES_CACHE%HAS_TRANSPOSE(NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix tranpose.",ERR,ERROR,*999)
+                        IF(ERR/=0) CALL FlagError("Could not allocate matrix tranpose.",ERR,ERROR,*999)
                         ALLOCATE(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix row field variable indexes.",ERR,ERROR,*999)
+                        IF(ERR/=0) CALL FlagError("Could not allocate matrix row field variable indexes.",ERR,ERROR,*999)
                         IF(NUMBER_OF_INTERFACE_MATRICES>CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES) THEN
                           CREATE_VALUES_CACHE%MATRIX_COEFFICIENTS(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)= &
                             & OLD_MATRIX_COEFFICIENTS(1:CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES)
@@ -1189,7 +1197,7 @@ CONTAINS
                             IF(CREATE_VALUES_CACHE%MATRIX_ROW_FIELD_VARIABLE_INDICES(matrix_idx)==0) THEN
                               LOCAL_ERROR="Could not map an interface mesh index for interface matrix "// &
                                 & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//"."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ENDDO !matrix_idx
                         ELSE
@@ -1209,38 +1217,38 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))// &
                         & " is invalid. The number must be <= the number of added dependent variables of "// &
                         & TRIM(NUMBER_TO_VSTRING(number_of_dependent_variables,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Interface condition dependent is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Interface condition dependent is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   LOCAL_ERROR="The specified number of interface matrices of "// &
                     & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))// &
                     & " is invalid. The number must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The interface condition method of "// &
                   & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface equations interface condition is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("INTERFACE_MAPPING_MATRICES_NUMBER_SET")
@@ -1275,7 +1283,7 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Interface mapping has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface mapping has been finished.",ERR,ERROR,*999)
       ELSE
         CREATE_VALUES_CACHE=>INTERFACE_MAPPING%CREATE_VALUES_CACHE
         IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
@@ -1294,29 +1302,29 @@ CONTAINS
                     & TRIM(NUMBER_TO_VSTRING(SIZE(MATRIX_TRANSPOSE,1),"*",ERR,ERROR))// &
                     & ") must match the number of interface matrices ("// &
                     & TRIM(NUMBER_TO_VSTRING(CREATE_VALUES_CACHE%NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))//")."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The interface condition method of "// &
                   & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface equations interface condition is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("INTERFACE_MAPPING_MATRICES_TRANSPOSE_SET")
@@ -1343,20 +1351,20 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Interface mapping has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface mapping has been finished.",ERR,ERROR,*999)
       ELSE
         IF(ASSOCIATED(INTERFACE_MAPPING%CREATE_VALUES_CACHE)) THEN
           IF(INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_LAGRANGE_VARIABLE_TYPE/=0) THEN
             INTERFACE_MAPPING%CREATE_VALUES_CACHE%RHS_COEFFICIENT=RHS_COEFFICIENT
           ELSE
-            CALL FLAG_ERROR("The interface mapping RHS Lagrange variable type has not been set.",ERR,ERROR,*999)
+            CALL FlagError("The interface mapping RHS Lagrange variable type has not been set.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping create values cache is not associated",ERR,ERROR,*999)
+          CALL FlagError("Interface mapping create values cache is not associated",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface mapping is not associated",ERR,ERROR,*999)
+      CALL FlagError("Interface mapping is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("INTERFACE_MAPPING_RHS_COEFF_SET")
@@ -1411,10 +1419,10 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(ASSOCIATED(INTERFACE_MAPPING%RHS_MAPPING)) THEN
-        CALL FLAG_ERROR("Interface mapping RHS mapping is already associated.",ERR,ERROR,*998)
+        CALL FlagError("Interface mapping RHS mapping is already associated.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(INTERFACE_MAPPING%RHS_MAPPING,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface mapping RHS mapping.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate interface mapping RHS mapping.",ERR,ERROR,*999)
         INTERFACE_MAPPING%RHS_MAPPING%INTERFACE_MAPPING=>INTERFACE_MAPPING        
         INTERFACE_MAPPING%RHS_MAPPING%RHS_VARIABLE_TYPE=0
         NULLIFY(INTERFACE_MAPPING%RHS_MAPPING%RHS_VARIABLE)
@@ -1422,7 +1430,7 @@ CONTAINS
         INTERFACE_MAPPING%RHS_MAPPING%RHS_COEFFICIENT=1.0_DP
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*998)
     ENDIF
        
     EXITS("INTERFACE_MAPPING_RHS_MAPPING_INITIALISE")
@@ -1456,7 +1464,7 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
       IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Interface mapping has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface mapping has been finished.",ERR,ERROR,*999)
       ELSE
         CREATE_VALUES_CACHE=>INTERFACE_MAPPING%CREATE_VALUES_CACHE
         IF(ASSOCIATED(CREATE_VALUES_CACHE)) THEN
@@ -1478,7 +1486,7 @@ CONTAINS
                         LOCAL_ERROR="The specified RHS variable type of "// &
                           & TRIM(NUMBER_TO_VSTRING(RHS_VARIABLE_TYPE,"*",ERR,ERROR))// &
                           & " is the same as the Lagrange variable type for the interface matrices."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                       !Check the RHS variable number is defined on the Lagrange field
                       IF(RHS_VARIABLE_TYPE>=1.AND.RHS_VARIABLE_TYPE<=FIELD_NUMBER_OF_VARIABLE_TYPES) THEN
@@ -1488,43 +1496,43 @@ CONTAINS
                           LOCAL_ERROR="The specified RHS variable type of "// &
                             & TRIM(NUMBER_TO_VSTRING(RHS_VARIABLE_TYPE,"*",ERR,ERROR))// &
                             & " is not defined on the Lagrange field."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="The specified RHS variable type of "// &
                           & TRIM(NUMBER_TO_VSTRING(RHS_VARIABLE_TYPE,"*",ERR,ERROR))// &
                           & " is invalid. The number must either be zero or >= 1 and <= "// &
                           & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Lagrange field is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Lagrange field is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Interface Lagrange is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Interface Lagrange is not associated.",ERR,ERROR,*999)
                   ENDIF
                 CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The interface condition method of "// &
                     & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
-                CALL FLAG_ERROR("Interface equations interface condition is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Interface equations interface condition is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface mapping interface equations is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface mapping create values cache is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("INTERFACE_MAPPING_RHS_VARIABLE_TYPE_SET")

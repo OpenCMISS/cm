@@ -78,7 +78,7 @@ MODULE BIOELECTRIC_ROUTINES
 
   PUBLIC BIOELECTRIC_EQUATIONS_SET_SETUP
 
-  PUBLIC BIOELECTRIC_EQUATIONS_SET_SOLUTION_METHOD_SET
+  PUBLIC Bioelectric_EquationsSetSolutionMethodSet
 
   PUBLIC BIOELECTRIC_PROBLEM_CLASS_TYPE_SET
 
@@ -118,16 +118,16 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
               & " is not valid for a bioelectric problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           !do nothing
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Control loop problem is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Control loop problem is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("BIOELECTRIC_CONTROL_LOOP_POST_LOOP")
@@ -160,10 +160,10 @@ CONTAINS
         EQUATIONS_TYPE=EQUATIONS_SET%TYPE
         EQUATIONS_SUBTYPE=EQUATIONS_SET%SUBTYPE
       ELSE
-        CALL FLAG_ERROR("Equations set is not a bioelectric class.",ERR,ERROR,*999)
+        CALL FlagError("Equations set is not a bioelectric class.",ERR,ERROR,*999)
       END IF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_GET")
@@ -194,18 +194,18 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_TYPE)
       CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
-        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
+        CALL Biodomain_EquationsSetSubtypeSet(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
           & ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
-        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
+        CALL Biodomain_EquationsSetSubtypeSet(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
           & ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a bioelectric equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET")
@@ -240,10 +240,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a bioelectric equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("BIOELECTRIC_FINITE_ELEMENT_CALCULATE")
@@ -272,16 +272,16 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
-        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL Biodomain_EquationsSetSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
-        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL Biodomain_EquationsSetSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a bioelectric equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("BIOELECTRIC_EQUATIONS_SET_SETUP")
@@ -295,7 +295,7 @@ CONTAINS
   !
 
   !>Sets/changes the solution method for a bioelectric equation set class.
-  SUBROUTINE BIOELECTRIC_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE Bioelectric_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -305,29 +305,29 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("BIOELECTRIC_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("Bioelectric_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
-        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL Biodomain_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
-        CALL BIODOMAIN_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL Biodomain_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a bioelectric equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    EXITS("BIOELECTRIC_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("Bioelectric_EquationsSetSolutionMethodSet")
     RETURN
-999 ERRORSEXITS("BIOELECTRIC_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
+999 ERRORSEXITS("Bioelectric_EquationsSetSolutionMethodSet",ERR,ERROR)
     RETURN 1
     
-  END SUBROUTINE BIOELECTRIC_EQUATIONS_SET_SOLUTION_METHOD_SET
+  END SUBROUTINE Bioelectric_EquationsSetSolutionMethodSet
 
   !
   !================================================================================================================================
@@ -363,19 +363,19 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
                 & " is not valid for a bioelectrics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Control loop problem is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Control loop problem is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solvers control loop is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solvers control loop is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver solvers is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver solvers is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("BIOELECTRIC_PRE_SOLVE")
@@ -418,19 +418,19 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
                 & " is not valid for a bioelectrics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Control loop problem is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Control loop problem is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solvers control loop is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solvers control loop is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver solvers is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver solvers is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("BIOELECTRIC_POST_SOLVE")
@@ -462,10 +462,10 @@ CONTAINS
         PROBLEM_EQUATION_TYPE=PROBLEM%TYPE
         PROBLEM_SUBTYPE=PROBLEM%SUBTYPE
       ELSE
-        CALL FLAG_ERROR("Problem is not bioelectric class.",ERR,ERROR,*999)
+        CALL FlagError("Problem is not bioelectric class.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("BIOELECTRIC_PROBLEM_CLASS_TYPE_GET")
@@ -502,10 +502,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a bioelectric problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("BIOELECTRIC_PROBLEM_CLASS_TYPE_SET")
@@ -542,10 +542,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a bioelectric problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("BIOELECTRIC_PROBLEM_SETUP")

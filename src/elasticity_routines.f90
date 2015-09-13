@@ -76,17 +76,17 @@ MODULE ELASTICITY_ROUTINES
 
   PUBLIC ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE,ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE
 
-  PUBLIC ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE,ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE
+  PUBLIC Elasticity_FiniteElementPreResidualEvaluate,Elasticity_FiniteElementPostResidualEvaluate
 
   PUBLIC ELASTICITY_EQUATIONS_SET_SETUP
 
-  PUBLIC ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET
+  PUBLIC Elasticity_EquationsSetSolutionMethodSet
 
-  PUBLIC ElasticityEquationsSet_DerivedVariableCalculate
+  PUBLIC Elasticity_EquationsSetDerivedVariableCalculate
 
   PUBLIC Elasticity_StrainInterpolateXi
 
-  PUBLIC ELASTICITY_EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC
+  PUBLIC Elasticity_BoundaryConditionsAnalyticCalculate
   
   PUBLIC ELASTICITY_PROBLEM_CLASS_TYPE_SET
 
@@ -128,10 +128,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("ELASTICITY_EQUATIONS_SET_CLASS_TYPE_SET")
@@ -162,14 +162,14 @@ CONTAINS
       CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
         CALL LINEAR_ELASTICITY_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("ELASTICITY_FINITE_ELEMENT_CALCULATE")
@@ -198,16 +198,16 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-        CALL FINITE_ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL FiniteElasticity_FiniteElementJacobianEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE")
@@ -236,16 +236,16 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-        CALL FINITE_ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL FiniteElasticity_FiniteElementResidualEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE")
@@ -259,7 +259,7 @@ CONTAINS
   !
 
   !>Pre-evaluates the residual for an elasticity class finite element equation set.
-  SUBROUTINE ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE Elasticity_FiniteElementPreResidualEvaluate(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
@@ -268,35 +268,36 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+    ENTERS("Elasticity_FiniteElementPreResidualEvaluate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
-        CALL FLAG_ERROR("Cannot pre-evaluate the residual for a linear equations set.",ERR,ERROR,*999)
+        CALL FlagError("Cannot pre-evaluate the residual for a linear equations set.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-        CALL FINITE_ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+        CALL FiniteElasticity_FiniteElementPreResidualEvaluate(EQUATIONS_SET,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
-    EXITS("ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE")
+    EXITS("Elasticity_FiniteElementPreResidualEvaluate")
     RETURN
-999 ERRORSEXITS("ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE",ERR,ERROR)
+999 ERRORSEXITS("Elasticity_FiniteElementPreResidualEvaluate",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE ELASTICITY_FINITE_ELEMENT_PRE_RESIDUAL_EVALUATE
+    
+  END SUBROUTINE Elasticity_FiniteElementPreResidualEvaluate
 
   !
   !================================================================================================================================
   !
 
   !>Post-evaluates the residual for an elasticity class finite element equation set.
-  SUBROUTINE ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE Elasticity_FiniteElementPostResidualEvaluate(EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
@@ -305,28 +306,30 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+    ENTERS("Elasticity_FiniteElementPostResidualEvaluate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
-        CALL FLAG_ERROR("Cannot post-evaluate the residual for a linear equations set.",ERR,ERROR,*999)
+        CALL FlagError("Cannot post-evaluate the residual for a linear equations set.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-        CALL FINITE_ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE(EQUATIONS_SET,ERR,ERROR,*999)
+        CALL FiniteElasticity_FiniteElementPostResidualEvaluate(EQUATIONS_SET,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
-    EXITS("ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE")
+    EXITS("Elasticity_FiniteElementPostResidualEvaluate")
     RETURN
-999 ERRORSEXITS("ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE",ERR,ERROR)
+999 ERRORS("Elasticity_FiniteElementPostResidualEvaluate",ERR,ERROR)
+    EXITS("Elasticity_FiniteElementPostResidualEvaluate")
     RETURN 1
-  END SUBROUTINE ELASTICITY_FINITE_ELEMENT_POST_RESIDUAL_EVALUATE
+    
+  END SUBROUTINE Elasticity_FiniteElementPostResidualEvaluate
 
   !
   !================================================================================================================================
@@ -354,10 +357,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("ELASTICITY_EQUATIONS_SET_SETUP")
@@ -371,7 +374,7 @@ CONTAINS
   !
   
   !>Sets/changes the solution method for an elasticity equation set class.
-  SUBROUTINE ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE Elasticity_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -381,35 +384,36 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("Elasticity_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
-        CALL LINEAR_ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL LinearElasticity_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-        CALL FINITE_ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL FiniteElasticity_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
-    EXITS("ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("Elasticity_EquationsSetSolutionMethodSet")
     RETURN
-999 ERRORSEXITS("ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
+999 ERRORSEXITS("Elasticity_EquationsSetSolutionMethodSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE ELASTICITY_EQUATIONS_SET_SOLUTION_METHOD_SET
+    
+  END SUBROUTINE Elasticity_EquationsSetSolutionMethodSet
 
   !
   !================================================================================================================================
   !
 
   !>Calculates a derived value for the elasticity equations set. \see OPENCMISS::CMISSEquationsSet_DerivedCalculate
-  SUBROUTINE ElasticityEquationsSet_DerivedVariableCalculate(equationsSet,derivedType,err,error,*)
+  SUBROUTINE Elasticity_EquationsSetDerivedVariableCalculate(equationsSet,derivedType,err,error,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: equationsSet !<A pointer to the equations set to calculate the output for
@@ -417,32 +421,34 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-    ENTERS("ElasticityEquationsSet_DerivedVariableCalculate",err,error,*999)
+    ENTERS("Elasticity_EquationsSetDerivedVariableCalculate",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
       IF(.NOT.equationsSet%EQUATIONS_SET_FINISHED) THEN
-        CALL FLAG_ERROR("Equations set has not been finished.",err,error,*999)
+        CALL FlagError("Equations set has not been finished.",err,error,*999)
       ELSE
         SELECT CASE(equationsSet%TYPE)
         CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
           CALL FiniteElasticityEquationsSet_DerivedVariableCalculate(equationsSet,derivedType, &
             & err,error,*999)
         CASE DEFAULT
-          CALL FLAG_ERROR("Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%TYPE,"*",err,error))// &
+          CALL FlagError("Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%TYPE,"*",err,error))// &
             & " is not valid for an elasticity equations set class.",err,error,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+      CALL FlagError("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    EXITS("ElasticityEquationsSet_DerivedVariableCalculate")
+    EXITS("Elasticity_EquationsSetDerivedVariableCalculate")
     RETURN
-999 ERRORSEXITS("ElasticityEquationsSet_DerivedVariableCalculate",err,error)
+999 ERRORS("Elasticity_EquationsSetDerivedVariableCalculate",err,error)
+    EXITS("Elasticity_EquationsSetDerivedVariableCalculate")
     RETURN 1
-  END SUBROUTINE ElasticityEquationsSet_DerivedVariableCalculate
+    
+  END SUBROUTINE Elasticity_EquationsSetDerivedVariableCalculate
 
   !
   !================================================================================================================================
@@ -486,7 +492,7 @@ CONTAINS
   !
 
   !>Sets the analytic boundary conditions for an elasticity equation set class.
-  SUBROUTINE ELASTICITY_EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+  SUBROUTINE Elasticity_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -496,28 +502,30 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("ELASTICITY_EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC",ERR,ERROR,*999)
+    ENTERS("Elasticity_BoundaryConditionsAnalyticCalculate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
-        CALL LINEAR_ELASTICITY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+        CALL LinearElasticity_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-        CALL FINITE_ELASTICITY_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+        CALL FiniteElasticity_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
 
-    EXITS("ELASTICITY_EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC")
+    EXITS("Elasticity_BoundaryConditionsAnalyticCalculate")
     RETURN
-999 ERRORSEXITS("ELASTICITY_EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC",ERR,ERROR)
+999 ERRORS("Elasticity_BoundaryConditionsAnalyticCalculate",ERR,ERROR)
+    EXITS("Elasticity_BoundaryConditionsAnalyticCalculate")
     RETURN 1
-  END SUBROUTINE ELASTICITY_EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC
+    
+  END SUBROUTINE Elasticity_BoundaryConditionsAnalyticCalculate
 
   !
   !================================================================================================================================
@@ -544,16 +552,16 @@ CONTAINS
       CASE(PROBLEM_FINITE_ELASTICITY_TYPE)
         CALL FINITE_ELASTICITY_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
       CASE(PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE)
-        CALL FLAG_ERROR("Not implemented yet.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented yet.",ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE)
         CALL FiniteElasticity_ContactProblemSubtypeSet(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("ELASTICITY_PROBLEM_CLASS_TYPE_SET")
@@ -586,16 +594,16 @@ CONTAINS
       CASE(PROBLEM_FINITE_ELASTICITY_TYPE)
         CALL FINITE_ELASTICITY_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_LINEAR_ELASTICITY_CONTACT_TYPE)
-        CALL FLAG_ERROR("Not implemented yet.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented yet.",ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_CONTACT_TYPE)
         CALL FiniteElasticity_ContactProblemSetup(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("ELASTICITY_PROBLEM_SETUP")
@@ -634,10 +642,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("ELASTICITY_PRE_SOLVE")
@@ -677,10 +685,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for an elasticity problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("ELASTICITY_POST_SOLVE")
@@ -722,17 +730,17 @@ CONTAINS
         CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
             !do nothing for now
         CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-            CALL FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+            CALL FiniteElasticity_ControlTimeLoopPreLoop(CONTROL_LOOP,ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
             & " is not valid for an elasticity problem class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
         !do nothing
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("ELASTICITY_CONTROL_LOOP_PRE_LOOP")
@@ -771,16 +779,16 @@ CONTAINS
           CASE DEFAULT
             localError="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",err,error))// &
               & " is not valid for a elasticity problem class."
-            CALL FLAG_ERROR(localError,err,error,*999)
+            CALL FlagError(localError,err,error,*999)
           END SELECT
         CASE DEFAULT
           !do nothing
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Problem is not associated.",err,error,*999)
+        CALL FlagError("Problem is not associated.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",err,error,*999)
+      CALL FlagError("Control loop is not associated.",err,error,*999)
     ENDIF
 
     EXITS("Elasticity_ControlLoopPostLoop")
@@ -813,7 +821,7 @@ CONTAINS
         !Do nothing
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("ELASTICITY_LOAD_INCREMENT_APPLY")

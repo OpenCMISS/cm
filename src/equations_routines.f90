@@ -167,13 +167,13 @@ CONTAINS
 
     IF(ASSOCIATED(EQUATIONS)) THEN
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Equations have already been finished.",ERR,ERROR,*999)        
+        CALL FlagError("Equations have already been finished.",ERR,ERROR,*999)        
       ELSE
         !Set the finished flag
         EQUATIONS%EQUATIONS_FINISHED=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_CREATE_FINISH")
@@ -201,10 +201,10 @@ CONTAINS
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS)) THEN
-        CALL FLAG_ERROR("Equations are already associated for the equations set.",ERR,ERROR,*999)        
+        CALL FlagError("Equations are already associated for the equations set.",ERR,ERROR,*999)        
       ELSE
         IF(ASSOCIATED(EQUATIONS)) THEN
-          CALL FLAG_ERROR("Equations is already associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations is already associated.",ERR,ERROR,*999)
         ELSE
           !Initialise the equations
           CALL EQUATIONS_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
@@ -213,7 +213,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_CREATE_START")
@@ -241,7 +241,7 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS)) THEN
       CALL EQUATIONS_FINALISE(EQUATIONS,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_DESTROY")
@@ -298,10 +298,10 @@ CONTAINS
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS)) THEN
-        CALL FLAG_ERROR("Equations is already associated for this equations set.",ERR,ERROR,*998)
+        CALL FlagError("Equations is already associated for this equations set.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(EQUATIONS_SET%EQUATIONS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate equations.",ERR,ERROR,*999)
         EQUATIONS_SET%EQUATIONS%EQUATIONS_SET=>EQUATIONS_SET
         EQUATIONS_SET%EQUATIONS%LINEARITY=EQUATIONS_LINEAR
         EQUATIONS_SET%EQUATIONS%TIME_DEPENDENCE=EQUATIONS_STATIC
@@ -315,7 +315,7 @@ CONTAINS
         CALL EQUATIONS_INTERPOLATION_INITIALISE(EQUATIONS_SET%EQUATIONS,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*998)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*998)
     ENDIF
        
     EXITS("EQUATIONS_INITIALISE")
@@ -355,10 +355,10 @@ CONTAINS
       CALL FIELD_INTERPOLATED_POINTS_FINALISE(EQUATIONS_INTERPOLATION%MATERIALS_INTERP_POINT,ERR,ERROR,*999)
       CALL FIELD_INTERPOLATED_POINTS_FINALISE(EQUATIONS_INTERPOLATION%SOURCE_INTERP_POINT,ERR,ERROR,*999)
       CALL FIELD_PHYSICAL_POINTS_FINALISE(EQUATIONS_INTERPOLATION%DEPENDENT_PHYSICAL_POINT,ERR,ERROR,*999)
-      CALL FIELD_INTERPOLATED_POINTS_METRICS_FINALISE(EQUATIONS_INTERPOLATION%DEPENDENT_INTERP_POINT_METRICS,ERR,ERROR,*999)
-      CALL FIELD_INTERPOLATED_POINTS_METRICS_FINALISE(EQUATIONS_INTERPOLATION%INDEPENDENT_INTERP_POINT_METRICS,ERR,ERROR,*999)
-      CALL FIELD_INTERPOLATED_POINTS_METRICS_FINALISE(EQUATIONS_INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
-      CALL FIELD_INTERPOLATED_POINTS_METRICS_FINALISE(EQUATIONS_INTERPOLATION%FIBRE_INTERP_POINT_METRICS,ERR,ERROR,*999)
+      CALL Field_InterpolatedPointsMetricsFinalise(EQUATIONS_INTERPOLATION%DEPENDENT_INTERP_POINT_METRICS,ERR,ERROR,*999)
+      CALL Field_InterpolatedPointsMetricsFinalise(EQUATIONS_INTERPOLATION%INDEPENDENT_INTERP_POINT_METRICS,ERR,ERROR,*999)
+      CALL Field_InterpolatedPointsMetricsFinalise(EQUATIONS_INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
+      CALL Field_InterpolatedPointsMetricsFinalise(EQUATIONS_INTERPOLATION%FIBRE_INTERP_POINT_METRICS,ERR,ERROR,*999)
       DEALLOCATE(EQUATIONS_INTERPOLATION)
     ENDIF
        
@@ -390,10 +390,10 @@ CONTAINS
       EQUATIONS_SET=>EQUATIONS%EQUATIONS_SET
       IF(ASSOCIATED(EQUATIONS_SET)) THEN
         IF(ASSOCIATED(EQUATIONS%INTERPOLATION)) THEN
-          CALL FLAG_ERROR("Interpolation is already associated for these equations.",ERR,ERROR,*998)
+          CALL FlagError("Interpolation is already associated for these equations.",ERR,ERROR,*998)
         ELSE
           ALLOCATE(EQUATIONS%INTERPOLATION,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations interpolation",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate equations interpolation",ERR,ERROR,*999)
           EQUATIONS%INTERPOLATION%EQUATIONS=>EQUATIONS
           NULLIFY(EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS)
           NULLIFY(EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS)
@@ -436,7 +436,7 @@ CONTAINS
             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATED_POINTS_INITIALISE(EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_PARAMETERS, &
             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT,ERR,ERROR,*999)
-          CALL FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE(EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT, &
+          CALL Field_InterpolatedPointsMetricsInitialise(EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT, &
             & EQUATIONS%INTERPOLATION%GEOMETRIC_INTERP_POINT_METRICS,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(EQUATIONS%INTERPOLATION%DEPENDENT_FIELD, &
             & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_PARAMETERS,ERR,ERROR,*999)
@@ -448,7 +448,7 @@ CONTAINS
           IF(EQUATIONS%INTERPOLATION%DEPENDENT_FIELD%TYPE==FIELD_GEOMETRIC_TYPE.OR. &
             & EQUATIONS%INTERPOLATION%DEPENDENT_FIELD%TYPE==FIELD_FIBRE_TYPE.OR. &
             & EQUATIONS%INTERPOLATION%DEPENDENT_FIELD%TYPE==FIELD_GEOMETRIC_GENERAL_TYPE) THEN
-            CALL FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE(EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT, &
+            CALL Field_InterpolatedPointsMetricsInitialise(EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT, &
               & EQUATIONS%INTERPOLATION%DEPENDENT_INTERP_POINT_METRICS,ERR,ERROR,*999)
           ENDIF
           IF(ASSOCIATED(EQUATIONS%INTERPOLATION%FIBRE_FIELD)) THEN
@@ -456,7 +456,7 @@ CONTAINS
               & EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINTS_INITIALISE(EQUATIONS%INTERPOLATION%FIBRE_INTERP_PARAMETERS,  &
               & EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT,ERR,ERROR,*999)
-            CALL FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE(EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT,  &
+            CALL Field_InterpolatedPointsMetricsInitialise(EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT,  &
               & EQUATIONS%INTERPOLATION%FIBRE_INTERP_POINT_METRICS,ERR,ERROR,*999)
           ENDIF
           IF(ASSOCIATED(EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD)) THEN
@@ -466,7 +466,7 @@ CONTAINS
               & EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT,ERR,ERROR,*999)
             IF(EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD%TYPE==FIELD_GEOMETRIC_TYPE.OR. &
               & EQUATIONS%INTERPOLATION%INDEPENDENT_FIELD%TYPE==FIELD_FIBRE_TYPE) THEN
-              CALL FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE(EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT,  &
+              CALL Field_InterpolatedPointsMetricsInitialise(EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT,  &
                 &  EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT_METRICS,ERR,ERROR,*999)
             END IF
           ENDIF
@@ -485,10 +485,10 @@ CONTAINS
           
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations equation set is not associated",ERR,ERROR,*998)
+        CALL FlagError("Equations equation set is not associated",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated",ERR,ERROR,*998)
+      CALL FlagError("Equations is not associated",ERR,ERROR,*998)
     ENDIF
        
     EXITS("EQUATIONS_INTERPOLATION_INITIALISE")
@@ -518,10 +518,10 @@ CONTAINS
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
         LINEARITY_TYPE=EQUATIONS%LINEARITY
       ELSE
-        CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_LINEARITY_TYPE_GET")
@@ -549,7 +549,7 @@ CONTAINS
 
     IF(ASSOCIATED(EQUATIONS)) THEN
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations has already been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(LINEARITY_TYPE)
         CASE(EQUATIONS_LINEAR)
@@ -561,11 +561,11 @@ CONTAINS
         CASE DEFAULT
           LOCAL_ERROR="The specified linearity type of "//TRIM(NUMBER_TO_VSTRING(LINEARITY_TYPE,"*",ERR,ERROR))// &
             & " is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_LINEARITY_TYPE_SET")
@@ -594,10 +594,10 @@ CONTAINS
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
         LUMPING_TYPE=EQUATIONS%LUMPING_TYPE
       ELSE
-        CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_LUMPING_TYPE_GET")
@@ -625,7 +625,7 @@ CONTAINS
 
     IF(ASSOCIATED(EQUATIONS)) THEN
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(EQUATIONS%TIME_DEPENDENCE==EQUATIONS_FIRST_ORDER_DYNAMIC.OR. &
           & EQUATIONS%TIME_DEPENDENCE==EQUATIONS_SECOND_ORDER_DYNAMIC) THEN
@@ -637,17 +637,17 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The specified lumping type of "//TRIM(NUMBER_TO_VSTRING(LUMPING_TYPE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
           LOCAL_ERROR="Invalid equations time dependence. The equations time dependence of "// &
             & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
             & " does not correspond to dynamic equations. You can only set lumping for dynamic equations."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_LUMPING_TYPE_SET")
@@ -676,10 +676,10 @@ CONTAINS
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
         OUTPUT_TYPE=EQUATIONS%OUTPUT_TYPE
       ELSE
-        CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_OUTPUT_TYPE_GET")
@@ -707,7 +707,7 @@ CONTAINS
 
     IF(ASSOCIATED(EQUATIONS)) THEN
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations has already been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(OUTPUT_TYPE)
         CASE(EQUATIONS_NO_OUTPUT)
@@ -722,11 +722,11 @@ CONTAINS
           EQUATIONS%OUTPUT_TYPE=EQUATIONS_NODAL_MATRIX_OUTPUT
         CASE DEFAULT
           LOCAL_ERROR="The specified output type of "//TRIM(NUMBER_TO_VSTRING(OUTPUT_TYPE,"*",ERR,ERROR))//" is invalid"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_OUTPUT_TYPE_SET")
@@ -756,10 +756,10 @@ CONTAINS
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
         SPARSITY_TYPE=EQUATIONS%SPARSITY_TYPE
       ELSE
-        CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_SPARSITY_TYPE_GET")
@@ -787,7 +787,7 @@ CONTAINS
 
     IF(ASSOCIATED(EQUATIONS)) THEN
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations has already been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(SPARSITY_TYPE)
         CASE(EQUATIONS_SPARSE_MATRICES)
@@ -797,11 +797,11 @@ CONTAINS
         CASE DEFAULT
           LOCAL_ERROR="The specified sparsity type of "//TRIM(NUMBER_TO_VSTRING(SPARSITY_TYPE,"*",ERR,ERROR))// &
             & " is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_SPARSITY_TYPE_SET")
@@ -830,10 +830,10 @@ CONTAINS
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
         TIME_DEPENDENCE_TYPE=EQUATIONS%TIME_DEPENDENCE
       ELSE
-        CALL FLAG_ERROR("Equations has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_TIME_DEPENDENCE_TYPE_GET")
@@ -861,7 +861,7 @@ CONTAINS
 
     IF(ASSOCIATED(EQUATIONS)) THEN
       IF(EQUATIONS%EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations has already been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(TIME_DEPENDENCE_TYPE)
         CASE(EQUATIONS_STATIC)
@@ -875,11 +875,11 @@ CONTAINS
         CASE DEFAULT
           LOCAL_ERROR="The specified time dependence type of "//TRIM(NUMBER_TO_VSTRING(TIME_DEPENDENCE_TYPE,"*",ERR,ERROR))// &
             & " is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_TIME_DEPENDENCE_TYPE_SET")
@@ -907,16 +907,16 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
         IF(ASSOCIATED(EQUATIONS)) THEN
-          CALL FLAG_ERROR("Equations is already associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations is already associated.",ERR,ERROR,*999)
         ELSE
           EQUATIONS=>EQUATIONS_SET%EQUATIONS
-          IF(.NOT.ASSOCIATED(EQUATIONS)) CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+          IF(.NOT.ASSOCIATED(EQUATIONS)) CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations set has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("EQUATIONS_SET_EQUATIONS_GET")
@@ -954,16 +954,16 @@ CONTAINS
       equationsSet=>equations%equations_set
       IF(ASSOCIATED(equationsSet)) THEN
         IF(.NOT.equationsSet%EQUATIONS_SET_FINISHED) THEN
-          CALL FLAG_ERROR("Equations set has not been finished.",err,error,*999)
+          CALL FlagError("Equations set has not been finished.",err,error,*999)
         END IF
       ELSE
-        CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+        CALL FlagError("Equations set is not associated.",err,error,*999)
       END IF
       IF(ASSOCIATED(fieldVariable)) THEN
-        CALL FLAG_ERROR("Derived field variable is already associated.",err,error,*999)
+        CALL FlagError("Derived field variable is already associated.",err,error,*999)
       END IF
     ELSE
-      CALL FLAG_ERROR("Equations are not associated.",err,error,*999)
+      CALL FlagError("Equations are not associated.",err,error,*999)
     END IF
 
     IF(ASSOCIATED(equationsSet%derived)) THEN
@@ -974,19 +974,19 @@ CONTAINS
             IF(fieldVariableType/=0) THEN
               CALL FIELD_VARIABLE_GET(equationsSet%derived%derivedField,fieldVariableType,fieldVariable,err,error,*999)
             ELSE
-              CALL FLAG_ERROR("The field variable type for the derived variable type of "// &
+              CALL FlagError("The field variable type for the derived variable type of "// &
                 & TRIM(NUMBER_TO_VSTRING(derivedType,"*",err,error))//" has not been set.",err,error,*999)
             END IF
           ELSE
-            CALL FLAG_ERROR("The derived variable type of "//TRIM(NUMBER_TO_VSTRING(derivedType,"*",err,error))// &
+            CALL FlagError("The derived variable type of "//TRIM(NUMBER_TO_VSTRING(derivedType,"*",err,error))// &
               & " is invalid. It should be between 1 and "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_NUMBER_OF_DERIVED_TYPES,"*", &
               & err,error))//" inclusive.",err,error,*999)
           END IF
         ELSE
-          CALL FLAG_ERROR("Equations set derived field is not associated",err,error,*999)
+          CALL FlagError("Equations set derived field is not associated",err,error,*999)
         END IF
       ELSE
-        CALL FLAG_ERROR("Equations set derived information is not finished",err,error,*999)
+        CALL FlagError("Equations set derived information is not finished",err,error,*999)
       END IF
     END IF
 

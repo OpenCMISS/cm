@@ -102,7 +102,7 @@ CONTAINS
     IF(ASSOCIATED(HISTORY)) THEN
       HISTORY%UNIT_NUMBER=0
     ELSE
-      CALL FLAG_ERROR("History is not associated.",ERR,ERROR,*999)
+      CALL FlagError("History is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("HISTORY_CLOSE")
@@ -129,7 +129,7 @@ CONTAINS
     IF(ASSOCIATED(HISTORY)) THEN
       HISTORY%HISTORY_FINISHED=.TRUE.      
     ELSE
-      CALL FLAG_ERROR("History is not associated.",ERR,ERROR,*999)
+      CALL FlagError("History is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("HISTORY_CREATE_FINISH")
@@ -156,11 +156,11 @@ CONTAINS
     
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(HISTORY)) THEN
-        CALL FLAG_ERROR("History is already associated.",ERR,ERROR,*999)
+        CALL FlagError("History is already associated.",ERR,ERROR,*999)
       ELSE
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("HISTORY_CREATE_START")
@@ -187,7 +187,7 @@ CONTAINS
     IF(ASSOCIATED(HISTORY)) THEN
       CALL HISTORY_FINALISE(HISTORY,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("History is not associated.",ERR,ERROR,*999)
+      CALL FlagError("History is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("HISTORY_DESTROY")
@@ -239,10 +239,10 @@ CONTAINS
     
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(CONTROL_LOOP%HISTORY)) THEN
-        CALL FLAG_ERROR("Control loop history is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Control loop history is already associated.",ERR,ERROR,*999)
       ELSE
         ALLOCATE(CONTROL_LOOP%HISTORY,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate control loop history.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate control loop history.",ERR,ERROR,*999)
         CONTROL_LOOP%HISTORY%CONTROL_LOOP=>CONTROL_LOOP
         CONTROL_LOOP%HISTORY%HISTORY_FINISHED=.FALSE.
         CONTROL_LOOP%HISTORY%FILE_FORMAT=HISTORY_BINARY_FILE_FORMAT
@@ -250,7 +250,7 @@ CONTAINS
         CONTROL_LOOP%HISTORY%UNIT_NUMBER=0
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("HISTORY_INITIALISE")
@@ -278,7 +278,7 @@ CONTAINS
     
     IF(ASSOCIATED(HISTORY)) THEN
       IF(HISTORY%HISTORY_FINISHED) THEN
-        CALL FLAG_ERROR("History has been finished.",ERR,ERROR,*999)
+        CALL FlagError("History has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(FILE_FORMAT)
         CASE(HISTORY_ASCII_FILE_FORMAT)
@@ -287,11 +287,11 @@ CONTAINS
           HISTORY%FILE_FORMAT=HISTORY_BINARY_FILE_FORMAT
         CASE DEFAULT
           LOCAL_ERROR="The supplied file format of "//TRIM(NUMBER_TO_VSTRING(FILE_FORMAT,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("History is not associated.",ERR,ERROR,*999)
+      CALL FlagError("History is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("HISTORY_FILE_FORMAT_SET")
@@ -318,13 +318,13 @@ CONTAINS
     
     IF(ASSOCIATED(HISTORY)) THEN
       IF(HISTORY%HISTORY_FINISHED) THEN
-        CALL FLAG_ERROR("History has been finished.",ERR,ERROR,*999)
+        CALL FlagError("History has been finished.",ERR,ERROR,*999)
       ELSE
 !!TODO: Check filename???
         HISTORY%FILENAME=FILENAME
       ENDIF
     ELSE
-      CALL FLAG_ERROR("History is not associated.",ERR,ERROR,*999)
+      CALL FlagError("History is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("HISTORY_FILENAME_SET_C")
@@ -351,13 +351,13 @@ CONTAINS
     
     IF(ASSOCIATED(HISTORY)) THEN
       IF(HISTORY%HISTORY_FINISHED) THEN
-        CALL FLAG_ERROR("History has been finished.",ERR,ERROR,*999)
+        CALL FlagError("History has been finished.",ERR,ERROR,*999)
       ELSE
 !!TODO: Check filename???
         HISTORY%FILENAME=FILENAME
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("HISTORY_FILENAME_SET_VS")
@@ -384,10 +384,10 @@ CONTAINS
     IF(ASSOCIATED(HISTORY)) THEN
       IF(HISTORY%HISTORY_FINISHED) THEN
       ELSE
-        CALL FLAG_ERROR("History has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("History has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("History is not associated.",ERR,ERROR,*999)
+      CALL FlagError("History is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("HISTORY_OPEN")

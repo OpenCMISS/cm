@@ -43,7 +43,6 @@
 
 !>This module handles all Darcy equations routines.
 
-
 MODULE DARCY_EQUATIONS_ROUTINES
 
   USE BASE_ROUTINES
@@ -82,8 +81,8 @@ MODULE DARCY_EQUATIONS_ROUTINES
 
   PUBLIC DARCY_EQUATION_EQUATIONS_SET_SETUP
   PUBLIC DARCY_EQUATION_EQUATIONS_SET_SUBTYPE_SET
-  PUBLIC DARCY_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
-  PUBLIC DARCY_EQUATION_ANALYTIC_CALCULATE
+  PUBLIC Darcy_EquationsSetSolutionMethodSet
+  PUBLIC Darcy_BoundaryConditionsAnalyticCalculate
 
   PUBLIC DARCY_EQUATION_PROBLEM_SETUP
   PUBLIC DARCY_EQUATION_PROBLEM_SUBTYPE_SET
@@ -95,6 +94,8 @@ MODULE DARCY_EQUATIONS_ROUTINES
   PUBLIC DARCY_EQUATION_POST_SOLVE_OUTPUT_DATA
 
   PUBLIC DARCY_CONTROL_TIME_LOOP_PRE_LOOP
+
+  PUBLIC Darcy_PreSolveStorePreviousIterate
 
   PUBLIC DARCY_EQUATION_MONITOR_CONVERGENCE
 
@@ -113,7 +114,7 @@ CONTAINS
   !
 
   !>Sets/changes the solution method for a Darcy equation type of a fluid mechanics equations set class.
-  SUBROUTINE DARCY_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE Darcy_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -123,7 +124,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("DARCY_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("Darcy_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
@@ -136,33 +137,33 @@ CONTAINS
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a Darcy equation type of a fluid mechanics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    EXITS("DARCY_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("Darcy_EquationsSetSolutionMethodSet")
     RETURN
-999 ERRORSEXITS("DARCY_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
+999 ERRORSEXITS("Darcy_EquationsSetSolutionMethodSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE DARCY_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
+  END SUBROUTINE Darcy_EquationsSetSolutionMethodSet
 
   !
   !================================================================================================================================
@@ -234,19 +235,19 @@ CONTAINS
             & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
-             CALL DARCY_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
+             CALL Darcy_EquationsSetSolutionMethodSet(EQUATIONS_SET,EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
                !do nothing
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard or quasistatic Darcy equation."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE,EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
-              CALL DARCY_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
+              CALL Darcy_EquationsSetSolutionMethodSet(EQUATIONS_SET,EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
 
               EQUATIONS_SET_FIELD_NUMBER_OF_VARIABLES = 1
               EQUATIONS_SET_FIELD_NUMBER_OF_COMPONENTS = 2
@@ -297,7 +298,7 @@ CONTAINS
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard or quasistatic Darcy equation."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           END SELECT
 
@@ -371,7 +372,7 @@ CONTAINS
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a linear diffusion equation."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           END SELECT
 
@@ -457,19 +458,19 @@ CONTAINS
                   CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                   CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                     & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
                 !-----------------------------------
@@ -535,19 +536,19 @@ CONTAINS
                     CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELVDELN_VARIABLE_TYPE,1, &
                       & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
                   !-----------------------------------------------------------------------
@@ -604,19 +605,19 @@ CONTAINS
                     ENDDO !component_idx
                   ENDDO
                   CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE(EQUATIONS_SET_MULTI_COMPARTMENT_DARCY_SUBTYPE)
                   !Check the field created by Darcy routines for the multi-compartment model
@@ -656,19 +657,19 @@ CONTAINS
                      ENDDO
                     ENDDO
                   CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
 
                 CASE DEFAULT
@@ -701,19 +702,19 @@ CONTAINS
                     CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
                       & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 END SELECT ! on (EQUATIONS_SET%SUBTYPE)
               ENDIF ! on (EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD_AUTO_CREATED)
@@ -732,7 +733,7 @@ CONTAINS
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard, quasistatic or ALE Darcy equation"
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           END SELECT
 
@@ -822,19 +823,19 @@ CONTAINS
                   CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                   CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                     & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
                 !Check the user specified field
@@ -866,19 +867,19 @@ CONTAINS
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,1, &
                     & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                     & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ENDIF
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -889,7 +890,7 @@ CONTAINS
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard, quasistatic or ALE Darcy equation"
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           END SELECT
 
@@ -966,7 +967,7 @@ CONTAINS
                     & MATERIAL_FIELD_NUMBER_OF_COMPONENTS,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -980,13 +981,13 @@ CONTAINS
                   ENDDO
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard, quasistatic or ALE Darcy equation."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)
           !Materials field needs two extra variable types
@@ -1089,7 +1090,7 @@ CONTAINS
                      & MATERIAL_FIELD_NUMBER_OF_U1_VAR_COMPONENTS,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -1111,13 +1112,13 @@ CONTAINS
                   ENDDO
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard, quasistatic or ALE Darcy equation."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           END SELECT
 
@@ -1163,16 +1164,16 @@ CONTAINS
                             LOCAL_ERROR="The specified analytic function type of "// &
                               & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                               & " is invalid for an analytic Darcy problem."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ELSE
-                        CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+                    CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
                   ENDIF
                 CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
                   IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -1183,13 +1184,13 @@ CONTAINS
                       ENDIF
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
                   ENDIF
                 CASE DEFAULT
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for an analytic Darcy problem."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
           CASE(EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
               SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -1210,16 +1211,16 @@ CONTAINS
                           LOCAL_ERROR="The specified analytic function type of "// &
                             & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                             & " is invalid for an analytic Darcy problem."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ELSE
-                        CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+                    CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
                   ENDIF
                 CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
                   IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -1230,19 +1231,19 @@ CONTAINS
                       ENDIF
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
                   ENDIF
                 CASE DEFAULT
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for an analytic Darcy problem."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
               & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
               & " is invalid for a Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -1322,7 +1323,7 @@ CONTAINS
                     & NUMBER_OF_SOURCE_COMPONENTS,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set source is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set source is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               EQUATIONS_SOURCE=>EQUATIONS_SET%SOURCE
@@ -1346,13 +1347,13 @@ CONTAINS
                   ENDDO !component_idx
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set source is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set source is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard, quasistatic or ALE Darcy equation."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           END SELECT
 
@@ -1374,10 +1375,10 @@ CONTAINS
                   CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
                   CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Equations set materials has not been finished.",ERR,ERROR,*999)
+                  CALL FlagError("Equations set materials has not been finished.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -1389,7 +1390,7 @@ CONTAINS
                   CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
                   !Create the equations mapping.
                   CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-                  CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+                  CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
                   EQUATIONS_SET_FIELD_FIELD=>EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD
                   CALL FIELD_PARAMETER_SET_DATA_GET(EQUATIONS_SET_FIELD_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
@@ -1400,7 +1401,7 @@ CONTAINS
                     VARIABLE_TYPES(2*num_var-1)=FIELD_U_VARIABLE_TYPE+(FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(num_var-1))
                     VARIABLE_TYPES(2*num_var)=FIELD_DELUDELN_VARIABLE_TYPE+(FIELD_NUMBER_OF_VARIABLE_SUBTYPES*(num_var-1))
                   ENDDO
-                  CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/VARIABLE_TYPES(2*imy_matrix-1)/), &
+                  CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,(/VARIABLE_TYPES(2*imy_matrix-1)/), &
                     & ERR,ERROR,*999)
                   CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,VARIABLE_TYPES(2*imy_matrix),ERR,ERROR,*999)
                   CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -1413,12 +1414,12 @@ CONTAINS
                   CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
                     CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
                       & ERR,ERROR,*999)
-                    CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
+                    CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
                       & ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The equations matrices sparsity type of "// &
                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
                 CASE DEFAULT
@@ -1427,8 +1428,8 @@ CONTAINS
                   CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
                   !Create the equations mapping.
                   CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-                  CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
-                  CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
+                  CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+                  CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
                     & ERR,ERROR,*999)
                   CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
                   CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -1441,36 +1442,36 @@ CONTAINS
                   CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
                     CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
                       & ERR,ERROR,*999)
-                    CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
+                    CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
                       & ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The equations matrices sparsity type of "// &
                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
                 END SELECT
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                   LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
 
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard Darcy equation."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           !-----------------------------------------------------------------
           !   q u a s i s t a t i c   and    A L E
@@ -1486,10 +1487,10 @@ CONTAINS
                   CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
                   CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_QUASISTATIC,ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Equations set materials has not been finished.",ERR,ERROR,*999)
+                  CALL FlagError("Equations set materials has not been finished.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -1499,14 +1500,14 @@ CONTAINS
                 CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
                 !Create the equations mapping.
                 CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-                CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+                CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
                 SELECT CASE(EQUATIONS_SET%SUBTYPE)
                 CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE)
-                  CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_V_VARIABLE_TYPE/), &
+                  CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,(/FIELD_V_VARIABLE_TYPE/), &
                     & ERR,ERROR,*999)
                   CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELVDELN_VARIABLE_TYPE,ERR,ERROR,*999)
                 CASE DEFAULT
-                  CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
+                  CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
                     & ERR,ERROR,*999)
                   CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
                 END SELECT
@@ -1520,34 +1521,34 @@ CONTAINS
                 CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
                   CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
                     & ERR,ERROR,*999)
-                  CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
+                  CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
                     & ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The equations matrices sparsity type of "// &
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
                 CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a quasistatic Darcy equation."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           !-----------------------------------------------------------------
           !   d y n a m i c
@@ -1564,10 +1565,10 @@ CONTAINS
                     CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
                     CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_FIRST_ORDER_DYNAMIC,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Equations set materials has not been finished.",ERR,ERROR,*999)
+                    CALL FlagError("Equations set materials has not been finished.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Equations materials is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations materials is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
                 SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -1579,7 +1580,7 @@ CONTAINS
                     CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
                     IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE .OR. &
                         & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) THEN
-                      CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,0,ERR,ERROR,*999)
+                      CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,0,ERR,ERROR,*999)
                     ENDIF
                     CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.TRUE.,ERR,ERROR,*999)
                     SELECT CASE(EQUATIONS_SET%SUBTYPE)
@@ -1597,7 +1598,7 @@ CONTAINS
                          & FIELD_VALUES_SET_TYPE,EQUATIONS_SET_FIELD_DATA,ERR,ERROR,*999)
                       imy_matrix = EQUATIONS_SET_FIELD_DATA(1)
                       Ncompartments = EQUATIONS_SET_FIELD_DATA(2)
-                      CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,Ncompartments-1,ERR,ERROR,*999)
+                      CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,Ncompartments-1,ERR,ERROR,*999)
                       ALLOCATE(VARIABLE_TYPES(2*Ncompartments+2))
                       ALLOCATE(VARIABLE_U_TYPES(Ncompartments-1))
                       DO num_var=1,Ncompartments+1
@@ -1613,7 +1614,7 @@ CONTAINS
                       ENDDO
                       CALL EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,VARIABLE_TYPES(2*imy_matrix+1), &
                          & ERR,ERROR,*999)
-                      CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,VARIABLE_U_TYPES,ERR,ERROR,*999)
+                      CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,VARIABLE_U_TYPES,ERR,ERROR,*999)
                       CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,VARIABLE_TYPES(2*imy_matrix+2),ERR,ERROR,*999)
                       CALL EQUATIONS_MAPPING_SOURCE_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
                     CASE DEFAULT
@@ -1632,7 +1633,7 @@ CONTAINS
                       CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                         & (/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE/) &
                         & ,ERR,ERROR,*999)
-                      CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                      CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
                         & (/EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_DIAGONAL_STRUCTURE/),ERR,ERROR,*999)
                     ELSE
                       SELECT CASE(EQUATIONS%SPARSITY_TYPE)
@@ -1643,7 +1644,7 @@ CONTAINS
                           CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                             & (/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE, &
                             & DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/),ERR,ERROR,*999)
-                          CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                          CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
                             & (/EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)
                             IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)THEN
                               ALLOCATE(COUPLING_MATRIX_STORAGE_TYPE(Ncompartments-1))
@@ -1655,26 +1656,26 @@ CONTAINS
                               CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                                 & COUPLING_MATRIX_STORAGE_TYPE, &
                                 & ERR,ERROR,*999)
-                              CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                              CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES, &
                                 COUPLING_MATRIX_STRUCTURE_TYPE,ERR,ERROR,*999)
                             ENDIF
                         CASE DEFAULT
                           LOCAL_ERROR="The equations matrices sparsity type of "// &
                             & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ENDIF
                     CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*", &
                       & ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                   & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                   & " is invalid for a Darcy equation."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           !-----------------------------------------------------------------
           !   D e f a u l t
@@ -1683,7 +1684,7 @@ CONTAINS
             LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
               & " for a setup subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
               & " is invalid for a Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         !-----------------------------------------------------------------
@@ -1692,16 +1693,16 @@ CONTAINS
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a standard, quasistatic, ALE or dynamic Darcy equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 
         END SELECT
       CASE DEFAULT
         LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " does not equal a standard, quasistatic, ALE or dynamic Darcy equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DARCY_EQUATION_EQUATIONS_SET_SETUP")
@@ -2088,7 +2089,7 @@ CONTAINS
 
               IF( ABS(Jxy) < 1.0E-10_DP ) THEN
                 LOCAL_ERROR="DARCY_EQUATION_FINITE_ELEMENT_CALCULATE: Jacobian Jxy is smaller than 1.0E-10_DP."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END IF
 
               !ffact = f(Jxy) of the INRIA model, dfdJfact is not relevant here
@@ -3035,7 +3036,7 @@ CONTAINS
 
           IF(RHS_VECTOR%UPDATE_VECTOR) THEN
             ! Integrate pressure over faces, and add to RHS vector
-            CALL DarcyEquation_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
+            CALL Darcy_FiniteElementFaceIntegrate(EQUATIONS_SET,ELEMENT_NUMBER,FIELD_VARIABLE,ERR,ERROR,*999)
           ENDIF
 
           ! CHECK STIFFNESS MATRIX WITH CMHEART
@@ -3062,7 +3063,7 @@ CONTAINS
 
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            CALL Field_InterpolationParametersScaleFactorsElementGet(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             mhs=0
             DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -3114,14 +3115,14 @@ CONTAINS
         CASE DEFAULT
           LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
             & " is not valid for a Darcy equation type of a fluid mechanics equations set class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
   EXITS("DARCY_EQUATION_FINITE_ELEMENT_CALCULATE")
@@ -3136,7 +3137,7 @@ CONTAINS
 
   !>Calculates the face integration term of the finite element formulation for Darcy's equation,
   !>required for pressure boundary conditions.
-  SUBROUTINE DarcyEquation_FiniteElementFaceIntegrate(equationsSet,elementNumber,dependentVariable,err,error,*)
+  SUBROUTINE Darcy_FiniteElementFaceIntegrate(equationsSet,elementNumber,dependentVariable,err,error,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<The equations set to calculate the RHS term for
@@ -3166,7 +3167,7 @@ CONTAINS
     INTEGER(INTG) :: faceParameterIdx, elementDofIdx, normalComponentIdx
     REAL(DP) :: gaussWeight, normalProjection, pressureGauss
 
-    ENTERS("DarcyEquation_FiniteElementFaceIntegrate",err,error,*999)
+    ENTERS("Darcy_FiniteElementFaceIntegrate",err,error,*999)
 
     NULLIFY(decomposition)
     NULLIFY(decompElement)
@@ -3191,10 +3192,10 @@ CONTAINS
           rhsVector=>equationsMatrices%RHS_VECTOR
         END IF
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
+        CALL FlagError("Equations set equations is not associated.",err,error,*999)
       END IF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+      CALL FlagError("Equations set is not associated.",err,error,*999)
     END IF
 
     SELECT CASE(equationsSet%SUBTYPE)
@@ -3225,7 +3226,7 @@ CONTAINS
           IF(ALLOCATED(decompElement%ELEMENT_FACES)) THEN
             faceNumber=decompElement%ELEMENT_FACES(faceIdx)
           ELSE
-            CALL FLAG_ERROR("Decomposition element faces is not allocated.",err,error,*999)
+            CALL FlagError("Decomposition element faces is not allocated.",err,error,*999)
           END IF
           face=>decomposition%TOPOLOGY%FACES%FACES(faceNumber)
           !This speeds things up but is also important, as non-boundary faces have an XI_DIRECTION that might
@@ -3286,9 +3287,9 @@ CONTAINS
       ! Do nothing for other equation set subtypes
     END SELECT
 
-    EXITS("DarcyEquation_FiniteElementFaceIntegrate")
+    EXITS("Darcy_FiniteElementFaceIntegrate")
     RETURN
-999 ERRORSEXITS("DarcyEquation_FiniteElementFaceIntegrate",err,error)
+999 ERRORSEXITS("Darcy_FiniteElementFaceIntegrate",err,error)
     RETURN 1
   END SUBROUTINE
 
@@ -3358,10 +3359,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a Darcy equation type of a fluid mechanics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DARCY_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
@@ -3416,10 +3417,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a Darcy equation type of a fluid mechanics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DARCY_EQUATION_PROBLEM_SUBTYPE_SET")
@@ -3475,7 +3476,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3491,7 +3492,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -3516,7 +3517,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3546,12 +3547,12 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a standard Darcy equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       !-----------------------------------------------------------------
@@ -3569,7 +3570,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a quasistatic Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3586,7 +3587,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a quasistatic Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -3611,7 +3612,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a quasistatic Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3641,12 +3642,12 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a quasistatic Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a quasistatic Darcy equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       !-----------------------------------------------------------------
@@ -3664,7 +3665,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3681,7 +3682,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -3711,7 +3712,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for an ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3750,12 +3751,12 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for an ALE Darcy equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       !-----------------------------------------------------------------
@@ -3773,7 +3774,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3790,7 +3791,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -3825,7 +3826,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for an ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3864,12 +3865,12 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for an ALE Darcy equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       !-----------------------------------------------------------------
@@ -3887,7 +3888,7 @@ CONTAINS
                 LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                   & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                   & " is invalid for a transient Darcy fluid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(PROBLEM_SETUP_CONTROL_TYPE)
             SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3904,7 +3905,7 @@ CONTAINS
                 LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                   & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                   & " is invalid for a transient Darcy fluid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(PROBLEM_SETUP_SOLVERS_TYPE)
             !Get the control loop
@@ -3932,7 +3933,7 @@ CONTAINS
                 LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                  & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                  & " is invalid for a transient Darcy fluid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
             SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3963,12 +3964,12 @@ CONTAINS
                 LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                   & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                   & " is invalid for a transient Darcy fluid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a transient Darcy fluid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       !-----------------------------------------------------------------
@@ -3977,11 +3978,11 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
           & " does not equal a standard, quasistatic or ALE Darcy equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
 
 !     EXITS("DARCY_EQUATION_PROBLEM_STANDARD_SETUP")
@@ -4054,17 +4055,17 @@ CONTAINS
                   IF(ASSOCIATED(SOLVER_MATRIX)) THEN
                     SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
                   ELSE
-                    CALL FLAG_ERROR("Solver Matrix is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver Matrix is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ENDDO
               ELSE
-                CALL FLAG_ERROR("Solver Matrices is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver Matrices is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
           ENDIF
 
           !--- pre_solve calls for various actions
@@ -4074,7 +4075,7 @@ CONTAINS
             CASE(PROBLEM_QUASISTATIC_DARCY_SUBTYPE)
               ! do nothing
             CASE(PROBLEM_TRANSIENT_DARCY_SUBTYPE)
-              CALL DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              CALL Darcy_PreSolveUpdateBoundaryConditions(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)
 
               IF((CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_SIMPLE_TYPE.OR.CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) &
@@ -4093,12 +4094,12 @@ CONTAINS
                   IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                    IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_INCOMP_ELAST_DARCY_ANALYTIC_DARCY)THEN
                    !call only analytic update and DO NOT call the other standard pre-solve routines as the mesh does not require deformation
-                     CALL DARCY_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
+                     CALL Darcy_PreSolveUpdateAnalyticValues(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
                    ENDIF
                   ELSE
                    !default
                      !--- 1.1 Transfer solid displacement to Darcy geometric field
-                     CALL DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
+                     CALL Darcy_PreSolveGetSolidDisplacement(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
 
                      !--- 1.2 Update the mesh (and calculate boundary velocities) PRIOR to solving for new material properties
                      CALL DARCY_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
@@ -4107,7 +4108,7 @@ CONTAINS
   ! ! !              !unless:
   ! ! !              !--- 1.3 Apply both normal and moving mesh boundary conditions, OR:
   ! ! !              !--- 1.3 (Iteratively) Render the boundary impermeable (ellipsoid, general curvilinear mesh)
-  ! ! !              CALL DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
+  ! ! !              CALL Darcy_PreSolveUpdateBoundaryConditions(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
                   ENDIF
                  ENDIF
                 ENDIF
@@ -4132,19 +4133,19 @@ CONTAINS
                   IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
                    IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_INCOMP_ELAST_DARCY_ANALYTIC_DARCY)THEN
                    !call only analytic update and DO NOT call the other standard pre-solve routines as the mesh does not require deformation
-                     CALL DARCY_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
+                     CALL Darcy_PreSolveUpdateAnalyticValues(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
                    ENDIF
                   ELSE
                    !default
                      !--- 1.1 Transfer solid displacement to Darcy geometric field
-                     CALL DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
+                     CALL Darcy_PreSolveGetSolidDisplacement(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
 
                      !--- 1.2 Update the mesh (and calculate boundary velocities) PRIOR to solving for new material properties
                      CALL DARCY_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
 
   ! ! !                 !i n   p r i n c i p l e   c u r r e n t l y   d o   n o t   n e e d   t o   u p d a t e   B C s
   ! ! !                 !--- 1.3 Apply both normal and moving mesh boundary conditions
-  ! ! !                 CALL DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
+  ! ! !                 CALL Darcy_PreSolveUpdateBoundaryConditions(CONTROL_LOOP,SOLVER_ALE_DARCY,ERR,ERROR,*999)
                   ENDIF
                  ENDIF
                 ENDIF
@@ -4152,21 +4153,21 @@ CONTAINS
                     & CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE).AND.SOLVER%GLOBAL_NUMBER==SOLVER_NUMBER_DARCY) THEN
 ! ! !                 !n o t   f o r   n o w   ! ! !
 ! ! !                 !--- 2.1 Update the material field
-! ! !                 CALL DARCY_EQUATION_PRE_SOLVE_UPDATE_MAT_PROPERTIES(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+! ! !                 CALL Darcy_PreSolveUpdateMatrixProperties(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               END IF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Darcy fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DARCY_EQUATION_PRE_SOLVE")
@@ -4230,14 +4231,14 @@ CONTAINS
       IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
         CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,'== Storing reference data',ERR,ERROR,*999)
       ENDIF
-      CALL DARCY_EQUATION_PRE_SOLVE_STORE_REFERENCE_DATA(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
+      CALL Darcy_PreSolveStoreReferenceData(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
     ENDIF
 
     !Store data of previous time step (mesh position); executed once per time step before subiteration
     IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
       CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,'== Storing previous data',ERR,ERROR,*999)
     ENDIF
-    CALL DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_DATA(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
+    CALL Darcy_PreSolveStorePreviousData(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
 
     EXITS("DARCY_CONTROL_TIME_LOOP_PRE_LOOP")
     RETURN
@@ -4250,7 +4251,7 @@ CONTAINS
   !
 
   !>Store some reference data for ALE Darcy problem
-  SUBROUTINE DARCY_EQUATION_PRE_SOLVE_STORE_REFERENCE_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE Darcy_PreSolveStoreReferenceData(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -4273,7 +4274,7 @@ CONTAINS
     INTEGER(INTG) :: NDOFS_TO_PRINT,equations_set_idx
 
 
-    ENTERS("DARCY_EQUATION_PRE_SOLVE_STORE_REFERENCE_DATA",ERR,ERROR,*999)
+    ENTERS("Darcy_PreSolveStoreReferenceData",ERR,ERROR,*999)
 
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVER_MAPPING)
@@ -4351,61 +4352,62 @@ CONTAINS
                                     & FIELD_INITIAL_VALUES_SET_TYPE,INITIAL_VALUES,ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Dependent field and / or geometric field is / are not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Dependent field and / or geometric field is / are not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE DEFAULT
                           LOCAL_ERROR="Equations set subtype " &
                             & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                             & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
                    ENDDO
                   ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE DEFAULT
                 LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                   & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
           ! do nothing
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
 
-    EXITS("DARCY_EQUATION_PRE_SOLVE_STORE_REFERENCE_DATA")
+    EXITS("Darcy_PreSolveStoreReferenceData")
     RETURN
-999 ERRORSEXITS("DARCY_EQUATION_PRE_SOLVE_STORE_REFERENCE_DATA",ERR,ERROR)
+999 ERRORSEXITS("Darcy_PreSolveStoreReferenceData",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE DARCY_EQUATION_PRE_SOLVE_STORE_REFERENCE_DATA
+    
+  END SUBROUTINE Darcy_PreSolveStoreReferenceData
 
   !
   !================================================================================================================================
   !
 
   !>Store data of previous time step (mesh position) for ALE Darcy problem
-  SUBROUTINE DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE Darcy_PreSolveStorePreviousData(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -4422,7 +4424,7 @@ CONTAINS
     REAL(DP) :: ALPHA
 
 
-    ENTERS("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_DATA",ERR,ERROR,*999)
+    ENTERS("Darcy_PreSolveStorePreviousData",ERR,ERROR,*999)
 
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVER_MAPPING)
@@ -4466,47 +4468,47 @@ CONTAINS
                             CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                               & FIELD_VALUES_SET_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
                           ELSE
-                            CALL FLAG_ERROR("Dependent field and / or geometric field is / are not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Dependent field and / or geometric field is / are not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE DEFAULT
                           LOCAL_ERROR="Equations set subtype " &
                             & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                             & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE DEFAULT
                 LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                   & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
           ! do nothing
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-
-    EXITS("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_DATA")
+    EXITS("Darcy_PreSolveStorePreviousData")
     RETURN
-999 ERRORSEXITS("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_DATA",ERR,ERROR)
+999 ERRORSEXITS("Darcy_PreSolveStorePreviousData",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_DATA
+    
+  END SUBROUTINE Darcy_PreSolveStorePreviousData
 
   !
   !================================================================================================================================
@@ -4551,7 +4553,7 @@ CONTAINS
         IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
           CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
         ELSE
-          CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
+          CALL FlagError("Could not find a time control loop.",ERR,ERROR,*999)
         ENDIF
       ENDDO
 
@@ -4628,22 +4630,22 @@ CONTAINS
                             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                               & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
                           ELSE
-                            CALL FLAG_ERROR("Geometric field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Geometric field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE DEFAULT
                           LOCAL_ERROR="Equations set subtype " &
                             & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                             & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
                 ! do nothing
@@ -4651,16 +4653,16 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DARCY_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH")
@@ -4674,7 +4676,7 @@ CONTAINS
   !
 
   !>Update boundary conditions for Darcy equation pre solve
-  SUBROUTINE DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE Darcy_PreSolveUpdateBoundaryConditions(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -4705,7 +4707,7 @@ CONTAINS
     INTEGER(INTG) :: dof_number,NUMBER_OF_DOFS,loop_idx
     INTEGER(INTG) :: NDOFS_TO_PRINT
 
-    ENTERS("DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
+    ENTERS("Darcy_PreSolveUpdateBoundaryConditions",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       CONTROL_TIME_LOOP=>CONTROL_LOOP
@@ -4717,7 +4719,7 @@ CONTAINS
         IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
           CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
         ELSE
-          CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
+          CALL FlagError("Could not find a time control loop.",ERR,ERROR,*999)
         ENDIF
       ENDDO
 
@@ -4860,7 +4862,7 @@ CONTAINS
                                       CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                         & FIELD_INITIAL_VALUES_SET_TYPE,INITIAL_VALUES,ERR,ERROR,*999)
                                     ELSE
-                                      CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Boundary condition variable is not associated.",ERR,ERROR,*999)
                                     END IF
 
                                     CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_VAR_TYPE, &
@@ -4869,65 +4871,67 @@ CONTAINS
                                       & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
 
                                   ELSE
-                                    CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Boundary conditions are not associated.",ERR,ERROR,*999)
                               END IF
                             ELSE
-                              CALL FLAG_ERROR("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
                             END IF
                           CASE DEFAULT
                             LOCAL_ERROR="Equations set subtype " &
                               & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                               & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ELSE
-                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF
               CASE DEFAULT
                 LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                   & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
           ! do nothing
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    EXITS("DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
+    EXITS("Darcy_PreSolveUpdateBoundaryConditions")
     RETURN
-999 ERRORSEXITS("DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR)
+999 ERRORS("Darcy_PreSolveUpdateBoundaryConditions",ERR,ERROR)
+    EXITS("Darcy_PreSolveUpdateBoundaryConditions")
     RETURN 1
-  END SUBROUTINE DARCY_EQUATION_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS
+    
+  END SUBROUTINE Darcy_PreSolveUpdateBoundaryConditions
 
   !
   !================================================================================================================================
   !
 
   !>Update materials field for ALE Darcy problem
-  SUBROUTINE DARCY_EQUATION_PRE_SOLVE_UPDATE_MAT_PROPERTIES(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE Darcy_PreSolveUpdateMatrixProperties(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -4949,7 +4953,7 @@ CONTAINS
     INTEGER(INTG) :: NDOFS_TO_PRINT, I
 
 
-    ENTERS("DARCY_EQUATION_PRE_SOLVE_UPDATE_MAT_PROPERTIES",ERR,ERROR,*999)
+    ENTERS("Darcy_PreSolveUpdateMatrixProperties",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
 
@@ -4986,16 +4990,16 @@ CONTAINS
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(DEPENDENT_FIELD_MAT_PROPERTIES, &
                           & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_MAT_PROPERTIES,ERR,ERROR,*999)
                       ELSE
-                        CALL FLAG_ERROR("DEPENDENT_FIELD_MAT_PROPERTIES is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("DEPENDENT_FIELD_MAT_PROPERTIES is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Galerkin Projection equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Galerkin Projection equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Galerkin Projection solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Galerkin Projection solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Galerkin Projection solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Galerkin Projection solver equations are not associated.",ERR,ERROR,*999)
                 END IF
 
                 !--- Get the materials field for the ALE Darcy equations
@@ -5011,30 +5015,30 @@ CONTAINS
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(MATERIALS_FIELD_ALE_DARCY, &
                           & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_MATERIALS_FIELD_ALE_DARCY,ERR,ERROR,*999)
                       ELSE
-                        CALL FLAG_ERROR("MATERIALS_FIELD_ALE_DARCY is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("MATERIALS_FIELD_ALE_DARCY is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("ALE Darcy equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("ALE Darcy equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("ALE Darcy solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("ALE Darcy solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("ALE Darcy solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("ALE Darcy solver equations are not associated.",ERR,ERROR,*999)
                 END IF
 
                 !--- Copy the result from Galerkin-Projection's dependent field to ALE Darcy's material field
                 IF(NUMBER_OF_COMPONENTS_MATERIALS_FIELD_ALE_DARCY==NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_MAT_PROPERTIES) THEN
                   DO I=1,NUMBER_OF_COMPONENTS_MATERIALS_FIELD_ALE_DARCY
-                    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD_MAT_PROPERTIES, &
+                    CALL Field_ParametersToFieldParametersCopy(DEPENDENT_FIELD_MAT_PROPERTIES, &
                       & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,MATERIALS_FIELD_ALE_DARCY, &
                       & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,ERR,ERROR,*999)
                   END DO
                 ELSE
-!                   CALL FLAG_ERROR("Dimension of Galerkin Projection and ALE Darcy equations set is not consistent",ERR,ERROR,*999)
+!                   CALL FlagError("Dimension of Galerkin Projection and ALE Darcy equations set is not consistent",ERR,ERROR,*999)
                   LOCAL_ERROR="Number of components of Galerkin-Projection dependent field "// &
                     & "is not consistent with ALE-Darcy-equation material field."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END IF
 
                 IF(DIAGNOSTICS3) THEN
@@ -5054,24 +5058,26 @@ CONTAINS
               END IF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for DARCY_EQUATION_PRE_SOLVE_UPDATE_MAT_PROPERTIES."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & " is not valid for Darcy_PreSolveUpdateMatrixProperties."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    EXITS("DARCY_EQUATION_PRE_SOLVE_UPDATE_MAT_PROPERTIES")
+    EXITS("Darcy_PreSolveUpdateMatrixProperties")
     RETURN
-999 ERRORSEXITS("DARCY_EQUATION_PRE_SOLVE_UPDATE_MAT_PROPERTIES",ERR,ERROR)
+999 ERRORS("Darcy_PreSolveUpdateMatrixProperties",ERR,ERROR)
+    EXITS("Darcy_PreSolveUpdateMatrixProperties")
     RETURN 1
-  END SUBROUTINE DARCY_EQUATION_PRE_SOLVE_UPDATE_MAT_PROPERTIES
+    
+  END SUBROUTINE Darcy_PreSolveUpdateMatrixProperties
 
   !
   !================================================================================================================================
@@ -5117,16 +5123,16 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Darcy fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DARCY_EQUATION_POST_SOLVE")
@@ -5357,16 +5363,16 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Darcy fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DARCY_EQUATION_POST_SOLVE_OUTPUT_DATA")
@@ -5380,7 +5386,7 @@ CONTAINS
   !
 
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
-  SUBROUTINE DARCY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+  SUBROUTINE Darcy_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -5405,7 +5411,7 @@ CONTAINS
     !Temp variables
     INTEGER(INTG) :: number_of_element_nodes,temp_local_ny,temp_node_number,velocity_DOF_check,temp_local_node_number
 
-    ENTERS("DARCY_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
+    ENTERS("Darcy_BoundaryConditionsAnalyticCalculate",ERR,ERROR,*999)
 
     BOUND_COUNT=0
 
@@ -5487,16 +5493,16 @@ CONTAINS
                               ENDDO !deriv_idx
                             ENDDO !node_idx
                           ELSE
-                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                      CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !component_idx
                   CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
@@ -5504,19 +5510,19 @@ CONTAINS
                   CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
                     & ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !variable_idx
               CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
@@ -5712,44 +5718,44 @@ CONTAINS
                                               !calculate p
                                               VALUE = X(1)**2.0_DP + 2.0_DP*X(1)*X(2) - X(2)**2.0_DP
                                             ELSE
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                             ENDIF
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                         SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                           CASE(NO_GLOBAL_DERIV)
                                               VALUE= 0.0_DP
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE DEFAULT
                                         LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
                                           & " is invalid."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   ELSE
                                     LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   ENDIF
 
 
@@ -5773,19 +5779,19 @@ CONTAINS
                                               !calculate p
                                               VALUE =          EXP( ARG(1) ) * EXP( ARG(2) )
                                             ELSE
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                             ENDIF
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                         SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
@@ -5800,31 +5806,31 @@ CONTAINS
                                               !calculate p
                                               VALUE= 0.0_DP
                                             ELSE
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                             ENDIF
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
 
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
 
 
                                       CASE DEFAULT
                                         LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
                                           & " is invalid."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   ELSE
                                     LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   ENDIF
 
 
@@ -5848,19 +5854,19 @@ CONTAINS
                                               !calculate p
                                               VALUE =          SIN( ARG(1) ) * SIN( ARG(2) )
                                             ELSE
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                             ENDIF
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                         SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
@@ -5875,28 +5881,28 @@ CONTAINS
                                               !calculate p
                                               VALUE=0.0_DP
                                             ELSE
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                             ENDIF
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE DEFAULT
                                         LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
                                           & " is invalid."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   ELSE
                                     LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   ENDIF
 
                                 CASE(EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_1)
@@ -5921,44 +5927,44 @@ CONTAINS
                                               VALUE = X(1)**2.0_DP + 2.0_DP*X(1)*X(2) - X(2)**2.0_DP + &
                                                        & 3.0_DP*X(3) + X(3)*X(1) + X(3)*X(2)
                                             ELSE
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                             ENDIF
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                         SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                           CASE(NO_GLOBAL_DERIV)
                                             VALUE=0.0_DP
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE DEFAULT
                                         LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
                                           & " is invalid."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   ELSE
                                     LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   ENDIF
 
 
@@ -5986,19 +5992,19 @@ CONTAINS
                                               !calculate p
                                               VALUE =          EXP( ARG(1) ) * EXP( ARG(2) ) * EXP( ARG(3) )
                                             ELSE
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                             ENDIF
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                         SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
@@ -6016,29 +6022,29 @@ CONTAINS
                                               !calculate p
                                               VALUE=0.0_DP
                                             ELSE
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                             ENDIF
 
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE DEFAULT
                                         LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
                                           & " is invalid."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   ELSE
                                     LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   ENDIF
 
                                 CASE(EQUATIONS_SET_DARCY_EQUATION_THREE_DIM_3)
@@ -6065,19 +6071,19 @@ CONTAINS
                                               !calculate p
                                               VALUE =          SIN( ARG(1) ) * SIN( ARG(2) )  * SIN( ARG(3) )
                                             ELSE
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                             ENDIF
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                         SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
@@ -6095,34 +6101,34 @@ CONTAINS
                                               !calculate p
                                               VALUE=0.0_DP
                                             ELSE
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                             ENDIF
                                           CASE(GLOBAL_DERIV_S1)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE(GLOBAL_DERIV_S1_S2)
-                                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                               & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                               & ERR,ERROR))//" is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE DEFAULT
                                         LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))//&
                                           & " is invalid."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   ELSE
                                     LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   ENDIF
                                 CASE DEFAULT
                                   LOCAL_ERROR="The analytic function type of "// &
                                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                                     & " is invalid."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                 END SELECT
                                 !Default to version 1 of each node derivative
                                 local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
@@ -6243,16 +6249,16 @@ CONTAINS
                               ENDDO !deriv_idx
                             ENDDO !node_idx
                           ELSE
-                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                      CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !component_idx
                   CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
@@ -6264,40 +6270,40 @@ CONTAINS
                   CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
                     & ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !variable_idx
               CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
         ENDIF
        END SELECT
       ELSE
-        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    EXITS("DARCY_EQUATION_ANALYTIC_CALCULATE")
+    EXITS("Darcy_BoundaryConditionsAnalyticCalculate")
     RETURN
-999 ERRORSEXITS("DARCY_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR)
+999 ERRORSEXITS("Darcy_BoundaryConditionsAnalyticCalculate",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE DARCY_EQUATION_ANALYTIC_CALCULATE
+  END SUBROUTINE Darcy_BoundaryConditionsAnalyticCalculate
 
   !
   !================================================================================================================================
   !
 
   !>Update geometric field for ALE Darcy problem
-  SUBROUTINE DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE Darcy_PreSolveGetSolidDisplacement(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -6324,7 +6330,7 @@ CONTAINS
     INTEGER(INTG) :: INPUT_TYPE,INPUT_OPTION
 
 
-    ENTERS("DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT",ERR,ERROR,*999)
+    ENTERS("Darcy_PreSolveGetSolidDisplacement",ERR,ERROR,*999)
 
 !--- \todo : Do we need for each case a FIELD_PARAMETER_SET_UPDATE_START / FINISH on FIELD_MESH_DISPLACEMENT_SET_TYPE ?
 
@@ -6345,7 +6351,7 @@ CONTAINS
         IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
           CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
         ELSE
-          CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
+          CALL FlagError("Could not find a time control loop.",ERR,ERROR,*999)
         ENDIF
       ENDDO
 
@@ -6395,22 +6401,22 @@ CONTAINS
                             CALL FIELD_PARAMETER_SETS_COPY(GEOMETRIC_FIELD_DARCY,FIELD_U_VARIABLE_TYPE, &
                               & FIELD_INITIAL_VALUES_SET_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,ALPHA,ERR,ERROR,*999)
                           ELSE
-                            CALL FLAG_ERROR("Geometric field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Geometric field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE DEFAULT
                           LOCAL_ERROR="Equations set subtype " &
                             & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                             & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
                 ! do nothing
@@ -6427,7 +6433,7 @@ CONTAINS
                     IF(ASSOCIATED(EQUATIONS_SET_DARCY)) THEN
                       GEOMETRIC_FIELD_DARCY=>EQUATIONS_SET_DARCY%GEOMETRY%GEOMETRIC_FIELD
                     ELSE
-                      CALL FLAG_ERROR("Darcy equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Darcy equations set is not associated.",ERR,ERROR,*999)
                     END IF
                     IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
                       CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Darcy motion read from a file ... ",ERR,ERROR,*999)
@@ -6448,10 +6454,10 @@ CONTAINS
                     CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET_DARCY%GEOMETRY%GEOMETRIC_FIELD, &
                       & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Darcy solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Darcy solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Darcy solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Darcy solver equations are not associated.",ERR,ERROR,*999)
                 END IF
 
                IF(DIAGNOSTICS1) THEN
@@ -6487,20 +6493,20 @@ CONTAINS
                     IF(ASSOCIATED(EQUATIONS_SET_FINITE_ELASTICITY)) THEN
                       DEPENDENT_FIELD_FINITE_ELASTICITY=>EQUATIONS_SET_FINITE_ELASTICITY%DEPENDENT%DEPENDENT_FIELD
                       IF(ASSOCIATED(DEPENDENT_FIELD_FINITE_ELASTICITY)) THEN
-                          !No longer needed, since no more 'FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY'
+                          !No longer needed, since no more 'Field_ParametersToFieldParametersCopy'
 !                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(DEPENDENT_FIELD_FINITE_ELASTICITY, &
 !                           & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_FINITE_ELASTICITY,ERR,ERROR,*999)
                       ELSE
-                        CALL FLAG_ERROR("DEPENDENT_FIELD_FINITE_ELASTICITY is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("DEPENDENT_FIELD_FINITE_ELASTICITY is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Finite elasticity equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Finite elasticity equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Finite elasticity solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Finite elasticity solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Finite elasticity solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Finite elasticity solver equations are not associated.",ERR,ERROR,*999)
                 END IF
 
                 !--- Get the geometric field for the ALE Darcy equations
@@ -6513,20 +6519,20 @@ CONTAINS
                     IF(ASSOCIATED(EQUATIONS_SET_DARCY)) THEN
                       GEOMETRIC_FIELD_DARCY=>EQUATIONS_SET_DARCY%GEOMETRY%GEOMETRIC_FIELD
                       IF(ASSOCIATED(GEOMETRIC_FIELD_DARCY)) THEN
-                          !No longer needed, since no more 'FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY'
+                          !No longer needed, since no more 'Field_ParametersToFieldParametersCopy'
 !                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD_DARCY, &
 !                           & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_GEOMETRIC_FIELD_DARCY,ERR,ERROR,*999)
                       ELSE
-                        CALL FLAG_ERROR("GEOMETRIC_FIELD_DARCY is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("GEOMETRIC_FIELD_DARCY is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Darcy equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Darcy equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Darcy solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Darcy solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Darcy solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Darcy solver equations are not associated.",ERR,ERROR,*999)
                 END IF
 
                 !--- Copy the result from Finite-elasticity's dependent field to ALE Darcy's geometric field
@@ -6613,29 +6619,30 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    EXITS("DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT")
+    EXITS("Darcy_PreSolveGetSolidDisplacement")
     RETURN
-999 ERRORSEXITS("DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT",ERR,ERROR)
+999 ERRORSEXITS("Darcy_PreSolveGetSolidDisplacement",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE DARCY_EQUATION_PRE_SOLVE_GET_SOLID_DISPLACEMENT
+    
+  END SUBROUTINE Darcy_PreSolveGetSolidDisplacement
 
   !
   !================================================================================================================================
 
   !>Store solution of previous subiteration iterate
-  SUBROUTINE DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE Darcy_PreSolveStorePreviousIterate(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -6655,7 +6662,7 @@ CONTAINS
     INTEGER(INTG) :: FIELD_VAR_TYPE,equations_set_idx
 
 
-    ENTERS("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE",ERR,ERROR,*999)
+    ENTERS("Darcy_PreSolveStorePreviousIterate",ERR,ERROR,*999)
 
     NULLIFY(DEPENDENT_FIELD)
     NULLIFY(SOLVER_EQUATIONS)
@@ -6717,53 +6724,54 @@ CONTAINS
                                 CALL FIELD_PARAMETER_SETS_COPY(DEPENDENT_FIELD,FIELD_VAR_TYPE, &
                                   & FIELD_VALUES_SET_TYPE,FIELD_PREVIOUS_ITERATION_VALUES_SET_TYPE,ALPHA,ERR,ERROR,*999)
                               ELSE
-                                CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Dependent field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE DEFAULT
                           LOCAL_ERROR="Equations set subtype " &
                             & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                             & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
                    ENDDO
                   ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE DEFAULT
                 LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                   & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
           ! do nothing
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    EXITS("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE")
+    EXITS("Darcy_PreSolveStorePreviousIterate")
     RETURN
-999 ERRORSEXITS("DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE",ERR,ERROR)
+999 ERRORSEXITS("Darcy_PreSolveStorePreviousIterate",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE
+    
+  END SUBROUTINE Darcy_PreSolveStorePreviousIterate
 
   !
   !================================================================================================================================
@@ -6771,7 +6779,7 @@ CONTAINS
   !updates the boundary conditions etc to the required analytic values
   !for the case EquationsSetIncompElastDarcyAnalyticDarcy the pressure field obtained from the finite elasticity solve is overwritten
   !by the appropriate mass increase for that time step
-  SUBROUTINE DARCY_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE Darcy_PreSolveUpdateAnalyticValues(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -6808,7 +6816,7 @@ CONTAINS
 !    INTEGER(INTG) :: EQUATIONS_SET_IDX
 !    INTEGER(INTG) :: equations_row_number
 
-    ENTERS("DARCY_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES",ERR,ERROR,*999)
+    ENTERS("Darcy_PreSolveUpdateAnalyticValues",ERR,ERROR,*999)
 
 
     A1 = 0.4_DP
@@ -6824,7 +6832,7 @@ CONTAINS
         IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
           CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
         ELSE
-          CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
+          CALL FlagError("Could not find a time control loop.",ERR,ERROR,*999)
         ENDIF
       ENDDO
 
@@ -6869,7 +6877,7 @@ CONTAINS
 !                                DO component_idx=4,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
 
 
-                               CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
+                               CALL Field_ParametersToFieldParametersCopy(DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
                                  & FIELD_VALUES_SET_TYPE,4,DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                                  & FIELD_VALUES_SET_TYPE,4,ERR,ERROR,*999)
 
@@ -6924,16 +6932,16 @@ CONTAINS
 ! !                                             ENDDO !deriv_idx
 !                                           ENDDO !node_idx
 !                                         ELSE
-!                                           CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+!                                           CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
 !                                         ENDIF
 !                                       ELSE
-!                                         CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+!                                         CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
 !                                       ENDIF
 !                                     ELSE
-!                                       CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+!                                       CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
 !                                     ENDIF
 !                                   ELSE
-!                                     CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+!                                     CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
 !                                   ENDIF
 !                                 ENDDO !component_idx
                                 CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
@@ -6945,30 +6953,30 @@ CONTAINS
                                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
                                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                               ELSE
-                                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
                               ENDIF
 
 !                              ENDDO !variable_idx
                              CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
                               & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                           ELSE
-                            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                         ENDIF
                        ENDIF
                       ELSE
-                        !CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                        !CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                   END IF
 !                 ELSE
-!                   CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+!                   CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
 !                 END IF
                 CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -7015,7 +7023,7 @@ CONTAINS
 !                                         LOCAL_ERROR="The analytic function type of "// &
 !                                           & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))//&
 !                                           & " is invalid."
-!                                         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!                                         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 !                                       END SELECT
 !                                       local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
 !                                         & NODE_PARAM2DOF_MAP(deriv_idx,node_idx)
@@ -7024,16 +7032,16 @@ CONTAINS
 !                                     ENDDO !deriv_idx
 !                                   ENDDO !node_idx
 !                                 ELSE
-!                                   CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+!                                   CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
 !                                 ENDIF
 !                               ELSE
-!                                 CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+!                                 CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
 !                               ENDIF
 !                             ELSE
-!                               CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+!                               CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
 !                             ENDIF
 !                           ELSE
-!                             CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+!                             CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
 !                           ENDIF
 !                         ENDDO !component_idx
 !                         CALL FIELD_PARAMETER_SET_UPDATE_START(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -7041,46 +7049,48 @@ CONTAINS
 !                         CALL FIELD_PARAMETER_SET_UPDATE_FINISH(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
 !                           & ERR,ERROR,*999)
 !                       ELSE
-!                         CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+!                         CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
 !                       ENDIF
 !                     CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
 !                       & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
 !                   ELSE
-!                     CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+!                     CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
 !                   ENDIF
 !                 ELSE
-!                   CALL FLAG_ERROR("Equations set source field is not associated.",ERR,ERROR,*999)
+!                   CALL FlagError("Equations set source field is not associated.",ERR,ERROR,*999)
 !                 ENDIF
 !               ELSE
-!                 CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+!                 CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
 !               ENDIF
 !             ELSE
-!               CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+!               CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
 !             ENDIF
 !             ENDIF
             ENDDO !eqnset_idx
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF
           CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Darcy equation type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
-    EXITS("DARCY_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES")
+    
+    EXITS("Darcy_PreSolveUpdateAnalyticValues")
     RETURN
-999 ERRORSEXITS("DARCY_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES",ERR,ERROR)
+999 ERRORSEXITS("Darcy_PreSolveUpdateAnalyticValues",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE DARCY_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES
+    
+  END SUBROUTINE Darcy_PreSolveUpdateAnalyticValues
 
   !
   !================================================================================================================================
@@ -7222,7 +7232,7 @@ CONTAINS
                                       ENDIF
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("DARCY_EQUATION_MONITOR_CONVERGENCE must be called "// &
+                                    CALL FlagError("DARCY_EQUATION_MONITOR_CONVERGENCE must be called "// &
                                         & "with a while control loop",ERR,ERROR,*999)
                                   ENDIF
 
@@ -7253,49 +7263,49 @@ CONTAINS
                                     & FIELD_VALUES_SET_TYPE,ITERATION_VALUES_N1,ERR,ERROR,*999)
 
                                 ELSE
-                                  CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Dependent field is not associated.",ERR,ERROR,*999)
                             END IF
                           CASE DEFAULT
                             LOCAL_ERROR="Equations set subtype " &
                               & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                               & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ELSE
-                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                       END IF
                      ENDDO
 !                     ELSE
-!                       CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+!                       CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
 !                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF
               CASE DEFAULT
                 LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                   & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
           ! do nothing
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     CLOSE(23)
@@ -7433,49 +7443,49 @@ CONTAINS
                                     & FIELD_VALUES_SET_TYPE,ITERATION_VALUES_N1,ERR,ERROR,*999)
 
                                 ELSE
-                                  CALL FLAG_ERROR("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("FIELD_VAR_TYPE is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("EQUATIONS_MAPPING is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Dependent field is not associated.",ERR,ERROR,*999)
                             END IF
                           CASE DEFAULT
                             LOCAL_ERROR="Equations set subtype " &
                               & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                               & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ELSE
-                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                       END IF
                     ENDDO
 !                     ELSE
-!                       CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+!                       CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
 !                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF
               CASE DEFAULT
                 LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                   & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
           ! do nothing
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DARCY_EQUATION_ACCELERATE_CONVERGENCE")
@@ -7539,7 +7549,7 @@ CONTAINS
         IF (ASSOCIATED(CONTROL_LOOP%PARENT_LOOP)) THEN
           CONTROL_TIME_LOOP=>CONTROL_TIME_LOOP%PARENT_LOOP
         ELSE
-          CALL FLAG_ERROR("Could not find a time control loop.",ERR,ERROR,*999)
+          CALL FlagError("Could not find a time control loop.",ERR,ERROR,*999)
         ENDIF
       ENDDO
 
@@ -7582,16 +7592,16 @@ CONTAINS
                       IF(ASSOCIATED(DEPENDENT_FIELD_DARCY)) THEN
                         ! do nothing
                       ELSE
-                        CALL FLAG_ERROR("GEOMETRIC_FIELD_DARCY is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("GEOMETRIC_FIELD_DARCY is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Darcy equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Darcy equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Darcy solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Darcy solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Darcy solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Darcy solver equations are not associated.",ERR,ERROR,*999)
                 END IF
 
                 ! Set the mass increase for Darcy dependent field (u, v, w; m)
@@ -7624,16 +7634,16 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Darcy equation fluid type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DARCY_EQUATION_POST_SOLVE_SET_MASS_INCREASE")
