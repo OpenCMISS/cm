@@ -169,10 +169,10 @@ CONTAINS
           IF(ASSOCIATED(INTERFACE_MATRICES%MATRICES(MATRIX_NUMBER)%PTR)) THEN
             LOCAL_ERROR="Interface matrix for matrix number "//TRIM(NUMBER_TO_VSTRING(MATRIX_NUMBER,"*",ERR,ERROR))// &
               & " is already associated."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*998)
           ELSE
             ALLOCATE(INTERFACE_MATRICES%MATRICES(MATRIX_NUMBER)%PTR,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface matrix.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate interface matrix.",ERR,ERROR,*999)
             INTERFACE_MATRIX=>INTERFACE_MATRICES%MATRICES(MATRIX_NUMBER)%PTR
             INTERFACE_MATRIX%MATRIX_NUMBER=MATRIX_NUMBER
             INTERFACE_MATRIX%INTERFACE_MATRICES=>INTERFACE_MATRICES
@@ -189,19 +189,19 @@ CONTAINS
             NULLIFY(INTERFACE_MATRIX%MATRIX_TRANSPOSE)
             NULLIFY(INTERFACE_MATRIX%TEMP_VECTOR)
             NULLIFY(INTERFACE_MATRIX%TEMP_TRANSPOSE_VECTOR)
-            CALL EQUATIONS_MATRICES_ELEMENT_MATRIX_INITIALISE(INTERFACE_MATRIX%ELEMENT_MATRIX,ERR,ERROR,*999)
+            CALL EquationsMatrices_ElementMatrixInitialise(INTERFACE_MATRIX%ELEMENT_MATRIX,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*998)
+          CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*998)
         ENDIF
       ELSE
         LOCAL_ERROR="The specified interface matrix number of "//TRIM(NUMBER_TO_VSTRING(MATRIX_NUMBER,"*",ERR,ERROR))// &
           & " is invalid. The matrix number must be > 0 and <= "// &
           & TRIM(NUMBER_TO_VSTRING(INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("INTERFACE_MATRIX_INITIALISE")
@@ -259,7 +259,7 @@ CONTAINS
         ELSE
           LOCAL_ERROR="Interface matrix for interface matrix number "//TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))// &
             & " is not associated."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDDO !matrix_idx
       RHS_VECTOR=>INTERFACE_MATRICES%RHS_VECTOR
@@ -272,7 +272,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not allocated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not allocated.",ERR,ERROR,*999)
     ENDIF
 #ifdef TAUPROF
     CALL TAU_STATIC_PHASE_STOP("INTERFACE_MATRICES_ELEMENT_ADD()")
@@ -350,14 +350,14 @@ CONTAINS
                       ELSE
                         localError="Interface matrix number "//TRIM(NUMBER_TO_VSTRING(matrixIdx,"*",err,error))// &
                           & " is not associated."
-                        CALL FLAG_ERROR(localError,err,error,*999)
+                        CALL FlagError(localError,err,error,*999)
                       ENDIF
                     ENDDO !matrixIdx
                   ELSE
-                    CALL FLAG_ERROR("Interface element connectivity is not associated.",err,error,*999)
+                    CALL FlagError("Interface element connectivity is not associated.",err,error,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Interface mesh connectivity is not associated.",err,error,*999)              
+                  CALL FlagError("Interface mesh connectivity is not associated.",err,error,*999)              
                 ENDIF
               CASE(INTERFACE_CONDITION_DATA_POINTS_INTEGRATION)
                 pointsConnectivity=>interface%pointsConnectivity
@@ -385,19 +385,19 @@ CONTAINS
                       ELSE
                         localError="Interface matrix number "//TRIM(NUMBER_TO_VSTRING(matrixIdx,"*",err,error))// &
                           & " is not associated."
-                        CALL FLAG_ERROR(localError,err,error,*999)
+                        CALL FlagError(localError,err,error,*999)
                       ENDIF
                     ENDDO !matrixIdx
                   ELSE
-                    CALL FLAG_ERROR("Interface points connectivity coupled elements is not allocated.",err,error,*999)             
+                    CALL FlagError("Interface points connectivity coupled elements is not allocated.",err,error,*999)             
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)              
+                  CALL FlagError("Interface points connectivity is not associated.",err,error,*999)              
                 ENDIF
               CASE DEFAULT
                 localError="The interface condition integration type of "// &
                   & TRIM(NUMBER_TO_VSTRING(interfaceCondition%integrationType,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+                CALL FlagError(localError,ERR,ERROR,*999)
               END SELECT
               !RHS element matrix dofs are the same for both mesh and points connectivity, right now
               rhsVector=>interfaceMatrices%RHS_VECTOR
@@ -409,23 +409,23 @@ CONTAINS
                   CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_CALCULATE(rhsVector%ELEMENT_VECTOR,rhsVector%UPDATE_VECTOR, &
                     & interfaceElementNumber,rowsFieldVariable,err,error,*999)
                 ELSE
-                  CALL FLAG_ERROR("Interface mapping rhs mapping is not associated.",err,error,*999)
+                  CALL FlagError("Interface mapping rhs mapping is not associated.",err,error,*999)
                 ENDIF
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Interface condition interface is not associated.",err,error,*999)            
+              CALL FlagError("Interface condition interface is not associated.",err,error,*999)            
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Interface equations interface condition is not associated.",err,error,*999)
+            CALL FlagError("Interface equations interface condition is not associated.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping interface equations is not associated.",err,error,*999)
+          CALL FlagError("Interface mapping interface equations is not associated.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface mapping is not associated.",err,error,*999)
+        CALL FlagError("Interface mapping is not associated.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not allocated",err,error,*999)
+      CALL FlagError("Interface matrices is not allocated",err,error,*999)
     ENDIF
     
 #ifdef TAUPROF
@@ -465,7 +465,7 @@ CONTAINS
         ELSE
           LOCAL_ERROR="Interface matrix number "//TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))// &
             & " is not associated."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       RHS_VECTOR=>INTERFACE_MATRICES%RHS_VECTOR
       IF(ASSOCIATED(RHS_VECTOR)) THEN
@@ -477,7 +477,7 @@ CONTAINS
 
       ENDDO !matrix_idx
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("INTERFACE_MATRICES_ELEMENT_FINALISE")
@@ -534,7 +534,7 @@ CONTAINS
                 ELSE
                   localError="Interface matrix number "//TRIM(NUMBER_TO_VSTRING(matrixIdx,"*",err,error))// &
                     & " is not associated."
-                  CALL FLAG_ERROR(localError,err,error,*999)
+                  CALL FlagError(localError,err,error,*999)
                 ENDIF
               ENDDO !matrixIdx
             CASE(INTERFACE_CONDITION_DATA_POINTS_INTEGRATION) 
@@ -556,28 +556,28 @@ CONTAINS
                       ELSE
                         localError="Interface matrix number "//TRIM(NUMBER_TO_VSTRING(matrixIdx,"*",err,error))// &
                           & " is not associated."
-                        CALL FLAG_ERROR(localError,err,error,*999)
+                        CALL FlagError(localError,err,error,*999)
                       ENDIF
                     ENDDO !matrixIdx
                   ELSE
-                    CALL FLAG_ERROR("Interface points connectivity coupled elements is not allocated.",err,error,*999)             
+                    CALL FlagError("Interface points connectivity coupled elements is not allocated.",err,error,*999)             
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)              
+                  CALL FlagError("Interface points connectivity is not associated.",err,error,*999)              
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Interface is not associated.",err,error,*999)
+                CALL FlagError("Interface is not associated.",err,error,*999)
               ENDIF
             CASE DEFAULT
               localError="The interface condition integration type of "// &
                 & TRIM(NUMBER_TO_VSTRING(interfaceCondition%integrationType,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+              CALL FlagError(localError,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
+            CALL FlagError("Interface condition is not associated.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface equations is not associated.",err,error,*999)
+          CALL FlagError("Interface equations is not associated.",err,error,*999)
         ENDIF
         rhsVector=>interfaceMatrices%RHS_VECTOR
         IF(ASSOCIATED(rhsVector)) THEN
@@ -587,14 +587,14 @@ CONTAINS
             rowsFieldVariable=>rhsMapping%RHS_VARIABLE
             CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_SETUP(rhsVector%ELEMENT_VECTOR,rowsFieldVariable,err,error,*999)
           ELSE
-            CALL FLAG_ERROR("RHS mapping is not associated.",err,error,*999)
+            CALL FlagError("RHS mapping is not associated.",err,error,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface matrices mapping is not associated.",err,error,*999)
+        CALL FlagError("Interface matrices mapping is not associated.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",err,error,*999)
+      CALL FlagError("Interface matrices is not associated.",err,error,*999)
     ENDIF
     
     EXITS("InterfaceMatrices_ElementInitialise")
@@ -653,7 +653,7 @@ CONTAINS
               MATRIX_NUMBER=INTERFACE_MATRIX%MATRIX_NUMBER
               SELECT CASE(INTERFACE_MATRIX%STRUCTURE_TYPE)
               CASE(INTERFACE_MATRIX_NO_STRUCTURE)
-                CALL FLAG_ERROR("There is no structure to calculate for a matrix with no structure.",ERR,ERROR,*998)
+                CALL FlagError("There is no structure to calculate for a matrix with no structure.",ERR,ERROR,*998)
               CASE(INTERFACE_MATRIX_FEM_STRUCTURE)
                 SELECT CASE(INTERFACE_MATRIX%STORAGE_TYPE)
                 CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
@@ -684,7 +684,7 @@ CONTAINS
                                         IF(ASSOCIATED(COLUMN_DOFS_PARAM_MAPPING)) THEN
                                           !Allocate lists
                                           ALLOCATE(COLUMN_INDICES_LISTS(ROW_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL),STAT=ERR)
-                                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices lists.",ERR,ERROR,*999)
+                                          IF(ERR/=0) CALL FlagError("Could not allocate column indices lists.",ERR,ERROR,*999)
                                           DO local_row=1,ROW_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
                                             !Set up list
                                             NULLIFY(COLUMN_INDICES_LISTS(local_row)%PTR)
@@ -696,12 +696,12 @@ CONTAINS
                                           ENDDO !local_row
                                           !Allocate row indices
                                           ALLOCATE(ROW_INDICES(ROW_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL+1),STAT=ERR)
-                                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row indices.",ERR,ERROR,*999)
+                                          IF(ERR/=0) CALL FlagError("Could not allocate row indices.",ERR,ERROR,*999)
                                           IF(INTERFACE_MATRIX%HAS_TRANSPOSE) THEN
                                             !Allocate transpose lists
                                             ALLOCATE(TRANSPOSE_COLUMN_INDICES_LISTS(COLUMN_DOFS_DOMAIN_MAPPING% &
                                               & TOTAL_NUMBER_OF_LOCAL),STAT=ERR)
-                                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate transpose column indices lists.", &
+                                            IF(ERR/=0) CALL FlagError("Could not allocate transpose column indices lists.", &
                                               & ERR,ERROR,*999)
                                             DO local_column=1,COLUMN_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
                                               !Set up list
@@ -718,7 +718,7 @@ CONTAINS
                                             !Allocate transpose row indices
                                             ALLOCATE(TRANSPOSE_ROW_INDICES(COLUMN_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL+1), &
                                               & STAT=ERR)
-                                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate transpose row indices.",ERR,ERROR,*999)
+                                            IF(ERR/=0) CALL FlagError("Could not allocate transpose row indices.",ERR,ERROR,*999)
                                           ENDIF
                                           !Loop over the number of components in the Lagrange multipler variable
                                           DO column_component_idx=1,COLUMN_VARIABLE%NUMBER_OF_COMPONENTS
@@ -798,21 +798,21 @@ CONTAINS
                                                           ENDDO !row_local_derivative_idx
                                                         ENDDO !row_local_node_idx
                                                       CASE(FIELD_GRID_POINT_BASED_INTERPOLATION)
-                                                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                                       CASE(FIELD_GAUSS_POINT_BASED_INTERPOLATION)
-                                                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                                       CASE DEFAULT
                                                         LOCAL_ERROR="The row variable interpolation type of "// &
                                                           & TRIM(NUMBER_TO_VSTRING(ROW_VARIABLE%COMPONENTS(row_component_idx)% &
                                                           INTERPOLATION_TYPE,"*",ERR,ERROR))//" is invalid."
-                                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                                       END SELECT
                                                     ENDDO !row_component_idx
                                                   ENDDO !column_local_derivative_idx
                                                 ENDDO !column_local_node_idx
                                               ENDDO !interface_element_idx
                                             ELSE
-                                              CALL FLAG_ERROR("Only node based fields implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Only node based fields implemented.",ERR,ERROR,*999)
                                             ENDIF
                                           ENDDO !column_component_idx
                                           ROW_INDICES(1)=1
@@ -841,12 +841,12 @@ CONTAINS
                                                 & "*",ERR,ERROR))//") does not match the number of non-zeros in the interface "// &
                                                 & "matrix ("//TRIM(NUMBER_TO_VSTRING(TRANSPOSE_NUMBER_OF_NON_ZEROS,"*",ERR, &
                                                 & ERROR))//")."
-                                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                             ENDIF
                                           ENDIF
                                           !Allocate and setup the column locations
                                           ALLOCATE(COLUMN_INDICES(NUMBER_OF_NON_ZEROS),STAT=ERR)
-                                          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices.",ERR,ERROR,*999)
+                                          IF(ERR/=0) CALL FlagError("Could not allocate column indices.",ERR,ERROR,*999)
                                           DO local_row=1,ROW_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
                                             CALL LIST_DETACH_AND_DESTROY(COLUMN_INDICES_LISTS(local_row)%PTR,NUMBER_OF_COLUMNS, &
                                               & COLUMNS,ERR,ERROR,*999)
@@ -859,7 +859,7 @@ CONTAINS
                                             !Allocate and setup the column locations
                                             ALLOCATE(TRANSPOSE_COLUMN_INDICES(NUMBER_OF_NON_ZEROS),STAT=ERR)
                                             IF(ERR/=0) &
-                                              & CALL FLAG_ERROR("Could not allocate transpose column indices.",ERR,ERROR,*999)
+                                              & CALL FlagError("Could not allocate transpose column indices.",ERR,ERROR,*999)
                                             DO local_column=1,COLUMN_DOFS_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
                                               CALL LIST_DETACH_AND_DESTROY(TRANSPOSE_COLUMN_INDICES_LISTS(local_column)%PTR, &
                                                 & NUMBER_OF_ROWS,TRANSPOSE_COLUMNS,ERR,ERROR,*999)
@@ -903,65 +903,65 @@ CONTAINS
                                             ENDIF
                                           ENDIF
                                         ELSE
-                                          CALL FLAG_ERROR("Column dofs parameter mapping is not associated.",ERR,ERROR,*999)
+                                          CALL FlagError("Column dofs parameter mapping is not associated.",ERR,ERROR,*999)
                                         ENDIF
                                       ELSE
-                                        CALL FLAG_ERROR("Row dofs parameter mapping is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Row dofs parameter mapping is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Column dofs domain mapping is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Column dofs domain mapping is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Row dofs domain mapping is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Row dofs domain mapping is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Column field variable is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Column field variable is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Row field variable is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Row field variable is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Interface mesh connectivity is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Interface mesh connectivity is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Interface condition interface is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Interface condition interface is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Interface equations is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Interface equations is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
                   ENDIF
                 CASE DEFAULT
                   LOCAL_ERROR="The matrix storage type of "// &
                     & TRIM(NUMBER_TO_VSTRING(INTERFACE_MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE DEFAULT
                 LOCAL_ERROR="The matrix structure type of "// &
                   & TRIM(NUMBER_TO_VSTRING(INTERFACE_MATRIX%STRUCTURE_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*998)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Transpose column indices is already associated.",ERR,ERROR,*998)
+              CALL FlagError("Transpose column indices is already associated.",ERR,ERROR,*998)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Transpose row indieces is already associated.",ERR,ERROR,*998)
+            CALL FlagError("Transpose row indieces is already associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Column indices is already associated.",ERR,ERROR,*998)
+          CALL FlagError("Column indices is already associated.",ERR,ERROR,*998)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Row indieces is already associated.",ERR,ERROR,*998)
+        CALL FlagError("Row indieces is already associated.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Interface matrix is not associated.",ERR,ERROR,*998)
     ENDIF
      
     EXITS("INTERFACE_MATRIX_STRUCTURE_CALCULATE")
@@ -1023,7 +1023,7 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
       IF(INTERFACE_MATRICES%INTERFACE_MATRICES_FINISHED) THEN
-        CALL FLAG_ERROR("Interface matrices have already been finished.",ERR,ERROR,*998)
+        CALL FlagError("Interface matrices have already been finished.",ERR,ERROR,*998)
       ELSE
         INTERFACE_MAPPING=>INTERFACE_MATRICES%INTERFACE_MAPPING
         IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
@@ -1074,12 +1074,12 @@ CONTAINS
                 ELSE
                   LOCAL_ERROR="Row domain map for interface matrix number "// &
                     & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//" is not associated."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 LOCAL_ERROR="Interface matrix for matrix number "//TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))// &
                   & " is not associated."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDDO !matrix_idx
             RHS_VECTOR=>INTERFACE_MATRICES%RHS_VECTOR
@@ -1092,14 +1092,14 @@ CONTAINS
             !Finish up
             INTERFACE_MATRICES%INTERFACE_MATRICES_FINISHED=.TRUE.
           ELSE
-            CALL FLAG_ERROR("Column domain map is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Column domain map is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*998)
+          CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*998)
     ENDIF
        
     EXITS("INTERFACE_MATRICES_CREATE_FINISH")
@@ -1132,7 +1132,7 @@ CONTAINS
     IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN      
       IF(INTERFACE_EQUATIONS%INTERFACE_EQUATIONS_FINISHED) THEN
         IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
-          CALL FLAG_ERROR("Interface matrices is already associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface matrices is already associated.",ERR,ERROR,*999)
         ELSE
           NULLIFY(INTERFACE_MATRICES)
           !Initialise the interface matrices
@@ -1141,10 +1141,10 @@ CONTAINS
           INTERFACE_MATRICES=>INTERFACE_EQUATIONS%INTERFACE_MATRICES
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface equations has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface equations has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface equations is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("INTERFACE_MATRICES_CREATE_START")
@@ -1172,7 +1172,7 @@ CONTAINS
     IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
       CALL INTERFACE_MATRICES_FINALISE(INTERFACE_MATRICES,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("INTERFACE_MATRICES_DESTROY")
@@ -1235,13 +1235,13 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
       IF(ASSOCIATED(INTERFACE_EQUATIONS%INTERFACE_MATRICES)) THEN
-        CALL FLAG_ERROR("Interface matrices is already associated for this interface equations.",ERR,ERROR,*998)
+        CALL FlagError("Interface matrices is already associated for this interface equations.",ERR,ERROR,*998)
       ELSE
         INTERFACE_MAPPING=>INTERFACE_EQUATIONS%INTERFACE_MAPPING
         IF(ASSOCIATED(INTERFACE_MAPPING)) THEN
           IF(INTERFACE_MAPPING%INTERFACE_MAPPING_FINISHED) THEN
             ALLOCATE(INTERFACE_EQUATIONS%INTERFACE_MATRICES,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface equations interface matrices.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate interface equations interface matrices.",ERR,ERROR,*999)
             INTERFACE_EQUATIONS%INTERFACE_MATRICES%INTERFACE_EQUATIONS=>INTERFACE_EQUATIONS
             INTERFACE_EQUATIONS%INTERFACE_MATRICES%INTERFACE_MATRICES_FINISHED=.FALSE.
             INTERFACE_EQUATIONS%INTERFACE_MATRICES%INTERFACE_MAPPING=>INTERFACE_MAPPING
@@ -1254,21 +1254,21 @@ CONTAINS
             INTERFACE_EQUATIONS%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES=INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES
             ALLOCATE(INTERFACE_EQUATIONS%INTERFACE_MATRICES%MATRICES(INTERFACE_EQUATIONS%INTERFACE_MATRICES% &
               & NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface matrices matrices.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate interface matrices matrices.",ERR,ERROR,*999)
             DO matrix_idx=1,INTERFACE_EQUATIONS%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES
               NULLIFY(INTERFACE_EQUATIONS%INTERFACE_MATRICES%MATRICES(matrix_idx)%PTR)
               CALL INTERFACE_MATRIX_INITIALISE(INTERFACE_EQUATIONS%INTERFACE_MATRICES,matrix_idx,ERR,ERROR,*999)
             ENDDO !matrix_idx
             CALL INTERFACE_MATRICES_RHS_INITIALISE(INTERFACE_EQUATIONS%INTERFACE_MATRICES,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Interface mapping has not been finished.",ERR,ERROR,*999)
+            CALL FlagError("Interface mapping has not been finished.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface equations interface mapping is not associated.",ERR,ERROR,*998)
+          CALL FlagError("Interface equations interface mapping is not associated.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface equations is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Interface equations is not associated.",ERR,ERROR,*998)
     ENDIF
        
     EXITS("INTERFACE_MATRICES_INITIALISE")
@@ -1313,7 +1313,7 @@ CONTAINS
               CALL DISTRIBUTED_MATRIX_OUTPUT(ID,INTERFACE_MATRIX%MATRIX_TRANSPOSE,ERR,ERROR,*999)
             ENDIF
          ELSE
-            CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Interface matrix is not associated.",ERR,ERROR,*999)
           ENDIF
         ENDDO !matrix_idx
         RHS_VECTOR=>INTERFACE_MATRICES%RHS_VECTOR
@@ -1322,10 +1322,10 @@ CONTAINS
           CALL DISTRIBUTED_VECTOR_OUTPUT(ID,RHS_VECTOR%RHS_VECTOR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface matrices have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface matrices have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("INTERFACE_MATRICES_OUTPUT")
@@ -1387,21 +1387,21 @@ CONTAINS
         RHS_MAPPING=>INTERFACE_MAPPING%RHS_MAPPING
         IF(ASSOCIATED(RHS_MAPPING)) THEN
           IF(ASSOCIATED(INTERFACE_MATRICES%RHS_VECTOR)) THEN
-            CALL FLAG_ERROR("Interface matrices RHS vector is already associated.",ERR,ERROR,*998)
+            CALL FlagError("Interface matrices RHS vector is already associated.",ERR,ERROR,*998)
           ELSE
             ALLOCATE(INTERFACE_MATRICES%RHS_VECTOR,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface matrices RHS vector.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate interface matrices RHS vector.",ERR,ERROR,*999)
             INTERFACE_MATRICES%RHS_VECTOR%UPDATE_VECTOR=.TRUE.
             INTERFACE_MATRICES%RHS_VECTOR%FIRST_ASSEMBLY=.TRUE.
             NULLIFY(INTERFACE_MATRICES%RHS_VECTOR%RHS_VECTOR)
-            CALL EQUATIONS_MATRICES_ELEMENT_VECTOR_INITIALISE(INTERFACE_MATRICES%RHS_VECTOR%ELEMENT_VECTOR,ERR,ERROR,*999)
+            CALL EquationsMatrices_ElementVectorInitialise(INTERFACE_MATRICES%RHS_VECTOR%ELEMENT_VECTOR,ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface matrices equation mapping is not associated.",ERR,ERROR,*998)
+        CALL FlagError("Interface matrices equation mapping is not associated.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("INTERFACE_MATRICES_RHS_INITIALISE")
@@ -1432,7 +1432,7 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
       IF(INTERFACE_MATRICES%INTERFACE_MATRICES_FINISHED) THEN
-        CALL FLAG_ERROR("Interface matrices have been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface matrices have been finished.",ERR,ERROR,*999)
       ELSE
         IF(SIZE(STORAGE_TYPE,1)==INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES) THEN
           DO matrix_idx=1,INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES
@@ -1456,21 +1456,21 @@ CONTAINS
               CASE DEFAULT
                 LOCAL_ERROR="The specified storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE(matrix_idx),"*",ERR,ERROR))// &
                   & " for interface matrix number "//TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface matrix is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDDO !matrix_idx
         ELSE
           LOCAL_ERROR="The size of the storage type array ("//TRIM(NUMBER_TO_VSTRING(SIZE(STORAGE_TYPE,1),"*",ERR,ERROR))// &
             & ") is not equal to the number of interface matrices ("// &
             & TRIM(NUMBER_TO_VSTRING(INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))//")."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("INTERFACE_MATRICES_STORAGE_TYPE_SET")
@@ -1501,7 +1501,7 @@ CONTAINS
 
     IF(ASSOCIATED(INTERFACE_MATRICES)) THEN
       IF(INTERFACE_MATRICES%INTERFACE_MATRICES_FINISHED) THEN
-        CALL FLAG_ERROR("Interface matrices have been finished.",ERR,ERROR,*999)
+        CALL FlagError("Interface matrices have been finished.",ERR,ERROR,*999)
       ELSE
         IF(SIZE(STRUCTURE_TYPE,1)==INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES) THEN
           DO matrix_idx=1,INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES
@@ -1516,21 +1516,21 @@ CONTAINS
                 LOCAL_ERROR="The specified strucutre type of "// &
                   & TRIM(NUMBER_TO_VSTRING(STRUCTURE_TYPE(matrix_idx),"*",ERR,ERROR))//" for interface matrix number "// &
                   & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface matrix is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDDO !matrix_idx
         ELSE
           LOCAL_ERROR="The size of the structure type array ("//TRIM(NUMBER_TO_VSTRING(SIZE(STRUCTURE_TYPE,1),"*",ERR,ERROR))// &
             & ") is not equal to the number of interface matrices ("// &
             & TRIM(NUMBER_TO_VSTRING(INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES,"*",ERR,ERROR))//")."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("INTERFACE_MATRICES_STRUCTURE_TYPE_SET")
@@ -1569,7 +1569,7 @@ CONTAINS
             ENDIF
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface matrix is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDDO !matrix_idx
       RHS_VECTOR=>INTERFACE_MATRICES%RHS_VECTOR
@@ -1579,7 +1579,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("INTERFACE_MATRICES_VALUES_INITIALISE")
@@ -1625,20 +1625,20 @@ CONTAINS
                 InterfaceMatrix%INTERFACE_MATRIX_TRANSPOSE_TIME_DEPENDENCE_TYPE=TimeDependenceType
               ELSE
                 LOCAL_ERROR="Interface matrices has_transpose flag is .false. but interface matrix type is transpose."
-                CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
+                CALL FlagError(LOCAL_ERROR,Err,Error,*999)
               ENDIF
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Interface matrix is not associated",Err,Error,*999)
+            CALL FlagError("Interface matrix is not associated",Err,Error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface matrices not associated.",Err,Error,*999)
+          CALL FlagError("Interface matrices not associated.",Err,Error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface equations not associated.",Err,Error,*999)
+        CALL FlagError("Interface equations not associated.",Err,Error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface condition is not associated.",Err,Error,*999)
+      CALL FlagError("Interface condition is not associated.",Err,Error,*999)
     ENDIF
     
     EXITS("InterfaceMatrix_TimeDependenceTypeSet")
@@ -1684,7 +1684,7 @@ CONTAINS
                 TimeDependenceType=InterfaceMatrix%INTERFACE_MATRIX_TRANSPOSE_TIME_DEPENDENCE_TYPE
               ELSE
                 LOCAL_ERROR="Interface matrices has_transpose flag is .false. but interface matrix type is transpose."
-                CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
+                CALL FlagError(LOCAL_ERROR,Err,Error,*999)
               ENDIF
             ENDIF
             !Sanity check
@@ -1692,19 +1692,19 @@ CONTAINS
               LOCAL_ERROR="Invalid time dependence type of "//TRIM(NUMBER_TO_VSTRING(TimeDependenceType,"*",ERR,ERROR))// &
                 & ". Must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_INTERFACE_MATRIX_TYPES,"*",ERR,ERROR))// &
                 & "."
-              CALL FLAG_ERROR(LOCAL_ERROR,Err,Error,*999)
+              CALL FlagError(LOCAL_ERROR,Err,Error,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Interface matrix is not associated",Err,Error,*999)
+            CALL FlagError("Interface matrix is not associated",Err,Error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Interface matrices not associated.",Err,Error,*999)
+          CALL FlagError("Interface matrices not associated.",Err,Error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface equations not associated.",Err,Error,*999)
+        CALL FlagError("Interface equations not associated.",Err,Error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface condition is not associated.",Err,Error,*999)
+      CALL FlagError("Interface condition is not associated.",Err,Error,*999)
     ENDIF
     
     EXITS("InterfaceMatrix_TimeDependenceTypeGet")

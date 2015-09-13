@@ -81,7 +81,7 @@ CONTAINS
     ENDIF
     
     ALLOCATE( array( newSize ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
     
     array(:) = 0
 
@@ -108,7 +108,7 @@ CONTAINS
     ENDIF
     
     ALLOCATE( array( newSize ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
     
     array(:) = 0
 
@@ -140,7 +140,7 @@ CONTAINS
     ENDIF
     
     ALLOCATE( array( newSize ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
     
     EXITS("REALLOCATE_STRING")
     RETURN
@@ -166,7 +166,7 @@ CONTAINS
     ENDIF
     
     ALLOCATE( array( newSize1, newSize2 ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
     
     array(:,:) = 0
 

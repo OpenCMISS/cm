@@ -82,14 +82,14 @@ MODULE MULTI_COMPARTMENT_TRANSPORT_ROUTINES
 
   IMPLICIT NONE
 
-  PUBLIC MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SETUP
-  PUBLIC MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SUBTYPE_SET
-  PUBLIC MULTI_COMPARTMENT_TRANSPORT_SET_SOLUTION_METHOD_SET
+  PUBLIC MultiCompartmentTransport_EquationsSetSetup
+  PUBLIC MultiCompartmentTransport_EquationsSetSubtypeSet
+  PUBLIC MultiCompartmentTransport_EquationsSetSolutionMethodSet
 
   PUBLIC MULTI_COMPARTMENT_TRANSPORT_PROBLEM_SETUP
-  PUBLIC MULTI_COMPARTMENT_TRANSPORT_PROBLEM_SUBTYPE_SET
+  PUBLIC MultiCompartmentTransport_ProblemSubtypeSet
   
-  PUBLIC MULTI_COMPARTMENT_TRANSPORT_FINITE_ELEMENT_CALCULATE
+  PUBLIC MultiCompartmentTransport_FiniteElementCalculate
 
   PUBLIC MULTI_COMPARTMENT_TRANSPORT_PRE_SOLVE
   PUBLIC MULTI_COMPARTMENT_TRANSPORT_POST_SOLVE
@@ -102,7 +102,7 @@ CONTAINS
   !
 
   !>Sets/changes the solution method for a coupled diffusion & advection-diffusion equation type of a multi physics equations set class.
-  SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE MultiCompartmentTransport_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -111,9 +111,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("MULTI_COMPARTMENT_TRANSPORT_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("MultiCompartmentTransport_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
 
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !     IF(ASSOCIATED(EQUATIONS_SET)) THEN
 !       SELECT CASE(EQUATIONS_SET%SUBTYPE)
 !       CASE(EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE)
@@ -121,40 +121,42 @@ CONTAINS
 !         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
 !           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
 !         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-!           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+!           CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-!           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+!           CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-!           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+!           CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-!           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+!           CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-!           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+!           CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !         CASE DEFAULT
 !           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-!           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 !         END SELECT
 !       CASE DEFAULT
 !         LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
 !           & " is not valid for a diffusion & advection-diffusion equation type of a multi physics equations set class."
-!         CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+!         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 !       END SELECT
 !     ELSE
-!       CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+!       CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
 !     ENDIF
        
-    EXITS("MULTI_COMPARTMENT_TRANSPORT_SET_SOLUTION_METHOD_SET")
+    EXITS("MultiCompartmentTransport_EquationsSetSolutionMethodSet")
     RETURN
-999 ERRORSEXITS("MULTI_COMPARTMENT_TRANSPORT_SET_SOLUTION_METHOD_SET",ERR,ERROR)
+999 ERRORS("MultiCompartmentTransport_EquationsSetSolutionMethodSet",ERR,ERROR)
+    EXITS("MultiCompartmentTransport_EquationsSetSolutionMethodSet")
     RETURN 1
-  END SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_SET_SOLUTION_METHOD_SET
+    
+  END SUBROUTINE MultiCompartmentTransport_EquationsSetSolutionMethodSet
 
   !
   !================================================================================================================================
   !
 
   !>Sets up the multi-compartment coupled advection-diffusion & diffusion transport equation.
-  SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
+  SUBROUTINE MultiCompartmentTransport_EquationsSetSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup
@@ -164,50 +166,49 @@ CONTAINS
     !Local Variables
 
 
-    ENTERS("MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
+    ENTERS("MultiCompartmentTransport_EquationsSetSetup",ERR,ERROR,*999)
 
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    CALL FlagError("Not implemented.",ERR,ERROR,*999)
              
-    EXITS("MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SETUP")
+    EXITS("MultiCompartmentTransport_EquationsSetSetup")
     RETURN
-999 ERRORSEXITS("MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SETUP",ERR,ERROR)
+999 ERRORSEXITS("MultiCompartmentTransport_EquationsSetSetup",ERR,ERROR)
     RETURN 1
 
-  END SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SETUP
+  END SUBROUTINE MultiCompartmentTransport_EquationsSetSetup
 
   !
   !================================================================================================================================
   !
 
   !>Calculates the element stiffness matrices and RHS for a multi-compartment coupled advection-diffusion & diffusion transport equation.
-  SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE MultiCompartmentTransport_FiniteElementCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-
     !Local Variables
 
+    ENTERS("MultiCompartmentTransport_FiniteElementCalculate",ERR,ERROR,*999)
 
-
-    ENTERS("MULTI_COMPARTMENT_TRANSPORT_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
-
-    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    CALL FlagError("Not implemented.",ERR,ERROR,*999)
       
-  EXITS("MULTI_COMPARTMENT_TRANSPORT_FINITE_ELEMENT_CALCULATE")
+    EXITS("MultiCompartmentTransport_FiniteElementCalculate")
     RETURN
-999 ERRORSEXITS("MULTI_COMPARTMENT_TRANSPORT_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
+999 ERRORS("MultiCompartmentTransport_FiniteElementCalculate",ERR,ERROR)
+    EXITS("MultiCompartmentTransport_FiniteElementCalculate")
     RETURN 1
-  END SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_FINITE_ELEMENT_CALCULATE
+    
+  END SUBROUTINE MultiCompartmentTransport_FiniteElementCalculate
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the equation subtype for a multi-compartment coupled advection-diffusion & diffusion transport equation type of a multi physics equations set class.
-  SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  SUBROUTINE MultiCompartmentTransport_EquationsSetSubtypeSet(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
@@ -216,23 +217,24 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
+    ENTERS("MultiCompartmentTransport_EquationsSetSubtypeSet",ERR,ERROR,*999)
     
-    ENTERS("MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    CALL FlagError("Not implemented.",ERR,ERROR,*999)
        
-    EXITS("MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SUBTYPE_SET")
+    EXITS("MultiCompartmentTransport_EquationsSetSubtypeSet")
     RETURN
-999 ERRORSEXITS("MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
+999 ERRORS("MultiCompartmentTransport_EquationsSetSubtypeSet",ERR,ERROR)
+    EXITS("MultiCompartmentTransport_EquationsSetSubtypeSet")
     RETURN 1
-  END SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_EQUATIONS_SET_SUBTYPE_SET
+    
+  END SUBROUTINE MultiCompartmentTransport_EquationsSetSubtypeSet
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the problem subtype for a coupled diffusion & advection-diffusion equation type .
-  SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  SUBROUTINE MultiCompartmentTransport_ProblemSubtypeSet(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
@@ -242,7 +244,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("MULTI_COMPARTMENT_TRANSPORT_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("MultiCompartmentTransport_ProblemSubtypeSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM_SUBTYPE)
@@ -253,17 +255,18 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a multi-compartment coupled transport equation type of a multi physics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    EXITS("MULTI_COMPARTMENT_TRANSPORT_PROBLEM_SUBTYPE_SET")
+    EXITS("MultiCompartmentTransport_ProblemSubtypeSet")
     RETURN
-999 ERRORSEXITS("MULTI_COMPARTMENT_TRANSPORT_PROBLEM_SUBTYPE_SET",ERR,ERROR)
+999 ERRORSEXITS("MultiCompartmentTransport_ProblemSubtypeSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_PROBLEM_SUBTYPE_SET
+    
+  END SUBROUTINE MultiCompartmentTransport_ProblemSubtypeSet
 
   !
   !================================================================================================================================
@@ -310,7 +313,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a multi-compartment transport equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -327,7 +330,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a multi-compartment transport equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -356,7 +359,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a multi-compartment transport equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -387,12 +390,12 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a multi-compartment transport equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a multi-compartment transport equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       !-----------------------------------------------------------------
@@ -401,11 +404,11 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
           & " does not equal a standard multi-component transport equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("MULTI_COMPARTMENT_TRANSPORT_PROBLEM_SETUP")
@@ -451,7 +454,7 @@ CONTAINS
               IF(ASSOCIATED(EQUATIONS_SET)) THEN
                IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
 
-                CALL MULTI_COMP_TRANSPORT_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                CALL MultiCompartmentTransport_PreSolveUpdateAnalyticValues(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
 !               IF(SOLVER%GLOBAL_NUMBER==1) THEN
 !                 !copy current value of concentration_one to another variable
 !                 !CALL ADVEC_DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLN(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -468,16 +471,16 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a multi-compartment transport type of a multi physics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("MULTI_COMPARTMENT_TRANSPORT_PRE_SOLVE")
@@ -490,7 +493,7 @@ CONTAINS
   !================================================================================================================================
   !
   !updates the boundary conditions and source term to the required analytic values
-  SUBROUTINE MULTI_COMP_TRANSPORT_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE MultiCompartmentTransport_PreSolveUpdateAnalyticValues(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -531,7 +534,7 @@ CONTAINS
 !    INTEGER(INTG) :: EQUATIONS_SET_IDX
 !    INTEGER(INTG) :: equations_row_number
 
-    ENTERS("MULTI_COMP_TRANSPORT_PRE_SOLVE_UPDATE_ANALYTIC_VALUES",ERR,ERROR,*999)
+    ENTERS("MultiCompartmentTransport_PreSolveUpdateAnalyticValues",ERR,ERROR,*999)
 
 
     A1 = 0.4_DP
@@ -624,7 +627,7 @@ CONTAINS
                                                 ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                                                 GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
                                                   & GLOBAL_DERIVATIVE_INDEX
-                                                CALL DIFFUSION_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, &
+                                                CALL Diffusion_AnalyticFunctionsEvaluate(EQUATIONS_SET%SUBTYPE, &
                                                   & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,CURRENT_TIME,variable_type, &
                                                   & GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
                                                   & VALUE,ERR,ERROR,*999)
@@ -651,19 +654,19 @@ CONTAINS
                                               ENDDO !deriv_idx
                                             ENDDO !node_idx
                                           ELSE
-                                            CALL FLAG_ERROR("Boundary conditions variable is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Boundary conditions variable is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ELSE
-                                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                                          CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                                         ENDIF
                                       ELSE
-                                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                                    CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                                   ENDIF
                                 ENDDO !component_idx
                                 CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
@@ -675,29 +678,29 @@ CONTAINS
                                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
                                  & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                               ELSE
-                                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
                               ENDIF
 
 !                              ENDDO !variable_idx
                              CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,& 
                               & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                           ELSE
-                            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
                           ENDIF            
                         ELSE
-                          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        !CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                        !CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                   END IF                
 !                 ELSE
-!                   CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+!                   CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
 !                 END IF  
                 CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -770,7 +773,7 @@ CONTAINS
                                         LOCAL_ERROR="The analytic function type of "// &
                                           & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))//&
                                           & " is invalid."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                       !Default to version 1 of each node derivative
                                       local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
@@ -780,16 +783,16 @@ CONTAINS
                                     ENDDO !deriv_idx
                                   ENDDO !node_idx
                                 ELSE
-                                  CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !component_idx
                         CALL FIELD_PARAMETER_SET_UPDATE_START(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -797,45 +800,48 @@ CONTAINS
                         CALL FIELD_PARAMETER_SET_UPDATE_FINISH(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                           & ERR,ERROR,*999)
                       ELSE
-                        CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                       & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
                   ENDIF            
                 ELSE
-                  CALL FLAG_ERROR("Equations set source field is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations set source field is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
             ENDIF
             ENDDO !eqnset_idx
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF  
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a multi-physics coupled diffusion equation type of a multi-physics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
-    EXITS("MULTI_COMP_TRANSPORT_PRE_SOLVE_UPDATE_ANALYTIC_VALUES")
+    
+    EXITS("MultiCompartmentTransport_PreSolveUpdateAnalyticValues")
     RETURN
-999 ERRORSEXITS("MULTI_COMP_TRANSPORT_PRE_SOLVE_UPDATE_ANALYTIC_VALUES",ERR,ERROR)
+999 ERRORS("MultiCompartmentTransport_PreSolveUpdateAnalyticValues",ERR,ERROR)
+    EXITS("MultiCompartmentTransport_PreSolveUpdateAnalyticValues")
     RETURN 1
-  END SUBROUTINE MULTI_COMP_TRANSPORT_PRE_SOLVE_UPDATE_ANALYTIC_VALUES
+    
+  END SUBROUTINE MultiCompartmentTransport_PreSolveUpdateAnalyticValues
   !   
   !================================================================================================================================
   !
@@ -908,16 +914,16 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a multi-compartment type of a multi physics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("MULTI_COMPARTMENT_TRANSPORT_POST_SOLVE")
@@ -931,7 +937,7 @@ CONTAINS
   !
 
   !>Sets up the diffuion-diffusion problem post solve output data.
-  SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE MultiCompartmentTransport_PostSolveOutputData(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -942,7 +948,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("MULTI_COMPARTMENT_TRANSPORT_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
+    ENTERS("MultiCompartmentTransport_PostSolveOutputData",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
@@ -954,23 +960,25 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a multi-compartment transport type of a multi physics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
       
-    EXITS("MULTI_COMPARTMENT_TRANSPORT_POST_SOLVE_OUTPUT_DATA")
+    EXITS("MultiCompartmentTransport_PostSolveOutputData")
     RETURN
-999 ERRORSEXITS("MULTI_COMPARTMENT_TRANSPORT_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
+999 ERRORS("MultiCompartmentTransport_PostSolveOutputData",ERR,ERROR)
+    EXITS("MultiCompartmentTransport_PostSolveOutputData")
     RETURN 1
-  END SUBROUTINE MULTI_COMPARTMENT_TRANSPORT_POST_SOLVE_OUTPUT_DATA
+    
+  END SUBROUTINE MultiCompartmentTransport_PostSolveOutputData
       
   !   
   !================================================================================================================================

@@ -426,7 +426,7 @@ CONTAINS
     ENDIF
 
     ALLOCATE( array( newSize ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
 
     array(:) = 0
 
@@ -454,7 +454,7 @@ CONTAINS
     ENDIF
 
     ALLOCATE( array( newSize ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
 
     array(:) = 0
 
@@ -482,7 +482,7 @@ CONTAINS
     ENDIF
 
     ALLOCATE( array( newSize ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
 
     EXITS("REALLOCATE_STRING")
     RETURN
@@ -508,7 +508,7 @@ CONTAINS
     ENDIF
 
     ALLOCATE( array( newSize ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
 
     EXITS("REALLOCATE_COMPONENTS")
     RETURN
@@ -534,7 +534,7 @@ CONTAINS
     ENDIF
 
     ALLOCATE( array( newSize ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
 
     EXITS("REALLOCATE_BASIS")
     RETURN
@@ -560,7 +560,7 @@ CONTAINS
     ENDIF
 
     ALLOCATE( array( newSize ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
 
     EXITS("REALLOCATE_FIELD")
     RETURN
@@ -586,7 +586,7 @@ CONTAINS
     ENDIF
 
     ALLOCATE( array( newSize ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
 
     EXITS("REALLOCATE_ELEMENTS")
     RETURN
@@ -613,7 +613,7 @@ CONTAINS
     ENDIF
 
     ALLOCATE( array( newSize1, newSize2 ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( errorMessage, ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( errorMessage, ERR, ERROR, *999)
 
     array(:,:) = 0
 
@@ -879,10 +879,10 @@ CONTAINS
           FIELD_TYPE=FIELD_FIBRE_TYPE
         ELSE
           FIELD_TYPE=-1
-          CALL FLAG_ERROR("Cannot find corresponding field type from input string",ERR,ERROR,*999)
+          CALL FlagError("Cannot find corresponding field type from input string",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
-        CALL FLAG_ERROR("Cannot find any information from input string",ERR,ERROR,*999)
+        CALL FlagError("Cannot find any information from input string",ERR,ERROR,*999)
     END SELECT !CASE(LABEL_TYPE)
 
     EXITS("FIELD_IO_FIELD_INFO")
@@ -953,7 +953,7 @@ CONTAINS
       FIELD_IO_DERIVATIVE_INFO=PART_DERIV_S4_S4_S4
     ELSE
       FIELD_IO_DERIVATIVE_INFO=-1
-      CALL FLAG_ERROR("Could not recognize derivatives from input string",ERR,ERROR,*999)
+      CALL FlagError("Could not recognize derivatives from input string",ERR,ERROR,*999)
     ENDIF
 
     EXITS("FIELD_IO_DERIVATIVE_INFO")
@@ -1037,12 +1037,12 @@ CONTAINS
     ENTERS("FIELD_IO_CREATE_FIELDS",ERR,ERROR,*999)
 
     IF(.NOT.ASSOCIATED(DECOMPOSITION)) THEN
-      CALL FLAG_ERROR("decomposition is NOT associated before importing data",ERR,ERROR,*999)
+      CALL FlagError("decomposition is NOT associated before importing data",ERR,ERROR,*999)
       GOTO 999
     ENDIF
 
     IF(.NOT.ASSOCIATED(REGION)) THEN
-      CALL FLAG_ERROR("region is NOT associated before importing data",ERR,ERROR,*999)
+      CALL FlagError("region is NOT associated before importing data",ERR,ERROR,*999)
       GOTO 999
     ENDIF
 
@@ -1090,7 +1090,7 @@ CONTAINS
             pos=INDEX(LINE,CMISS_KEYWORD_FIELDS)
             LINE=REMOVE(LINE,1, pos+LEN_TRIM(CMISS_KEYWORD_FIELDS)-1)
             idx_field=STRING_TO_INTEGER(LINE, ERR,ERROR)
-            IF(idx_field/=NUMBER_OF_FIELDS) CALL FLAG_ERROR("find different field number in exnode files",ERR,ERROR,*999)
+            IF(idx_field/=NUMBER_OF_FIELDS) CALL FlagError("find different field number in exnode files",ERR,ERROR,*999)
             idx_comp=0
             DO idx_field=1,NUMBER_OF_FIELDS
               CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
@@ -1101,7 +1101,7 @@ CONTAINS
                 number_of_comps=STRING_TO_INTEGER(LINE, ERR,ERROR)
                 total_number_of_comps=total_number_of_comps+number_of_comps
               ELSE
-             IF(LIST_STR(idx_field)/=LINE) CALL FLAG_ERROR("find different field information in exnode files", &
+             IF(LIST_STR(idx_field)/=LINE) CALL FlagError("find different field information in exnode files", &
               & ERR,ERROR,*999)
               ENDIF
               pos=INDEX(LINE,CMISS_KEYWORD_COMPONENTS)
@@ -1342,7 +1342,7 @@ CONTAINS
             CALL STRING_TO_MUTI_REALS_VS(LINE, total_number_of_devs-LIST_DEV_POS(idx_comp)+1, LIST_DEV_VALUE, &
               & LIST_DEV_POS(idx_comp), ERR,ERROR, *999)
           ELSE
-            CALL FLAG_ERROR("The position of nodal information in exenode files is not correct",ERR, ERROR,*999)
+            CALL FlagError("The position of nodal information in exenode files is not correct",ERR, ERROR,*999)
             NODE_SECTION=.FALSE.
           ENDIF !(VERIFY(CMISS_KEYWORD_NODE , LINE)==0)
           IF(.NOT.FILE_END) THEN
@@ -1453,7 +1453,7 @@ CONTAINS
     !Local Variables
 
     IF(.NOT.ASSOCIATED(MESH)) THEN
-      CALL FLAG_ERROR("mesh is NOT associated before decomposing the mesh",ERR,ERROR,*999)
+      CALL FlagError("mesh is NOT associated before decomposing the mesh",ERR,ERROR,*999)
       GOTO 999
     ENDIF
 
@@ -1529,9 +1529,9 @@ CONTAINS
           & NUMBER_OF_EXNODE_FILES, MASTER_COMPUTATIONAL_NUMBER, my_computational_node_number, FIELD_SCALING_TYPE, &
           & ERR, ERROR, *999)
     ELSE IF(METHOD=="MPIIO") THEN
-      CALL FLAG_ERROR("MPI IO has not been implemented",ERR,ERROR,*999)
+      CALL FlagError("MPI IO has not been implemented",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)
+      CALL FlagError("Unknown method!",ERR,ERROR,*999)
     ENDIF
 
     !IF(ALLOCATED(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)) DEALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)
@@ -1572,13 +1572,13 @@ CONTAINS
         pos=INDEX(LINE,"*")
         LINE1=EXTRACT(LINE, 1, pos)
         LINE=REMOVE(LINE,1,pos)
-        CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION_TYPE, LINE, ERR, ERROR, *999)
+        CALL FieldIO_TranslateLabelIntoInterpolationType(INTERPOLATION_TYPE, LINE, ERR, ERROR, *999)
         INTERPOLATION_XI(idx_comp, num_interp)=INTERPOLATION_TYPE
       ENDDO
       num_interp=num_interp+1
       LINE1=EXTRACT(LINE, 1, pos)
       LINE=REMOVE(LINE,1,pos)
-      CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION_TYPE, LINE, ERR, ERROR, *999)
+      CALL FieldIO_TranslateLabelIntoInterpolationType(INTERPOLATION_TYPE, LINE, ERR, ERROR, *999)
       INTERPOLATION_XI(idx_comp, num_interp)=INTERPOLATION_TYPE
     ENDDO
 
@@ -1638,23 +1638,23 @@ CONTAINS
 
     !checking region pointer
     IF(.NOT.ASSOCIATED(REGION)) THEN
-      CALL FLAG_ERROR("region is not associated",ERR,ERROR,*999)
+      CALL FlagError("region is not associated",ERR,ERROR,*999)
       GOTO 999
     ENDIF
 
     !checking mesh pointer
     IF(ASSOCIATED(MESH)) THEN
-      CALL FLAG_ERROR("mesh is associated, pls release the memory first",ERR,ERROR,*999)
+      CALL FlagError("mesh is associated, pls release the memory first",ERR,ERROR,*999)
       GOTO 999
     ENDIF
 
     IF(.NOT.REGION%REGION_FINISHED) THEN
-      CALL FLAG_ERROR("region is not finished",ERR,ERROR,*999)
+      CALL FlagError("region is not finished",ERR,ERROR,*999)
       GOTO 999
     ENDIF
 
     !IF(ASSOCIATED(BASES%BASES)) THEN
-    !   CALL FLAG_ERROR("bases are associated, pls release the memory first",ERR,ERROR,*999)
+    !   CALL FlagError("bases are associated, pls release the memory first",ERR,ERROR,*999)
     !   GOTO 999
     !ENDIF
     !BASES%NUMBER_BASIS_FUNCTIONS=0
@@ -1681,7 +1681,7 @@ CONTAINS
       FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exelem,"*",ERR,ERROR))//".exelem"
       INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       IF(.NOT.FILE_EXIST) THEN
-        CALL FLAG_ERROR("exelem files can be found, pls check again",ERR,ERROR,*999)
+        CALL FlagError("exelem files can be found, pls check again",ERR,ERROR,*999)
         !GOTO 999
       ENDIF
       DO WHILE(FILE_EXIST)
@@ -1713,7 +1713,7 @@ CONTAINS
               NUMBER_OF_FIELDS=STRING_TO_INTEGER(LINE, ERR,ERROR)
             ELSE
               IF(NUMBER_OF_FIELDS/=STRING_TO_INTEGER(LINE, ERR,ERROR)) THEN
-                CALL FLAG_ERROR("find different number of fields in the exelem files",ERR,ERROR,*999)
+                CALL FlagError("find different number of fields in the exelem files",ERR,ERROR,*999)
                 !GOTO 999
               ENDIF
             ENDIF
@@ -1737,7 +1737,7 @@ CONTAINS
                 COMPONENTS_IN_FIELDS(idx_field)=idx_comp
               ELSE
                 IF(NUMBER_OF_COMPONENTS/=idx_comp) THEN
-                  CALL FLAG_ERROR("find different total number of components in the exelem files",ERR,ERROR,*999)
+                  CALL FlagError("find different total number of components in the exelem files",ERR,ERROR,*999)
                   !GOTO 999
                 ENDIF
               ENDIF
@@ -1747,7 +1747,7 @@ CONTAINS
               COMPONENTS_IN_FIELDS(idx_field)=idx_comp1
             ELSE
               IF(COMPONENTS_IN_FIELDS(idx_field)/=idx_comp1) THEN
-                CALL FLAG_ERROR("find different number of components in one field in the exelem files",ERR,ERROR,*999)
+                CALL FlagError("find different number of components in one field in the exelem files",ERR,ERROR,*999)
                 !GOTO 999
               ENDIF
             ENDIF
@@ -1774,7 +1774,7 @@ CONTAINS
           & "can not allocate the memory for outputing components in field", ERR, ERROR, *999 )
       !IF(ALLOCATED(LIST_FIELD_TYPE)) DEALLOCATE(LIST_FIELD_TYPE)
       !ALLOCATE(LIST_FIELD_TYPE(NUMBER_OF_FIELDS), STAT=ERR)
-      !IF(ERR/=0) CALL FLAG_ERROR("can not allocate the memory for list of field types",ERR,ERROR,*999)
+      !IF(ERR/=0) CALL FlagError("can not allocate the memory for list of field types",ERR,ERROR,*999)
       !LIST_FIELD_TYPE(:)=0
     ENDIF
     CALL MPI_BCAST(COMPONENTS_IN_FIELDS,NUMBER_OF_FIELDS,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
@@ -1794,7 +1794,7 @@ CONTAINS
       FILE_NAME=NAME//".part"//TRIM(NUMBER_TO_VSTRING(idx_exnode,"*",ERR,ERROR))//".exnode"
       INQUIRE(FILE=CHAR(FILE_NAME), EXIST=FILE_EXIST)
       IF(.NOT.FILE_EXIST) THEN
-        CALL FLAG_ERROR("exnode files can be found, pls check again",ERR,ERROR,*999)
+        CALL FlagError("exnode files can be found, pls check again",ERR,ERROR,*999)
         !GOTO 999
       ENDIF
       DO WHILE(FILE_EXIST)
@@ -1864,7 +1864,7 @@ CONTAINS
 
     !IF(ALLOCATED(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)) DEALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER)
     !ALLOCATE(USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(NUMBER_OF_NODES), STAT=ERR)
-    !IF(ERR/=0) CALL FLAG_ERROR("can not allocate nodal number mapping for output",ERR,ERROR,*999)
+    !IF(ERR/=0) CALL FlagError("can not allocate nodal number mapping for output",ERR,ERROR,*999)
     !USER_NODAL_NUMBER_MAP_GLOBAL_NODAL_NUMBER(:)=LIST_NODAL_NUMBER(:)
     !IF(ALLOCATED(LIST_NODAL_NUMBER)) DEALLOCATE(LIST_NODAL_NUMBER)
 
@@ -1989,10 +1989,10 @@ CONTAINS
       ENDDO
       !IF(ALLOCATED(MESH_COMPONENTS_OF_FIELD_COMPONENTS)) DEALLOCATE(MESH_COMPONENTS_OF_FIELD_COMPONENTS)
       !ALLOCATE(MESH_COMPONENTS_OF_FIELD_COMPONENTS(NUMBER_OF_COMPONENTS),STAT=ERR)
-      !IF(ERR/=0) CALL FLAG_ERROR("can not allocate mesh components of field components for output",ERR,ERROR,*999)
+      !IF(ERR/=0) CALL FlagError("can not allocate mesh components of field components for output",ERR,ERROR,*999)
       !MESH_COMPONENTS_OF_FIELD_COMPONENTS(:)=LIST_FIELD_COMPONENTS(:)
       !ALLOCATE(LIST_MESH_COMPONENTS(NUMBER_OF_MESH_COMPONENTS),STAT=ERR)
-      !IF(ERR/=0) CALL FLAG_ERROR("ALLOCATEDcan not allocate list of mesh components",ERR,ERROR,*999)
+      !IF(ERR/=0) CALL FlagError("ALLOCATEDcan not allocate list of mesh components",ERR,ERROR,*999)
       !idx_comp1=0
       !DO idx_comp=1,NUMBER_OF_COMPONENTS
       !   IF(LIST_FIELD_COMPONENTS(idx_comp)==idx_comp) THEN
@@ -2058,7 +2058,7 @@ CONTAINS
              ELSE IF(NUMBER_OF_DIMENSIONS==1) THEN
                LIST_ELEMENT_NUMBER(idx_elem)=SHAPE_INDEX(3)
              ELSE
-               CALL FLAG_ERROR("Non recognized dimension size during reading elemental numbering",ERR,ERROR,*999)
+               CALL FlagError("Non recognized dimension size during reading elemental numbering",ERR,ERROR,*999)
              ENDIF
              idx_elem=idx_elem+1
            ENDIF
@@ -2077,7 +2077,7 @@ CONTAINS
     DO idx_elem=1,NUMBER_OF_ELEMENTS
       DO idx_comp=1, NUMBER_OF_MESH_COMPONENTS
         IF(idx_elem/=LIST_ELEMENT_NUMBER(idx_elem)) &
-            & CALL MESH_TOPOLOGY_ELEMENTS_ELEMENT_USER_NUMBER_SET(idx_elem,LIST_ELEMENT_NUMBER(idx_elem), &
+            & CALL MeshElements_ElementUserNumberSet(idx_elem,LIST_ELEMENT_NUMBER(idx_elem), &
             & ELEMENTS_PTR(idx_comp)%PTR,ERR,ERROR,*999)
       ENDDO
     ENDDO
@@ -2086,7 +2086,7 @@ CONTAINS
     CALL MPI_BCAST(NUMBER_OF_EXELEM_FILES,1,MPI_INTEGER,MASTER_COMPUTATIONAL_NUMBER,MPI_COMM_WORLD,MPI_IERROR)
     CALL MPI_ERROR_CHECK("MPI_BCAST",MPI_IERROR,ERR,ERROR,*999)
     !ALLOCATE(LIST_BASES(NUMBER_OF_COMPONENTS),STAT=ERR)
-    !IF(ERR/=0) CALL FLAG_ERROR("can not allocate list of bases",ERR,ERROR,*999)
+    !IF(ERR/=0) CALL FlagError("can not allocate list of bases",ERR,ERROR,*999)
 
     CALL REALLOCATE( LIST_COMP_NODES, NUMBER_OF_COMPONENTS, &
         & "Could not allocate list of component nodal index ", ERR, ERROR, *999 )
@@ -2265,7 +2265,7 @@ CONTAINS
         !      LINE=EXTRACT(LIST_STR(idx_comp),1, pos-1)
         !      LIST_STR(idx_comp)=REMOVE(LIST_STR(idx_comp),1,pos)
         !    ENDIF
-        !    CALL FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION_XI(idx_comp, idx_dim), LINE, ERR, ERROR, *999)
+        !    CALL FieldIO_TranslateLabelIntoInterpolationType(INTERPOLATION_XI(idx_comp, idx_dim), LINE, ERR, ERROR, *999)
         !  ENDDO
         !ENDDO
       ENDIF !MASTER_COMPUTATIONAL_NUMBER/=my_computational_node_number
@@ -2297,7 +2297,7 @@ CONTAINS
         ELSE IF(NUMBER_OF_DIMENSIONS==1) THEN
           CALL LIST_SEARCH(LIST_ELEMENT_NUMBER, SHAPE_INDEX(3),GLOBAL_ELEMENT_NUMBER, ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Non recognized dimension size during reading elemental numbering",ERR,ERROR,*999)
+          CALL FlagError("Non recognized dimension size during reading elemental numbering",ERR,ERROR,*999)
         ENDIF
 
         IF(MESH_COMPONENTS_OF_FIELD_COMPONENTS(idx_comp)==current_mesh_comp) THEN
@@ -2361,7 +2361,7 @@ CONTAINS
   !
 
   !>Finding basis information
-  SUBROUTINE FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE(INTERPOLATION, LABEL_TYPE, ERR, ERROR, *)
+  SUBROUTINE FieldIO_TranslateLabelIntoInterpolationType(INTERPOLATION, LABEL_TYPE, ERR, ERROR, *)
     !Argument variables
     INTEGER(INTG), INTENT(INOUT) :: INTERPOLATION !< xi interpolation type
     TYPE(VARYING_STRING), INTENT(IN) :: LABEL_TYPE !<label type
@@ -2369,7 +2369,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE",ERR,ERROR,*999)
+    ENTERS("FieldIO_TranslateLabelIntoInterpolationType",ERR,ERROR,*999)
 
     SELECT CASE(CHAR(LABEL_TYPE))
     CASE("l.Lagrange")
@@ -2385,21 +2385,22 @@ CONTAINS
     CASE("HermiteLagrange")
       INTERPOLATION=BASIS_QUADRATIC2_HERMITE_INTERPOLATION
     CASE DEFAULT
-      CALL FLAG_ERROR("Invalid interpolation type",ERR,ERROR,*999)
+      CALL FlagError("Invalid interpolation type",ERR,ERROR,*999)
     END SELECT
 
-    EXITS("FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE")
+    EXITS("FieldIO_TranslateLabelIntoInterpolationType")
     RETURN
-999 ERRORSEXITS("FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE",ERR,ERROR)
+999 ERRORSEXITS("FieldIO_TranslateLabelIntoInterpolationType",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE FIELD_IO_TRANSLATE_LABEL_INTO_INTERPOLATION_TYPE
+    
+  END SUBROUTINE FieldIO_TranslateLabelIntoInterpolationType
 
   !
   !================================================================================================================================
   !
 
   !>Finding basis information
-  SUBROUTINE FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, * )
+  SUBROUTINE FieldIO_CalculateSimplexScaleAndNodeCounts(BASIS, num_scl, num_node, ERR, ERROR, * )
     !Argument variables
     TYPE(BASIS_TYPE), INTENT(IN) :: BASIS !<The error string
     INTEGER(INTG), INTENT(INOUT) :: num_scl
@@ -2410,9 +2411,9 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: n
 
-    ENTERS("FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS",ERR,ERROR,*999)
+    ENTERS("FieldIO_CalculateSimplexScaleAndNodeCounts",ERR,ERROR,*999)
 
-    IF(BASIS%NUMBER_OF_XI==0) CALL FLAG_ERROR("number of xi in the basis is zero",ERR,ERROR,*999)
+    IF(BASIS%NUMBER_OF_XI==0) CALL FlagError("number of xi in the basis is zero",ERR,ERROR,*999)
 
     n = BASIS%NUMBER_OF_XI
 
@@ -2425,16 +2426,16 @@ CONTAINS
       CASE(BASIS_CUBIC_SIMPLEX_INTERPOLATION)
         num_node = ( n + 1 ) * ( n + 2 ) * ( n + 3 ) / 6
       CASE DEFAULT
-        CALL FLAG_ERROR( "Invalid interpolation type", ERR, ERROR, *999 )
+        CALL FlagError( "Invalid interpolation type", ERR, ERROR, *999 )
     END SELECT
 
     num_scl = num_node
 
-    EXITS("FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS")
+    EXITS("FieldIO_CalculateSimplexScaleAndNodeCounts")
     RETURN
-999 ERRORSEXITS("FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS",ERR,ERROR)
+999 ERRORSEXITS("FieldIO_CalculateSimplexScaleAndNodeCounts",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS
+  END SUBROUTINE FieldIO_CalculateSimplexScaleAndNodeCounts
 
   !
   !================================================================================================================================
@@ -2452,7 +2453,7 @@ CONTAINS
 
     ENTERS("FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS",ERR,ERROR,*999)
 
-    IF(BASIS%NUMBER_OF_XI==0) CALL FLAG_ERROR("number of xi in the basis is zero",ERR,ERROR,*999)
+    IF(BASIS%NUMBER_OF_XI==0) CALL FlagError("number of xi in the basis is zero",ERR,ERROR,*999)
 
     num_scl=1;
     num_node=1
@@ -2477,7 +2478,7 @@ CONTAINS
         num_scl=num_scl*3
         num_node=num_node*2
       CASE DEFAULT
-        CALL FLAG_ERROR( "Invalid interpolation type", ERR, ERROR, *999 )
+        CALL FlagError( "Invalid interpolation type", ERR, ERROR, *999 )
       END SELECT
     ENDDO !ni
 
@@ -2515,7 +2516,7 @@ CONTAINS
   !
 
   !>Write the header of a group elements using FORTRAN
-  SUBROUTINE FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN( global_number, MAX_NODE_COMP_INDEX,NUM_OF_SCALING_FACTOR_SETS, &
+  SUBROUTINE FieldIO_ExportElementalGroupHeaderFortran( global_number, MAX_NODE_COMP_INDEX,NUM_OF_SCALING_FACTOR_SETS, &
     & LIST_COMP_SCALE, my_computational_node_number, elementalInfoSet, sessionHandle, ERR,ERROR, *)
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: global_number !<element number in my elemental IO list
@@ -2552,7 +2553,7 @@ CONTAINS
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
     LOGICAL :: SAME_SCALING_SET
 
-    ENTERS("FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN",ERR,ERROR,*999)
+    ENTERS("FieldIO_ExportElementalGroupHeaderFortran",ERR,ERROR,*999)
 
     !SANDER
     ALLOCATE(INTERPOLATION_XI(3), STAT = ERR)
@@ -2654,16 +2655,16 @@ CONTAINS
     DO scaleIndex = 1, NUM_OF_SCALING_FACTOR_SETS
       BASIS => listScaleBases( scaleIndex )%PTR
       IF(.NOT.ASSOCIATED(BASIS)) THEN
-        CALL FLAG_ERROR("Basis is not associated",ERR,ERROR,*999)
+        CALL FlagError("Basis is not associated",ERR,ERROR,*999)
       ENDIF
 
       SELECT CASE( BASIS%TYPE )
       CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE )
         CALL FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
       CASE( BASIS_SIMPLEX_TYPE )
-        CALL FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
+        CALL FieldIO_CalculateSimplexScaleAndNodeCounts(BASIS, num_scl, num_node, ERR, ERROR, *999 )
       CASE DEFAULT
-        CALL FLAG_ERROR("Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))//" is invalid or not implemented",&
+        CALL FlagError("Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))//" is invalid or not implemented",&
             &ERR,ERROR,*999)
       END SELECT
 
@@ -2674,7 +2675,7 @@ CONTAINS
     !write out the scale factor set information
     ERR = FieldExport_ScalingFactorCount( sessionHandle, NUM_OF_SCALING_FACTOR_SETS )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+      CALL FlagError( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
 
     CALL REALLOCATE(INTERPOLATION_XI, BASIS%NUMBER_OF_XI, &
@@ -2695,22 +2696,22 @@ CONTAINS
         ERR = FieldExport_ScaleFactors( sessionHandle, basis%NUMBER_OF_XI, C_LOC(INTERPOLATION_XI), &
           & basis%NUMBER_OF_ELEMENT_PARAMETERS );
         IF( ERR /= 0 ) THEN
-          CALL FLAG_ERROR( "can not get basis type of lagrange_hermite label" ,ERR, ERROR, *999 )
+          CALL FlagError( "can not get basis type of lagrange_hermite label" ,ERR, ERROR, *999 )
         ENDIF
       CASE DEFAULT
-        CALL FLAG_ERROR( "Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE, "*" , ERR, ERROR ))//" is not implemented",&
+        CALL FlagError( "Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE, "*" , ERR, ERROR ))//" is not implemented",&
             &ERR,ERROR, *999)
       END SELECT
     ENDDO !scaleIndex
 
     ERR = FieldExport_NodeCount( sessionHandle, MAX_NUM_NODES )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+      CALL FlagError( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
 
     ERR = FieldExport_FieldCount( sessionHandle, NUM_OF_VARIABLES )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+      CALL FlagError( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
 
     !write out the nodal header
@@ -2744,7 +2745,7 @@ CONTAINS
         ENDIF
 
         IF( ERR /= 0 ) THEN
-          CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+          CALL FlagError( "File write error during field export", ERR, ERROR,*999 )
         ENDIF
       ENDIF
 
@@ -2756,9 +2757,9 @@ CONTAINS
       CASE( BASIS_LAGRANGE_HERMITE_TP_TYPE )
         CALL FIELD_IO_CALCULATE_TP_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
       CASE( BASIS_SIMPLEX_TYPE )
-        CALL FIELD_IO_CALCULATE_SIMPLEX_SCALE_AND_NODE_COUNTS(BASIS, num_scl, num_node, ERR, ERROR, *999 )
+        CALL FieldIO_CalculateSimplexScaleAndNodeCounts(BASIS, num_scl, num_node, ERR, ERROR, *999 )
       CASE DEFAULT
-        CALL FLAG_ERROR("Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))//" is invalid or not implemented",&
+        CALL FlagError("Basis type "//TRIM(NUMBER_TO_VSTRING(BASIS%TYPE,"*",ERR,ERROR))//" is invalid or not implemented",&
             &ERR,ERROR,*999)
       END SELECT
       CALL REALLOCATE(NUMBER_OF_DERIVATIVES, num_node, &
@@ -2811,7 +2812,7 @@ CONTAINS
             & component%COMPONENT_NUMBER,interpType,basis%NUMBER_OF_XI, C_LOC( INTERPOLATION_XI ) )
       ENDIF
       IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+        CALL FlagError( "File write error during field export", ERR, ERROR,*999 )
       ENDIF
 
       IF( interpType /= 3 .AND. interpType /= 6) THEN
@@ -2841,7 +2842,7 @@ CONTAINS
         ! For elements with collapsed nodes, the node indexes need to be changed
         IF (BASIS%NUMBER_OF_COLLAPSED_XI>0) THEN
     !!$         IF((.NOT.BASIS%COLLAPSED_XI(1).OR.BASIS%COLLAPSED_XI(2).OR.BASIS%COLLAPSED_XI(3)==BASIS_NOT_COLLAPSED)) THEN
-    !!$           CALL FLAG_ERROR("Pyramide elements output is not implemented",&
+    !!$           CALL FlagError("Pyramide elements output is not implemented",&
     !!$              &ERR,ERROR,*999)
 
           NODE_NUMBER_COUNTER=0
@@ -3375,12 +3376,12 @@ CONTAINS
         ERR = FieldExport_NodeScaleIndexes( sessionHandle, NUMBER_OF_ELEMENT_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
             & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), C_LOC( SCALE_INDEXES ) )
         ! ELSE
-        !  CALL FLAG_ERROR("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
+        !  CALL FlagError("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
         ! ENDIF
       ENDIF
 
       IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+        CALL FlagError( "File write error during field export", ERR, ERROR,*999 )
       ENDIF
 
     ENDDO !comp_idx
@@ -3399,11 +3400,11 @@ CONTAINS
     CALL CHECKED_DEALLOCATE( SCALE_INDEXES )
 
 
-    EXITS("FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN")
+    EXITS("FieldIO_ExportElementalGroupHeaderFortran")
     RETURN
-999 ERRORSEXITS("FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN",ERR,ERROR)
+999 ERRORSEXITS("FieldIO_ExportElementalGroupHeaderFortran",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN
+  END SUBROUTINE FieldIO_ExportElementalGroupHeaderFortran
 
   !
   !================================================================================================================================
@@ -3505,7 +3506,7 @@ CONTAINS
         firstScaleSet = 0
 
         IF( ERR /= 0 ) THEN
-          CALL FLAG_ERROR( "Cannot write node scales to file", ERR, ERROR,*999 )
+          CALL FlagError( "Cannot write node scales to file", ERR, ERROR,*999 )
         ENDIF
 
       ENDIF ! componentScales(componentIndex) == scaleIndex
@@ -3562,19 +3563,19 @@ CONTAINS
     NUM_OF_SCALING_FACTOR_SETS=0
 
     IF(.NOT.ALLOCATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET)) THEN
-      CALL FLAG_ERROR("the elemental information set in input is invalid",ERR,ERROR,*999)
+      CALL FlagError("the elemental information set in input is invalid",ERR,ERROR,*999)
     ENDIF
 
     IF(.NOT.ALLOCATED(ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER)) THEN
-      CALL FLAG_ERROR("the elemental information set is not associated with any numbering list",ERR,ERROR,*999)
+      CALL FlagError("the elemental information set is not associated with any numbering list",ERR,ERROR,*999)
     ENDIF
 
     IF(ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES==0) THEN
-      CALL FLAG_ERROR("the elemental information set does not contain any nodes",ERR,ERROR,*999)
+      CALL FlagError("the elemental information set does not contain any nodes",ERR,ERROR,*999)
     ENDIF
 
     IF(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(1)%PTR%SAME_HEADER) THEN
-      CALL FLAG_ERROR("the first header flag of elemental information set should be false",ERR,ERROR,*999)
+      CALL FlagError("the first header flag of elemental information set should be false",ERR,ERROR,*999)
     ENDIF
 
     !NULLIFY(SCALE_FACTORS)
@@ -3588,7 +3589,7 @@ CONTAINS
 
     ERR = FieldExport_OpenSession( EXPORT_TYPE_FILE, char(FILE_NAME)//C_NULL_CHAR, sessionHandle )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "Cannot open file export session", ERR, ERROR,*999 )
+      CALL FlagError( "Cannot open file export session", ERR, ERROR,*999 )
     ENDIF
 
     IF(ASSOCIATED(ELEMENTAL_INFO_SET%FIELDS%REGION)) THEN
@@ -3597,11 +3598,11 @@ CONTAINS
       IF(ASSOCIATED(ELEMENTAL_INFO_SET%FIELDS%INTERFACE)) THEN
         ERR = FieldExport_Group( sessionHandle, CHAR(ELEMENTAL_INFO_SET%FIELDS%INTERFACE%LABEL)//C_NULL_CHAR )
       ELSE
-        CALL FLAG_ERROR("Fields region or interface is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Fields region or interface is not associated.",ERR,ERROR,*999)
       ENDIF
     ENDIF
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "Cannot write group name to elements file", ERR, ERROR,*999 )
+      CALL FlagError( "Cannot write group name to elements file", ERR, ERROR,*999 )
     ENDIF
 
     components => ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(1)%PTR
@@ -3612,7 +3613,7 @@ CONTAINS
 
     ERR = FieldExport_MeshDimensions( sessionHandle, BASIS%NUMBER_OF_XI, BASIS%TYPE  )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "Cannot write mesh dimensions to file", ERR, ERROR,*999 )
+      CALL FlagError( "Cannot write mesh dimensions to file", ERR, ERROR,*999 )
     ENDIF
 
     DO elem_idx=1, ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES
@@ -3622,13 +3623,13 @@ CONTAINS
 
       IF(.NOT.ALLOCATED(LIST_COMP_SCALE)) THEN
         ALLOCATE(LIST_COMP_SCALE(components%NUMBER_OF_COMPONENTS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate LIST_COMP_SCALE in exelem io",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate LIST_COMP_SCALE in exelem io",ERR,ERROR,*999)
       ENDIF
 
       !check whether need to write out the nodal information header
       IF(.NOT.components%SAME_HEADER) THEN
         !write out the nodal header
-        CALL FIELD_IO_EXPORT_ELEMENTAL_GROUP_HEADER_FORTRAN( global_number, MAX_NODE_COMP_INDEX, NUM_OF_SCALING_FACTOR_SETS, &
+        CALL FieldIO_ExportElementalGroupHeaderFortran( global_number, MAX_NODE_COMP_INDEX, NUM_OF_SCALING_FACTOR_SETS, &
           & LIST_COMP_SCALE, my_computational_node_number, components, sessionHandle, ERR, ERROR, *999)
       ENDIF
 
@@ -3641,7 +3642,7 @@ CONTAINS
 
       ERR = FieldExport_ElementIndex( sessionHandle, NUM_DIM, element%USER_NUMBER )
       IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "Cannot write element index to file", ERR, ERROR,*999 )
+        CALL FlagError( "Cannot write element index to file", ERR, ERROR,*999 )
       ENDIF
 
       isFirstValueSet = 1
@@ -3672,14 +3673,14 @@ CONTAINS
             CALL FIELD_PARAMETER_SET_DATA_GET(component%FIELD_VARIABLE%FIELD,&
                 & component%FIELD_VARIABLE%VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
             ALLOCATE(GEOMETRIC_PARAMETERS_DP(SIZE(GEOMETRIC_PARAMETERS_INTG)))
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
+            IF(ERR/=0) CALL FlagError("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
             GEOMETRIC_PARAMETERS_DP(1:SIZE(GEOMETRIC_PARAMETERS_INTG))= &
               & REAL(GEOMETRIC_PARAMETERS_INTG(1:SIZE(GEOMETRIC_PARAMETERS_INTG)))
             ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 1, &
                 & GEOMETRIC_PARAMETERS_DP(component%PARAM_TO_DOF_MAP%ELEMENT_PARAM2DOF_MAP%ELEMENTS(local_number)))
             DEALLOCATE(GEOMETRIC_PARAMETERS_DP)
           ELSE
-            CALL FLAG_ERROR( "Only INTG and REAL data types implemented.", ERR, ERROR,*999 )
+            CALL FlagError( "Only INTG and REAL data types implemented.", ERR, ERROR,*999 )
           ENDIF
           isFirstValueSet = 0
         ELSE IF( component%INTERPOLATION_TYPE == FIELD_CONSTANT_INTERPOLATION ) THEN
@@ -3694,14 +3695,14 @@ CONTAINS
             CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
               & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
             ALLOCATE(GEOMETRIC_PARAMETERS_DP(SIZE(GEOMETRIC_PARAMETERS_INTG)))
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
+            IF(ERR/=0) CALL FlagError("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
             GEOMETRIC_PARAMETERS_DP(1:SIZE(GEOMETRIC_PARAMETERS_INTG))= &
               & REAL(GEOMETRIC_PARAMETERS_INTG(1:SIZE(GEOMETRIC_PARAMETERS_INTG)))
             ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, 1, &
               & GEOMETRIC_PARAMETERS_DP(component%PARAM_TO_DOF_MAP%CONSTANT_PARAM2DOF_MAP))
             DEALLOCATE(GEOMETRIC_PARAMETERS_DP)
           ELSE
-            CALL FLAG_ERROR( "Only INTG and REAL data types implemented.", ERR, ERROR,*999 )
+            CALL FlagError( "Only INTG and REAL data types implemented.", ERR, ERROR,*999 )
           ENDIF
           isFirstValueSet = 0
         ELSE IF( component%INTERPOLATION_TYPE == FIELD_GAUSS_POINT_BASED_INTERPOLATION) THEN
@@ -3717,7 +3718,7 @@ CONTAINS
             CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
               & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_INTG,ERR,ERROR,*999)
             ALLOCATE(GEOMETRIC_PARAMETERS_DP(SIZE(GEOMETRIC_PARAMETERS_INTG)))
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
+            IF(ERR/=0) CALL FlagError("Could not allocate geometric parameters dp", ERR, ERROR,*999 )
             GEOMETRIC_PARAMETERS_DP(1:SIZE(GEOMETRIC_PARAMETERS_INTG))= &
               & REAL(GEOMETRIC_PARAMETERS_INTG(1:SIZE(GEOMETRIC_PARAMETERS_INTG)))
             ERR = FieldExport_ElementGridValues( sessionHandle, isFirstValueSet, BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP( &
@@ -3725,13 +3726,13 @@ CONTAINS
               & GEOMETRIC_PARAMETERS_DP(component%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(1,local_number)))
             DEALLOCATE(GEOMETRIC_PARAMETERS_DP)
           ELSE
-            CALL FLAG_ERROR( "Only INTG and REAL data types implemented.", ERR, ERROR,*999 )
+            CALL FlagError( "Only INTG and REAL data types implemented.", ERR, ERROR,*999 )
           ENDIF
           isFirstValueSet = 0
         ENDIF
 
         IF(ERR/=0) THEN
-          CALL FLAG_ERROR( "Cannot write grid points to nodes file", ERR, ERROR,*999 )
+          CALL FlagError( "Cannot write grid points to nodes file", ERR, ERROR,*999 )
         ENDIF
       ENDDO
 
@@ -3772,7 +3773,7 @@ CONTAINS
             USER_ELEMENT_NODES(9)=element%USER_ELEMENT_NODES(7)
             USER_ELEMENT_NODES(10)=element%USER_ELEMENT_NODES(3)
          CASE DEFAULT
-            CALL FLAG_ERROR("Invalid basis order.",ERR,ERROR,*999)
+            CALL FlagError("Invalid basis order.",ERR,ERROR,*999)
           END SELECT
         CASE(3)
           SELECT CASE(BASIS%INTERPOLATION_ORDER(1))
@@ -3811,17 +3812,17 @@ CONTAINS
             USER_ELEMENT_NODES(19)=element%USER_ELEMENT_NODES(14)
             USER_ELEMENT_NODES(20)=element%USER_ELEMENT_NODES(4)
           CASE DEFAULT
-            CALL FLAG_ERROR("Invalid basis order.",ERR,ERROR,*999)
+            CALL FlagError("Invalid basis order.",ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
-          CALL FLAG_ERROR("Invalid number of xi.",ERR,ERROR,*999)
+          CALL FlagError("Invalid number of xi.",ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       END SELECT
       ERR = FieldExport_ElementNodeIndices( sessionHandle, BASIS%NUMBER_OF_NODES, C_LOC( USER_ELEMENT_NODES ) )
       IF(ERR/=0) THEN
-        CALL FLAG_ERROR( "Cannot write node indices to file", ERR, ERROR,*999 )
+        CALL FlagError( "Cannot write node indices to file", ERR, ERROR,*999 )
       ENDIF
 
       CALL FIELD_IO_EXPORT_ELEMENT_SCALE_FACTORS( sessionHandle, components, &
@@ -3831,7 +3832,7 @@ CONTAINS
 
     ERR = FieldExport_CloseSession( sessionHandle )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "Cannot close element export file", ERR, ERROR,*999 )
+      CALL FlagError( "Cannot close element export file", ERR, ERROR,*999 )
     ENDIF
     sessionHandle = -1
 
@@ -3870,10 +3871,10 @@ CONTAINS
     ENTERS("FIELD_IO_ELEMENTAL_INFO_SET_SORT",ERR,ERROR,*999)
 
     IF(.NOT.ALLOCATED(ELEMENTAL_INFO_SET%LIST_OF_GLOBAL_NUMBER)) THEN
-      CALL FLAG_ERROR("list of global numbering in the input data is invalid",ERR,ERROR,*999)
+      CALL FlagError("list of global numbering in the input data is invalid",ERR,ERROR,*999)
     ENDIF
     IF(.NOT.ALLOCATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET)) THEN
-      CALL FLAG_ERROR("nodal information set in the input data is invalid",ERR,ERROR,*999)
+      CALL FlagError("nodal information set in the input data is invalid",ERR,ERROR,*999)
     ENDIF
 
 
@@ -4059,7 +4060,7 @@ CONTAINS
   !
 
   !>Collect the elemental information from each MPI process
-  SUBROUTINE FIELD_IO_ELEMENTAL_INFO_SET_ATTACH_LOCAL_PROCESS( ELEMENTAL_INFO_SET, FIELDS, ERR, ERROR, * )
+  SUBROUTINE FieldIO_ElementalInfoSetAttachLocalProcess( ELEMENTAL_INFO_SET, FIELDS, ERR, ERROR, * )
     !Argument variables
     TYPE(FIELD_IO_INFO_SET), INTENT(INOUT):: ELEMENTAL_INFO_SET !<nodal information in this process
     TYPE(FIELDS_TYPE), POINTER ::FIELDS !<the field object
@@ -4074,7 +4075,7 @@ CONTAINS
     INTEGER(INTG) :: num_field, var_idx, component_idx, np, nn !temporary variable
     LOGICAL :: foundNewElement
 
-    ENTERS("FIELD_IO_ELEMENTAL_INFO_SET_ATTACH_LOCAL_PROCESS",ERR,ERROR,*999)
+    ENTERS("FieldIO_ElementalInfoSetAttachLocalProcess",ERR,ERROR,*999)
 
     !validate the input data
     INREGION=.FALSE.
@@ -4085,7 +4086,7 @@ CONTAINS
       IF(ASSOCIATED(FIELDS%INTERFACE)) THEN
         ININTERFACE=.TRUE.
       ELSE
-        CALL FLAG_ERROR("Fields is not associated with a region or interface.",ERR,ERROR,*999)
+        CALL FlagError("Fields is not associated with a region or interface.",ERR,ERROR,*999)
       ENDIF
     ENDIF
 
@@ -4095,7 +4096,7 @@ CONTAINS
         IF(.NOT.ASSOCIATED(FIELDS%FIELDS(num_field)%PTR)) THEN
           LOCAL_ERROR ="No. "//TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))// &
             & " field handle in fields list is invalid"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
 
         IF( num_field == 1 ) THEN
@@ -4105,7 +4106,7 @@ CONTAINS
         IF(FIELDS%FIELDS(num_field-1)%PTR%REGION%USER_NUMBER/=FIELDS%FIELDS(num_field)%PTR%REGION%USER_NUMBER) THEN
           LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
             & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same region"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDDO
     ELSE
@@ -4114,7 +4115,7 @@ CONTAINS
         IF(.NOT.ASSOCIATED(FIELDS%FIELDS(num_field)%PTR)) THEN
           LOCAL_ERROR ="No. "//TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))// &
             & " field handle in fields list is invalid"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
 
         IF( num_field == 1 ) THEN
@@ -4125,7 +4126,7 @@ CONTAINS
           & FIELDS%FIELDS(num_field)%PTR%INTERFACE%USER_NUMBER) THEN
           LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
             & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same interface."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDDO
     ENDIF
@@ -4137,7 +4138,7 @@ CONTAINS
     !information set with nodal information of local process
     IF((ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES/=0).OR.(.NOT.ASSOCIATED(ELEMENTAL_INFO_SET%FIELDS)) &
       & .OR.ALLOCATED(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET)) THEN
-      CALL FLAG_ERROR("nodal information set is not initialized properly, and call start method first", &
+      CALL FlagError("nodal information set is not initialized properly, and call start method first", &
         & ERR,ERROR,*999)
     ENDIF
 
@@ -4178,7 +4179,7 @@ CONTAINS
 
     !allocate the nodal information set and initialize them
     ALLOCATE(ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES),STAT=ERR)
-    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nodal information set",ERR,ERROR,*999)
+    IF(ERR/=0) CALL FlagError("Could not allocate nodal information set",ERR,ERROR,*999)
 
     DO nn = 1, ELEMENTAL_INFO_SET%NUMBER_OF_ENTRIES
       ALLOCATE( ELEMENTAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR )
@@ -4225,11 +4226,11 @@ CONTAINS
     !LOCAL_PROCESS_NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER=>LIST_OF_GLOBAL_NUMBER
     !NULLIFY(LIST_OF_GLOBAL_NUMBER)
 
-    EXITS("FIELD_IO_ELEMENTAL_INFO_SET_ATTACH_LOCAL_PROCESS")
+    EXITS("FieldIO_ElementalInfoSetAttachLocalProcess")
     RETURN
-999 ERRORSEXITS("FIELD_IO_ELEMENTAL_INFO_SET_ATTACH_LOCAL_PROCESS",ERR,ERROR)
+999 ERRORSEXITS("FieldIO_ElementalInfoSetAttachLocalProcess",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE FIELD_IO_ELEMENTAL_INFO_SET_ATTACH_LOCAL_PROCESS
+  END SUBROUTINE FieldIO_ElementalInfoSetAttachLocalProcess
 
   !
   !================================================================================================================================
@@ -4258,13 +4259,13 @@ CONTAINS
   !  IF(ERR/=0) GOTO 999
   !  IF(METHOD=="FORTRAN") THEN
   !     CALL FIELD_IO_INFO_SET_INITIALISE(LOCAL_PROCESS_NODAL_INFO_SET, FIELDS, ERR,ERROR,*999)
-  !     CALL FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(LOCAL_PROCESS_NODAL_INFO_SET, ERR,ERROR,*999)
+  !     CALL FieldIO_NodelInfoSetAttachLocalProcess(LOCAL_PROCESS_NODAL_INFO_SET, ERR,ERROR,*999)
   !     CALL FIELD_IO_NODAL_INFO_SET_SORT(LOCAL_PROCESS_NODAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)
   !     CALL FIELD_IO_IMPORT_NODES_FROM_LOCAL_FILE(LOCAL_PROCESS_NODAL_INFO_SET, FILE_NAME, my_computational_node_number, &
   !          &computational_node_numbers, ERR, ERROR, *999)
   !     CALL FIELD_IO_NODAL_INFO_SET_FINALIZE(LOCAL_PROCESS_NODAL_INFO_SET, ERR,ERROR,*999)
   !  ELSE IF(METHOD=="MPIIO") THEN
-  !     CALL FLAG_ERROR("what are u thinking, of course not!",ERR,ERROR,*999)
+  !     CALL FlagError("what are u thinking, of course not!",ERR,ERROR,*999)
   !  ENDIF
   !
   !  EXITS("FIELD_IO_NODES_IMPORT")
@@ -4395,10 +4396,10 @@ CONTAINS
       IF(DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES&
         &==DOMAIN_NODES2%NODES(local_number2)%NUMBER_OF_DERIVATIVES) THEN
         ALLOCATE(array1(DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary buffer in IO sorting",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate temporary buffer in IO sorting",ERR,ERROR,*999)
 
         ALLOCATE(array2(DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary buffer in IO sorting",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate temporary buffer in IO sorting",ERR,ERROR,*999)
 
         array1(1:DOMAIN_NODES1%NODES(local_number1)%NUMBER_OF_DERIVATIVES)=0
         array2(1:DOMAIN_NODES1%NODES(local_number2)%NUMBER_OF_DERIVATIVES)=0
@@ -4459,10 +4460,10 @@ CONTAINS
     ENTERS("FIELD_IO_NODAL_INFO_SET_SORT",ERR,ERROR,*999)
 
     IF(.NOT.ALLOCATED(NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER)) THEN
-       CALL FLAG_ERROR("list of global numbering in the input data is invalid",ERR,ERROR,*999)
+       CALL FlagError("list of global numbering in the input data is invalid",ERR,ERROR,*999)
     ENDIF
     IF(.NOT.ALLOCATED(NODAL_INFO_SET%COMPONENT_INFO_SET)) THEN
-       CALL FLAG_ERROR("nodal information set in the input data is invalid",ERR,ERROR,*999)
+       CALL FlagError("nodal information set in the input data is invalid",ERR,ERROR,*999)
     ENDIF
 
     !group nodal information set according to its components, i.e. put all the nodes with the same components together
@@ -4576,10 +4577,10 @@ CONTAINS
     ENTERS("FIELD_IO_LABEL_DERIVATIVE_INFO_GET",ERR,ERROR,*999)
 
     IF(NUMBER_DERIVATIVES==0) THEN
-       CALL FLAG_ERROR("number of derivatives in the input data is zero",ERR,ERROR,*999)
+       CALL FlagError("number of derivatives in the input data is zero",ERR,ERROR,*999)
     ENDIF
     IF(LABEL_TYPE/=FIELD_IO_DERIVATIVE_LABEL) THEN
-       CALL FLAG_ERROR("label type in the input data is not derivative label",ERR,ERROR,*999)
+       CALL FlagError("label type in the input data is not derivative label",ERR,ERROR,*999)
     ENDIF
 
     IF((NUMBER_DERIVATIVES==1).AND.GROUP_DERIVATIVES(1)==NO_PART_DERIV) THEN
@@ -4663,7 +4664,7 @@ CONTAINS
     ENTERS("FIELD_IO_GET_FIELD_INFO_LABEL",ERR,ERROR,*999)
 
     IF(.NOT.ASSOCIATED(FIELD)) THEN
-       CALL FLAG_ERROR("field pointer in the input data is invalid",ERR,ERROR,*999)
+       CALL FlagError("field pointer in the input data is invalid",ERR,ERROR,*999)
        GOTO 999
     ENDIF
 
@@ -4705,7 +4706,7 @@ CONTAINS
     ENTERS("FIELD_IO_GET_VARIABLE_INFO_LABEL",ERR,ERROR,*999)
 
     IF(.NOT.ASSOCIATED(COMPONENT)) THEN
-      CALL FLAG_ERROR("component pointer in the input data is invalid",ERR,ERROR,*999)
+      CALL FlagError("component pointer in the input data is invalid",ERR,ERROR,*999)
       GOTO 999
     ENDIF
 
@@ -4840,7 +4841,7 @@ CONTAINS
     ENTERS("FIELD_IO_GET_COMPONENT_INFO_LABEL",ERR,ERROR,*999)
 
     IF(.NOT.ASSOCIATED(COMPONENT)) THEN
-       CALL FLAG_ERROR("component pointer in the input data is invalid",ERR,ERROR,*999)
+       CALL FlagError("component pointer in the input data is invalid",ERR,ERROR,*999)
        GOTO 999
     ENDIF
 
@@ -4952,13 +4953,13 @@ CONTAINS
   !  ENDDO !comp_idx
   !  !Allocate the memory for group of field variables
   !  ALLOCATE(GROUP_FIELDS(NUM_OF_FIELDS),STAT=ERR)
-  !  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary field buffer in IO",ERR,ERROR,*999)
+  !  IF(ERR/=0) CALL FlagError("Could not allocate temporary field buffer in IO",ERR,ERROR,*999)
   !  !Allocate the memory for group of field components
   !  ALLOCATE(GROUP_VARIABLES(NUM_OF_VARIABLES),STAT=ERR)
-  !  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary variable buffer in IO",ERR,ERROR,*999)
+  !  IF(ERR/=0) CALL FlagError("Could not allocate temporary variable buffer in IO",ERR,ERROR,*999)
   !  !Allocate the memory for group of maximum number of derivatives
   !  ALLOCATE(GROUP_DERIVATIVES(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
-  !  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary derivatives buffer in IO",ERR,ERROR,*999)
+  !  IF(ERR/=0) CALL FlagError("Could not allocate temporary derivatives buffer in IO",ERR,ERROR,*999)
   !
   !  !fill information into the group of fields and variables
   !  NUM_OF_FIELDS=0
@@ -5005,18 +5006,18 @@ CONTAINS
   !
   !  CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
   !  IF(LINE/=" "//"#Fields="//TRIM(NUMBER_TO_VSTRING(SUM(GROUP_FIELDS(1:NUM_OF_FIELDS)),"*",ERR,ERROR))) &
-  !     & CALL FLAG_ERROR("Fields number in the Header part do not match",ERR,ERROR,*999)
+  !     & CALL FlagError("Fields number in the Header part do not match",ERR,ERROR,*999)
   !
   !  DO field_idx=1, NUM_OF_FIELDS
   !     !write out the field information
   !     !LABEL=FIELD_IO_GET_FIELD_INFO_LABEL(NODAL_INFO_SET%COMPONENT_INFO_SET(LOCAL_NODAL_NUMBER)%COMPONENTS(comp_idx1)%PTR, FIELD_IO_FIELD_LABEL,ERR,ERROR)
   !     !IF(ERR/=0) THEN
-  !     !   CALL FLAG_ERROR("can not get field label",ERR,ERROR,*999)
+  !     !   CALL FlagError("can not get field label",ERR,ERROR,*999)
   !     !ENDIF
   !     !CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
   !     !IF(LINE/=TRIM(NUMBER_TO_VSTRING(field_idx,"*",ERR,ERROR))//") "//TRIM(LABEL)&
   !     !&//" , #variables="//TRIM(NUMBER_TO_VSTRING(GROUP_FIELDS(field_idx),"*",ERR,ERROR)) &
-  !     !CALL FLAG_ERROR("Variable number in the Header part do not match",ERR,ERROR,*999)
+  !     !CALL FlagError("Variable number in the Header part do not match",ERR,ERROR,*999)
   !
   !     DO var_idx=1, GROUP_FIELDS(field_idx)
   !        global_var_idx=global_var_idx+1
@@ -5025,12 +5026,12 @@ CONTAINS
   !        &//FIELD_IO_GET_FIELD_INFO_LABEL(NODAL_INFO_SET%COMPONENT_INFO_SET(LOCAL_NODAL_NUMBER)%&
   !        &COMPONENTS(comp_idx1)%PTR, FIELD_IO_VARIABLE_LABEL,ERR,ERROR)
   !        IF(ERR/=0) THEN
-  !           CALL FLAG_ERROR("can not get variable label",ERR,ERROR,*999)
+  !           CALL FlagError("can not get variable label",ERR,ERROR,*999)
   !           GOTO 999
   !        ENDIF
   !        CALL FIELD_IO_FORTRAN_FILE_READ_STRING(FILE_ID, LINE, FILE_END, ERR,ERROR, *999)
   !        IF(LINE/=TRIM(LABEL)//", #Components="//TRIM(NUMBER_TO_VSTRING(GROUP_VARIABLES(global_var_idx),"*",ERR,ERROR))) &
-  !           & CALL FLAG_ERROR("Components number in the Header part do not match",ERR,ERROR,*999)
+  !           & CALL FlagError("Components number in the Header part do not match",ERR,ERROR,*999)
   !
   !
   !        DO comp_idx=1, GROUP_VARIABLES(global_var_idx)
@@ -5038,7 +5039,7 @@ CONTAINS
   !           LABEL="   "//FIELD_IO_GET_FIELD_INFO_LABEL(NODAL_INFO_SET%COMPONENT_INFO_SET(LOCAL_NODAL_NUMBER)%&
   !           &COMPONENTS(comp_idx1)%PTR, FIELD_IO_COMPONENT_LABEL,ERR,ERROR)
   !           IF(ERR/=0) THEN
-  !              CALL FLAG_ERROR("can not get component label",ERR,ERROR,*999)
+  !              CALL FlagError("can not get component label",ERR,ERROR,*999)
   !              GOTO 999
   !           ENDIF
   !           LINE=TRIM(LABEL)//"."
@@ -5059,7 +5060,7 @@ CONTAINS
   !           LABEL=FIELD_IO_LABEL_DERIVATIVE_INFO_GET(GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV), NUM_OF_NODAL_DEV, &
   !              &FIELD_IO_DERIVATIVE_LABEL,ERR,ERROR)
   !           IF(ERR/=0) THEN
-  !              CALL FLAG_ERROR("can not get derivative label",ERR,ERROR,*999)
+  !              CALL FlagError("can not get derivative label",ERR,ERROR,*999)
   !              GOTO 999
   !           ENDIF
   !           !write out the header
@@ -5067,7 +5068,7 @@ CONTAINS
   !           !assemble the header
   !           IF(LINE/=LINE//"  Value index= "//TRIM(NUMBER_TO_VSTRING(value_idx,"*",ERR,ERROR))&
   !              &//", #Derivatives= "//TRIM(NUMBER_TO_VSTRING(NUM_OF_NODAL_DEV-1,"*",ERR,ERROR))//TRIM(LABEL)) &
-  !              & CALL FLAG_ERROR("Value index in the Header part do not match",ERR,ERROR,*999)
+  !              & CALL FlagError("Value index in the Header part do not match",ERR,ERROR,*999)
   !           !increase the component index
   !           comp_idx1=comp_idx1+1
   !           !increase the value index
@@ -5168,13 +5169,13 @@ CONTAINS
 
     !Allocate the memory for group of field variables
     ALLOCATE(GROUP_FIELDS(NUM_OF_FIELDS),STAT=ERR)
-    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary field buffer in IO",ERR,ERROR,*999)
+    IF(ERR/=0) CALL FlagError("Could not allocate temporary field buffer in IO",ERR,ERROR,*999)
     !Allocate the memory for group of field components
     ALLOCATE(GROUP_VARIABLES(NUM_OF_VARIABLES),STAT=ERR)
-    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary variable buffer in IO",ERR,ERROR,*999)
+    IF(ERR/=0) CALL FlagError("Could not allocate temporary variable buffer in IO",ERR,ERROR,*999)
     !Allocate the memory for group of maximum number of derivatives
     ALLOCATE(GROUP_DERIVATIVES(MAX_NUM_OF_NODAL_DERIVATIVES),STAT=ERR)
-    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate temporary derivatives buffer in IO",ERR,ERROR,*999)
+    IF(ERR/=0) CALL FlagError("Could not allocate temporary derivatives buffer in IO",ERR,ERROR,*999)
 
     !fill information into the group of fields and variables
     NUM_OF_FIELDS=0
@@ -5215,7 +5216,7 @@ CONTAINS
 
     ERR = FieldExport_FieldCount( sessionHandle, SUM(GROUP_FIELDS(1:NUM_OF_FIELDS) ) )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+      CALL FlagError( "File write error during field export", ERR, ERROR,*999 )
     ENDIF
 
     DO field_idx=1, NUM_OF_FIELDS
@@ -5244,7 +5245,7 @@ CONTAINS
            & variable_ptr%NUMBER_OF_COMPONENTS )
         ENDIF
         IF( ERR /= 0 ) THEN
-          CALL FLAG_ERROR( "File write error during field export", ERR, ERROR,*999 )
+          CALL FlagError( "File write error during field export", ERR, ERROR,*999 )
         ENDIF
 
         DO comp_idx=1, variable_ptr%NUMBER_OF_COMPONENTS
@@ -5318,7 +5319,7 @@ CONTAINS
 
           ERR = FieldExport_VersionInfo( sessionHandle, fieldInfoSet%COMPONENT_VERSIONS(comp_idx1) )
           IF(ERR/=0) THEN
-            CALL FLAG_ERROR( "Error exporting version information.", ERR, ERROR,*999 )
+            CALL FlagError( "Error exporting version information.", ERR, ERROR,*999 )
           ENDIF
           ERR = FieldExport_EndComponent( sessionHandle )
 
@@ -5381,24 +5382,24 @@ CONTAINS
     MAX_NUM_OF_NODAL_DERIVATIVES=0
 
     IF(.NOT.ALLOCATED(NODAL_INFO_SET%COMPONENT_INFO_SET)) THEN
-      CALL FLAG_ERROR("the nodal information set in input is invalid",ERR,ERROR,*999)
+      CALL FlagError("the nodal information set in input is invalid",ERR,ERROR,*999)
     ENDIF
 
     IF(.NOT.ALLOCATED(NODAL_INFO_SET%LIST_OF_GLOBAL_NUMBER)) THEN
-      CALL FLAG_ERROR("the nodal global information set is not associated with any numbering list",ERR,ERROR,*999)
+      CALL FlagError("the nodal global information set is not associated with any numbering list",ERR,ERROR,*999)
     ENDIF
 
     IF(NODAL_INFO_SET%NUMBER_OF_ENTRIES==0) THEN
-      CALL FLAG_ERROR("the nodal information set does not contain any nodes",ERR,ERROR,*999)
+      CALL FlagError("the nodal information set does not contain any nodes",ERR,ERROR,*999)
     ENDIF
 
     IF(NODAL_INFO_SET%COMPONENT_INFO_SET(1)%PTR%SAME_HEADER) THEN
-      CALL FLAG_ERROR("the first header flag of nodal information set should be false",ERR,ERROR,*999)
+      CALL FlagError("the first header flag of nodal information set should be false",ERR,ERROR,*999)
     ENDIF
 
     ERR = FieldExport_OpenSession( EXPORT_TYPE_FILE, char(FILE_NAME)//C_NULL_CHAR, sessionHandle )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "Cannot open file export session", ERR, ERROR,*999 )
+      CALL FlagError( "Cannot open file export session", ERR, ERROR,*999 )
     ENDIF
 
     IF(ASSOCIATED(NODAL_INFO_SET%FIELDS%REGION)) THEN
@@ -5407,11 +5408,11 @@ CONTAINS
       IF(ASSOCIATED(NODAL_INFO_SET%FIELDS%INTERFACE)) THEN
        ERR = FieldExport_Group( sessionHandle, CHAR(NODAL_INFO_SET%FIELDS%INTERFACE%LABEL)//C_NULL_CHAR )
      ELSE
-        CALL FLAG_ERROR("Fields region or interface is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Fields region or interface is not associated.",ERR,ERROR,*999)
       ENDIF
     ENDIF
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
+      CALL FlagError( "Cannot write group name to nodes file", ERR, ERROR,*999 )
     ENDIF
 
     DO nn=1, NODAL_INFO_SET%NUMBER_OF_ENTRIES
@@ -5467,7 +5468,7 @@ CONTAINS
           ERR = FieldExport_NodeValues( sessionHandle, DOMAIN_NODES%NODES(local_number)%USER_NUMBER, NUM_OF_NODAL_DEV, &
             & C_LOC(NODAL_BUFFER) )
           IF(ERR/=0) THEN
-            CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
+            CALL FlagError( "Cannot write group name to nodes file", ERR, ERROR,*999 )
           ENDIF
         ENDDO !paddingCount
 
@@ -5482,7 +5483,7 @@ CONTAINS
           CALL FIELD_PARAMETER_SET_DATA_GET(COMPONENT%FIELD_VARIABLE%FIELD,COMPONENT%FIELD_VARIABLE%VARIABLE_TYPE, &
             & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS_DP,ERR,ERROR,*999)
         CASE DEFAULT
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         END SELECT
         !get the nodal partial derivatives
         NUM_OF_NODAL_DEV=DOMAIN_NODES%NODES(local_number)%NUMBER_OF_DERIVATIVES
@@ -5527,7 +5528,7 @@ CONTAINS
                   & DERIVATIVES(DERIVATIVE_INDEXES(dev_idx))%VERSIONS(version_idx) )
               ENDIF
             CASE DEFAULT
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             END SELECT
             NODAL_BUFFER( NUM_OF_NODAL_DEV ) = VALUE
           ENDDO !dev_idx
@@ -5541,7 +5542,7 @@ CONTAINS
         ERR = FieldExport_NodeValues( sessionHandle, DOMAIN_NODES%NODES(local_number)%USER_NUMBER, NUM_OF_NODAL_DEV, &
           & C_LOC(NODAL_BUFFER) )
         IF(ERR/=0) THEN
-          CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
+          CALL FlagError( "Cannot write group name to nodes file", ERR, ERROR,*999 )
         ENDIF
       ENDDO !comp_idx
 
@@ -5557,7 +5558,7 @@ CONTAINS
         ERR = FieldExport_NodeValues( sessionHandle, DOMAIN_NODES%NODES(local_number)%USER_NUMBER, NUM_OF_NODAL_DEV, &
           & C_LOC(NODAL_BUFFER) )
         IF(ERR/=0) THEN
-          CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
+          CALL FlagError( "Cannot write group name to nodes file", ERR, ERROR,*999 )
         ENDIF
       ENDDO !paddingCount
 
@@ -5565,7 +5566,7 @@ CONTAINS
       !       ERR = FieldExport_NodeValues( sessionHandle, DOMAIN_NODES%NODES(local_number)%USER_NUMBER, &
       !         & total_nodal_values, C_LOC(TOTAL_NODAL_BUFFER) )
       !       IF(ERR/=0) THEN
-      !         CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
+      !         CALL FlagError( "Cannot write group name to nodes file", ERR, ERROR,*999 )
       !       ENDIF
 
 
@@ -5573,7 +5574,7 @@ CONTAINS
 
     ERR = FieldExport_CloseSession( sessionHandle )
     IF(ERR/=0) THEN
-      CALL FLAG_ERROR( "Cannot write group name to nodes file", ERR, ERROR,*999 )
+      CALL FlagError( "Cannot write group name to nodes file", ERR, ERROR,*999 )
     ENDIF
 
     !release the temporary memory
@@ -5621,7 +5622,7 @@ CONTAINS
     LEN_OF_DATA=LEN(STRING_DATA)
 
     IF(LEN_OF_DATA==0) THEN
-      CALL FLAG_ERROR("leng of string is zero",ERR,ERROR,*999)
+      CALL FlagError("leng of string is zero",ERR,ERROR,*999)
     ENDIF
 
     EXITS("FIELD_IO_FORTRAN_FILE_READ_STRING")
@@ -5898,7 +5899,7 @@ CONTAINS
   !!
 
   !>Collect nodal information from each MPI process
-  SUBROUTINE FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(NODAL_INFO_SET, FIELDS, my_computational_node_number, ERR,ERROR,*)
+  SUBROUTINE FieldIO_NodelInfoSetAttachLocalProcess(NODAL_INFO_SET, FIELDS, my_computational_node_number, ERR,ERROR,*)
     !Argument variables
     TYPE(FIELD_IO_INFO_SET), INTENT(INOUT):: NODAL_INFO_SET !<nodal information in this process
     TYPE(FIELDS_TYPE), POINTER ::FIELDS !<the field object
@@ -5916,7 +5917,7 @@ CONTAINS
     LOGICAL :: foundNewNode
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS",ERR,ERROR,*999)
+    ENTERS("FieldIO_NodelInfoSetAttachLocalProcess",ERR,ERROR,*999)
 
     !validate the input data
     INREGION=.FALSE.
@@ -5927,7 +5928,7 @@ CONTAINS
       IF(ASSOCIATED(FIELDS%INTERFACE)) THEN
         ININTERFACE=.TRUE.
       ELSE
-        CALL FLAG_ERROR("Fields is not associated with a region or interface.",ERR,ERROR,*999)
+        CALL FlagError("Fields is not associated with a region or interface.",ERR,ERROR,*999)
       ENDIF
     ENDIF
 
@@ -5937,7 +5938,7 @@ CONTAINS
         IF(.NOT.ASSOCIATED(FIELDS%FIELDS(num_field)%PTR)) THEN
           LOCAL_ERROR ="No. "//TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))// &
             & " field handle in fields list is invalid"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
 
         IF( num_field == 1 ) THEN
@@ -5947,7 +5948,7 @@ CONTAINS
         IF(FIELDS%FIELDS(num_field-1)%PTR%REGION%USER_NUMBER/=FIELDS%FIELDS(num_field)%PTR%REGION%USER_NUMBER) THEN
           LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
             & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same region"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDDO
     ELSE
@@ -5956,7 +5957,7 @@ CONTAINS
         IF(.NOT.ASSOCIATED(FIELDS%FIELDS(num_field)%PTR)) THEN
           LOCAL_ERROR ="No. "//TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))// &
             & " field handle in fields list is invalid"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
 
         IF( num_field == 1 ) THEN
@@ -5967,21 +5968,21 @@ CONTAINS
           & FIELDS%FIELDS(num_field)%PTR%INTERFACE%USER_NUMBER) THEN
           LOCAL_ERROR = "No. "//TRIM(NUMBER_TO_VSTRING(num_field-1,"*",ERR,ERROR))//" and "// &
             & TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR))//" fields are not in the same interface."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDDO
     ENDIF
 
     !checking whether the list of fields are using the same decomposition
     !IF(.NOT.ASSOCIATED(DECOMPOSITION))
-    !  CALL FLAG_ERROR("decomposition method is not vakid",ERR,ERROR,*999)
+    !  CALL FlagError("decomposition method is not vakid",ERR,ERROR,*999)
     !ENDIF
     !DO num_field =1, FIELDS%NUMBER_OF_FIELDS
     !  IF(FIELDS%FIELDS(num_field)%PTR%DECOMPOSITION/=DECOMPOSITION)
     !    LOCAL_ERROR ="No. "//TRIM(NUMBER_TO_VSTRING(num_field,"*",ERR,ERROR)) //" field "&
     !    & //" uses different decomposition method with the specified decomposition method,"//&
     !     & "which is not supported currently, ask Heye for more details"
-    !    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+    !    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     !  ENDIF
     !ENDDO
 
@@ -5992,7 +5993,7 @@ CONTAINS
     !information set with nodal information of local process
     IF( ( NODAL_INFO_SET%NUMBER_OF_ENTRIES > 0 ) .OR. &
       & ALLOCATED( NODAL_INFO_SET%COMPONENT_INFO_SET ) ) THEN
-      CALL FLAG_ERROR("nodal information set is not initialized properly, call start method first",ERR,ERROR,*999)
+      CALL FlagError("nodal information set is not initialized properly, call start method first",ERR,ERROR,*999)
     ENDIF
 
     DO field_idx = 1, NODAL_INFO_SET%FIELDS%NUMBER_OF_FIELDS
@@ -6036,7 +6037,7 @@ CONTAINS
 
     !allocate the nodal information set and initialize them
     ALLOCATE( NODAL_INFO_SET%COMPONENT_INFO_SET( NODAL_INFO_SET%NUMBER_OF_ENTRIES ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate nodal information set", ERR, ERROR, *999)
+    IF( ERR /= 0 ) CALL FlagError( "Could not allocate nodal information set", ERR, ERROR, *999)
 
     DO nn = 1, NODAL_INFO_SET%NUMBER_OF_ENTRIES
       ALLOCATE( NODAL_INFO_SET%COMPONENT_INFO_SET(nn)%PTR )
@@ -6097,11 +6098,11 @@ CONTAINS
       ENDDO !var_idx
     ENDDO !field_idx
 
-    EXITS("FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS")
+    EXITS("FieldIO_NodelInfoSetAttachLocalProcess")
     RETURN
-999 ERRORSEXITS("FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS",ERR,ERROR)
+999 ERRORSEXITS("FieldIO_NodelInfoSetAttachLocalProcess",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS
+  END SUBROUTINE FieldIO_NodelInfoSetAttachLocalProcess
 
   !!
   !!================================================================================================================================
@@ -6171,15 +6172,15 @@ CONTAINS
     IF(ERR/=0) GOTO 999
     IF(METHOD=="FORTRAN") THEN
       CALL FIELD_IO_INFO_SET_INITIALISE(NODAL_INFO_SET, ERR,ERROR,*999)
-      CALL FIELD_IO_NODAL_INFO_SET_ATTACH_LOCAL_PROCESS(NODAL_INFO_SET, FIELDS, my_computational_node_number, ERR,ERROR,*999)
+      CALL FieldIO_NodelInfoSetAttachLocalProcess(NODAL_INFO_SET, FIELDS, my_computational_node_number, ERR,ERROR,*999)
       CALL FIELD_IO_NODAL_INFO_SET_SORT(NODAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)
       CALL FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE(NODAL_INFO_SET, FILE_NAME, my_computational_node_number, &
           & ERR, ERROR, *999)
       CALL FIELD_IO_INFO_SET_INITIALISE(NODAL_INFO_SET, ERR,ERROR,*999)
     ELSE IF(METHOD=="MPIIO") THEN
-      CALL FLAG_ERROR("MPI IO has not been implemented yet!",ERR,ERROR,*999)
+      CALL FlagError("MPI IO has not been implemented yet!",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)
+      CALL FlagError("Unknown method!",ERR,ERROR,*999)
     ENDIF
 
     EXITS("FIELD_IO_NODES_EXPORT")
@@ -6221,15 +6222,15 @@ CONTAINS
     IF(ERR/=0) GOTO 999
     IF(METHOD=="FORTRAN") THEN
       CALL FIELD_IO_INFO_SET_INITIALISE( LOCAL_PROCESS_ELEMENTAL_INFO_SET, ERR, ERROR, *999 )
-      CALL FIELD_IO_ELEMENTAL_INFO_SET_ATTACH_LOCAL_PROCESS( LOCAL_PROCESS_ELEMENTAL_INFO_SET, FIELDS, ERR, ERROR, *999 )
+      CALL FieldIO_ElementalInfoSetAttachLocalProcess( LOCAL_PROCESS_ELEMENTAL_INFO_SET, FIELDS, ERR, ERROR, *999 )
       CALL FIELD_IO_ELEMENTAL_INFO_SET_SORT(LOCAL_PROCESS_ELEMENTAL_INFO_SET, my_computational_node_number, ERR,ERROR,*999)
       CALL FIELD_IO_EXPORT_ELEMENTS_INTO_LOCAL_FILE(LOCAL_PROCESS_ELEMENTAL_INFO_SET, FILE_NAME, my_computational_node_number, &
           & ERR, ERROR, *999)
       CALL FIELD_IO_INFO_SET_INITIALISE(LOCAL_PROCESS_ELEMENTAL_INFO_SET, ERR,ERROR,*999)
     ELSE IF(METHOD=="MPIIO") THEN
-      CALL FLAG_ERROR("MPI IO has not been implemented yet",ERR,ERROR,*999)
+      CALL FlagError("MPI IO has not been implemented yet",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Unknown method!",ERR,ERROR,*999)
+      CALL FlagError("Unknown method!",ERR,ERROR,*999)
     ENDIF
 
     EXITS("FIELD_IO_ELEMENTS_EXPORT")

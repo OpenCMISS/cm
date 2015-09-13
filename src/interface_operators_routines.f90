@@ -214,9 +214,9 @@ CONTAINS
                 ENDDO !rowComponentIdx
               ELSE
                 !\todo defaults to first mesh component, generalise
-                !XI=INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM( &
+                !XI=InterfaceOperators_InterfToCoupledMeshGaussTransform( &
                 !  & elementConnectivity,interfaceConnectivityBasis,GaussPoint,err,error)
-                XI(1:interfaceDependentBasis%NUMBER_OF_XI)=INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM( &
+                XI(1:interfaceDependentBasis%NUMBER_OF_XI)=InterfaceOperators_InterfToCoupledMeshGaussTransform( &
                   & elementConnectivity,interfaceConnectivityBasis,GaussPoint,err,error)
                 !XI=interfaceCondition%interface%pointsConnectivity%pointsConnectivity(GaussPoint,coupledMeshIdx)%xi
                 ! Loop over number of Lagrange variable components as not all components in the dependent field variable may be coupled
@@ -325,7 +325,7 @@ CONTAINS
               & coupledMeshIdx==interfaceEquations%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES) THEN
               !Scale factor adjustment for the Lagrange Variable (columns)
               IF(interfaceDependentField%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(elementNumber, &
+                CALL Field_InterpolationParametersScaleFactorsElementGet(elementNumber, &
                   & interfaceInterpolation%DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(lagrangeVariableType)%PTR, &
                   & err,error,*999)
                 rowIdx=0
@@ -344,7 +344,7 @@ CONTAINS
             ELSE
               !Scale factor adjustment for the Lagrange Variable (columns)
               IF(interfaceDependentField%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(elementNumber, &
+                CALL Field_InterpolationParametersScaleFactorsElementGet(elementNumber, &
                   & interfaceInterpolation%DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(lagrangeVariableType)%PTR, &
                   & err,error,*999)
                 rowIdx=0
@@ -372,7 +372,7 @@ CONTAINS
               ENDIF
               !Scale factor adjustment for the row dependent variable
               IF(coupledMeshDependentField%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(coupledMeshElementNumber, &
+                CALL Field_InterpolationParametersScaleFactorsElementGet(coupledMeshElementNumber, &
                   & interfaceEquations%INTERPOLATION%VARIABLE_INTERPOLATION(coupledMeshIdx)% &
                   & DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(coupledMeshVariableType)%PTR,err,error,*999)
                 rowIdx=0
@@ -458,7 +458,7 @@ CONTAINS
                 DO dataPointIdx=1,decompositionElementData%numberOfProjectedData
                   localElementNumber=pointsConnectivity%pointsConnectivity(dataPointIdx,coupledMeshIdx)% &
                     & coupledMeshElementNumber
-                  CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(localElementNumber,interfaceEquations% &
+                  CALL Field_InterpolationParametersScaleFactorsElementGet(localElementNumber,interfaceEquations% &
                     & INTERPOLATION%VARIABLE_INTERPOLATION(coupledMeshIdx)%DEPENDENT_INTERPOLATION(1)% &
                     & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                   !Calculate the element index (non-conforming element) for this interface matrix
@@ -486,13 +486,13 @@ CONTAINS
             ENDIF !UPDATE_MATRIX
           ENDDO !coupledMeshIdx
         ELSE
-          CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)
+          CALL FlagError("Interface points connectivity is not associated.",err,error,*999)
         ENDIF
 
       CASE DEFAULT
         localError="Interface condition integration type "//TRIM(NUMBER_TO_VSTRING(interfaceCondition%integrationType, &
           & "*",err,error))// " is not valid."
-        CALL FLAG_ERROR(localError,err,error,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT !interfaceCondition%integrationType
 
     CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
@@ -559,11 +559,11 @@ CONTAINS
         IF(ASSOCIATED(interface)) THEN
           SELECT CASE(interfaceCondition%METHOD)
           CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-            CALL FLAG_ERROR("Not implemented.",err,error,*999)
+            CALL FlagError("Not implemented.",err,error,*999)
           CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD,INTERFACE_CONDITION_PENALTY_METHOD)
             SELECT CASE(interfaceCondition%integrationType)
             CASE(INTERFACE_CONDITION_GAUSS_INTEGRATION)
-              CALL FLAG_ERROR("Mesh connectivity is not implemented for frictionless contact.",err,error,*999)
+              CALL FlagError("Mesh connectivity is not implemented for frictionless contact.",err,error,*999)
             CASE(INTERFACE_CONDITION_DATA_POINTS_INTEGRATION)
               matrixCoefficients(1)=1; !\todo: Change to interface mapping matrix coefficients
               matrixCoefficients(2)=-1;
@@ -577,7 +577,7 @@ CONTAINS
                 !Test if datapoints were orthogonally projected.  
                 !\todo: Allow the user to choose to only include orthogonally projected points or not (check is commented when populating element matrix below).  
                 ALLOCATE(orthogonallyProjected(decompositionElementData%numberOfProjectedData),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate orthogonal projected logicals.",err,error,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate orthogonal projected logicals.",err,error,*999)
                 orthogonallyProjected=.TRUE. !Initialise orthogonal projected logicals
                 DO coupledMeshIdx=1,interface%NUMBER_OF_COUPLED_MESHES
                   coupledMeshDependentField=>interfaceCondition%DEPENDENT%EQUATIONS_SETS(coupledMeshIdx)%PTR% &
@@ -598,13 +598,13 @@ CONTAINS
                 
                 !Allocate memory for local allocatable variables
                 ALLOCATE(gaps(decompositionElementData%numberOfProjectedData),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate gaps.",err,error,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate gaps.",err,error,*999)
                 gaps=0.0_DP !Initialise gap functions
                 ALLOCATE(gapsComponents(3,decompositionElementData%numberOfProjectedData),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate component gaps.",err,error,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate component gaps.",err,error,*999)
                 gapsComponents=0.0_DP !Initialise gap functions
                 ALLOCATE(normals(3,decompositionElementData%numberOfProjectedData),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate normals.",err,error,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate normals.",err,error,*999)
                 normals=0.0_DP !Initialise gap functions
 
                 !Calculate Gap for each data point 
@@ -660,14 +660,14 @@ CONTAINS
                       !Calculate surface normal (use 2nd coupled mesh surface normal)
                       !\todo: Allow the user to choose which surface normal to calculate or alternatively allow for a weighted average of the two.  
                       IF (coupledMeshIdx==2) THEN
-                        CALL FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE(interpolatedPoints,interpolatedPointsMetrics, &
+                        CALL Field_InterpolatedPointsMetricsInitialise(interpolatedPoints,interpolatedPointsMetrics, &
                           & err,error,*999)
                         CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(numberOfCoupledMeshGeoComp,interpolatedPointsMetrics &
                           & (FIELD_U_VARIABLE_TYPE)%PTR,err,error,*999)
-                        CALL FIELD_POSITION_NORMAL_TANGENTS_CALCULATE_INT_PT_METRIC(interpolatedPointsMetrics &
+                        CALL Field_PositionNormalTangentsCalculateIntPtMetric(interpolatedPointsMetrics &
                           & (FIELD_U_VARIABLE_TYPE)%PTR,reverseNormal,positionPoint,normalPoint,tangentsPoint,err,error,*999)
                         normals(1:numberOfCoupledMeshGeoComp,dataPointIdx)=normalPoint(1:numberOfCoupledMeshGeoComp)
-                        CALL FIELD_INTERPOLATED_POINTS_METRICS_FINALISE(interpolatedPointsMetrics,err,error,*999)
+                        CALL Field_InterpolatedPointsMetricsFinalise(interpolatedPointsMetrics,err,error,*999)
                       ENDIF !coupledMeshIdx==1
                     !ENDIF !orthogonallyProjected(dataPointIdx)
                   ENDDO !dataPointIdx
@@ -708,7 +708,7 @@ CONTAINS
                             & elementNumbers(matrixElementIdx))
                           matrixElementIdx=matrixElementIdx+1
                         ENDDO
-                        CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(localElementNumber,interfaceEquations% &
+                        CALL Field_InterpolationParametersScaleFactorsElementGet(localElementNumber,interfaceEquations% &
                           & INTERPOLATION%VARIABLE_INTERPOLATION(coupledMeshIdx)%DEPENDENT_INTERPOLATION(1)% &
                           & INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                         xi(1:numberOfCoupledMeshXi)=pointsConnectivity%pointsConnectivity(globalDataPointNumber,coupledMeshIdx)% &
@@ -794,43 +794,43 @@ CONTAINS
                                 & " of field number "//TRIM(NUMBER_TO_VSTRING(penaltyField%USER_NUMBER,"*",err,error))//" is "// &
                                 & TRIM(NUMBER_TO_VSTRING(penaltyField%VARIABLE_TYPE_MAP(FIELD_U_VARIABLE_TYPE)%PTR%COMPONENTS &
                                 & (componentIdx)%INTERPOLATION_TYPE,"*", err,error))// " which is invalid for penalty field."
-                              CALL FLAG_ERROR(localError,err,error,*999)
+                              CALL FlagError(localError,err,error,*999)
                             END SELECT
                           ENDDO !componentIdx
                         ENDIF              
                       ELSE
-                        CALL FLAG_ERROR("Interface penalty matrix is not associated.",err,error,*999)
+                        CALL FlagError("Interface penalty matrix is not associated.",err,error,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Interface penalty field is not associated.",err,error,*999)
+                      CALL FlagError("Interface penalty field is not associated.",err,error,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Interface penalty is not associated.",err,error,*999)
+                    CALL FlagError("Interface penalty is not associated.",err,error,*999)
                   ENDIF
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Interface points connectivity is not associated.",err,error,*999)
+                CALL FlagError("Interface points connectivity is not associated.",err,error,*999)
               ENDIF
             CASE DEFAULT
               localError="Interface condition integration type "//TRIM(NUMBER_TO_VSTRING(interfaceCondition%integrationType, &
                 & "*",err,error))// " is not valid."
-              CALL FLAG_ERROR(localError,err,error,*999)
+              CALL FlagError(localError,err,error,*999)
             END SELECT !interfaceCondition%integrationType
           CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-            CALL FLAG_ERROR("Not implemented.",err,error,*999)
+            CALL FlagError("Not implemented.",err,error,*999)
           CASE DEFAULT
             localError="Interface condition method "//TRIM(NUMBER_TO_VSTRING(interfaceCondition%METHOD,"*",err,error))// &
               & " is not valid."
-            CALL FLAG_ERROR(localError,err,error,*999)
+            CALL FlagError(localError,err,error,*999)
           END SELECT !interfaceCondition%METHOD
         ELSE
-          CALL FLAG_ERROR("Interface is not associated.",err,error,*999)
+          CALL FlagError("Interface is not associated.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface equations is not associated.",err,error,*999)
+        CALL FlagError("Interface equations is not associated.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
+      CALL FlagError("Interface condition is not associated.",err,error,*999)
     ENDIF
 
     EXITS("FrictionlessContact_FiniteElementCalculate")
@@ -882,10 +882,10 @@ CONTAINS
 
     ENTERS("SolidFluidOperator_FiniteElementCalculate",err,error,*999)
 
-    IF(.NOT.ASSOCIATED(interfaceCondition)) CALL FLAG_ERROR("Interface condition is not associated.",err,error,*999)
-    IF(.NOT.ASSOCIATED(interfaceCondition%INTERFACE_EQUATIONS)) CALL FLAG_ERROR("Interface equations is not associated." &
+    IF(.NOT.ASSOCIATED(interfaceCondition)) CALL FlagError("Interface condition is not associated.",err,error,*999)
+    IF(.NOT.ASSOCIATED(interfaceCondition%INTERFACE_EQUATIONS)) CALL FlagError("Interface equations is not associated." &
       & ,err,error,*999)
-    IF(.NOT.ASSOCIATED(interfaceCondition%INTERFACE)) CALL FLAG_ERROR("Interface is not associated.",err,error,*999)
+    IF(.NOT.ASSOCIATED(interfaceCondition%INTERFACE)) CALL FlagError("Interface is not associated.",err,error,*999)
 
     interfaceEquations=>interfaceCondition%INTERFACE_EQUATIONS
 
@@ -893,7 +893,7 @@ CONTAINS
     !Select Interface method
     SELECT CASE(interfaceCondition%METHOD)
     CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-      CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CALL FlagError("Not implemented.",err,error,*999)
     CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD)
       !=============================================================================================================================
       !Select Integration type
@@ -958,12 +958,12 @@ CONTAINS
                 & JACOBIAN*interfaceQuadratureScheme%GAUSS_WEIGHTS(GaussPoint)
               IF(interfaceCondition%METHOD==INTERFACE_CONDITION_PENALTY_METHOD .AND. &
                   & coupledMeshIdx==interfaceEquations%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES) THEN
-                CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CALL FlagError("Not implemented.",err,error,*999)
               ELSE
                 !===================================================================================================================
                 !\todo defaults to first mesh component, generalise
                 !TODO Originally XI=...
-                XI(1:SIZE(elementConnectivity%XI,1))=INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM( &
+                XI(1:SIZE(elementConnectivity%XI,1))=InterfaceOperators_InterfToCoupledMeshGaussTransform( &
                   & elementConnectivity,interfaceConnectivityBasis,GaussPoint,err,error)
                 ! Loop over number of Lagrange variable components as not all components in the dependent field variable may be coupled
                 !\todo Currently Lagrange field variable component numbers must match each coupled dependent field variable component numbers. Generalise ordering
@@ -1084,11 +1084,11 @@ CONTAINS
             !\todo update looping of variables/components for non-zero matrix elements as done above 
             IF(interfaceCondition%METHOD==INTERFACE_CONDITION_PENALTY_METHOD .AND. &
               & coupledMeshIdx==interfaceEquations%INTERFACE_MATRICES%NUMBER_OF_INTERFACE_MATRICES) THEN
-              CALL FLAG_ERROR("Not implemented.",err,error,*999)
+              CALL FlagError("Not implemented.",err,error,*999)
             ELSE
               !Scale factor adjustment for the Lagrange Variable (columns)
               IF(interfaceDependentField%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(elementNumber, &
+                CALL Field_InterpolationParametersScaleFactorsElementGet(elementNumber, &
                   & interfaceInterpolation%DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(lagrangeVariableType)%PTR, &
                   & err,error,*999)
                 rowIdx=0
@@ -1116,7 +1116,7 @@ CONTAINS
               ENDIF
               !Scale factor adjustment for the row dependent variable
               IF(coupledMeshDependentField%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-                CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(coupledMeshElementNumber, &
+                CALL Field_InterpolationParametersScaleFactorsElementGet(coupledMeshElementNumber, &
                   & interfaceEquations%INTERPOLATION%VARIABLE_INTERPOLATION(coupledMeshIdx)% &
                   & DEPENDENT_INTERPOLATION(1)%INTERPOLATION_PARAMETERS(coupledMeshVariableType)%PTR,err,error,*999)
                 rowIdx=0
@@ -1143,19 +1143,19 @@ CONTAINS
         ENDDO ! coupledMeshIdx
         
       CASE(INTERFACE_CONDITION_DATA_POINTS_INTEGRATION)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE DEFAULT
         localError="Interface condition integration type "//TRIM(NUMBER_TO_VSTRING(interfaceCondition%integrationType, &
           & "*",err,error))// " is not valid."
-        CALL FLAG_ERROR(localError,err,error,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT !interfaceCondition%integrationType
 
     CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-      CALL FLAG_ERROR("Not implemented.",err,error,*999)
+      CALL FlagError("Not implemented.",err,error,*999)
     CASE DEFAULT
       localError="Interface condition method "//TRIM(NUMBER_TO_VSTRING(interfaceCondition%METHOD,"*",err,error))// &
         & " is not valid."
-      CALL FLAG_ERROR(localError,err,error,*999)
+      CALL FlagError(localError,err,error,*999)
     END SELECT
 
     EXITS("SolidFluidOperator_FiniteElementCalculate")
@@ -1169,7 +1169,7 @@ CONTAINS
   !================================================================================================================================
   !
 
-  FUNCTION INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM(elementConnectivity,interfaceConnectivityBasis,GaussPoint,err,error)
+  FUNCTION InterfaceOperators_InterfToCoupledMeshGaussTransform(elementConnectivity,interfaceConnectivityBasis,GaussPoint,err,error)
   
     !Argument variables
     TYPE(INTERFACE_ELEMENT_CONNECTIVITY_TYPE), POINTER :: elementConnectivity !<A pointer to the element connectivity
@@ -1178,25 +1178,26 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Function variable
-    REAL(DP) :: INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM(SIZE(elementConnectivity%XI,1))
+    REAL(DP) :: InterfaceOperators_InterfToCoupledMeshGaussTransform(SIZE(elementConnectivity%XI,1))
     !Local Variables
     INTEGER(INTG) :: rowParameterIdx
 
-    ENTERS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM",err,error,*999)
+    ENTERS("InterfaceOperators_InterfToCoupledMeshGaussTransform",err,error,*999)
     
-    INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM=0.0_DP
+    InterfaceOperators_InterfToCoupledMeshGaussTransform=0.0_DP
     DO rowParameterIdx = 1,interfaceConnectivityBasis%NUMBER_OF_ELEMENT_PARAMETERS
-      INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM(:)= INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM(:) + &
+      InterfaceOperators_InterfToCoupledMeshGaussTransform(:)= InterfaceOperators_InterfToCoupledMeshGaussTransform(:) + &
         & interfaceConnectivityBasis%QUADRATURE%QUADRATURE_SCHEME_MAP &
         & (BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR%GAUSS_BASIS_FNS(rowParameterIdx,NO_PART_DERIV,GaussPoint) * &
         & elementConnectivity%XI(:,1,rowParameterIdx)
     ENDDO
      
-    EXITS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM")
+    EXITS("InterfaceOperators_InterfToCoupledMeshGaussTransform")
     RETURN
-999 ERRORSEXITS("INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM",err,error)
+999 ERRORS("InterfaceOperators_InterfToCoupledMeshGaussTransform",err,error)
+    EXITS("InterfaceOperators_InterfToCoupledMeshGaussTransform")
     RETURN
     
-  END FUNCTION INTERFACE_TO_COUPLED_MESH_GAUSSPOINT_TRANSFORM
+  END FUNCTION InterfaceOperators_InterfToCoupledMeshGaussTransform
 
 END MODULE INTERFACE_OPERATORS_ROUTINES

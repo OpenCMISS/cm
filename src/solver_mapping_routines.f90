@@ -105,7 +105,7 @@ MODULE SOLVER_MAPPING_ROUTINES
 
   PUBLIC SOLVER_MAPPING_INTERFACE_CONDITION_ADD
 
-  PUBLIC SOLVER_MAPPING_EQUATS_VARS_TO_SOLVER_MATRIX_SET
+  PUBLIC SolverMapping_EquatsVarsToSolverMatrixSet
 
   PUBLIC SOLVER_MAPPING_SOLVER_MATRICES_NUMBER_SET
   
@@ -186,7 +186,7 @@ CONTAINS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
           BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
           IF(.NOT.ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-            CALL FLAG_ERROR("The solver equations boundary conditions are not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver equations boundary conditions are not associated.",ERR,ERROR,*999)
           END IF
           
           !
@@ -197,21 +197,21 @@ CONTAINS
           
           !Allocate equations set to solver map
           ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping equations set to solver map.",ERR,ERROR,*999)      
+          IF(ERR/=0) CALL FlagError("Could not allocate solver mapping equations set to solver map.",ERR,ERROR,*999)      
           !Allocate interface condition to solver map
           ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping interface condition to solver map.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate solver mapping interface condition to solver map.",ERR,ERROR,*999)
           !
           ! Allocate and initialise
           !
           ALLOCATE(INTERFACE_EQUATIONS_LISTS(SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations set list.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate equations set list.",ERR,ERROR,*999)
           DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
             INTERFACE_CONDITION=>SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR
             IF(ASSOCIATED(INTERFACE_CONDITION)) THEN
               INTERFACE_EQUATIONS=>INTERFACE_CONDITION%INTERFACE_EQUATIONS
               IF(ASSOCIATED(INTERFACE_EQUATIONS)) THEN
-                CALL SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAP_INITIALISE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
+                CALL SolverMapping_InterfaceToSolverMapInitialise(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
                   & interface_condition_idx),ERR,ERROR,*999)
                 SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)%INTERFACE_CONDITION_INDEX= &
                   & interface_condition_idx
@@ -223,10 +223,10 @@ CONTAINS
                 CALL LIST_DATA_DIMENSION_SET(INTERFACE_EQUATIONS_LISTS(interface_condition_idx)%PTR,2,ERR,ERROR,*999)
                 CALL LIST_CREATE_FINISH(INTERFACE_EQUATIONS_LISTS(interface_condition_idx)%PTR,ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Interface condition interface equations is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Interface condition interface equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDDO !interface_condition_idx
           !
@@ -237,7 +237,7 @@ CONTAINS
             IF(ASSOCIATED(EQUATIONS_SET)) THEN
               EQUATIONS=>EQUATIONS_SET%EQUATIONS
               IF(ASSOCIATED(EQUATIONS)) THEN
-                CALL SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                CALL SolverMapping_EquationsSetToSolverMapInitialise(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                   & equations_set_idx),ERR,ERROR,*999)
                 SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_SET_INDEX=equations_set_idx
                 SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%SOLVER_MAPPING=>SOLVER_MAPPING
@@ -247,10 +247,10 @@ CONTAINS
                   & NUMBER_OF_INTERFACES,INTERFACE_EQUATIONS_LIST,ERR,ERROR,*999)
                 ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                   & EQUATIONS_TO_SOLVER_MATRIX_MAPS_INTERFACE(NUMBER_OF_INTERFACES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations to solver maps interface.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate equations to solver maps interface.",ERR,ERROR,*999)
                 SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%NUMBER_OF_INTERFACE_CONDITIONS=NUMBER_OF_INTERFACES
                 DO interface_idx=1,NUMBER_OF_INTERFACES
-                  CALL SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                  CALL SolverMapping_EquationsToSolverInterfaceInitialise(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                     & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_INTERFACE(interface_idx),ERR,ERROR,*999)
                   interface_condition_idx=INTERFACE_EQUATIONS_LIST(1,interface_idx)
                   interface_matrix_idx=INTERFACE_EQUATIONS_LIST(2,interface_idx)
@@ -267,15 +267,15 @@ CONTAINS
                     CALL LIST_ITEM_ADD(INTERFACE_EQUATIONS_LISTS(interface_condition_idx)%PTR,INTERFACE_EQUATIONS_LIST_ITEM, &
                       & ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ENDDO !interface_condition_idx
                 IF(ALLOCATED(INTERFACE_EQUATIONS_LIST)) DEALLOCATE(INTERFACE_EQUATIONS_LIST)
               ELSE
-                CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDDO !equations_set_idx
           DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
@@ -283,11 +283,11 @@ CONTAINS
               INTERFACE_EQUATIONS_LIST,ERR,ERROR,*999)
             ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
               & INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS(NUMBER_OF_EQUATIONS_SETS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface to solver maps equations.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate interface to solver maps equations.",ERR,ERROR,*999)
             SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)%NUMBER_OF_EQUATIONS_SETS= &
               & NUMBER_OF_EQUATIONS_SETS
             DO equations_idx=1,NUMBER_OF_EQUATIONS_SETS
-              CALL SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_INITIALISE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
+              CALL SolverMapping_InterfaceToSolverEquationsInitialise(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
                 & interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS(equations_idx),ERR,ERROR,*999)
               equations_set_idx=INTERFACE_EQUATIONS_LIST(1,equations_idx)
               interface_matrix_idx=INTERFACE_EQUATIONS_LIST(2,equations_idx)
@@ -300,7 +300,7 @@ CONTAINS
                 SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                   & INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS(equations_idx)%INTERFACE_MATRIX_INDEX=interface_matrix_idx
               ELSE
-                CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !equations_idx
             IF(ALLOCATED(INTERFACE_EQUATIONS_LIST)) DEALLOCATE(INTERFACE_EQUATIONS_LIST)
@@ -322,7 +322,7 @@ CONTAINS
           !Allocate and initialise the rank lists.
           ALLOCATE(RANK_GLOBAL_ROWS_LISTS(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+SOLVER_MAPPING% &
             & NUMBER_OF_INTERFACE_CONDITIONS,0:COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate rank global rows lists.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate rank global rows lists.",ERR,ERROR,*999)
           CALL SolverDofCouplings_Initialise(rowCouplings,err,error,*999)
           DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
             equations_idx=0
@@ -344,13 +344,13 @@ CONTAINS
                     CALL LIST_KEY_DIMENSION_SET(RANK_GLOBAL_ROWS_LISTS(equations_idx,rank)%PTR,1,ERR,ERROR,*999)
                     CALL LIST_CREATE_FINISH(RANK_GLOBAL_ROWS_LISTS(equations_idx,rank)%PTR,ERR,ERROR,*999)  
                   ELSE
-                    CALL FLAG_ERROR("Equations equations mapping is not associated",ERR,ERROR,*999)
+                    CALL FlagError("Equations equations mapping is not associated",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !equations_set_idx
             DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
@@ -373,23 +373,23 @@ CONTAINS
                       CALL LIST_KEY_DIMENSION_SET(RANK_GLOBAL_ROWS_LISTS(equations_idx,rank)%PTR,1,ERR,ERROR,*999)
                       CALL LIST_CREATE_FINISH(RANK_GLOBAL_ROWS_LISTS(equations_idx,rank)%PTR,ERR,ERROR,*999)
                      ELSE
-                      CALL FLAG_ERROR("Interface equations interface mapping is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Interface equations interface mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Interface condition interface equations is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Interface condition interface equations is not associated.",ERR,ERROR,*999)
                   ENDIF
                 CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The interface condition method of "// &
                     & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
                     & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
-                CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !interface_condition_idx
           ENDDO !rank
@@ -459,7 +459,7 @@ CONTAINS
                                 END IF
                               END IF
                             ELSE
-                              CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Boundary condition variable is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ENDIF
                           IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
@@ -489,7 +489,7 @@ CONTAINS
                                 END IF
                               END IF
                             ELSE
-                              CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Boundary condition variable is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ENDIF
                           IF(ASSOCIATED(LINEAR_MAPPING)) THEN
@@ -523,7 +523,7 @@ CONTAINS
                                   END IF
                                 END IF
                               ELSE
-                                CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Boundary condition variable is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ENDDO !matrix_idx
                           ENDIF
@@ -542,23 +542,23 @@ CONTAINS
                           ENDIF !include row
                           CALL LIST_ITEM_ADD(RANK_GLOBAL_ROWS_LISTS(equations_idx,ROW_RANK)%PTR,ROW_LIST_ITEM,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Global row is not owned by a domain.",ERR,ERROR,*999)
+                          CALL FlagError("Global row is not owned by a domain.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !global_row
                     ELSE
-                      CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Equations set row degree of freedom mappings is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations set row degree of freedom mappings is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Equations equations mapping is not associated",ERR,ERROR,*999)
+                  CALL FlagError("Equations equations mapping is not associated",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDDO !equations set idx
           !Now add in rows from any interface matrices
@@ -616,46 +616,46 @@ CONTAINS
                                 CALL LIST_ITEM_ADD(RANK_GLOBAL_ROWS_LISTS(equations_idx,COLUMN_RANK)%PTR,ROW_LIST_ITEM, &
                                   & ERR,ERROR,*999)
                               ELSE
-                                CALL FLAG_ERROR("Global row is not owned by a domain.",ERR,ERROR,*999)
+                                CALL FlagError("Global row is not owned by a domain.",ERR,ERROR,*999)
                               ENDIF
                             ENDDO !global_column
                           ELSE
-                            CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Boundary condition variable is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Interface equations Lagrange field is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Interface equations Lagrange field is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Interface condition column degree of freedom mappings is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Interface condition column degree of freedom mappings is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Interface equations interface mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Interface equations interface mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Interface condition interface equations is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Interface condition interface equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The interface condition method of "// &
                   & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDDO !interface_condition_idx
 
           !Sanity check.
           IF(NUMBER_OF_LOCAL_SOLVER_ROWS==0) &
-            & CALL FLAG_ERROR("Invalid problem setup. The number of local solver rows is zero.",ERR,ERROR,*999)
+            & CALL FlagError("Invalid problem setup. The number of local solver rows is zero.",ERR,ERROR,*999)
           IF(NUMBER_OF_GLOBAL_SOLVER_ROWS==0) &
-            & CALL FLAG_ERROR("Invalid problem setup. The number of global solver rows is zero.",ERR,ERROR,*999)
+            & CALL FlagError("Invalid problem setup. The number of global solver rows is zero.",ERR,ERROR,*999)
 
           !
           ! 3. We now know how many local and global rows are in the solver matrix. Loop over the rows in rank order and calculate
@@ -667,19 +667,19 @@ CONTAINS
           !Allocate memory for the rows mapping
           !Allocate the solver rows to equations set maps
           ALLOCATE(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP(NUMBER_OF_LOCAL_SOLVER_ROWS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping solver row to equation rows map.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate solver mapping solver row to equation rows map.",ERR,ERROR,*999)
           !Set the number of rows
           SOLVER_MAPPING%NUMBER_OF_ROWS=NUMBER_OF_LOCAL_SOLVER_ROWS
           SOLVER_MAPPING%NUMBER_OF_GLOBAL_ROWS=NUMBER_OF_GLOBAL_SOLVER_ROWS
           !Allocate the solver rows domain mapping
           ALLOCATE(SOLVER_MAPPING%ROW_DOFS_MAPPING,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping row dofs mapping.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate solver mapping row dofs mapping.",ERR,ERROR,*999)
 !!TODO: what is the real number of domains for a solver???
           CALL DOMAIN_MAPPINGS_MAPPING_INITIALISE(SOLVER_MAPPING%ROW_DOFS_MAPPING,COMPUTATIONAL_ENVIRONMENT% &
             & NUMBER_COMPUTATIONAL_NODES,ERR,ERROR,*999)
           ROW_DOMAIN_MAPPING=>SOLVER_MAPPING%ROW_DOFS_MAPPING
           ALLOCATE(ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row dofs mapping global to local map.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate row dofs mapping global to local map.",ERR,ERROR,*999)
           ROW_DOMAIN_MAPPING%NUMBER_OF_GLOBAL=NUMBER_OF_GLOBAL_SOLVER_ROWS
 
           !Initialise the equations sets to solver maps
@@ -693,21 +693,21 @@ CONTAINS
             !Allocate the equations set to solver maps for solver matrix (sm) indexing
             ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
               & SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations set to solver map equations to solver matrix maps sm.", &
+            IF(ERR/=0) CALL FlagError("Could not allocate equations set to solver map equations to solver matrix maps sm.", &
               & ERR,ERROR,*999)
             DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
-              CALL SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+              CALL SolverMapping_EquatsToSolMatMapsSMInitialise(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                 & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx),ERR,ERROR,*999)
             ENDDO !solver_matrix_idx
             
             !Allocate the equations row to solver rows maps
             ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
               & EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations set to solver map equations row to solver rows maps.", &
+            IF(ERR/=0) CALL FlagError("Could not allocate equations set to solver map equations row to solver rows maps.", &
               & ERR,ERROR,*999)
             DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
               !Initialise
-              CALL SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+              CALL SolverMapping_EquatsRowToSolRowsMapInitialise(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                 & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(equations_row_number),ERR,ERROR,*999)
             ENDDO
             
@@ -724,10 +724,10 @@ CONTAINS
             !Allocate the interface to solver maps for solver matrix (sm) indexing
             ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_SM( &
               & SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface to solver map interface to solver matrix maps sm.", &
+            IF(ERR/=0) CALL FlagError("Could not allocate interface to solver map interface to solver matrix maps sm.", &
               & ERR,ERROR,*999)
             DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
-              CALL SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_INITIALISE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
+              CALL SolverMapping_InterfToSolMatMapsSMInitialise(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
                 & interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx),ERR,ERROR,*999)
             ENDDO !solver_matrix_idx
             
@@ -735,21 +735,21 @@ CONTAINS
             ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
               & INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
             IF(ERR/=0) &
-              & CALL FLAG_ERROR("Could not allocate interface to solver map equations to solver matrix maps im.", &
+              & CALL FlagError("Could not allocate interface to solver map equations to solver matrix maps im.", &
               & ERR,ERROR,*999)
             DO interface_matrix_idx=1,INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES
-              CALL SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_INITIALISE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
+              CALL SolverMapping_InterfToSolMatMapsIMInitialise(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
                 & interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(interface_matrix_idx),ERR,ERROR,*999)
                       
               !Allocate the interfafce row to solver row maps
               ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                 & INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(interface_matrix_idx)%INTERFACE_ROW_TO_SOLVER_ROWS_MAP( &
                 & INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(interface_matrix_idx)%TOTAL_NUMBER_OF_ROWS),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface condition to solver map interface row to solver row map.", &
+              IF(ERR/=0) CALL FlagError("Could not allocate interface condition to solver map interface row to solver row map.", &
                 & ERR,ERROR,*999)
               DO interface_row_number=1,INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(interface_matrix_idx) &
                 & %TOTAL_NUMBER_OF_ROWS
-                CALL SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_INITIALISE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
+                CALL SolverMapping_InterfRowToSolRowsMapInitialise(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
                   & interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(interface_matrix_idx)% &
                   & INTERFACE_ROW_TO_SOLVER_ROWS_MAP(interface_row_number),ERR,ERROR,*999)
               ENDDO !interface_row_number
@@ -760,11 +760,11 @@ CONTAINS
             ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
               & INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS(INTERFACE_MAPPING%TOTAL_NUMBER_OF_COLUMNS),STAT=ERR)
             IF(ERR/=0)  &
-              & CALL FLAG_ERROR("Could not allocate interface condition to solver map interface column to solver row map.", &
+              & CALL FlagError("Could not allocate interface condition to solver map interface column to solver row map.", &
               & ERR,ERROR,*999)
             DO interface_col_number=1,INTERFACE_MAPPING%TOTAL_NUMBER_OF_COLUMNS
               !Initialise
-              CALL SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_INITIALISE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
+              CALL SolverMapping_InterfColToSolRowsMapInitialise(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
                 & interface_condition_idx)%INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS(interface_col_number),ERR,ERROR,*999)
             ENDDO !interface_col_number
             
@@ -838,11 +838,11 @@ CONTAINS
                     & NUMBER_OF_GLOBAL_SOLVER_ROWS),ERR,ERROR,*999)
                   !Allocate the global to local map arrays
                   ALLOCATE(ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%LOCAL_NUMBER(1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row global to local map local number.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate row global to local map local number.",ERR,ERROR,*999)
                   ALLOCATE(ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%DOMAIN_NUMBER(1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row global to local map domain number.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate row global to local map domain number.",ERR,ERROR,*999)
                   ALLOCATE(ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%LOCAL_TYPE(1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row global to local map local type.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate row global to local map local type.",ERR,ERROR,*999)
                   !Set the global to local mappings
                   ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%NUMBER_OF_DOMAINS=1
                   ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%LOCAL_NUMBER(1)= &
@@ -855,19 +855,19 @@ CONTAINS
                     !Set up the solver row -> equations row mappings. Will need to look
                     !At the interface conditions for this equations set later.
                     !Initialise
-                    CALL SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_INITIALISE(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP( &
+                    CALL SolverMapping_SolRowToEquationsMapsInitialise(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP( &
                       & NUMBER_OF_LOCAL_SOLVER_ROWS),ERR,ERROR,*999)
 
                     ALLOCATE(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP(NUMBER_OF_LOCAL_SOLVER_ROWS)% &
                       & EQUATIONS_INDEX(numberRowEquationsRows),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver row to equations rows equations index.",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FlagError("Could not allocate solver row to equations rows equations index.",ERR,ERROR,*999)
                     ALLOCATE(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP(NUMBER_OF_LOCAL_SOLVER_ROWS)% &
                       & ROWCOL_NUMBER(numberRowEquationsRows),STAT=ERR)
                     IF(ERR/=0) &
-                      & CALL FLAG_ERROR("Could not allocate solver row to equations rows row/col number.",ERR,ERROR,*999)
+                      & CALL FlagError("Could not allocate solver row to equations rows row/col number.",ERR,ERROR,*999)
                     ALLOCATE(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP(NUMBER_OF_LOCAL_SOLVER_ROWS)% &
                       & COUPLING_COEFFICIENTS(numberRowEquationsRows),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver row to equations rows coupling coefficients.", &
+                    IF(ERR/=0) CALL FlagError("Could not allocate solver row to equations rows coupling coefficients.", &
                       & ERR,ERROR,*999)
                     !Set the mappings for the first equations DOF, the rest will be set up later using the DOF constraints
                     SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP(NUMBER_OF_LOCAL_SOLVER_ROWS)% &
@@ -891,11 +891,11 @@ CONTAINS
                       END IF
                       ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
                         & equationsRow)%SOLVER_ROWS(1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations row to solver rows maps solver rows.", &
+                      IF(ERR/=0) CALL FlagError("Could not allocate equations row to solver rows maps solver rows.", &
                         & ERR,ERROR,*999)
                       ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
                         & equationsRow)%COUPLING_COEFFICIENTS(1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations row to solver rows maps solver rows.", &
+                      IF(ERR/=0) CALL FlagError("Could not allocate equations row to solver rows maps solver rows.", &
                         & ERR,ERROR,*999)
                       !Set the mappings
                       SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS( &
@@ -982,11 +982,11 @@ CONTAINS
                     & NUMBER_OF_GLOBAL_SOLVER_ROWS),ERR,ERROR,*999)
                   !Allocate the global to local map arrays
                   ALLOCATE(ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%LOCAL_NUMBER(1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row global to local map local number.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate row global to local map local number.",ERR,ERROR,*999)
                   ALLOCATE(ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%DOMAIN_NUMBER(1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row global to local map domain number.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate row global to local map domain number.",ERR,ERROR,*999)
                   ALLOCATE(ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%LOCAL_TYPE(1),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row global to local map local type.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate row global to local map local type.",ERR,ERROR,*999)
                   !Set the global to local mappings
                   ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%NUMBER_OF_DOMAINS=1
                   ROW_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_ROWS)%LOCAL_NUMBER(1)= &
@@ -1001,15 +1001,15 @@ CONTAINS
 
                     !If the rows are interface rows (which is the case here) then this is the i'th column number that the solver row is mapped to.
                     !Initialise
-                    CALL SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_INITIALISE(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP( &
+                    CALL SolverMapping_SolRowToEquationsMapsInitialise(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP( &
                       & NUMBER_OF_LOCAL_SOLVER_ROWS),ERR,ERROR,*999)
                     ALLOCATE(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP(NUMBER_OF_LOCAL_SOLVER_ROWS)% &
                       & ROWCOL_NUMBER(1),STAT=ERR)
                     IF(ERR/=0) &
-                      & CALL FLAG_ERROR("Could not allocate solver row to equations rows row/col number.",ERR,ERROR,*999)
+                      & CALL FlagError("Could not allocate solver row to equations rows row/col number.",ERR,ERROR,*999)
                     ALLOCATE(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP(NUMBER_OF_LOCAL_SOLVER_ROWS)% &
                       & COUPLING_COEFFICIENTS(1),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver row to equations rows coupling coefficients.", &
+                    IF(ERR/=0) CALL FlagError("Could not allocate solver row to equations rows coupling coefficients.", &
                       & ERR,ERROR,*999)
                     !Set up the interface column -> solver row mappings
                     !/todo the SOLVER_ROW_TO_EQUATIONS_ROWS_MAP may need to be renamed for clarity
@@ -1078,9 +1078,9 @@ CONTAINS
           !
           !Allocate solver column to equations sets mapping array
           ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping solver column to equations column maps.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate solver mapping solver column to equations column maps.",ERR,ERROR,*999)
           ALLOCATE(SOLVER_MAPPING%VARIABLES_LIST(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping variables list.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate solver mapping variables list.",ERR,ERROR,*999)
           CALL SolverDofCouplings_Initialise(columnCouplings,err,error,*999)
 
           !Calculate the column mappings for each solver matrix
@@ -1098,13 +1098,13 @@ CONTAINS
               & NUMBER_OF_INTERFACE_VARIABLES,INTERFACE_VARIABLES,ERR,ERROR,*999)
             ALLOCATE(SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%VARIABLES(NUMBER_OF_EQUATIONS_VARIABLES+ &
               & NUMBER_OF_INTERFACE_VARIABLES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables list variables.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate variables list variables.",ERR,ERROR,*999)
             SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%NUMBER_OF_VARIABLES=NUMBER_OF_EQUATIONS_VARIABLES+ &
               & NUMBER_OF_INTERFACE_VARIABLES
             ALLOCATE(VARIABLES_LIST(NUMBER_OF_EQUATIONS_VARIABLES+NUMBER_OF_INTERFACE_VARIABLES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables list.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate variables list.",ERR,ERROR,*999)
             ALLOCATE(VARIABLE_PROCESSED(NUMBER_OF_EQUATIONS_VARIABLES+NUMBER_OF_INTERFACE_VARIABLES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable processed.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate variable processed.",ERR,ERROR,*999)
             VARIABLE_PROCESSED=.FALSE.
             solver_variable_idx=0
             DO variable_idx=1,NUMBER_OF_EQUATIONS_VARIABLES
@@ -1130,13 +1130,13 @@ CONTAINS
                     CALL LIST_KEY_DIMENSION_SET(VARIABLES_LIST(solver_variable_idx)%PTR,1,ERR,ERROR,*999)
                     CALL LIST_CREATE_FINISH(VARIABLES_LIST(solver_variable_idx)%PTR,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Dependent field variable is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Dependent field variable is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !variable_idx
             IF(ALLOCATED(EQUATIONS_VARIABLES)) DEALLOCATE(EQUATIONS_VARIABLES)
@@ -1164,34 +1164,34 @@ CONTAINS
                       CALL LIST_KEY_DIMENSION_SET(VARIABLES_LIST(solver_variable_idx)%PTR,1,ERR,ERROR,*999)
                       CALL LIST_CREATE_FINISH(VARIABLES_LIST(solver_variable_idx)%PTR,ERR,ERROR,*999)
                     ELSE
-                      CALL FLAG_ERROR("Lagrange field variable is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Lagrange field variable is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Interface condition Lagrange field is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Interface condition Lagrange field is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Interface condition Lagrange is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !variable_idx
             IF(ALLOCATED(INTERFACE_VARIABLES)) DEALLOCATE(INTERFACE_VARIABLES)
             
             !Initialise solver column to equations sets mapping array
-            CALL SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_INITIALISE(SOLVER_MAPPING% &
+            CALL SolverMapping_SolColToEquationsMapsInitialise(SOLVER_MAPPING% &
               & SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx),ERR,ERROR,*999)
             SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_MATRIX_NUMBER=solver_matrix_idx
             SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_MAPPING=>SOLVER_MAPPING
             !Allocate the solver col to equations set maps array
             ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
               & SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver col to equations map solver col to equation set maps.", &
+            IF(ERR/=0) CALL FlagError("Could not allocate solver col to equations map solver col to equation set maps.", &
               & ERR,ERROR,*999)
             !Allocate the solver col to interface maps array
             ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_COL_TO_INTERFACE_MAPS( &
               & SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver col to equations map solver col to interface maps.", &
+            IF(ERR/=0) CALL FlagError("Could not allocate solver col to equations map solver col to interface maps.", &
               & ERR,ERROR,*999)
             !Presort the column numbers by rank.
             !RANK_GLOBAL_COLS_LISTS(dof_type, equations_idx, variable_idx, rank_idx)
@@ -1199,7 +1199,7 @@ CONTAINS
             ALLOCATE(RANK_GLOBAL_COLS_LISTS(2,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+SOLVER_MAPPING% &
               & NUMBER_OF_INTERFACE_CONDITIONS,SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%NUMBER_OF_VARIABLES, &
               & 0:COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate rank global columns lists.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate rank global columns lists.",ERR,ERROR,*999)
             DO rank=0,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1
               DO solver_variable_idx=1,SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%NUMBER_OF_VARIABLES
                 DO equations_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
@@ -1233,13 +1233,13 @@ CONTAINS
             ALLOCATE(SUB_MATRIX_INFORMATION(3,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+ &
               & SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS,SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)% &
               & NUMBER_OF_VARIABLES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub matrix information.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate sub matrix information.",ERR,ERROR,*999)
             SUB_MATRIX_INFORMATION=0
             !Allocate sub-matrix list information
             ALLOCATE(SUB_MATRIX_LIST(0:3,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+ &
               & SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS,SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)% &
               & NUMBER_OF_VARIABLES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub matrix list.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate sub matrix list.",ERR,ERROR,*999)
             SUB_MATRIX_LIST=0
 
             !
@@ -1249,13 +1249,13 @@ CONTAINS
             !Calculate the number of solver dofs
             ALLOCATE(NUMBER_OF_VARIABLE_GLOBAL_SOLVER_DOFS(SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%NUMBER_OF_VARIABLES), &
               & STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of global solver dofs.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate number of global solver dofs.",ERR,ERROR,*999)
             ALLOCATE(NUMBER_OF_VARIABLE_LOCAL_SOLVER_DOFS(SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%NUMBER_OF_VARIABLES), &
               & STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of local solver dofs.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate number of local solver dofs.",ERR,ERROR,*999)
             ALLOCATE(TOTAL_NUMBER_OF_VARIABLE_LOCAL_SOLVER_DOFS(SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)% &
               & NUMBER_OF_VARIABLES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate total number of local solver dofs.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate total number of local solver dofs.",ERR,ERROR,*999)
 
             NUMBER_OF_VARIABLE_GLOBAL_SOLVER_DOFS=0
             NUMBER_OF_VARIABLE_LOCAL_SOLVER_DOFS=0
@@ -1306,7 +1306,7 @@ CONTAINS
               CALL LIST_REMOVE_DUPLICATES(EQUATIONS_SET_VARIABLE_LIST,ERR,ERROR,*999)
               CALL LIST_DETACH_AND_DESTROY(EQUATIONS_SET_VARIABLE_LIST,NUMBER_OF_VARIABLES,EQUATIONS_SET_VARIABLES,ERR,ERROR,*999)
               !Initialise equations set to solver map (sm)
-              CALL SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_INITIALISE(SOLVER_MAPPING% &
+              CALL SolverMapping_EquatsToSolMatMapsSMInitialise(SOLVER_MAPPING% &
                 & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx), &
                 & ERR,ERROR,*999)
               SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
@@ -1315,14 +1315,14 @@ CONTAINS
               ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                 & solver_matrix_idx)%VARIABLE_TYPES(NUMBER_OF_VARIABLES),STAT=ERR)
               IF(ERR/=0)  &
-                & CALL FLAG_ERROR("Could not allocate equations to solver matrix maps sm variable types.",ERR,ERROR,*999)
+                & CALL FlagError("Could not allocate equations to solver matrix maps sm variable types.",ERR,ERROR,*999)
               ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                 & solver_matrix_idx)%VARIABLES(NUMBER_OF_VARIABLES),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations to solver matrix maps sm variables.",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate equations to solver matrix maps sm variables.",ERR,ERROR,*999)
               ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                 & solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(NUMBER_OF_VARIABLES),STAT=ERR)
               IF(ERR/=0)  &
-                & CALL FLAG_ERROR("Could not allocate equations to solver matrix maps sm variables to solver col maps.", &
+                & CALL FlagError("Could not allocate equations to solver matrix maps sm variables to solver col maps.", &
                 & ERR,ERROR,*999)
               !Setup
               SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
@@ -1364,17 +1364,17 @@ CONTAINS
                         ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
                           & COLUMN_NUMBERS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps column numbers.", &
+                        IF(ERR/=0) CALL FlagError("Could not allocate variables to solver column maps column numbers.", &
                           & ERR,ERROR,*999)
                         ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
                           & COUPLING_COEFFICIENTS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps coupling coefficients.", &
+                        IF(ERR/=0) CALL FlagError("Could not allocate variables to solver column maps coupling coefficients.", &
                           & ERR,ERROR,*999)
                         ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%VARIABLE_TO_SOLVER_COL_MAPS(variable_idx)% &
                           & ADDITIVE_CONSTANTS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps additive constants.", &
+                        IF(ERR/=0) CALL FlagError("Could not allocate variables to solver column maps additive constants.", &
                           & ERR,ERROR,*999)
                         !Setup
                         !Set the sub-matrix information
@@ -1479,17 +1479,17 @@ CONTAINS
                           ENDDO !rank_idx
                         ENDDO !global_dof
                       ELSE
-                        CALL FLAG_ERROR("Boundary condition variable not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Boundary condition variable not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Equations matrix columns degree of freedom mapping is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations matrix columns degree of freedom mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
                     VARIABLE_PROCESSED(variable_position_idx)=.TRUE.
                   ELSE
-                    CALL FLAG_ERROR("Dependent variable does not exist in the list of solver variables.",ERR,ERROR,*999)
+                    CALL FlagError("Dependent variable does not exist in the list of solver variables.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Dependent variable is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !variable_idx
               IF(ALLOCATED(EQUATIONS_SET_VARIABLES)) DEALLOCATE(EQUATIONS_SET_VARIABLES)
@@ -1505,7 +1505,7 @@ CONTAINS
                 INTERFACE_MAPPING=>INTERFACE_EQUATIONS%INTERFACE_MAPPING
                 INTERFACE_DEPENDENT=>INTERFACE_CONDITION%DEPENDENT
                 !Initialise interface condition to solver map (sm)
-                CALL SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_INITIALISE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
+                CALL SolverMapping_InterfToSolMatMapsSMInitialise(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
                   & interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx), &
                   & ERR,ERROR,*999)
                 SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_SM( &
@@ -1515,16 +1515,16 @@ CONTAINS
                   & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%DEPENDENT_VARIABLE_TYPES( &
                   & INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
                 IF(ERR/=0)  &
-                  & CALL FLAG_ERROR("Could not allocate interface to solver matrix maps sm dependent variable types.", &
+                  & CALL FlagError("Could not allocate interface to solver matrix maps sm dependent variable types.", &
                   & ERR,ERROR,*999)
                 ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                   & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%DEPENDENT_VARIABLES(INTERFACE_MAPPING% &
                   & NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations to solver matrix maps sm variables.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate equations to solver matrix maps sm variables.",ERR,ERROR,*999)
                 ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                   & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%DEPENDENT_VARIABLE_TO_SOLVER_COL_MAPS( &
                   & INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface to solver matrix maps sm dependent variables "// &
+                IF(ERR/=0) CALL FlagError("Could not allocate interface to solver matrix maps sm dependent variables "// &
                   & "to solver col maps.",ERR,ERROR,*999)
                 !First add in the Lagrange to solver variables
                 LAGRANGE_FIELD=>INTERFACE_CONDITION%LAGRANGE%LAGRANGE_FIELD
@@ -1560,17 +1560,17 @@ CONTAINS
                         ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                           & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%LAGRANGE_VARIABLE_TO_SOLVER_COL_MAP% &
                           & COLUMN_NUMBERS(LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps column numbers.", &
+                        IF(ERR/=0) CALL FlagError("Could not allocate variables to solver column maps column numbers.", &
                           & ERR,ERROR,*999)
                         ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                           & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%LAGRANGE_VARIABLE_TO_SOLVER_COL_MAP% &
                           & COUPLING_COEFFICIENTS(LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps coupling coefficients.", &
+                        IF(ERR/=0) CALL FlagError("Could not allocate variables to solver column maps coupling coefficients.", &
                           & ERR,ERROR,*999)
                         ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                           & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%LAGRANGE_VARIABLE_TO_SOLVER_COL_MAP% &
                           & ADDITIVE_CONSTANTS(LAGRANGE_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps additive constants.", &
+                        IF(ERR/=0) CALL FlagError("Could not allocate variables to solver column maps additive constants.", &
                           & ERR,ERROR,*999)
                         DO equations_idx2=1,SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                           & NUMBER_OF_EQUATIONS_SETS
@@ -1632,16 +1632,16 @@ CONTAINS
                           VARIABLE_PROCESSED(variable_position_idx)=.TRUE.
                         ENDDO !equations_idx2
                       ELSE
-                        CALL FLAG_ERROR("Boundary condition variable not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Boundary condition variable not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Columns degree of freedom mapping is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Columns degree of freedom mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Lagrange variable does not exist in the list of solver variables.",ERR,ERROR,*999)
+                    CALL FlagError("Lagrange variable does not exist in the list of solver variables.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Lagrange variable is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Lagrange variable is not associated.",ERR,ERROR,*999)
                 ENDIF
                 !Now add in the Dependent variables
                 SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_SM( &
@@ -1679,18 +1679,18 @@ CONTAINS
                             ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                               & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%DEPENDENT_VARIABLE_TO_SOLVER_COL_MAPS( &
                               & interface_matrix_idx)%COLUMN_NUMBERS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps column numbers.", &
+                            IF(ERR/=0) CALL FlagError("Could not allocate variables to solver column maps column numbers.", &
                               & ERR,ERROR,*999)
                             ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                               & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%DEPENDENT_VARIABLE_TO_SOLVER_COL_MAPS( &
                               & interface_matrix_idx)%COUPLING_COEFFICIENTS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
                             IF(ERR/=0)  &
-                              & CALL FLAG_ERROR("Could not allocate variables to solver column maps coupling coefficients.", &
+                              & CALL FlagError("Could not allocate variables to solver column maps coupling coefficients.", &
                               & ERR,ERROR,*999)
                             ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                               & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%DEPENDENT_VARIABLE_TO_SOLVER_COL_MAPS( &
                               & interface_matrix_idx)%ADDITIVE_CONSTANTS(DEPENDENT_VARIABLE%TOTAL_NUMBER_OF_DOFS),STAT=ERR)
-                            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variables to solver column maps additive constants.", &
+                            IF(ERR/=0) CALL FlagError("Could not allocate variables to solver column maps additive constants.", &
                               & ERR,ERROR,*999)
                             !Set the sub-matrix information
                             SUB_MATRIX_INFORMATION(1,equations_idx,variable_position_idx)= &
@@ -1766,31 +1766,31 @@ CONTAINS
                               ENDDO !rank_idx
                             ENDDO !global_dof
                           ELSE
-                            CALL FLAG_ERROR("Boundary condition variable not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Boundary condition variable not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Interface matrix columns degree of freedom mapping is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Interface matrix columns degree of freedom mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Interface dependent equations set is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Interface dependent equations set is not associated.",ERR,ERROR,*999)
                       ENDIF
                       VARIABLE_PROCESSED(variable_position_idx)=.TRUE.
                     ELSE
-                      CALL FLAG_ERROR("Dependent variable does not exist in the list of solver variables.",ERR,ERROR,*999)
+                      CALL FlagError("Dependent variable does not exist in the list of solver variables.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Dependent variable is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ENDDO !matrix_idx
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The interface condition method of "// &
                   & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDDO !interface_idx
 
@@ -1810,12 +1810,12 @@ CONTAINS
             IF(NUMBER_OF_LOCAL_SOLVER_DOFS==0) THEN
               LOCAL_ERROR="Invalid problem setup. The number of local solver DOFs for solver matrix "// &
                 & TRIM(NUMBER_TO_VSTRING(solver_matrix_idx,"*",ERR,ERROR))//" is zero."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
             IF(NUMBER_OF_GLOBAL_SOLVER_DOFS==0) THEN
               LOCAL_ERROR="Invalid problem setup. The number of global solver DOFs for solver matrix "// &
                 & TRIM(NUMBER_TO_VSTRING(solver_matrix_idx,"*",ERR,ERROR))//" is zero."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
 
             !
@@ -1826,7 +1826,7 @@ CONTAINS
             !Allocate solver columns to equations sets maps
             ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
               & TOTAL_NUMBER_OF_LOCAL_SOLVER_DOFS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps.",ERR,ERROR,*999)
             !Set the number of columns
             SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_COLUMNS=NUMBER_OF_GLOBAL_SOLVER_DOFS
             !Set the number of variables
@@ -1836,17 +1836,17 @@ CONTAINS
             SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_GLOBAL_DOFS=NUMBER_OF_GLOBAL_SOLVER_DOFS
             !Allocate the columns domain mapping
             ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%COLUMN_DOFS_MAPPING,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver col to equations sets map column dofs mapping.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate solver col to equations sets map column dofs mapping.",ERR,ERROR,*999)
 !!TODO: what is the real number of domains for a solver???
             CALL DOMAIN_MAPPINGS_MAPPING_INITIALISE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
               & COLUMN_DOFS_MAPPING,COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES,ERR,ERROR,*999)
             COL_DOMAIN_MAPPING=>SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%COLUMN_DOFS_MAPPING
             ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(NUMBER_OF_GLOBAL_SOLVER_DOFS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column dofs mapping global to local.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate column dofs mapping global to local.",ERR,ERROR,*999)
             COL_DOMAIN_MAPPING%NUMBER_OF_GLOBAL=NUMBER_OF_GLOBAL_SOLVER_DOFS
             ALLOCATE(VARIABLE_RANK_PROCESSED(SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%NUMBER_OF_VARIABLES, &
               & 0:COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable rank processed.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate variable rank processed.",ERR,ERROR,*999)
             VARIABLE_RANK_PROCESSED=.FALSE.
             !Calculate the column mappings
             NUMBER_OF_COLUMNS=NUMBER_OF_GLOBAL_SOLVER_DOFS
@@ -1866,10 +1866,10 @@ CONTAINS
                 ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
                   & DYNAMIC_MAPPING%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES),STAT=ERR)
                 IF(ERR/=0) &
-                  & CALL FLAG_ERROR("Could not allocate equations set to solver map equations to solver matrix maps em.", &
+                  & CALL FlagError("Could not allocate equations set to solver map equations to solver matrix maps em.", &
                   & ERR,ERROR,*999)
                 DO equations_matrix_idx=1,DYNAMIC_MAPPING%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES
-                  CALL SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                  CALL SolverMapping_EquatsToSolMatMapsEMInitialise(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                     & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(equations_matrix_idx),ERR,ERROR,*999)
                 ENDDO !equations_matrix_idx
                 IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
@@ -1877,7 +1877,7 @@ CONTAINS
                   ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM( &
                     & NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES),STAT=ERR)
                   IF(ERR/=0) &
-                    & CALL FLAG_ERROR("Could not allocate equations set to solver map equations to solver matrix maps jm.", &
+                    & CALL FlagError("Could not allocate equations set to solver map equations to solver matrix maps jm.", &
                     & ERR,ERROR,*999)
                   DO equations_matrix_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
                     NULLIFY(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM( &
@@ -1890,10 +1890,10 @@ CONTAINS
                   ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
                     & LINEAR_MAPPING%NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
                   IF(ERR/=0) &
-                    & CALL FLAG_ERROR("Could not allocate equations set to solver map equations to solver matrix maps em.", &
+                    & CALL FlagError("Could not allocate equations set to solver map equations to solver matrix maps em.", &
                     & ERR,ERROR,*999)
                   DO equations_matrix_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_EQUATIONS_MATRICES
-                    CALL SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_INITIALISE(SOLVER_MAPPING% &
+                    CALL SolverMapping_EquatsToSolMatMapsEMInitialise(SOLVER_MAPPING% &
                       & EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
                       & equations_matrix_idx),ERR,ERROR,*999)
                   ENDDO !equations_matrix_idx
@@ -1903,7 +1903,7 @@ CONTAINS
                   ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM( &
                     & NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES),STAT=ERR)
                   IF(ERR/=0) &
-                    & CALL FLAG_ERROR("Could not allocate equations set to solver map equations to solver matrix maps jm.", &
+                    & CALL FlagError("Could not allocate equations set to solver map equations to solver matrix maps jm.", &
                     & ERR,ERROR,*999)
                   DO equations_matrix_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
                     NULLIFY(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM( &
@@ -1913,7 +1913,7 @@ CONTAINS
               ENDIF
               
               !Initialise solver columns to equations set map
-              CALL SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_INITIALISE(SOLVER_MAPPING% &
+              CALL SolverMapping_SolColToEquatsSetMapInitialise(SOLVER_MAPPING% &
                 & SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
                 & equations_set_idx),ERR,ERROR,*999)
               
@@ -1935,13 +1935,13 @@ CONTAINS
                   & equations_set_idx)%HAVE_DYNAMIC=.TRUE.
                 ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
                   & equations_set_idx)%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(NUMBER_OF_COLUMNS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver columns to dynamic equations map.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate solver columns to dynamic equations map.",ERR,ERROR,*999)
               ELSE
                 SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
                   & equations_set_idx)%HAVE_STATIC=.TRUE.
                 ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
                   & equations_set_idx)%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(NUMBER_OF_COLUMNS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver columns to static equations map.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate solver columns to static equations map.",ERR,ERROR,*999)
               ENDIF
               !Set the solver column to equations set map
               SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_COL_TO_EQUATIONS_SET_MAPS( &
@@ -1951,7 +1951,7 @@ CONTAINS
               IF(ASSOCIATED(DYNAMIC_MAPPING)) THEN
                 ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                   & solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations to solver matrix maps sm dynamic equations "// &
+                IF(ERR/=0) CALL FlagError("Could not allocate equations to solver matrix maps sm dynamic equations "// &
                   & "to solver matrix maps.",ERR,ERROR,*999)
                 !Set up dynamic arrays
                 SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
@@ -1961,8 +1961,8 @@ CONTAINS
                     & solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR)
                   ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                     & solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations to solver matrix maps.",ERR,ERROR,*999)
-                  CALL SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                  IF(ERR/=0) CALL FlagError("Could not allocate equations to solver matrix maps.",ERR,ERROR,*999)
+                  CALL SolverMapping_EquationsToSolverMapsInitialise(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                     & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
                     & DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,ERR,ERROR,*999)
                   SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
@@ -1980,12 +1980,12 @@ CONTAINS
                     & solver_matrix_idx)%NUMBER_OF_EQUATIONS_JACOBIANS=NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
                   ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                     & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAPS(NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian to solver matrix maps.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate Jacobian to solver matrix maps.",ERR,ERROR,*999)
                   DO equations_matrix_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
                     ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                       & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian to solver matrix map.",ERR,ERROR,*999)
-                    CALL SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                    IF(ERR/=0) CALL FlagError("Could not allocate Jacobian to solver matrix map.",ERR,ERROR,*999)
+                    CALL SolverMapping_JacobianToSolverMapInitialise(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                       & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
                       & JACOBIAN_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,ERR,ERROR,*999)
                     SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM &
@@ -1999,7 +1999,7 @@ CONTAINS
                   ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                     & solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(NUMBER_OF_LINEAR_EQUATIONS_MATRICES),STAT=ERR)
                   IF(ERR/=0) &
-                    & CALL FLAG_ERROR("Could not allocate equations to solver matrix maps sm equations to solver matrix maps.", &
+                    & CALL FlagError("Could not allocate equations to solver matrix maps sm equations to solver matrix maps.", &
                     & ERR,ERROR,*999)
                   !Set up linear arrays
                   SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
@@ -2009,8 +2009,8 @@ CONTAINS
                       & solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR)
                     ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                       & solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations to solver matrix maps.",ERR,ERROR,*999)
-                    CALL SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                    IF(ERR/=0) CALL FlagError("Could not allocate equations to solver matrix maps.",ERR,ERROR,*999)
+                    CALL SolverMapping_EquationsToSolverMapsInitialise(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                       & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
                       & LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,ERR,ERROR,*999)
                     SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
@@ -2026,7 +2026,7 @@ CONTAINS
                   ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                     & solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(0),STAT=ERR)
                   IF(ERR/=0) &
-                    & CALL FLAG_ERROR("Could not allocate equations to solver matrix maps sm equations to solver matrix maps.", &
+                    & CALL FlagError("Could not allocate equations to solver matrix maps sm equations to solver matrix maps.", &
                     & ERR,ERROR,*999)
                   !Set up linear arrays
                   SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
@@ -2038,12 +2038,12 @@ CONTAINS
                     & solver_matrix_idx)%NUMBER_OF_EQUATIONS_JACOBIANS=NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
                   ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                     & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAPS(NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian to solver matrix maps.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate Jacobian to solver matrix maps.",ERR,ERROR,*999)
                   DO equations_matrix_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
                     ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                       & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian to solver matrix map.",ERR,ERROR,*999)
-                    CALL SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_INITIALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                    IF(ERR/=0) CALL FlagError("Could not allocate Jacobian to solver matrix map.",ERR,ERROR,*999)
+                    CALL SolverMapping_JacobianToSolverMapInitialise(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                       & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
                       & JACOBIAN_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR,ERR,ERROR,*999)
                     SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM &
@@ -2089,7 +2089,7 @@ CONTAINS
                     ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                       & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
                       & equations_matrix_idx)%PTR%EQUATIONS_COL_TO_SOLVER_COLS_MAP(NUMBER_OF_EQUATIONS_COLUMNS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dynamic equations column to solver columns map.", &
+                    IF(ERR/=0) CALL FlagError("Could not allocate dynamic equations column to solver columns map.", &
                       & ERR,ERROR,*999)
                   ENDDO !equations_matrix_idx
                 ELSE
@@ -2111,7 +2111,7 @@ CONTAINS
                       ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                         & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
                         & equations_matrix_idx)%PTR%EQUATIONS_COL_TO_SOLVER_COLS_MAP(NUMBER_OF_EQUATIONS_COLUMNS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear equations column to solver columns map.", &
+                      IF(ERR/=0) CALL FlagError("Could not allocate linear equations column to solver columns map.", &
                         & ERR,ERROR,*999)
                     ENDDO !equations_matrix_idx
                   ENDIF
@@ -2129,7 +2129,7 @@ CONTAINS
                   ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM( &
                     & solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR% &
                     & JACOBIAN_COL_TO_SOLVER_COLS_MAP(NUMBER_OF_EQUATIONS_COLUMNS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Jacobian column to solver columns map.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate Jacobian column to solver columns map.",ERR,ERROR,*999)
                 ENDDO
               ENDIF
             ENDDO !equations_set_idx
@@ -2144,20 +2144,20 @@ CONTAINS
               CASE(INTERFACE_CONDITION_LAGRANGE_MULTIPLIERS_METHOD,INTERFACE_CONDITION_PENALTY_METHOD)
                 
                 !Initialise solver columns to interface condition map
-                CALL SOLVER_MAPPING_SOL_COL_TO_INTERF_MAP_INITIALISE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP( &
+                CALL SolverMapping_SolColToInterfMapInitialise(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP( &
                   & solver_matrix_idx)%SOLVER_COL_TO_INTERFACE_MAPS(interface_condition_idx),ERR,ERROR,*999)
                 
                 !Allocate the solver columns to equations set map arrays
                 ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_COL_TO_INTERFACE_MAPS( &
                   & interface_condition_idx)%SOLVER_COL_TO_INTERFACE_EQUATIONS_MAPS(NUMBER_OF_COLUMNS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver columns to interface equations map.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate solver columns to interface equations map.",ERR,ERROR,*999)
                 
                 !Allocate the interface to solver matrix maps sm interface to solver maps
                 ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                   &INTERFACE_TO_SOLVER_MATRIX_MAPS_SM( &
                   & solver_matrix_idx)%INTERFACE_EQUATIONS_TO_SOLVER_MATRIX_MAPS(INTERFACE_MAPPING%NUMBER_OF_INTERFACE_MATRICES), &
                   & STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface to solver matrix maps sm interface equations "// &
+                IF(ERR/=0) CALL FlagError("Could not allocate interface to solver matrix maps sm interface equations "// &
                   & "to solver matrix maps.",ERR,ERROR,*999)
                 
                 !Set up interface arrays
@@ -2170,8 +2170,8 @@ CONTAINS
                   ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                     & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%INTERFACE_EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
                     & interface_matrix_idx)%PTR,STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface to solver matrix maps.",ERR,ERROR,*999)
-                  CALL SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_INITIALISE(SOLVER_MAPPING% &
+                  IF(ERR/=0) CALL FlagError("Could not allocate interface to solver matrix maps.",ERR,ERROR,*999)
+                  CALL SolverMapping_InterfaceToSolverMapsInitialise(SOLVER_MAPPING% &
                     & INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_SM( &
                     & solver_matrix_idx)%INTERFACE_EQUATIONS_TO_SOLVER_MATRIX_MAPS(interface_matrix_idx)%PTR,ERR,ERROR,*999)
                   SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_IM( &
@@ -2195,22 +2195,22 @@ CONTAINS
                   ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                     & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%INTERFACE_EQUATIONS_TO_SOLVER_MATRIX_MAPS( &
                     & interface_matrix_idx)%PTR%INTERFACE_ROW_TO_SOLVER_COLS_MAP(NUMBER_OF_INTERFACE_ROWS),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface column to solver columns map.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate interface column to solver columns map.",ERR,ERROR,*999)
                 ENDDO !interface_matrix_idx
                 NUMBER_OF_INTERFACE_COLUMNS=INTERFACE_MAPPING%NUMBER_OF_COLUMNS
                 ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                   & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%INTERFACE_COL_TO_SOLVER_COLS_MAP( &
                   & NUMBER_OF_INTERFACE_COLUMNS),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface column to solver columns map.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate interface column to solver columns map.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The interface condition method of "// &
                   & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDDO !interface_condition_idx
             
@@ -2218,16 +2218,16 @@ CONTAINS
 
             !Allocate dof map to record column reordering
             ALLOCATE(DOF_MAP(SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%NUMBER_OF_VARIABLES),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof map.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate dof map.",ERR,ERROR,*999)
             DO solver_variable_idx=1,SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)%NUMBER_OF_VARIABLES
               ALLOCATE(DOF_MAP(solver_variable_idx)%PTR(SOLVER_MAPPING%VARIABLES_LIST(solver_matrix_idx)% &
                 & VARIABLES(solver_variable_idx)%VARIABLE%NUMBER_OF_GLOBAL_DOFS),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dof map global dof map.",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate dof map global dof map.",ERR,ERROR,*999)
               DOF_MAP(solver_variable_idx)%PTR=0
             ENDDO !solver_variable_idx
 
             ALLOCATE(solver_local_dof(0:COMPUTATIONAL_ENVIRONMENT%NUMBER_COMPUTATIONAL_NODES-1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver local dof array.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate solver local dof array.",ERR,ERROR,*999)
 
             !
             ! 4d Now calculate the solver mappings for each column in rank order
@@ -2350,13 +2350,13 @@ CONTAINS
                                 !local map.
                                 !Allocate the global to local map arrays
                                 ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%LOCAL_NUMBER(1),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map local number.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate column domain global to local map local number.", &
                                   & ERR,ERROR,*999)
                                 ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%DOMAIN_NUMBER(1),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map domain number.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate column domain global to local map domain number.", &
                                   & ERR,ERROR,*999)
                                 ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%LOCAL_TYPE(1),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map domain number.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate column domain global to local map domain number.", &
                                   & ERR,ERROR,*999)
                                 !Set up the global to local mappings
                                 COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%NUMBER_OF_DOMAINS=1
@@ -2367,39 +2367,39 @@ CONTAINS
 
                                 !Set up the solver dofs -> variable dofs map
                                 !Initialise
-                                CALL SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_INITIALISE(SOLVER_MAPPING% &
+                                CALL SolverMapping_SolverDofToVariableMapInitialise(SOLVER_MAPPING% &
                                   & SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
                                   & solver_local_dof(rank)),ERR,ERROR,*999)
                                 !Allocate the solver dofs to variable dofs arrays
                                 ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                   & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                   & EQUATIONS_TYPES(numberColEquationsCols),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps equations types.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps equations types.", &
                                   & ERR,ERROR,*999)
                                 ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                   & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                   & EQUATIONS_INDICES(numberColEquationsCols),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps equations indices.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps equations indices.", &
                                   & ERR,ERROR,*999)
                                 ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                   & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                   & VARIABLE(numberColEquationsCols),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps variable type.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps variable type.", &
                                   & ERR,ERROR,*999)
                                 ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                   & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                   & VARIABLE_DOF(numberColEquationsCols),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps variable dof.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps variable dof.", &
                                   & ERR,ERROR,*999)
                                 ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                   & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                   & VARIABLE_COEFFICIENT(numberColEquationsCols),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps variable coefficient.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps variable coefficient.", &
                                   & ERR,ERROR,*999)
                                 ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                   & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                   & ADDITIVE_CONSTANT(numberColEquationsCols),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps additive constant.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps additive constant.", &
                                   & ERR,ERROR,*999)
                                 SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
                                   & solver_local_dof(rank))%NUMBER_OF_EQUATION_DOFS=numberColEquationsCols
@@ -2460,7 +2460,7 @@ CONTAINS
                                         & DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR% &
                                         & EQUATIONS_COL_TO_SOLVER_COLS_MAP(equations_column)%COUPLING_COEFFICIENTS(1),STAT=ERR)
                                       IF(ERR/=0) &
-                                        & CALL FLAG_ERROR("Could not allocate dynamic equations column to solver columns map "// &
+                                        & CALL FlagError("Could not allocate dynamic equations column to solver columns map "// &
                                         & "coupling coefficients.",ERR,ERROR,*999)
                                       SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                         & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
@@ -2490,14 +2490,14 @@ CONTAINS
                                         & EQUATIONS_COL_TO_SOLVER_COLS_MAP(equations_column)%SOLVER_COLS(1), &
                                         & STAT=ERR)
                                       IF(ERR/=0) &
-                                        & CALL FLAG_ERROR("Could not allocate linear equations column to solver columns map "// &
+                                        & CALL FlagError("Could not allocate linear equations column to solver columns map "// &
                                         & "solver colums.",ERR,ERROR,*999)
                                       ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                         & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
                                         & LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(equations_matrix_idx)%PTR% &
                                         & EQUATIONS_COL_TO_SOLVER_COLS_MAP(equations_column)%COUPLING_COEFFICIENTS(1),STAT=ERR)
                                       IF(ERR/=0) &
-                                        & CALL FLAG_ERROR("Could not allocate linear equations column to solver columns map "// &
+                                        & CALL FlagError("Could not allocate linear equations column to solver columns map "// &
                                         & "coupling coefficients.",ERR,ERROR,*999)
                                       SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                         & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
@@ -2527,7 +2527,7 @@ CONTAINS
                                       & equations_matrix_idx)%PTR%JACOBIAN_COL_TO_SOLVER_COLS_MAP(jacobian_column)%SOLVER_COLS(1), &
                                       & STAT=ERR)
                                     IF(ERR/=0) &
-                                      & CALL FLAG_ERROR("Could not allocate Jacobian column to solver columns map solver colums.", &
+                                      & CALL FlagError("Could not allocate Jacobian column to solver columns map solver colums.", &
                                       & ERR,ERROR,*999)
                                     ALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                       & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAPS( &
@@ -2535,7 +2535,7 @@ CONTAINS
                                       & COUPLING_COEFFICIENTS(1),STAT=ERR)
                                     IF(ERR/=0) THEN
                                       LOCAL_ERROR="Could not allocate Jacobian column to solver columns map coupling coefficients."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     ENDIF
                                     SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
                                       & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%JACOBIAN_TO_SOLVER_MATRIX_MAPS( &
@@ -2554,7 +2554,7 @@ CONTAINS
                                     LOCAL_ERROR="The equations matrix type of "// &
                                       & TRIM(NUMBER_TO_VSTRING(matrix_type,"*",ERR,ERROR))// &
                                       & " is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 ENDDO !matrix_type_idx
                               END DO !colEquationsColIdx
@@ -2569,13 +2569,13 @@ CONTAINS
                                 !local map.
                                 !Allocate the global to local map arrays
                                 ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%LOCAL_NUMBER(1),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map local number.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate column domain global to local map local number.", &
                                   & ERR,ERROR,*999)
                                 ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%DOMAIN_NUMBER(1),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map domain number.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate column domain global to local map domain number.", &
                                   & ERR,ERROR,*999)
                                 ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%LOCAL_TYPE(1),STAT=ERR)
-                                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column domain global to local map domain number.", &
+                                IF(ERR/=0) CALL FlagError("Could not allocate column domain global to local map domain number.", &
                                   & ERR,ERROR,*999)
                                 !Set up the global to local mappings
                                 COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%NUMBER_OF_DOMAINS=1
@@ -2641,7 +2641,7 @@ CONTAINS
                                 CASE DEFAULT
                                   LOCAL_ERROR="The equations matrix type of "// &
                                     & TRIM(NUMBER_TO_VSTRING(matrix_type,"*",ERR,ERROR))//" is invalid."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                 END SELECT
                               ENDDO !matrix_type_idx
                             ENDIF !rank == myrank
@@ -2718,15 +2718,15 @@ CONTAINS
                                   !Allocate the global to local map arrays
                                   ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%LOCAL_NUMBER(1),STAT=ERR)
                                   IF(ERR/=0) &
-                                    & CALL FLAG_ERROR("Could not allocate column domain global to local map local number.", &
+                                    & CALL FlagError("Could not allocate column domain global to local map local number.", &
                                     & ERR,ERROR,*999)
                                   ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%DOMAIN_NUMBER(1),STAT=ERR)
                                   IF(ERR/=0) &
-                                    & CALL FLAG_ERROR("Could not allocate column domain global to local map domain number.", &
+                                    & CALL FlagError("Could not allocate column domain global to local map domain number.", &
                                     & ERR,ERROR,*999)
                                   ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%LOCAL_TYPE(1),STAT=ERR)
                                   IF(ERR/=0) &
-                                    & CALL FLAG_ERROR("Could not allocate column domain global to local map domain number.", &
+                                    & CALL FlagError("Could not allocate column domain global to local map domain number.", &
                                     & ERR,ERROR,*999)
                                   !Set up the global to local mappings
                                   COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%NUMBER_OF_DOMAINS=1
@@ -2738,40 +2738,40 @@ CONTAINS
                                   !Set up the solver column -> equations column mappings.
                                   !Set up the solver dofs -> variable dofs map
                                   !Initialise
-                                  CALL SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_INITIALISE(SOLVER_MAPPING% &
+                                  CALL SolverMapping_SolverDofToVariableMapInitialise(SOLVER_MAPPING% &
                                     & SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
                                     & solver_local_dof(rank)),ERR,ERROR,*999)
                                   !Allocate the solver dofs to variable dofs arrays
                                   ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                     & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                     & EQUATIONS_TYPES(numberColEquationsCols),STAT=ERR)
-                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps equations types.", &
+                                  IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps equations types.", &
                                     & ERR,ERROR,*999)
                                   ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                     & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                     & EQUATIONS_INDICES(numberColEquationsCols),STAT=ERR)
-                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps equations indices.", &
+                                  IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps equations indices.", &
                                     & ERR,ERROR,*999)
                                   ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                     & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                     & VARIABLE(numberColEquationsCols),STAT=ERR)
-                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps variable type.", &
+                                  IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps variable type.", &
                                     & ERR,ERROR,*999)
                                   ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                     & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                     & VARIABLE_DOF(numberColEquationsCols),STAT=ERR)
-                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps variable dof.", &
+                                  IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps variable dof.", &
                                     & ERR,ERROR,*999)
                                   ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                     & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                     & VARIABLE_COEFFICIENT(numberColEquationsCols),STAT=ERR)
                                   IF(ERR/=0) &
-                                    & CALL FLAG_ERROR("Could not allocate solver dof to variable maps variable coefficient.", &
+                                    & CALL FlagError("Could not allocate solver dof to variable maps variable coefficient.", &
                                     & ERR,ERROR,*999)
                                   ALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)% &
                                     & SOLVER_DOF_TO_VARIABLE_MAPS(solver_local_dof(rank))% &
                                     & ADDITIVE_CONSTANT(numberColEquationsCols),STAT=ERR)
-                                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dof to variable maps additive constant.", &
+                                  IF(ERR/=0) CALL FlagError("Could not allocate solver dof to variable maps additive constant.", &
                                     & ERR,ERROR,*999)
                                   !Setup
                                   SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS( &
@@ -2821,7 +2821,7 @@ CONTAINS
                                       ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                                         & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%INTERFACE_COL_TO_SOLVER_COLS_MAP( &
                                         & interface_column)%COUPLING_COEFFICIENTS(1),STAT=ERR)
-                                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface column to solver columns map "// &
+                                      IF(ERR/=0) CALL FlagError("Could not allocate interface column to solver columns map "// &
                                         & "coupling coefficients.",ERR,ERROR,*999)
                                       SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                                         & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)%INTERFACE_COL_TO_SOLVER_COLS_MAP( &
@@ -2853,14 +2853,14 @@ CONTAINS
                                       & INTERFACE_EQUATIONS_TO_SOLVER_MATRIX_MAPS(interface_matrix_idx)%PTR% &
                                       & INTERFACE_ROW_TO_SOLVER_COLS_MAP(interface_row)%SOLVER_COLS(1),STAT=ERR)
                                     IF(ERR/=0) &
-                                      & CALL FLAG_ERROR("Could not allocate interface equations row to solver columns map "// &
+                                      & CALL FlagError("Could not allocate interface equations row to solver columns map "// &
                                       & "solver colums.",ERR,ERROR,*999)
                                     ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                                       & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
                                       & INTERFACE_EQUATIONS_TO_SOLVER_MATRIX_MAPS(interface_matrix_idx)%PTR% &
                                       & INTERFACE_ROW_TO_SOLVER_COLS_MAP(interface_row)%COUPLING_COEFFICIENTS(1),STAT=ERR)
                                     IF(ERR/=0) &
-                                      & CALL FLAG_ERROR("Could not allocate interface equations row to solver columns map "// &
+                                      & CALL FlagError("Could not allocate interface equations row to solver columns map "// &
                                       & "coupling coefficients.",ERR,ERROR,*999)
                                     SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)% &
                                       & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx)% &
@@ -2888,15 +2888,15 @@ CONTAINS
                                   !Allocate the global to local map arrays
                                   ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%LOCAL_NUMBER(1),STAT=ERR)
                                   IF(ERR/=0) &
-                                    & CALL FLAG_ERROR("Could not allocate column domain global to local map local number.", &
+                                    & CALL FlagError("Could not allocate column domain global to local map local number.", &
                                     & ERR,ERROR,*999)
                                   ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%DOMAIN_NUMBER(1),STAT=ERR)
                                   IF(ERR/=0) &
-                                    & CALL FLAG_ERROR("Could not allocate column domain global to local map domain number.", &
+                                    & CALL FlagError("Could not allocate column domain global to local map domain number.", &
                                     & ERR,ERROR,*999)
                                   ALLOCATE(COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%LOCAL_TYPE(1),STAT=ERR)
                                   IF(ERR/=0) &
-                                    & CALL FLAG_ERROR("Could not allocate column domain global to local map domain number.", &
+                                    & CALL FlagError("Could not allocate column domain global to local map domain number.", &
                                     & ERR,ERROR,*999)
                                   !Set up the global to local mappings
                                   COL_DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(solver_global_dof)%NUMBER_OF_DOMAINS=1
@@ -2951,19 +2951,19 @@ CONTAINS
                             ENDIF !include_column
                           ENDDO !global_dof
                         CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                         CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                         CASE DEFAULT
                           LOCAL_ERROR="The interface condition method of "// &
                             & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
                             & " is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       CASE DEFAULT
                         LOCAL_ERROR="The equation type of "//TRIM(NUMBER_TO_VSTRING(equation_type,"*",ERR,ERROR))// &
                           & " is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                       VARIABLE_RANK_PROCESSED(solver_variable_idx,rank)=.TRUE.
                     ENDIF !Number of rank columns > 0
@@ -3015,7 +3015,7 @@ CONTAINS
                   & equations_matrix_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                   & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(equations_matrix_idx)%NUMBER_OF_SOLVER_MATRICES), &
                   & STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations to solver matrix maps.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate equations to solver matrix maps.",ERR,ERROR,*999)
                 SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
                   & equations_matrix_idx)%NUMBER_OF_SOLVER_MATRICES=0
               ENDDO !equations_matrix_idx
@@ -3042,7 +3042,7 @@ CONTAINS
                   & equations_matrix_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
                   & equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(equations_matrix_idx)%NUMBER_OF_SOLVER_MATRICES), &
                   & STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate equations to solver matrix maps.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate equations to solver matrix maps.",ERR,ERROR,*999)
                 SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM( &
                   & equations_matrix_idx)%NUMBER_OF_SOLVER_MATRICES=0
               ENDDO !equations_matrix_idx
@@ -3076,7 +3076,7 @@ CONTAINS
                   & INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(interface_matrix_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS(SOLVER_MAPPING% &
                   & INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_IM( &
                   & interface_matrix_idx)%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface to solver matrix maps.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate interface to solver matrix maps.",ERR,ERROR,*999)
                 SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP(interface_condition_idx)%INTERFACE_TO_SOLVER_MATRIX_MAPS_IM( &
                   & interface_matrix_idx)%NUMBER_OF_SOLVER_MATRICES=0
               ENDDO !interface_matrix_idx
@@ -3100,24 +3100,24 @@ CONTAINS
                 ENDDO !interface_matrix_idx
               ENDDO !solver_matrix_idx
             CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The interface condition method of "// &
                 & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
                         
           ENDDO !interface_condition_idx
         ELSE
-          CALL FLAG_ERROR("The solver mapping solver equations are not associated.",ERR,ERROR,*999)
+          CALL FlagError("The solver mapping solver equations are not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver mapping create values cache is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver mapping create values cache is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
     ENDIF
 
     IF(DIAGNOSTICS1) THEN
@@ -3292,7 +3292,7 @@ CONTAINS
         CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Number of global DOFs = ",SOLVER_MAPPING% &
           & SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%NUMBER_OF_GLOBAL_DOFS,ERR,ERROR,*999)
         ALLOCATE(VARIABLE_TYPES(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate variable types.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate variable types.",ERR,ERROR,*999)
         DO dof_idx=1,SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%TOTAL_NUMBER_OF_DOFS     
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"      Solver local DOF : ",dof_idx,ERR,ERROR,*999)
           CALL WRITE_STRING_VALUE(DIAGNOSTIC_OUTPUT_TYPE,"        Number of equations DOFs mapped to     = ",SOLVER_MAPPING% &
@@ -3786,18 +3786,18 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_MAPPING)) THEN
       IF(SOLVER_MAPPING%SOLVER_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Solver mapping has already been finished",ERR,ERROR,*998)
+        CALL FlagError("Solver mapping has already been finished",ERR,ERROR,*998)
       ELSE
         IF(ASSOCIATED(SOLVER_MAPPING%CREATE_VALUES_CACHE)) THEN
           CALL SOLVER_MAPPING_CALCULATE(SOLVER_MAPPING,ERR,ERROR,*999)
           CALL SOLVER_MAPPING_CREATE_VALUES_CACHE_FINALISE(SOLVER_MAPPING%CREATE_VALUES_CACHE,ERR,ERROR,*999)
           SOLVER_MAPPING%SOLVER_MAPPING_FINISHED=.TRUE.
         ELSE
-          CALL FLAG_ERROR("Solver mapping create values cache is not associated",ERR,ERROR,*999)
+          CALL FlagError("Solver mapping create values cache is not associated",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver mapping is not associated",ERR,ERROR,*998)
+      CALL FlagError("Solver mapping is not associated",ERR,ERROR,*998)
     ENDIF
        
     EXITS("SOLVER_MAPPING_CREATE_FINISH")
@@ -3825,10 +3825,10 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Solver equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver equations has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(ASSOCIATED(SOLVER_MAPPING)) THEN
-          CALL FLAG_ERROR("Solver mapping is already associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver mapping is already associated.",ERR,ERROR,*999)
         ELSE
           NULLIFY(SOLVER_MAPPING)
           CALL SOLVER_MAPPING_INITIALISE(SOLVER_EQUATIONS,ERR,ERROR,*999)
@@ -3836,7 +3836,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("SOLVER_MAPPING_CREATE_START")
@@ -3903,7 +3903,7 @@ CONTAINS
   !
 
   !>Initialises a solver mapping create values cache 
-  SUBROUTINE SOLVER_MAPPING_CREATE_VALUES_CACHE_INITIALISE(SOLVER_MAPPING,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_CreateValuesCacheInitialise(SOLVER_MAPPING,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING !<A pointer to the create values cache
@@ -3913,39 +3913,39 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR,equations_set_idx,solver_matrix_idx
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
-    ENTERS("SOLVER_MAPPING_CREATE_VALUES_CACHE_INITIALISE",ERR,ERROR,*998)
+    ENTERS("SolverMapping_CreateValuesCacheInitialise",ERR,ERROR,*998)
 
     IF(ASSOCIATED(SOLVER_MAPPING)) THEN
       IF(ASSOCIATED(SOLVER_MAPPING%CREATE_VALUES_CACHE)) THEN
-        CALL FLAG_ERROR("Solver mapping create values cache is already associated.",ERR,ERROR,*998)
+        CALL FlagError("Solver mapping create values cache is already associated.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping create values cache.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate solver mapping create values cache.",ERR,ERROR,*999)
         ALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%EQUATIONS_VARIABLE_LIST(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping create values cache equations variable list.", &
+        IF(ERR/=0) CALL FlagError("Could not allocate solver mapping create values cache equations variable list.", &
           & ERR,ERROR,*999)
         ALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping create values cache dynamic variable type.", &
+        IF(ERR/=0) CALL FlagError("Could not allocate solver mapping create values cache dynamic variable type.", &
           & ERR,ERROR,*999)
         ALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(0:FIELD_NUMBER_OF_VARIABLE_TYPES, &
           & SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping create values cache matrix variable types.", &
+        IF(ERR/=0) CALL FlagError("Could not allocate solver mapping create values cache matrix variable types.", &
           & ERR,ERROR,*999)
         ALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(0:FIELD_NUMBER_OF_VARIABLE_TYPES, &
           & SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping create values cache residual variable type.", &
+        IF(ERR/=0) CALL FlagError("Could not allocate solver mapping create values cache residual variable type.", &
           & ERR,ERROR,*999)
         ALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping create values cache RHS variable type.", &
+        IF(ERR/=0) CALL FlagError("Could not allocate solver mapping create values cache RHS variable type.", &
           & ERR,ERROR,*999)
         ALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%SOURCE_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping create values cache source variable type.", &
+        IF(ERR/=0) CALL FlagError("Could not allocate solver mapping create values cache source variable type.", &
           & ERR,ERROR,*999)
         ALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%INTERFACE_VARIABLE_LIST(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping create values cache interface variable list.", &
+        IF(ERR/=0) CALL FlagError("Could not allocate solver mapping create values cache interface variable list.", &
           & ERR,ERROR,*999)
         ALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%INTERFACE_INDICES(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver mapping create values cache interface condition indices.", &
+        IF(ERR/=0) CALL FlagError("Could not allocate solver mapping create values cache interface condition indices.", &
           & ERR,ERROR,*999)
         DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
           NULLIFY(SOLVER_MAPPING%CREATE_VALUES_CACHE%EQUATIONS_VARIABLE_LIST(solver_matrix_idx)%PTR)
@@ -3982,22 +3982,22 @@ CONTAINS
         SOLVER_MAPPING%CREATE_VALUES_CACHE%SOURCE_VARIABLE_TYPE=0
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*998)
     ENDIF
        
-    EXITS("SOLVER_MAPPING_CREATE_VALUES_CACHE_INITIALISE")
+    EXITS("SolverMapping_CreateValuesCacheInitialise")
     RETURN
 999 CALL SOLVER_MAPPING_CREATE_VALUES_CACHE_FINALISE(SOLVER_MAPPING%CREATE_VALUES_CACHE,DUMMY_ERR,DUMMY_ERROR,*998)
-998 ERRORSEXITS("SOLVER_MAPPING_CREATE_VALUES_CACHE_INITIALISE",ERR,ERROR)
+998 ERRORSEXITS("SolverMapping_CreateValuesCacheInitialise",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_CREATE_VALUES_CACHE_INITIALISE
+  END SUBROUTINE SolverMapping_CreateValuesCacheInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Adds a variable type from an equations set dependent field to the list of variables for a particular solver matrix of a solver mapping.
-  SUBROUTINE SOLVER_MAPPING_CREATE_VALUES_CACHE_EQN_VAR_LIST_ADD(SOLVER_MAPPING,solver_matrix_idx,equations_set_idx, &
+  SUBROUTINE SolverMapping_CreateValuesCacheEqnVarListAdd(SOLVER_MAPPING,solver_matrix_idx,equations_set_idx, &
     & variable_type,ERR,ERROR,*)
 
     !Argument variables
@@ -4014,7 +4014,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD,VAR_DEPENDENT_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("SOLVER_MAPPING_CREATE_VALUES_CACHE_EQN_VAR_LIST_ADD",ERR,ERROR,*999)
+    ENTERS("SolverMapping_CreateValuesCacheEqnVarListAdd",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MAPPING)) THEN
       IF(equations_set_idx>0.AND.equations_set_idx<=SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS) THEN
@@ -4038,10 +4038,10 @@ CONTAINS
                       IF(variable_type==VARIABLE_ITEM(2)) VARIABLE_FOUND=.TRUE.                               
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Variable dependent field is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Variable dependent field is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Variable equations set is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Variable equations set is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !variable_idx
               IF(.NOT.VARIABLE_FOUND) THEN
@@ -4052,34 +4052,35 @@ CONTAINS
               ENDIF
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dependent field is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
         LOCAL_ERROR="The specified equations set index of "//TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
           & " is invalid. The index must be > 0 and <= "// &
           & TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS,"*",ERR,ERROR))//"."        
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
     ENDIF
         
-    EXITS("SOLVER_MAPPING_CREATE_VALUES_CACHE_EQN_VAR_LIST_ADD")
+    EXITS("SolverMapping_CreateValuesCacheEqnVarListAdd")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_CREATE_VALUES_CACHE_EQN_VAR_LIST_ADD",ERR,ERROR)    
+999 ERRORS("SolverMapping_CreateValuesCacheEqnVarListAdd",ERR,ERROR)    
+    EXITS("SolverMapping_CreateValuesCacheEqnVarListAdd")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_CREATE_VALUES_CACHE_EQN_VAR_LIST_ADD
+  END SUBROUTINE SolverMapping_CreateValuesCacheEqnVarListAdd
 
   !
   !================================================================================================================================
   !
 
   !>Adds a variable type from an interface condition Lagrange field to the list of variables for a particular solver matrix of a solver mapping.
-  SUBROUTINE SOLVER_MAPPING_CREATE_VALUES_CACHE_INTERF_VAR_LIST_ADD(SOLVER_MAPPING,solver_matrix_idx,interface_condition_idx, &
+  SUBROUTINE SolverMapping_CreateValuesCacheInterfVarListAdd(SOLVER_MAPPING,solver_matrix_idx,interface_condition_idx, &
     & variable_type,ERR,ERROR,*)
     
     !Argument variables
@@ -4096,7 +4097,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: LAGRANGE_FIELD,VAR_LAGRANGE_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("SOLVER_MAPPING_CREATE_VALUES_CACHE_INTERF_VAR_LIST_ADD",ERR,ERROR,*999)
+    ENTERS("SolverMapping_CreateValuesCacheInterfVarListAdd",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MAPPING)) THEN
       IF(interface_condition_idx>0.AND.interface_condition_idx<=SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS) THEN
@@ -4126,23 +4127,23 @@ CONTAINS
                               IF(variable_type==VARIABLE_ITEM(2)) VARIABLE_FOUND=.TRUE.
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Variable Lagrange field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Variable Lagrange field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Variable interface Lagrange is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Variable interface Lagrange is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                       CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                       CASE DEFAULT
                         LOCAL_ERROR="The interface condition method of "// &
                           & TRIM(NUMBER_TO_VSTRING(VAR_INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
                           & " is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Variable equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Variable equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !variable_idx
                   IF(.NOT.VARIABLE_FOUND) THEN
@@ -4153,41 +4154,42 @@ CONTAINS
                   ENDIF
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Lagrange field is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Lagrange field is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Interface condition Lagrange is not asssociated.",ERR,ERROR,*999)
+              CALL FlagError("Interface condition Lagrange is not asssociated.",ERR,ERROR,*999)
             ENDIF
           CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The interface condition method of "// &
               & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
         LOCAL_ERROR="The specified interface condition index of "// &
           & TRIM(NUMBER_TO_VSTRING(interface_condition_idx,"*",ERR,ERROR))// &
           & " is invalid. The index must be > 0 and <= "// &
           & TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS,"*",ERR,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
     ENDIF
         
-    EXITS("SOLVER_MAPPING_CREATE_VALUES_CACHE_INTERF_VAR_LIST_ADD")
+    EXITS("SolverMapping_CreateValuesCacheInterfVarListAdd")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_CREATE_VALUES_CACHE_INTERF_VAR_LIST_ADD",ERR,ERROR)
+999 ERRORS("SolverMapping_CreateValuesCacheInterfVarListAdd",ERR,ERROR)
+    EXITS("SolverMapping_CreateValuesCacheInterfVarListAdd")
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_CREATE_VALUES_CACHE_INTERF_VAR_LIST_ADD
+  END SUBROUTINE SolverMapping_CreateValuesCacheInterfVarListAdd
 
   !
   !================================================================================================================================
@@ -4207,7 +4209,7 @@ CONTAINS
     IF(ASSOCIATED(SOLVER_MAPPING)) THEN
       CALL SOLVER_MAPPING_FINALISE(SOLVER_MAPPING,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Solver mapping is not associated",ERR,ERROR,*999)
+      CALL FlagError("Solver mapping is not associated",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_MAPPING_DESTROY")
@@ -4222,7 +4224,7 @@ CONTAINS
   !
 
   !>Finalises a equations column to solver columns map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_FINALISE(EQUATIONS_COL_TO_SOLVER_COLS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquatsColToSolColsMapFinalise(EQUATIONS_COL_TO_SOLVER_COLS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_COL_TO_SOLVER_COLS_MAP_TYPE) :: EQUATIONS_COL_TO_SOLVER_COLS_MAP !<The equations col to solver cols map to finalise
@@ -4230,26 +4232,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquatsColToSolColsMapFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(EQUATIONS_COL_TO_SOLVER_COLS_MAP%SOLVER_COLS)) &
       & DEALLOCATE(EQUATIONS_COL_TO_SOLVER_COLS_MAP%SOLVER_COLS)
     IF(ALLOCATED(EQUATIONS_COL_TO_SOLVER_COLS_MAP%COUPLING_COEFFICIENTS)) &
       & DEALLOCATE(EQUATIONS_COL_TO_SOLVER_COLS_MAP%COUPLING_COEFFICIENTS)
         
-    EXITS("SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_FINALISE")
+    EXITS("SolverMapping_EquatsColToSolColsMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_EquatsColToSolColsMapFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_FINALISE
+  END SUBROUTINE SolverMapping_EquatsColToSolColsMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an equations column to solver columns map
-  SUBROUTINE SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_INITIALISE(EQUATIONS_COL_TO_SOLVER_COLS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquatsColToSolColsMapInitialise(EQUATIONS_COL_TO_SOLVER_COLS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_COL_TO_SOLVER_COLS_MAP_TYPE) :: EQUATIONS_COL_TO_SOLVER_COLS_MAP !<The equations column to solver columns map to initialise
@@ -4257,23 +4259,24 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquatsColToSolColsMapInitialise",ERR,ERROR,*999)
 
     EQUATIONS_COL_TO_SOLVER_COLS_MAP%NUMBER_OF_SOLVER_COLS=0
     
-    EXITS("SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_INITIALISE")
+    EXITS("SolverMapping_EquatsColToSolColsMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_EquatsColToSolColsMapInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_EquatsColToSolColsMapInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_EquatsColToSolColsMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the mapping of global variables to a solver matrix for the solver mapping
-  SUBROUTINE SOLVER_MAPPING_EQUATS_VARS_TO_SOLVER_MATRIX_SET(SOLVER_MAPPING,SOLVER_MATRIX,EQUATIONS_SET_INDEX, &
+  SUBROUTINE SolverMapping_EquatsVarsToSolverMatrixSet(SOLVER_MAPPING,SOLVER_MATRIX,EQUATIONS_SET_INDEX, &
     & VARIABLE_TYPES,ERR,ERROR,*)
 
     !Argument variables
@@ -4291,11 +4294,11 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("SOLVER_MAPPING_EQUATS_VARS_TO_SOLVER_MATRIX_SET",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquatsVarsToSolverMatrixSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MAPPING)) THEN
       IF(SOLVER_MAPPING%SOLVER_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Solver mappings has been finished",ERR,ERROR,*999)
+        CALL FlagError("Solver mappings has been finished",ERR,ERROR,*999)
       ELSE
         IF(ASSOCIATED(SOLVER_MAPPING%CREATE_VALUES_CACHE)) THEN
           IF(SOLVER_MATRIX>=1.AND.SOLVER_MATRIX<=SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES) THEN
@@ -4319,7 +4322,7 @@ CONTAINS
                               & " at position "//TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))// &
                               & " in the array is invalid. The number must be >=1 and <= "// &
                               & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           ENDIF
                           IF(LINEAR_MAPPING%VAR_TO_EQUATIONS_MATRICES_MAPS(VARIABLE_TYPES(variable_idx))% &
                             & NUMBER_OF_EQUATIONS_MATRICES==0) THEN
@@ -4338,52 +4341,53 @@ CONTAINS
                           & TRIM(NUMBER_TO_VSTRING(SIZE(VARIABLE_TYPES,1),"*",ERR,ERROR))// &
                           & " is invalid. The size must be between 1 and "// &
                           & TRIM(NUMBER_TO_VSTRING(FIELD_NUMBER_OF_VARIABLE_TYPES,"*",ERR,ERROR))
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Equations mapping linear mapping is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations mapping linear mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Equations is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="The equations set index of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_INDEX,"*",ERR,ERROR))// &
                 & " is invalid. The number must be >= 1 and <= "// &
                 & TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The solver matrix number of "//TRIM(NUMBER_TO_VSTRING(SOLVER_MATRIX,"*",ERR,ERROR))// &
               & " is invalid. The number must be >= 1 and <= "// &
               & TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver mapping create values cache is not associated",ERR,ERROR,*999)
+          CALL FlagError("Solver mapping create values cache is not associated",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver mapping is not associated",ERR,ERROR,*999)
+      CALL FlagError("Solver mapping is not associated",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_MAPPING_EQUATS_VARS_TO_SOLVER_MATRIX_SET")
+    EXITS("SolverMapping_EquatsVarsToSolverMatrixSet")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATS_VARS_TO_SOLVER_MATRIX_SET",ERR,ERROR)
+999 ERRORSEXITS("SolverMapping_EquatsVarsToSolverMatrixSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_EQUATS_VARS_TO_SOLVER_MATRIX_SET
+    
+  END SUBROUTINE SolverMapping_EquatsVarsToSolverMatrixSet
   
   !
   !================================================================================================================================
   !
 
   !>Finalises a equations row to solver rows map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_FINALISE(EQUATIONS_ROW_SOLVER_ROWS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquatsRowToSolRowsMapFinalise(EQUATIONS_ROW_SOLVER_ROWS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_ROW_TO_SOLVER_ROWS_MAP_TYPE) :: EQUATIONS_ROW_SOLVER_ROWS_MAP !<The equations row to solver rows map to finalise
@@ -4391,26 +4395,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquatsRowToSolRowsMapFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(EQUATIONS_ROW_SOLVER_ROWS_MAP%SOLVER_ROWS)) &
       & DEALLOCATE(EQUATIONS_ROW_SOLVER_ROWS_MAP%SOLVER_ROWS)
     IF(ALLOCATED(EQUATIONS_ROW_SOLVER_ROWS_MAP%COUPLING_COEFFICIENTS)) &
       & DEALLOCATE(EQUATIONS_ROW_SOLVER_ROWS_MAP%COUPLING_COEFFICIENTS)
         
-    EXITS("SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_FINALISE")
+    EXITS("SolverMapping_EquatsRowToSolRowsMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_EquatsRowToSolRowsMapFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_FINALISE
+  END SUBROUTINE SolverMapping_EquatsRowToSolRowsMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an equations row to solver rows map
-  SUBROUTINE SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_INITIALISE(EQUATIONS_ROW_SOLVER_ROWS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquatsRowToSolRowsMapInitialise(EQUATIONS_ROW_SOLVER_ROWS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_ROW_TO_SOLVER_ROWS_MAP_TYPE) :: EQUATIONS_ROW_SOLVER_ROWS_MAP !<The equations row to solver rows map to initialise
@@ -4418,16 +4422,17 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquatsRowToSolRowsMapInitialise",ERR,ERROR,*999)
 
     EQUATIONS_ROW_SOLVER_ROWS_MAP%NUMBER_OF_SOLVER_ROWS=0
     
-    EXITS("SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_INITIALISE")
+    EXITS("SolverMapping_EquatsRowToSolRowsMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_EquatsRowToSolRowsMapInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_EquatsRowToSolRowsMapInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_EquatsRowToSolRowsMapInitialise
 
   !
   !================================================================================================================================
@@ -4461,7 +4466,7 @@ CONTAINS
     EQUATIONS_SET_INDEX=0
     IF(ASSOCIATED(SOLVER_MAPPING)) THEN
       IF(SOLVER_MAPPING%SOLVER_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Solver mapping has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver mapping has been finished.",ERR,ERROR,*999)
       ELSE
         SOLVER_EQUATIONS=>SOLVER_MAPPING%SOLVER_EQUATIONS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -4474,25 +4479,25 @@ CONTAINS
                   IF(ASSOCIATED(SOLVER_MAPPING%CREATE_VALUES_CACHE)) THEN
                     IF(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS>0) THEN
                       ALLOCATE(NEW_DYNAMIC_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new dynamic variable type.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate new dynamic variable type.",ERR,ERROR,*999)
                       ALLOCATE(NEW_MATRIX_VARIABLE_TYPES(0:FIELD_NUMBER_OF_VARIABLE_TYPES,SOLVER_MAPPING% &
                         & NUMBER_OF_EQUATIONS_SETS+1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new matrix variable types.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate new matrix variable types.",ERR,ERROR,*999)
                       ALLOCATE(NEW_RESIDUAL_VARIABLE_TYPES(0:FIELD_NUMBER_OF_VARIABLE_TYPES, &
                         & SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new residual variable type.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate new residual variable type.",ERR,ERROR,*999)
                       ALLOCATE(NEW_RHS_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new RHS variable type.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate new RHS variable type.",ERR,ERROR,*999)
                       ALLOCATE(NEW_SOURCE_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new source variable type.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate new source variable type.",ERR,ERROR,*999)
                       ALLOCATE(NEW_INTERFACE_INDICES(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new interface indices.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate new interface indices.",ERR,ERROR,*999)
                       DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                         NEW_INTERFACE_INDICES(equations_set_idx)%PTR=>SOLVER_MAPPING%CREATE_VALUES_CACHE%INTERFACE_INDICES( &
                           & equations_set_idx)%PTR
                       ENDDO !equations_sets
                       ALLOCATE(NEW_EQUATIONS_SETS(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new equations sets.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate new equations sets.",ERR,ERROR,*999)
 
                       IF(ASSOCIATED(SOLVER_MAPPING%CREATE_VALUES_CACHE%INTERFACE_INDICES)) &
                         & DEALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%INTERFACE_INDICES)
@@ -4528,21 +4533,21 @@ CONTAINS
 
                     ELSE IF(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS==0) THEN
                       ALLOCATE(NEW_DYNAMIC_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dynamic variable type.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate dynamic variable type.",ERR,ERROR,*999)
                       ALLOCATE(NEW_MATRIX_VARIABLE_TYPES(0:FIELD_NUMBER_OF_VARIABLE_TYPES, &
                         & SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix variable types.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate matrix variable types.",ERR,ERROR,*999)
                       ALLOCATE(NEW_RESIDUAL_VARIABLE_TYPES(0:FIELD_NUMBER_OF_VARIABLE_TYPES, &
                         & SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate residual variable type.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate residual variable type.",ERR,ERROR,*999)
                       ALLOCATE(NEW_RHS_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate RHS variable type.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate RHS variable type.",ERR,ERROR,*999)
                       ALLOCATE(NEW_SOURCE_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate source variable type.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate source variable type.",ERR,ERROR,*999)
                       ALLOCATE(NEW_INTERFACE_INDICES(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new interface indices.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate new interface indices.",ERR,ERROR,*999)
                       ALLOCATE(NEW_EQUATIONS_SETS(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new equations sets.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate new equations sets.",ERR,ERROR,*999)
 
                       NEW_DYNAMIC_VARIABLE_TYPE=0
                       NEW_MATRIX_VARIABLE_TYPES=0
@@ -4560,7 +4565,7 @@ CONTAINS
                         & DEALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%INTERFACE_INDICES)
                       SOLVER_MAPPING%CREATE_VALUES_CACHE%INTERFACE_INDICES=>NEW_INTERFACE_INDICES
                     ELSE
-                      CALL FLAG_ERROR("The number of equations sets is < 0.",ERR,ERROR,*999)
+                      CALL FlagError("The number of equations sets is < 0.",ERR,ERROR,*999)
                     ENDIF
                     NULLIFY(SOLVER_MAPPING%CREATE_VALUES_CACHE%INTERFACE_INDICES(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1)%PTR)
                     CALL LIST_CREATE_START(SOLVER_MAPPING%CREATE_VALUES_CACHE%INTERFACE_INDICES(SOLVER_MAPPING% &
@@ -4600,7 +4605,7 @@ CONTAINS
                               !Error - could not find any more variables to map to this solver matrix
                               LOCAL_ERROR="Could not find any unmapped variables for solver matrix "// &
                                 & TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//"."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ENDDO !matrix_idx
                           !Check if there are still unmapped matrix variables.
@@ -4609,11 +4614,11 @@ CONTAINS
                               & NUMBER_OF_EQUATIONS_MATRICES>0) THEN
                               LOCAL_ERROR="Variable type "//TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))// &
                                 & " is mapped to a linear matrix but has not been mapped to any solver matrices."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ENDDO !variable_idx
                         ELSE
-                          CALL FLAG_ERROR("Equations mapping linear mapping is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations mapping linear mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE(EQUATIONS_NONLINEAR)
                         IF(ASSOCIATED(EQUATIONS_MAPPING%NONLINEAR_MAPPING)) THEN
@@ -4645,16 +4650,16 @@ CONTAINS
                                 & "be 1 solver matrix and there are "// &
                                 & TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES,"*",ERR,ERROR))// &
                                 & " solver matrices."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE DEFAULT
                         LOCAL_ERROR="The equations linearity type of "// &
                           & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     CASE(EQUATIONS_FIRST_ORDER_DYNAMIC,EQUATIONS_SECOND_ORDER_DYNAMIC)
                       SELECT CASE(EQUATIONS%LINEARITY)
@@ -4663,7 +4668,7 @@ CONTAINS
                           SOLVER_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1)= &
                             & EQUATIONS_MAPPING%DYNAMIC_MAPPING%DYNAMIC_VARIABLE_TYPE
                         ELSE
-                          CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE(SOLVER_EQUATIONS_NONLINEAR)
                         IF(ASSOCIATED(EQUATIONS_MAPPING%DYNAMIC_MAPPING)) THEN
@@ -4675,17 +4680,17 @@ CONTAINS
                               & JACOBIAN_TO_VAR_MAP(matrix_idx)%VARIABLE_TYPE
                           ENDDO
                         ELSE
-                          CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE DEFAULT
                         LOCAL_ERROR="The equations linearity type of "// &
                           & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//" is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     CASE DEFAULT
                       LOCAL_ERROR="The equations time dependence type of "// &
                         & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
                     IF(ASSOCIATED(EQUATIONS_MAPPING%RHS_MAPPING)) THEN
                       SOLVER_MAPPING%CREATE_VALUES_CACHE%RHS_VARIABLE_TYPE(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS+1)= &
@@ -4701,43 +4706,43 @@ CONTAINS
                     
                     !Add the variables to the list of variables
                     variable_type=SOLVER_MAPPING%CREATE_VALUES_CACHE%DYNAMIC_VARIABLE_TYPE(EQUATIONS_SET_INDEX)
-                    CALL SOLVER_MAPPING_CREATE_VALUES_CACHE_EQN_VAR_LIST_ADD(SOLVER_MAPPING,1,EQUATIONS_SET_INDEX,variable_type, &
+                    CALL SolverMapping_CreateValuesCacheEqnVarListAdd(SOLVER_MAPPING,1,EQUATIONS_SET_INDEX,variable_type, &
                       & ERR,ERROR,*999)
                     DO solver_matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
                       DO matrix_idx=1,SOLVER_MAPPING%CREATE_VALUES_CACHE% &
                         & MATRIX_VARIABLE_TYPES(0,EQUATIONS_SET_INDEX,solver_matrix_idx)
                         variable_type=SOLVER_MAPPING%CREATE_VALUES_CACHE% &
                           & MATRIX_VARIABLE_TYPES(matrix_idx,EQUATIONS_SET_INDEX,solver_matrix_idx)
-                        CALL SOLVER_MAPPING_CREATE_VALUES_CACHE_EQN_VAR_LIST_ADD(SOLVER_MAPPING,1,EQUATIONS_SET_INDEX, &
+                        CALL SolverMapping_CreateValuesCacheEqnVarListAdd(SOLVER_MAPPING,1,EQUATIONS_SET_INDEX, &
                           & variable_type,ERR,ERROR,*999)
                       ENDDO !matrix_idx
                     ENDDO !solver_matrix_idx
                     DO matrix_idx=1,SOLVER_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(0,EQUATIONS_SET_INDEX)
                       variable_type=SOLVER_MAPPING%CREATE_VALUES_CACHE%RESIDUAL_VARIABLE_TYPES(matrix_idx,EQUATIONS_SET_INDEX)
-                      CALL SOLVER_MAPPING_CREATE_VALUES_CACHE_EQN_VAR_LIST_ADD(SOLVER_MAPPING,1,EQUATIONS_SET_INDEX,variable_type, &
+                      CALL SolverMapping_CreateValuesCacheEqnVarListAdd(SOLVER_MAPPING,1,EQUATIONS_SET_INDEX,variable_type, &
                         & ERR,ERROR,*999)
                     ENDDO
                   ELSE
-                    CALL FLAG_ERROR("Solvers mapping create values cache is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solvers mapping create values cache is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Equations set has not been finished.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver mapping solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver mapping solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_MAPPING_EQUATIONS_SET_ADD")
@@ -4757,7 +4762,7 @@ CONTAINS
   !
 
   !>Finalises a equations set to solver map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_FINALISE(EQUATIONS_SET_TO_SOLVER_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquationsSetToSolverMapFinalise(EQUATIONS_SET_TO_SOLVER_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TO_SOLVER_MAP_TYPE) :: EQUATIONS_SET_TO_SOLVER_MAP !<The equations set to solver map to finalise
@@ -4766,55 +4771,56 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: equations_matrix_idx,interface_condition_idx,row_idx,solver_matrix_idx
     
-    ENTERS("SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquationsSetToSolverMapFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_TO_SOLVER_MATRIX_MAPS_INTERFACE)) THEN
       DO interface_condition_idx=1,SIZE(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_TO_SOLVER_MATRIX_MAPS_INTERFACE,1)
-        CALL SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_FINALISE(EQUATIONS_SET_TO_SOLVER_MAP% &
+        CALL SolverMapping_EquationsToSolverInterfaceFinalise(EQUATIONS_SET_TO_SOLVER_MAP% &
           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_INTERFACE(interface_condition_idx),ERR,ERROR,*999)
       ENDDO !interface_condition_idx
       DEALLOCATE(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_TO_SOLVER_MATRIX_MAPS_INTERFACE)
     ENDIF
     IF(ALLOCATED(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM)) THEN
       DO solver_matrix_idx=1,SIZE(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM,1)
-        CALL SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_FINALISE(EQUATIONS_SET_TO_SOLVER_MAP% &
+        CALL SolverMapping_EquatsToSolMatMapsSMFinalise(EQUATIONS_SET_TO_SOLVER_MAP% &
           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx),ERR,ERROR,*999)
       ENDDO !solver_matrix_idx
       DEALLOCATE(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM)
     ENDIF
     IF(ALLOCATED(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM)) THEN
       DO equations_matrix_idx=1,SIZE(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM,1)
-        CALL SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_FINALISE(EQUATIONS_SET_TO_SOLVER_MAP% &
+        CALL SolverMapping_EquatsToSolMatMapsEMFinalise(EQUATIONS_SET_TO_SOLVER_MAP% &
           & EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM(equations_matrix_idx),ERR,ERROR,*999)
       ENDDO !equations_matrix_idx
       DEALLOCATE(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM)
     ENDIF
     IF(ALLOCATED(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM)) THEN
-      CALL SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_JM_FINALISE(EQUATIONS_SET_TO_SOLVER_MAP% &
+      CALL SolverMapping_EquatsToSolMatMapsJMFinalise(EQUATIONS_SET_TO_SOLVER_MAP% &
         & EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM,ERR,ERROR,*999)
       DEALLOCATE(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM)
     ENDIF
     IF(ALLOCATED(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS)) THEN
       DO row_idx=1,SIZE(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS,1)
-        CALL SOLVER_MAPPING_EQUATS_ROW_TO_SOL_ROWS_MAP_FINALISE(EQUATIONS_SET_TO_SOLVER_MAP% &
+        CALL SolverMapping_EquatsRowToSolRowsMapFinalise(EQUATIONS_SET_TO_SOLVER_MAP% &
           & EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(row_idx),ERR,ERROR,*999)
       ENDDO !row_idx
       DEALLOCATE(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS)
     ENDIF
         
-    EXITS("SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_FINALISE")
+    EXITS("SolverMapping_EquationsSetToSolverMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_FINALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_EquationsSetToSolverMapFinalise",ERR,ERROR)    
+    EXITS("SolverMapping_EquationsSetToSolverMapFinalise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_FINALISE
+  END SUBROUTINE SolverMapping_EquationsSetToSolverMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises a equations set to solver map.
-  SUBROUTINE SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_INITIALISE(EQUATIONS_SET_TO_SOLVER_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquationsSetToSolverMapInitialise(EQUATIONS_SET_TO_SOLVER_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TO_SOLVER_MAP_TYPE) :: EQUATIONS_SET_TO_SOLVER_MAP !<The equations set to solver map to initialise
@@ -4822,26 +4828,27 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquationsSetToSolverMapInitialise",ERR,ERROR,*999)
 
     EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS_SET_INDEX=0
     NULLIFY(EQUATIONS_SET_TO_SOLVER_MAP%SOLVER_MAPPING)
     NULLIFY(EQUATIONS_SET_TO_SOLVER_MAP%EQUATIONS)
     EQUATIONS_SET_TO_SOLVER_MAP%NUMBER_OF_INTERFACE_CONDITIONS=0
 
-    EXITS("SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_INITIALISE")
+    EXITS("SolverMapping_EquationsSetToSolverMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_EquationsSetToSolverMapInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_EquationsSetToSolverMapInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_EquationsSetToSolverMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises a equations set to solver matrix map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_FINALISE(EQUATIONS_TO_SOLVER_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquationsToSolverMapsFinalise(EQUATIONS_TO_SOLVER_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_TO_SOLVER_MAPS_TYPE), POINTER :: EQUATIONS_TO_SOLVER_MAP !<The equations set to solver map to finalise
@@ -4850,31 +4857,31 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: column_idx
     
-    ENTERS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquationsToSolverMapsFinalise",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_TO_SOLVER_MAP)) THEN
       IF(ALLOCATED(EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_TO_SOLVER_COLS_MAP)) THEN
         DO column_idx=1,SIZE(EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_TO_SOLVER_COLS_MAP,1)
-          CALL SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_FINALISE(EQUATIONS_TO_SOLVER_MAP% &
+          CALL SolverMapping_EquatsColToSolColsMapFinalise(EQUATIONS_TO_SOLVER_MAP% &
             & EQUATIONS_COL_TO_SOLVER_COLS_MAP(column_idx),ERR,ERROR,*999)
         ENDDO !column_idx
         DEALLOCATE(EQUATIONS_TO_SOLVER_MAP%EQUATIONS_COL_TO_SOLVER_COLS_MAP)
       ENDIF
     ENDIF
         
-    EXITS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_FINALISE")
+    EXITS("SolverMapping_EquationsToSolverMapsFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_EquationsToSolverMapsFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_FINALISE
+  END SUBROUTINE SolverMapping_EquationsToSolverMapsFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an equations to solver maps
-  SUBROUTINE SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_INITIALISE(EQUATIONS_TO_SOLVER_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquationsToSolverMapsInitialise(EQUATIONS_TO_SOLVER_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_TO_SOLVER_MAPS_TYPE), POINTER :: EQUATIONS_TO_SOLVER_MAP !<The equations to solver maps to initialise
@@ -4882,7 +4889,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquationsToSolverMapsInitialise",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_TO_SOLVER_MAP)) THEN
       EQUATIONS_TO_SOLVER_MAP%EQUATIONS_MATRIX_TYPE=0
@@ -4891,22 +4898,23 @@ CONTAINS
       NULLIFY(EQUATIONS_TO_SOLVER_MAP%EQUATIONS_MATRIX)
       NULLIFY(EQUATIONS_TO_SOLVER_MAP%SOLVER_MATRIX)
     ELSE
-      CALL FLAG_ERROR("Equations to solver map is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations to solver map is not associated.",ERR,ERROR,*999)
     ENDIF
         
-    EXITS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_INITIALISE")
+    EXITS("SolverMapping_EquationsToSolverMapsInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_EquationsToSolverMapsInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_EquationsToSolverMapsInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_INITIALISE
+  END SUBROUTINE SolverMapping_EquationsToSolverMapsInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises a equations set to solver matrix map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_FINALISE(EQUATIONS_TO_SOLVER_INTERFACE_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquationsToSolverInterfaceFinalise(EQUATIONS_TO_SOLVER_INTERFACE_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_INTERFACE_TYPE) :: EQUATIONS_TO_SOLVER_INTERFACE_MAP !<The equations set to solver map interface to finalise
@@ -4914,25 +4922,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquationsToSolverInterfaceFinalise",ERR,ERROR,*999)
 
     EQUATIONS_TO_SOLVER_INTERFACE_MAP%INTERFACE_CONDITION_INDEX=0
     NULLIFY(EQUATIONS_TO_SOLVER_INTERFACE_MAP%INTERFACE_CONDITION)
     EQUATIONS_TO_SOLVER_INTERFACE_MAP%INTERFACE_MATRIX_NUMBER=0
         
-    EXITS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_FINALISE")
+    EXITS("SolverMapping_EquationsToSolverInterfaceFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_FINALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_EquationsToSolverInterfaceFinalise",ERR,ERROR)    
+    EXITS("SolverMapping_EquationsToSolverInterfaceFinalise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_FINALISE
+  END SUBROUTINE SolverMapping_EquationsToSolverInterfaceFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises a equations set to solver matrix interface map.
-  SUBROUTINE SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_INITIALISE(EQUATIONS_TO_SOLVER_INTERFACE_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquationsToSolverInterfaceInitialise(EQUATIONS_TO_SOLVER_INTERFACE_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_INTERFACE_TYPE) :: EQUATIONS_TO_SOLVER_INTERFACE_MAP !<The equations set to solver map interface to initialise
@@ -4940,25 +4949,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquationsToSolverInterfaceInitialise",ERR,ERROR,*999)
 
     EQUATIONS_TO_SOLVER_INTERFACE_MAP%INTERFACE_CONDITION_INDEX=0
     NULLIFY(EQUATIONS_TO_SOLVER_INTERFACE_MAP%INTERFACE_CONDITION)
     EQUATIONS_TO_SOLVER_INTERFACE_MAP%INTERFACE_MATRIX_NUMBER=0
         
-    EXITS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_INITIALISE")
+    EXITS("SolverMapping_EquationsToSolverInterfaceInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_EquationsToSolverInterfaceInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_EquationsToSolverInterfaceInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATIONS_TO_SOLVER_INTERFACE_INITIALISE
+  END SUBROUTINE SolverMapping_EquationsToSolverInterfaceInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises a equations set to solver matrix map em and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_FINALISE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquatsToSolMatMapsEMFinalise(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM_TYPE) :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM !<The equations set to solver matrix maps em to finalise
@@ -4967,29 +4977,29 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: matrix_idx
     
-    ENTERS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquatsToSolMatMapsEMFinalise",ERR,ERROR,*999)
     
     IF(ALLOCATED(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM%EQUATIONS_TO_SOLVER_MATRIX_MAPS)) THEN
       DO matrix_idx=1,SIZE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM%EQUATIONS_TO_SOLVER_MATRIX_MAPS,1)
-        CALL SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_FINALISE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM% &
+        CALL SolverMapping_EquationsToSolverMapsFinalise(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM% &
           & EQUATIONS_TO_SOLVER_MATRIX_MAPS(matrix_idx)%PTR,ERR,ERROR,*999)        
       ENDDO !variable_idx
       DEALLOCATE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM%EQUATIONS_TO_SOLVER_MATRIX_MAPS)
     ENDIF
     
-    EXITS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_FINALISE")
+    EXITS("SolverMapping_EquatsToSolMatMapsEMFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_EquatsToSolMatMapsEMFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_FINALISE
+  END SUBROUTINE SolverMapping_EquatsToSolMatMapsEMFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an equations to solver matrix maps em.
-  SUBROUTINE SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_INITIALISE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquatsToSolMatMapsEMInitialise(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM_TYPE) :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM !<The equations to solver matrix maps em to initialise
@@ -4997,24 +5007,25 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquatsToSolMatMapsEMInitialise",ERR,ERROR,*999)
 
     EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM%EQUATIONS_MATRIX_NUMBER=0
     EQUATIONS_TO_SOLVER_MATRIX_MAPS_EM%NUMBER_OF_SOLVER_MATRICES=0
         
-    EXITS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_INITIALISE")
+    EXITS("SolverMapping_EquatsToSolMatMapsEMInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_EquatsToSolMatMapsEMInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_EquatsToSolMatMapsEMInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_EM_INITIALISE
+  END SUBROUTINE SolverMapping_EquatsToSolMatMapsEMInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises a equations set to solver matrix map jm and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_JM_FINALISE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquatsToSolMatMapsJMFinalise(EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(JACOBIAN_TO_SOLVER_MAP_PTR_TYPE), ALLOCATABLE, INTENT(IN) :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM(:) !<The equations set to solver matrix maps jm to finalise
@@ -5023,28 +5034,28 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: equations_matrix_idx
 
-    ENTERS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_JM_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquatsToSolMatMapsJMFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM)) THEN
       DO equations_matrix_idx=1,SIZE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM,1)
-        CALL SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_FINALISE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM(equations_matrix_idx)%PTR, &
+        CALL SolverMapping_JacobianToSolverMapFinalise(EQUATIONS_TO_SOLVER_MATRIX_MAPS_JM(equations_matrix_idx)%PTR, &
           & ERR,ERROR,*999)
       ENDDO
     ENDIF
 
-    EXITS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_JM_FINALISE")
+    EXITS("SolverMapping_EquatsToSolMatMapsJMFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_JM_FINALISE",ERR,ERROR)
+999 ERRORSEXITS("SolverMapping_EquatsToSolMatMapsJMFinalise",ERR,ERROR)
     RETURN 1
 
-  END SUBROUTINE SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_JM_FINALISE
+  END SUBROUTINE SolverMapping_EquatsToSolMatMapsJMFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises a equations set to solver matrix map sm and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_FINALISE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquatsToSolMatMapsSMFinalise(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM_TYPE) :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM !<The equations set to solver matrix maps sm to finalise
@@ -5053,52 +5064,52 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: matrix_idx,variable_idx
     
-    ENTERS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquatsToSolMatMapsSMFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%VARIABLE_TYPES)) DEALLOCATE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%VARIABLE_TYPES)
     IF(ALLOCATED(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%VARIABLES)) DEALLOCATE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%VARIABLES)
     IF(ALLOCATED(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%VARIABLE_TO_SOLVER_COL_MAPS)) THEN
       DO variable_idx=1,SIZE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%VARIABLE_TO_SOLVER_COL_MAPS,1)
-        CALL SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_FINALISE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM% &
+        CALL SolverMapping_VariableToSolverColMapFinalise(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM% &
           & VARIABLE_TO_SOLVER_COL_MAPS(variable_idx),ERR,ERROR,*999)        
       ENDDO !variable_idx
       DEALLOCATE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%VARIABLE_TO_SOLVER_COL_MAPS)
     ENDIF
     IF(ALLOCATED(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS)) THEN
       DO matrix_idx=1,SIZE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS,1)
-        CALL SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_FINALISE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM% &
+        CALL SolverMapping_EquationsToSolverMapsFinalise(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM% &
           & DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS(matrix_idx)%PTR,ERR,ERROR,*999)        
       ENDDO !variable_idx
       DEALLOCATE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%DYNAMIC_EQUATIONS_TO_SOLVER_MATRIX_MAPS)
     ENDIF
     IF(ALLOCATED(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS)) THEN
       DO matrix_idx=1,SIZE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS,1)
-        CALL SOLVER_MAPPING_EQUATIONS_TO_SOLVER_MAPS_FINALISE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM% &
+        CALL SolverMapping_EquationsToSolverMapsFinalise(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM% &
           & LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS(matrix_idx)%PTR,ERR,ERROR,*999)        
       ENDDO !variable_idx
       DEALLOCATE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%LINEAR_EQUATIONS_TO_SOLVER_MATRIX_MAPS)
     ENDIF
     IF(ALLOCATED(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%JACOBIAN_TO_SOLVER_MATRIX_MAPS)) THEN
       DO matrix_idx=1,SIZE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%JACOBIAN_TO_SOLVER_MATRIX_MAPS,1)
-        CALL SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_FINALISE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM% &
+        CALL SolverMapping_JacobianToSolverMapFinalise(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM% &
           & JACOBIAN_TO_SOLVER_MATRIX_MAPS(matrix_idx)%PTR,ERR,ERROR,*999)
       ENDDO
       DEALLOCATE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%JACOBIAN_TO_SOLVER_MATRIX_MAPS)
     ENDIF
 
-    EXITS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_FINALISE")
+    EXITS("SolverMapping_EquatsToSolMatMapsSMFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_EquatsToSolMatMapsSMFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_FINALISE
+  END SUBROUTINE SolverMapping_EquatsToSolMatMapsSMFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an equations to solver matrix maps sm.
-  SUBROUTINE SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_INITIALISE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_EquatsToSolMatMapsSMInitialise(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM_TYPE) :: EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM !<The equations to solver matrix maps sm to initialise
@@ -5106,7 +5117,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_EquatsToSolMatMapsSMInitialise",ERR,ERROR,*999)
 
     EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%SOLVER_MATRIX_NUMBER=0
     EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%NUMBER_OF_VARIABLES=0
@@ -5114,12 +5125,13 @@ CONTAINS
     EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=0
     EQUATIONS_TO_SOLVER_MATRIX_MAPS_SM%NUMBER_OF_EQUATIONS_JACOBIANS=0
 
-    EXITS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_INITIALISE")
+    EXITS("SolverMapping_EquatsToSolMatMapsSMInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_EquatsToSolMatMapsSMInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_EquatsToSolMatMapsSMInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_EQUATS_TO_SOL_MAT_MAPS_SM_INITIALISE
+  END SUBROUTINE SolverMapping_EquatsToSolMatMapsSMInitialise
 
   !
   !================================================================================================================================
@@ -5147,7 +5159,7 @@ CONTAINS
       IF(ALLOCATED(SOLVER_MAPPING%EQUATIONS_SETS)) DEALLOCATE(SOLVER_MAPPING%EQUATIONS_SETS)        
       IF(ALLOCATED(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP)) THEN
         DO equations_set_idx=1,SIZE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP,1)
-          CALL SOLVER_MAPPING_EQUATIONS_SET_TO_SOLVER_MAP_FINALISE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+          CALL SolverMapping_EquationsSetToSolverMapFinalise(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
             & equations_set_idx),ERR,ERROR,*999)
         ENDDO !equations_set_idx
         DEALLOCATE(SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP)
@@ -5155,21 +5167,21 @@ CONTAINS
       IF(ALLOCATED(SOLVER_MAPPING%INTERFACE_CONDITIONS)) DEALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITIONS)
       IF(ALLOCATED(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP)) THEN
         DO interface_condition_idx=1,SIZE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP,1)
-          CALL SOLVER_MAPPING_INTERF_CONDITION_TO_SOLVER_MAP_FINALISE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
+          CALL SolverMapping_InterfConditionToSolverMapFinalise(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP( &
             & interface_condition_idx),ERR,ERROR,*999)
         ENDDO !interface_condition_idx
         DEALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITION_TO_SOLVER_MAP)
       ENDIF
       IF(ALLOCATED(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP)) THEN
         DO solver_matrix_idx=1,SIZE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP,1)
-          CALL SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_FINALISE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP( &
+          CALL SolverMapping_SolColToEquationsMapsFinalise(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP( &
             & solver_matrix_idx),ERR,ERROR,*999)
         ENDDO !solver_matrix_idx
         DEALLOCATE(SOLVER_MAPPING%SOLVER_COL_TO_EQUATIONS_COLS_MAP)
       ENDIF
       IF(ALLOCATED(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP)) THEN
         DO row_idx=1,SIZE(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP,1)
-          CALL SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_FINALISE(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP( &
+          CALL SolverMapping_SolRowToEquationsMapsFinalise(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP( &
             & row_idx),ERR,ERROR,*999)
         ENDDO !row_idx
         DEALLOCATE(SOLVER_MAPPING%SOLVER_ROW_TO_EQUATIONS_ROWS_MAP)
@@ -5204,10 +5216,10 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(ASSOCIATED(SOLVER_EQUATIONS%SOLVER_MAPPING)) THEN
-        CALL FLAG_ERROR("Solver equations solver mapping is already associated",ERR,ERROR,*998)
+        CALL FlagError("Solver equations solver mapping is already associated",ERR,ERROR,*998)
       ELSE
         ALLOCATE(SOLVER_EQUATIONS%SOLVER_MAPPING,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver equations solver mapping",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate solver equations solver mapping",ERR,ERROR,*999)
         SOLVER_EQUATIONS%SOLVER_MAPPING%SOLVER_EQUATIONS=>SOLVER_EQUATIONS
         SOLVER_EQUATIONS%SOLVER_MAPPING%SOLVER_MAPPING_FINISHED=.FALSE.
         SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES=1
@@ -5217,10 +5229,10 @@ CONTAINS
         SOLVER_EQUATIONS%SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS=0
         NULLIFY(SOLVER_EQUATIONS%SOLVER_MAPPING%ROW_DOFS_MAPPING)
         NULLIFY(SOLVER_EQUATIONS%SOLVER_MAPPING%CREATE_VALUES_CACHE)
-        CALL SOLVER_MAPPING_CREATE_VALUES_CACHE_INITIALISE(SOLVER_EQUATIONS%SOLVER_MAPPING,ERR,ERROR,*999)
+        CALL SolverMapping_CreateValuesCacheInitialise(SOLVER_EQUATIONS%SOLVER_MAPPING,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated",ERR,ERROR,*998)
+      CALL FlagError("Solver equations is not associated",ERR,ERROR,*998)
     ENDIF
     
     EXITS("SOLVER_MAPPING_INITIALISE")
@@ -5261,7 +5273,7 @@ CONTAINS
     INTERFACE_CONDITION_INDEX=0
     IF(ASSOCIATED(SOLVER_MAPPING)) THEN
       IF(SOLVER_MAPPING%SOLVER_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Solver mapping has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver mapping has been finished.",ERR,ERROR,*999)
       ELSE
         SOLVER_EQUATIONS=>SOLVER_MAPPING%SOLVER_EQUATIONS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -5285,7 +5297,7 @@ CONTAINS
                         CASE DEFAULT
                           LOCAL_ERROR="The interface condition method of "// &
                             & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDSELECT
                         DO interface_matrix_idx=1,number_of_interface_matrices
                           EQUATIONS_SET=>INTERFACE_MAPPING%INTERFACE_MATRIX_ROWS_TO_VAR_MAPS(interface_matrix_idx)%EQUATIONS_SET
@@ -5338,40 +5350,40 @@ CONTAINS
                                   LOCAL_ERROR="The dependent variable associated with interface matrix number "// &
                                     & TRIM(NUMBER_TO_VSTRING(interface_matrix_idx,"*",ERR,ERROR))// &
                                     & " is not mapped to the solver equations."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                 ENDIF
                               ELSE
                                 LOCAL_ERROR="The dependent variable associated with interface matrix number "// &
                                   & TRIM(NUMBER_TO_VSTRING(interface_matrix_idx,"*",ERR,ERROR))//" is not associated."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               ENDIF
                             ELSE
                               LOCAL_ERROR="The equations set for the dependent variable associated with interface "// &
                                 & "matrix number "//TRIM(NUMBER_TO_VSTRING(interface_matrix_idx,"*",ERR,ERROR))// &
                                 & " has not been added to the solver equations."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ELSE
                             LOCAL_ERROR="Equations set is not associated for interface matrix number "// &
                               & TRIM(NUMBER_TO_VSTRING(interface_matrix_idx,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           ENDIF
                         ENDDO !interface_matrix_idx
                       ELSE
-                        CALL FLAG_ERROR("Interface condition dependent is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Interface condition dependent is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                     CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The interface condition method of "// &
                         & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
                     IF(SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS>0) THEN
                       ALLOCATE(OLD_INTERFACE_CONDITIONS(SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS),STAT=ERR)
-                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old interface conditions.",ERR,ERROR,*999)
+                      IF(ERR/=0) CALL FlagError("Could not allocate old interface conditions.",ERR,ERROR,*999)
                       DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
                         OLD_INTERFACE_CONDITIONS(interface_condition_idx)%PTR=>SOLVER_MAPPING% &
                           & INTERFACE_CONDITIONS(interface_condition_idx)%PTR
@@ -5380,10 +5392,10 @@ CONTAINS
                     ELSE IF(SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS==0) THEN
                       !Do nothing
                     ELSE
-                      CALL FLAG_ERROR("The number of interface conditions is < 0.",ERR,ERROR,*999)
+                      CALL FlagError("The number of interface conditions is < 0.",ERR,ERROR,*999)
                     ENDIF
                     ALLOCATE(SOLVER_MAPPING%INTERFACE_CONDITIONS(SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS+1),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate interface conditions.",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FlagError("Could not allocate interface conditions.",ERR,ERROR,*999)
                     DO interface_condition_idx=1,SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
                       SOLVER_MAPPING%INTERFACE_CONDITIONS(interface_condition_idx)%PTR=> &
                         & OLD_INTERFACE_CONDITIONS(interface_condition_idx)%PTR
@@ -5393,31 +5405,31 @@ CONTAINS
                     INTERFACE_CONDITION_INDEX=SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS
 
 !!TODO: SORT OUT LAGRANGE FIELD VARIABLE
-                    CALL SOLVER_MAPPING_CREATE_VALUES_CACHE_INTERF_VAR_LIST_ADD(SOLVER_MAPPING,1,INTERFACE_CONDITION_INDEX, &
+                    CALL SolverMapping_CreateValuesCacheInterfVarListAdd(SOLVER_MAPPING,1,INTERFACE_CONDITION_INDEX, &
                       & 1,ERR,ERROR,*999)
                     
                     IF(ALLOCATED(OLD_INTERFACE_CONDITIONS)) DEALLOCATE(OLD_INTERFACE_CONDITIONS)
                   ELSE
-                    CALL FLAG_ERROR("Solvers mapping create values cache is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solvers mapping create values cache is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Interface equations mapping is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Interface equations mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Interface condition interface equations is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Interface condition interface equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Interface condition has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Interface condition has not been finished.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver mapping solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver mapping solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_MAPPING_INTERFACE_CONDITION_ADD")
@@ -5433,7 +5445,7 @@ CONTAINS
   !
 
   !>Finalises an interface condition to solver map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_INTERF_CONDITION_TO_SOLVER_MAP_FINALISE(INTERFACE_CONDITION_TO_SOLVER_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfConditionToSolverMapFinalise(INTERFACE_CONDITION_TO_SOLVER_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_CONDITION_TO_SOLVER_MAP_TYPE) :: INTERFACE_CONDITION_TO_SOLVER_MAP !<The interface condition to solver map to finalise
@@ -5442,7 +5454,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: column_idx,equations_set_idx,interface_matrix_idx,solver_matrix_idx
     
-    ENTERS("SOLVER_MAPPING_INTERF_CONDITION_TO_SOLVER_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfConditionToSolverMapFinalise",ERR,ERROR,*999)
 
     INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_CONDITION_INDEX=0
     NULLIFY(INTERFACE_CONDITION_TO_SOLVER_MAP%SOLVER_MAPPING)
@@ -5450,46 +5462,47 @@ CONTAINS
     INTERFACE_CONDITION_TO_SOLVER_MAP%NUMBER_OF_EQUATIONS_SETS=0
     IF(ALLOCATED(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS)) THEN
       DO equations_set_idx=1,SIZE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS,1)
-        CALL SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_FINALISE(INTERFACE_CONDITION_TO_SOLVER_MAP% &
+        CALL SolverMapping_InterfaceToSolverEquationsFinalise(INTERFACE_CONDITION_TO_SOLVER_MAP% &
           & INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS(equations_set_idx),ERR,ERROR,*999)
       ENDDO !equations_set_idx
       DEALLOCATE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS)
     ENDIF
     IF(ALLOCATED(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_SM)) THEN
       DO solver_matrix_idx=1,SIZE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_SM,1)
-        CALL SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_FINALISE(INTERFACE_CONDITION_TO_SOLVER_MAP% &
+        CALL SolverMapping_InterfToSolMatMapsSMFinalise(INTERFACE_CONDITION_TO_SOLVER_MAP% &
           & INTERFACE_TO_SOLVER_MATRIX_MAPS_SM(solver_matrix_idx),ERR,ERROR,*999)
       ENDDO !solver_matrix_idx
       DEALLOCATE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_SM)
     ENDIF
     IF(ALLOCATED(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_IM)) THEN
       DO interface_matrix_idx=1,SIZE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_IM,1)
-        CALL SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_FINALISE(INTERFACE_CONDITION_TO_SOLVER_MAP% &
+        CALL SolverMapping_InterfToSolMatMapsIMFinalise(INTERFACE_CONDITION_TO_SOLVER_MAP% &
           & INTERFACE_TO_SOLVER_MATRIX_MAPS_IM(interface_matrix_idx),ERR,ERROR,*999)
       ENDDO !interface_matrix_idx
       DEALLOCATE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_IM)
     ENDIF
     IF(ALLOCATED(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS)) THEN
       DO column_idx=1,SIZE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS,1)
-        CALL SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_FINALISE(INTERFACE_CONDITION_TO_SOLVER_MAP% &
+        CALL SolverMapping_InterfColToSolRowsMapFinalise(INTERFACE_CONDITION_TO_SOLVER_MAP% &
           & INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS(column_idx),ERR,ERROR,*999)
       ENDDO !column_idx
       DEALLOCATE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS)
     ENDIF
         
-    EXITS("SOLVER_MAPPING_INTERF_CONDITION_TO_SOLVER_MAP_FINALISE")
+    EXITS("SolverMapping_InterfConditionToSolverMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERF_CONDITION_TO_SOLVER_MAP_FINALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_InterfConditionToSolverMapFinalise",ERR,ERROR)    
+    EXITS("SolverMapping_InterfConditionToSolverMapFinalise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERF_CONDITION_TO_SOLVER_MAP_FINALISE
+  END SUBROUTINE SolverMapping_InterfConditionToSolverMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an interface condition to solver map.
-  SUBROUTINE SOLVER_MAPPING_INTERF_CONDITON_TO_SOLVER_MAP_INITIALISE(INTERFACE_CONDITION_TO_SOLVER_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfConditionToSolverMapInitialise(INTERFACE_CONDITION_TO_SOLVER_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_CONDITION_TO_SOLVER_MAP_TYPE) :: INTERFACE_CONDITION_TO_SOLVER_MAP !<The interface condition to solver map to initialise
@@ -5497,26 +5510,27 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_INTERF_CONDITON_TO_SOLVER_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfConditionToSolverMapInitialise",ERR,ERROR,*999)
 
     INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_CONDITION_INDEX=0
     NULLIFY(INTERFACE_CONDITION_TO_SOLVER_MAP%SOLVER_MAPPING)
     NULLIFY(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_EQUATIONS)
     INTERFACE_CONDITION_TO_SOLVER_MAP%NUMBER_OF_EQUATIONS_SETS=0
     
-    EXITS("SOLVER_MAPPING_INTERF_CONDITON_TO_SOLVER_MAP_INITIALISE")
+    EXITS("SolverMapping_InterfConditionToSolverMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERF_CONDITON_TO_SOLVER_MAP_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_InterfConditionToSolverMapInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_InterfConditionToSolverMapInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERF_CONDITON_TO_SOLVER_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_InterfConditionToSolverMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises a interface condition to solver map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAP_FINALISE(INTERFACE_CONDITION_TO_SOLVER_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfaceToSolverMapFinalise(INTERFACE_CONDITION_TO_SOLVER_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_CONDITION_TO_SOLVER_MAP_TYPE), POINTER :: INTERFACE_CONDITION_TO_SOLVER_MAP !<The equations set to solver map to finalise
@@ -5525,19 +5539,19 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: equations_set_idx,interface_column_idx
     
-    ENTERS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfaceToSolverMapFinalise",ERR,ERROR,*999)
 
     IF(ASSOCIATED(INTERFACE_CONDITION_TO_SOLVER_MAP)) THEN
       IF(ALLOCATED(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS)) THEN
         DO equations_set_idx=1,SIZE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS,1)
-          CALL SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_FINALISE(INTERFACE_CONDITION_TO_SOLVER_MAP% &
+          CALL SolverMapping_InterfaceToSolverEquationsFinalise(INTERFACE_CONDITION_TO_SOLVER_MAP% &
             & INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS(equations_set_idx),ERR,ERROR,*999)
         ENDDO !equations_set_idx
         DEALLOCATE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS)
       ENDIF
       IF(ALLOCATED(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS)) THEN
         DO interface_column_idx=1,SIZE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS,1)
-          CALL SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_FINALISE(INTERFACE_CONDITION_TO_SOLVER_MAP% &
+          CALL SolverMapping_InterfColToSolRowsMapFinalise(INTERFACE_CONDITION_TO_SOLVER_MAP% &
             & INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS(interface_column_idx),ERR,ERROR,*999)
         ENDDO !interface_column_idx
         DEALLOCATE(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_COLUMN_TO_SOLVER_ROWS_MAPS)
@@ -5545,19 +5559,19 @@ CONTAINS
       DEALLOCATE(INTERFACE_CONDITION_TO_SOLVER_MAP)
     ENDIF
     
-    EXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAP_FINALISE")
+    EXITS("SolverMapping_InterfaceToSolverMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAP_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_InterfaceToSolverMapFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAP_FINALISE
+  END SUBROUTINE SolverMapping_InterfaceToSolverMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an interface condition to solver map.
-  SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAP_INITIALISE(INTERFACE_CONDITION_TO_SOLVER_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfaceToSolverMapInitialise(INTERFACE_CONDITION_TO_SOLVER_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_CONDITION_TO_SOLVER_MAP_TYPE) :: INTERFACE_CONDITION_TO_SOLVER_MAP !<The interface condition to solver map to initialise
@@ -5565,26 +5579,27 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfaceToSolverMapInitialise",ERR,ERROR,*999)
 
     INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_CONDITION_INDEX=0
     NULLIFY(INTERFACE_CONDITION_TO_SOLVER_MAP%SOLVER_MAPPING)
     NULLIFY(INTERFACE_CONDITION_TO_SOLVER_MAP%INTERFACE_EQUATIONS)
     INTERFACE_CONDITION_TO_SOLVER_MAP%NUMBER_OF_EQUATIONS_SETS=0
     
-    EXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAP_INITIALISE")
+    EXITS("SolverMapping_InterfaceToSolverMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAP_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_InterfaceToSolverMapInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_InterfaceToSolverMapInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_InterfaceToSolverMapInitialise
 
  !
   !================================================================================================================================
   !
 
   !>Finalises an interface to solver matrix maps and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_FINALISE(INTERFACE_TO_SOLVER_MAPS,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfaceToSolverMapsFinalise(INTERFACE_TO_SOLVER_MAPS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_TO_SOLVER_MAPS_TYPE), POINTER :: INTERFACE_TO_SOLVER_MAPS !<The interface to solver maps to finalise
@@ -5593,31 +5608,31 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: row_idx
     
-    ENTERS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfaceToSolverMapsFinalise",ERR,ERROR,*999)
 
     IF(ASSOCIATED(INTERFACE_TO_SOLVER_MAPS)) THEN
       IF(ALLOCATED(INTERFACE_TO_SOLVER_MAPS%INTERFACE_ROW_TO_SOLVER_COLS_MAP)) THEN
         DO row_idx=1,SIZE(INTERFACE_TO_SOLVER_MAPS%INTERFACE_ROW_TO_SOLVER_COLS_MAP,1)
-          CALL SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_FINALISE(INTERFACE_TO_SOLVER_MAPS% &
+          CALL SolverMapping_EquatsColToSolColsMapFinalise(INTERFACE_TO_SOLVER_MAPS% &
             & INTERFACE_ROW_TO_SOLVER_COLS_MAP(row_idx),ERR,ERROR,*999)
         ENDDO !row_idx
         DEALLOCATE(INTERFACE_TO_SOLVER_MAPS%INTERFACE_ROW_TO_SOLVER_COLS_MAP)
       ENDIF
     ENDIF
         
-    EXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_FINALISE")
+    EXITS("SolverMapping_InterfaceToSolverMapsFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_InterfaceToSolverMapsFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_FINALISE
+  END SUBROUTINE SolverMapping_InterfaceToSolverMapsFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an interface to solver maps
-  SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_INITIALISE(INTERFACE_TO_SOLVER_MAPS,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfaceToSolverMapsInitialise(INTERFACE_TO_SOLVER_MAPS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_TO_SOLVER_MAPS_TYPE), POINTER :: INTERFACE_TO_SOLVER_MAPS !<The interface to solver maps to initialise
@@ -5625,7 +5640,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfaceToSolverMapsInitialise",ERR,ERROR,*999)
 
     IF(ASSOCIATED(INTERFACE_TO_SOLVER_MAPS)) THEN
       INTERFACE_TO_SOLVER_MAPS%INTERFACE_MATRIX_NUMBER=0
@@ -5633,22 +5648,23 @@ CONTAINS
       NULLIFY(INTERFACE_TO_SOLVER_MAPS%INTERFACE_MATRIX)
       NULLIFY(INTERFACE_TO_SOLVER_MAPS%SOLVER_MATRIX)
     ELSE
-      CALL FLAG_ERROR("Interface to solver maps is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Interface to solver maps is not associated.",ERR,ERROR,*999)
     ENDIF
         
-    EXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_INITIALISE")
+    EXITS("SolverMapping_InterfaceToSolverMapsInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_InterfaceToSolverMapsInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_InterfaceToSolverMapsInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_INITIALISE
+  END SUBROUTINE SolverMapping_InterfaceToSolverMapsInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises an interface to solver matrix equations map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_FINALISE(INTERFACE_TO_SOLVER_EQUATIONS_MAPS,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfaceToSolverEquationsFinalise(INTERFACE_TO_SOLVER_EQUATIONS_MAPS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS_TYPE) :: INTERFACE_TO_SOLVER_EQUATIONS_MAPS !<The interface to solver equations map to finalise
@@ -5656,25 +5672,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfaceToSolverEquationsFinalise",ERR,ERROR,*999)
 
     INTERFACE_TO_SOLVER_EQUATIONS_MAPS%EQUATIONS_SET_INDEX=0
     NULLIFY(INTERFACE_TO_SOLVER_EQUATIONS_MAPS%EQUATIONS_SET)
     INTERFACE_TO_SOLVER_EQUATIONS_MAPS%INTERFACE_MATRIX_INDEX=0
          
-    EXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_FINALISE")
+    EXITS("SolverMapping_InterfaceToSolverEquationsFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_FINALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_InterfaceToSolverEquationsFinalise",ERR,ERROR)    
+    EXITS("SolverMapping_InterfaceToSolverEquationsFinalise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_FINALISE
+  END SUBROUTINE SolverMapping_InterfaceToSolverEquationsFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an interface to solver matrix equations map.
-  SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_INITIALISE(INTERFACE_TO_SOLVER_EQUATIONS_MAPS,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfaceToSolverEquationsInitialise(INTERFACE_TO_SOLVER_EQUATIONS_MAPS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_TO_SOLVER_MATRIX_MAPS_EQUATIONS_TYPE) :: INTERFACE_TO_SOLVER_EQUATIONS_MAPS !<The interface to solver equations map to initialise
@@ -5682,25 +5699,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfaceToSolverEquationsInitialise",ERR,ERROR,*999)
 
     INTERFACE_TO_SOLVER_EQUATIONS_MAPS%EQUATIONS_SET_INDEX=0
     NULLIFY(INTERFACE_TO_SOLVER_EQUATIONS_MAPS%EQUATIONS_SET)
     INTERFACE_TO_SOLVER_EQUATIONS_MAPS%INTERFACE_MATRIX_INDEX=0
          
-    EXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_INITIALISE")
+    EXITS("SolverMapping_InterfaceToSolverEquationsInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_InterfaceToSolverEquationsInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_InterfaceToSolverEquationsInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERFACE_TO_SOLVER_EQUATIONS_INITIALISE
+  END SUBROUTINE SolverMapping_InterfaceToSolverEquationsInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises a interface column to solver row map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_FINALISE(INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfColToSolRowsMapFinalise(INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP_TYPE) :: INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP !<The interface column to solver row map to finalise
@@ -5708,25 +5726,25 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfColToSolRowsMapFinalise",ERR,ERROR,*999)
 
     INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP%NUMBER_OF_SOLVER_ROWS=0
     INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP%SOLVER_ROW=0
     INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP%COUPLING_COEFFICIENT=0.0_DP
          
-    EXITS("SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_FINALISE")
+    EXITS("SolverMapping_InterfColToSolRowsMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_InterfColToSolRowsMapFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_FINALISE
+  END SUBROUTINE SolverMapping_InterfColToSolRowsMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises am interface column to solver row map.
-  SUBROUTINE SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_INITIALISE(INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfColToSolRowsMapInitialise(INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP_TYPE) :: INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP !<The interface column to solver row map to initialise
@@ -5734,25 +5752,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfColToSolRowsMapInitialise",ERR,ERROR,*999)
 
     INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP%NUMBER_OF_SOLVER_ROWS=0
     INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP%SOLVER_ROW=0
     INTERFACE_COLUMN_TO_SOLVER_ROWS_MAP%COUPLING_COEFFICIENT=0.0_DP
         
-    EXITS("SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_INITIALISE")
+    EXITS("SolverMapping_InterfColToSolRowsMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_InterfColToSolRowsMapInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_InterfColToSolRowsMapInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERF_COL_TO_SOL_ROWS_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_InterfColToSolRowsMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises a interface row to solver row map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_FINALISE(INTERFACE_ROW_TO_SOLVER_ROWS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfRowToSolRowsMapFinalise(INTERFACE_ROW_TO_SOLVER_ROWS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_ROW_TO_SOLVER_ROWS_MAP_TYPE) :: INTERFACE_ROW_TO_SOLVER_ROWS_MAP !<The interface row to solver row map to finalise
@@ -5760,25 +5779,25 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfRowToSolRowsMapFinalise",ERR,ERROR,*999)
 
     INTERFACE_ROW_TO_SOLVER_ROWS_MAP%NUMBER_OF_SOLVER_ROWS=0
     INTERFACE_ROW_TO_SOLVER_ROWS_MAP%SOLVER_ROW=0
     INTERFACE_ROW_TO_SOLVER_ROWS_MAP%COUPLING_COEFFICIENT=0.0_DP
         
-    EXITS("SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_FINALISE")
+    EXITS("SolverMapping_InterfRowToSolRowsMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_InterfRowToSolRowsMapFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_FINALISE
+  END SUBROUTINE SolverMapping_InterfRowToSolRowsMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises am interface row to solver row map.
-  SUBROUTINE SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_INITIALISE(INTERFACE_ROW_TO_SOLVER_ROWS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfRowToSolRowsMapInitialise(INTERFACE_ROW_TO_SOLVER_ROWS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_ROW_TO_SOLVER_ROWS_MAP_TYPE) :: INTERFACE_ROW_TO_SOLVER_ROWS_MAP !<The interface row to solver row map to initialise
@@ -5786,25 +5805,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfRowToSolRowsMapInitialise",ERR,ERROR,*999)
 
     INTERFACE_ROW_TO_SOLVER_ROWS_MAP%NUMBER_OF_SOLVER_ROWS=0
     INTERFACE_ROW_TO_SOLVER_ROWS_MAP%SOLVER_ROW=0
     INTERFACE_ROW_TO_SOLVER_ROWS_MAP%COUPLING_COEFFICIENT=0.0_DP
         
-    EXITS("SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_INITIALISE")
+    EXITS("SolverMapping_InterfRowToSolRowsMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_InterfRowToSolRowsMapInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_InterfRowToSolRowsMapInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_InterfRowToSolRowsMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises an interface to solver matrix map im and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_FINALISE(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfToSolMatMapsIMFinalise(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM_TYPE) :: INTERFACE_TO_SOLVER_MATRIX_MAPS_IM !<The interface to solver matrix maps Im to finalise
@@ -5813,38 +5833,38 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: row_idx,solver_matrix_idx
     
-    ENTERS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfToSolMatMapsIMFinalise",ERR,ERROR,*999)
 
     INTERFACE_TO_SOLVER_MATRIX_MAPS_IM%INTERFACE_MATRIX_NUMBER=0
     INTERFACE_TO_SOLVER_MATRIX_MAPS_IM%NUMBER_OF_SOLVER_MATRICES=0
     IF(ALLOCATED(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM%INTERFACE_TO_SOLVER_MATRIX_MAPS)) THEN
       DO solver_matrix_idx=1,SIZE(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM%INTERFACE_TO_SOLVER_MATRIX_MAPS,1)
-        CALL SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_FINALISE(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM% &
+        CALL SolverMapping_InterfaceToSolverMapsFinalise(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM% &
           & INTERFACE_TO_SOLVER_MATRIX_MAPS(solver_matrix_idx)%PTR,ERR,ERROR,*999)        
       ENDDO !solver_matrix_idx
       DEALLOCATE(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM%INTERFACE_TO_SOLVER_MATRIX_MAPS)
     ENDIF
     IF(ALLOCATED(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM%INTERFACE_ROW_TO_SOLVER_ROWS_MAP)) THEN
       DO row_idx=1,SIZE(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM%INTERFACE_ROW_TO_SOLVER_ROWS_MAP,1)
-        CALL SOLVER_MAPPING_INTERF_ROW_TO_SOL_ROWS_MAP_FINALISE(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM% &
+        CALL SolverMapping_InterfRowToSolRowsMapFinalise(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM% &
           INTERFACE_ROW_TO_SOLVER_ROWS_MAP(row_idx),ERR,ERROR,*999)
       ENDDO !row_idx
       DEALLOCATE(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM%INTERFACE_ROW_TO_SOLVER_ROWS_MAP)
     ENDIF
     
-    EXITS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_FINALISE")
+    EXITS("SolverMapping_InterfToSolMatMapsIMFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_InterfToSolMatMapsIMFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_FINALISE
+  END SUBROUTINE SolverMapping_InterfToSolMatMapsIMFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an interface to solver matrix maps im.
-  SUBROUTINE SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_INITIALISE(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfToSolMatMapsIMInitialise(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_TO_SOLVER_MATRIX_MAPS_IM_TYPE) :: INTERFACE_TO_SOLVER_MATRIX_MAPS_IM !<The interface to solver matrix maps Im to initialise
@@ -5852,24 +5872,25 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfToSolMatMapsIMInitialise",ERR,ERROR,*999)
 
     INTERFACE_TO_SOLVER_MATRIX_MAPS_IM%INTERFACE_MATRIX_NUMBER=0
     INTERFACE_TO_SOLVER_MATRIX_MAPS_IM%NUMBER_OF_SOLVER_MATRICES=0
     
-    EXITS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_INITIALISE")
+    EXITS("SolverMapping_InterfToSolMatMapsIMInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_InterfToSolMatMapsIMInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_InterfToSolMatMapsIMInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_IM_INITIALISE
+  END SUBROUTINE SolverMapping_InterfToSolMatMapsIMInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises an interface to solver matrix map sm and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_FINALISE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfToSolMatMapsSMFinalise(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM_TYPE) :: INTERFACE_TO_SOLVER_MATRIX_MAPS_SM !<The interface to solver matrix maps sm to finalise
@@ -5878,12 +5899,12 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: column_idx,interface_matrix_idx
     
-    ENTERS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfToSolMatMapsSMFinalise",ERR,ERROR,*999)
 
     INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%SOLVER_MATRIX_NUMBER=0
     INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%LAGRANGE_VARIABLE_TYPE=0
     NULLIFY(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%LAGRANGE_VARIABLE)
-    CALL SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_FINALISE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM% &
+    CALL SolverMapping_VariableToSolverColMapFinalise(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM% &
       & LAGRANGE_VARIABLE_TO_SOLVER_COL_MAP,ERR,ERROR,*999)
     INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%NUMBER_OF_DEPENDENT_VARIABLES=0
     IF(ALLOCATED(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%DEPENDENT_VARIABLE_TYPES)) &
@@ -5892,7 +5913,7 @@ CONTAINS
       & DEALLOCATE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%DEPENDENT_VARIABLES)
     IF(ALLOCATED(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%DEPENDENT_VARIABLE_TO_SOLVER_COL_MAPS)) THEN
       DO interface_matrix_idx=1,SIZE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%DEPENDENT_VARIABLE_TO_SOLVER_COL_MAPS,1)
-        CALL SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_FINALISE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM% &
+        CALL SolverMapping_VariableToSolverColMapFinalise(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM% &
           & DEPENDENT_VARIABLE_TO_SOLVER_COL_MAPS(interface_matrix_idx),ERR,ERROR,*999)
       ENDDO !interface_matrix_idx
       DEALLOCATE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%DEPENDENT_VARIABLE_TO_SOLVER_COL_MAPS)
@@ -5900,32 +5921,32 @@ CONTAINS
     INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%NUMBER_OF_INTERFACE_MATRICES=0
     IF(ALLOCATED(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%INTERFACE_EQUATIONS_TO_SOLVER_MATRIX_MAPS)) THEN
       DO interface_matrix_idx=1,SIZE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%INTERFACE_EQUATIONS_TO_SOLVER_MATRIX_MAPS,1)
-        CALL SOLVER_MAPPING_INTERFACE_TO_SOLVER_MAPS_FINALISE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM% &
+        CALL SolverMapping_InterfaceToSolverMapsFinalise(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM% &
           INTERFACE_EQUATIONS_TO_SOLVER_MATRIX_MAPS(interface_matrix_idx)%PTR,ERR,ERROR,*999)
       ENDDO !interface_matrix_idx
       DEALLOCATE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%INTERFACE_EQUATIONS_TO_SOLVER_MATRIX_MAPS)
     ENDIF
     IF(ALLOCATED(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%INTERFACE_COL_TO_SOLVER_COLS_MAP)) THEN
       DO column_idx=1,SIZE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%INTERFACE_COL_TO_SOLVER_COLS_MAP,1)
-        CALL SOLVER_MAPPING_EQUATS_COL_TO_SOL_COLS_MAP_FINALISE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM% &
+        CALL SolverMapping_EquatsColToSolColsMapFinalise(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM% &
           & INTERFACE_COL_TO_SOLVER_COLS_MAP(column_idx),ERR,ERROR,*999)
       ENDDO !column_idx
       DEALLOCATE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%INTERFACE_COL_TO_SOLVER_COLS_MAP)
     ENDIF
    
-    EXITS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_FINALISE")
+    EXITS("SolverMapping_InterfToSolMatMapsSMFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_InterfToSolMatMapsSMFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_FINALISE
+  END SUBROUTINE SolverMapping_InterfToSolMatMapsSMFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an interface to solver matrix maps sm.
-  SUBROUTINE SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_INITIALISE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_InterfToSolMatMapsSMInitialise(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM,ERR,ERROR,*)
 
     !Argument variables
     TYPE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM_TYPE) :: INTERFACE_TO_SOLVER_MATRIX_MAPS_SM !<The interface to solver matrix maps sm to initialise
@@ -5933,29 +5954,30 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_InterfToSolMatMapsSMInitialise",ERR,ERROR,*999)
 
     INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%SOLVER_MATRIX_NUMBER=0
     INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%LAGRANGE_VARIABLE_TYPE=0
     NULLIFY(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%LAGRANGE_VARIABLE)
-    CALL SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_INITIALISE(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM% &
+    CALL SolverMapping_VariableToSolverColMapInitialise(INTERFACE_TO_SOLVER_MATRIX_MAPS_SM% &
       & LAGRANGE_VARIABLE_TO_SOLVER_COL_MAP,ERR,ERROR,*999)
     INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%NUMBER_OF_DEPENDENT_VARIABLES=0
     INTERFACE_TO_SOLVER_MATRIX_MAPS_SM%NUMBER_OF_INTERFACE_MATRICES=0
         
-    EXITS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_INITIALISE")
+    EXITS("SolverMapping_InterfToSolMatMapsSMInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_InterfToSolMatMapsSMInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_InterfToSolMatMapsSMInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_INTERF_TO_SOL_MAT_MAPS_SM_INITIALISE
+  END SUBROUTINE SolverMapping_InterfToSolMatMapsSMInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises a Jacobian column to solver columns map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_JAC_COL_TO_SOL_COLS_MAP_FINALISE(JACOBIAN_COL_TO_SOLVER_COLS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_JacColToSolColsMapFinalise(JACOBIAN_COL_TO_SOLVER_COLS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(JACOBIAN_COL_TO_SOLVER_COLS_MAP_TYPE) :: JACOBIAN_COL_TO_SOLVER_COLS_MAP !<The Jacobian col to solver cols map to finalise
@@ -5963,26 +5985,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_JAC_COL_TO_SOL_COLS_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_JacColToSolColsMapFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(JACOBIAN_COL_TO_SOLVER_COLS_MAP%SOLVER_COLS)) &
       & DEALLOCATE(JACOBIAN_COL_TO_SOLVER_COLS_MAP%SOLVER_COLS)
     IF(ALLOCATED(JACOBIAN_COL_TO_SOLVER_COLS_MAP%COUPLING_COEFFICIENTS)) &
       & DEALLOCATE(JACOBIAN_COL_TO_SOLVER_COLS_MAP%COUPLING_COEFFICIENTS)
         
-    EXITS("SOLVER_MAPPING_JAC_COL_TO_SOL_COLS_MAP_FINALISE")
+    EXITS("SolverMapping_JacColToSolColsMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_JAC_COL_TO_SOL_COLS_MAP_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_JacColToSolColsMapFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_JAC_COL_TO_SOL_COLS_MAP_FINALISE
+  END SUBROUTINE SolverMapping_JacColToSolColsMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises an Jacobian column to solver columns map
-  SUBROUTINE SOLVER_MAPPING_JAC_COL_TO_SOL_COLS_MAP_INITIALISE(JACOBIAN_COL_TO_SOLVER_COLS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_JacColToSolColsMapInitialise(JACOBIAN_COL_TO_SOLVER_COLS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(JACOBIAN_COL_TO_SOLVER_COLS_MAP_TYPE) :: JACOBIAN_COL_TO_SOLVER_COLS_MAP !<The Jacobian column to solver columns map to initialise
@@ -5990,23 +6012,23 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_JAC_COL_TO_SOL_COLS_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_JacColToSolColsMapInitialise",ERR,ERROR,*999)
 
     JACOBIAN_COL_TO_SOLVER_COLS_MAP%NUMBER_OF_SOLVER_COLS=0
     
-    EXITS("SOLVER_MAPPING_JAC_COL_TO_SOL_COLS_MAP_INITIALISE")
+    EXITS("SolverMapping_JacColToSolColsMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_JAC_COL_TO_SOL_COLS_MAP_INITIALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_JacColToSolColsMapInitialise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_JAC_COL_TO_SOL_COLS_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_JacColToSolColsMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises a equations set to solver matrix map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_FINALISE(JACOBIAN_TO_SOLVER_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_JacobianToSolverMapFinalise(JACOBIAN_TO_SOLVER_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MAP !<The jacobian to solver map to finalise
@@ -6015,31 +6037,31 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: column_idx
     
-    ENTERS("SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_JacobianToSolverMapFinalise",ERR,ERROR,*999)
 
     IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MAP)) THEN
       IF(ALLOCATED(JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP)) THEN
         DO column_idx=1,SIZE(JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP,1)
-          CALL SOLVER_MAPPING_JAC_COL_TO_SOL_COLS_MAP_FINALISE(JACOBIAN_TO_SOLVER_MAP% &
+          CALL SolverMapping_JacColToSolColsMapFinalise(JACOBIAN_TO_SOLVER_MAP% &
             & JACOBIAN_COL_TO_SOLVER_COLS_MAP(column_idx),ERR,ERROR,*999)
         ENDDO !column_idx
         DEALLOCATE(JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP)
       ENDIF
     ENDIF
         
-    EXITS("SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_FINALISE")
+    EXITS("SolverMapping_JacobianToSolverMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_JacobianToSolverMapFinalise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_FINALISE
+  END SUBROUTINE SolverMapping_JacobianToSolverMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises a Jacobian to solver maps
-  SUBROUTINE SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_INITIALISE(JACOBIAN_TO_SOLVER_MATRIX_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_JacobianToSolverMapInitialise(JACOBIAN_TO_SOLVER_MATRIX_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(JACOBIAN_TO_SOLVER_MAP_TYPE), POINTER :: JACOBIAN_TO_SOLVER_MATRIX_MAP !<The Jacobian to solver maps to initialise
@@ -6049,30 +6071,30 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
-    ENTERS("SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_INITIALISE",ERR,ERROR,*998)
+    ENTERS("SolverMapping_JacobianToSolverMapInitialise",ERR,ERROR,*998)
 
     IF(ASSOCIATED(JACOBIAN_TO_SOLVER_MATRIX_MAP)) THEN
       JACOBIAN_TO_SOLVER_MATRIX_MAP%SOLVER_MATRIX_NUMBER=0
       NULLIFY(JACOBIAN_TO_SOLVER_MATRIX_MAP%JACOBIAN_MATRIX)
       NULLIFY(JACOBIAN_TO_SOLVER_MATRIX_MAP%SOLVER_MATRIX)
     ELSE
-      CALL FLAG_ERROR("Jacobian to solver matrix map is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Jacobian to solver matrix map is not associated.",ERR,ERROR,*999)
     ENDIF
         
-    EXITS("SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_INITIALISE")
+    EXITS("SolverMapping_JacobianToSolverMapInitialise")
     RETURN
-999 CALL SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_FINALISE(JACOBIAN_TO_SOLVER_MATRIX_MAP,DUMMY_ERR,DUMMY_ERROR,*998)
-998 ERRORSEXITS("SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_INITIALISE",ERR,ERROR)    
+999 CALL SolverMapping_JacobianToSolverMapFinalise(JACOBIAN_TO_SOLVER_MATRIX_MAP,DUMMY_ERR,DUMMY_ERROR,*998)
+998 ERRORSEXITS("SolverMapping_JacobianToSolverMapInitialise",ERR,ERROR)    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_JACOBIAN_TO_SOLVER_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_JacobianToSolverMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises the solver column to dynamic equations map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOLVER_COL_TO_D_EQUATIONS_MAP_FINALISE(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolverColToDEquationsMapFinalise(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP_TYPE) :: SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP !<The solver column to dynamic equations map to finalise
@@ -6080,7 +6102,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_SOLVER_COL_TO_D_EQUATIONS_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolverColToDEquationsMapFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP%EQUATIONS_MATRIX_NUMBERS)) &
       & DEALLOCATE(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP%EQUATIONS_MATRIX_NUMBERS)
@@ -6089,18 +6111,20 @@ CONTAINS
     IF(ALLOCATED(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP%COUPLING_COEFFICIENTS)) &
       & DEALLOCATE(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP%COUPLING_COEFFICIENTS)
        
-    EXITS("SOLVER_MAPPING_SOLVER_COL_TO_D_EQUATIONS_MAP_FINALISE")
+    EXITS("SolverMapping_SolverColToDEquationsMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOLVER_COL_TO_D_EQUATIONS_MAP_FINALISE",ERR,ERROR)
+999 ERRORS("SolverMapping_SolverColToDEquationsMapFinalise",ERR,ERROR)
+    EXITS("SolverMapping_SolverColToDEquationsMapFinalise")
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_SOLVER_COL_TO_D_EQUATIONS_MAP_FINALISE
+    
+  END SUBROUTINE SolverMapping_SolverColToDEquationsMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the solver column to dynamic equations mapping and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOLVER_COL_TO_D_EQUATIONS_MAP_INITIALISE(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolverColToDEquationsMapInitialise(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP_TYPE) :: SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP !<The solver column to dynamic equations map to initialise
@@ -6108,22 +6132,24 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_SOLVER_COL_TO_D_EQUATIONS_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolverColToDEquationsMapInitialise",ERR,ERROR,*999)
 
     SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAP%NUMBER_OF_DYNAMIC_EQUATIONS_MATRICES=0
      
-    EXITS("SOLVER_MAPPING_SOLVER_COL_TO_D_EQUATIONS_MAP_INITIALISE")
+    EXITS("SolverMapping_SolverColToDEquationsMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOLVER_COL_TO_D_EQUATIONS_MAP_INITIALISE",ERR,ERROR)
+999 ERRORS("SolverMapping_SolverColToDEquationsMapInitialise",ERR,ERROR)
+    EXITS("SolverMapping_SolverColToDEquationsMapInitialise")
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_SOLVER_COL_TO_D_EQUATIONS_MAP_INITIALISE
+    
+  END SUBROUTINE SolverMapping_SolverColToDEquationsMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises the solver column to static equations map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOLVER_COL_TO_S_EQUATIONS_MAP_FINALISE(SOLVER_COL_TO_STATIC_EQUATIONS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolverColToSEquationsMapFinalise(SOLVER_COL_TO_STATIC_EQUATIONS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_STATIC_EQUATIONS_MAP_TYPE) :: SOLVER_COL_TO_STATIC_EQUATIONS_MAP !<The solver column to static equations map to finalise
@@ -6131,7 +6157,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_SOLVER_COL_TO_S_EQUATIONS_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolverColToSEquationsMapFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(SOLVER_COL_TO_STATIC_EQUATIONS_MAP%EQUATIONS_MATRIX_NUMBERS)) &
       & DEALLOCATE(SOLVER_COL_TO_STATIC_EQUATIONS_MAP%EQUATIONS_MATRIX_NUMBERS)
@@ -6140,18 +6166,20 @@ CONTAINS
     IF(ALLOCATED(SOLVER_COL_TO_STATIC_EQUATIONS_MAP%COUPLING_COEFFICIENTS)) &
       & DEALLOCATE(SOLVER_COL_TO_STATIC_EQUATIONS_MAP%COUPLING_COEFFICIENTS)
        
-    EXITS("SOLVER_MAPPING_SOLVER_COL_TO_S_EQUATIONS_MAP_FINALISE")
+    EXITS("SolverMapping_SolverColToSEquationsMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOLVER_COL_TO_S_EQUATIONS_MAP_FINALISE",ERR,ERROR)
+999 ERRORS("SolverMapping_SolverColToSEquationsMapFinalise",ERR,ERROR)
+    EXITS("SolverMapping_SolverColToSEquationsMapFinalise")
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_SOLVER_COL_TO_S_EQUATIONS_MAP_FINALISE
+    
+  END SUBROUTINE SolverMapping_SolverColToSEquationsMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the solver column to static equations mapping and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOLVER_COL_TO_S_EQUATIONS_MAP_INITIALISE(SOLVER_COL_TO_STATIC_EQUATIONS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolverColToSEquationsMapInitialise(SOLVER_COL_TO_STATIC_EQUATIONS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_STATIC_EQUATIONS_MAP_TYPE) :: SOLVER_COL_TO_STATIC_EQUATIONS_MAP !<The solver column to static equations map to initialise
@@ -6159,24 +6187,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_SOLVER_COL_TO_S_EQUATIONS_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolverColToSEquationsMapInitialise",ERR,ERROR,*999)
 
     SOLVER_COL_TO_STATIC_EQUATIONS_MAP%NUMBER_OF_LINEAR_EQUATIONS_MATRICES=0
     SOLVER_COL_TO_STATIC_EQUATIONS_MAP%JACOBIAN_COL_NUMBER=0    
     SOLVER_COL_TO_STATIC_EQUATIONS_MAP%JACOBIAN_COUPLING_COEFFICIENT=0.0_DP
     
-    EXITS("SOLVER_MAPPING_SOLVER_COL_TO_S_EQUATIONS_MAP_INITIALISE")
+    EXITS("SolverMapping_SolverColToSEquationsMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOLVER_COL_TO_S_EQUATIONS_MAP_INITIALISE",ERR,ERROR)
+999 ERRORS("SolverMapping_SolverColToSEquationsMapInitialise",ERR,ERROR)
+    EXITS("SolverMapping_SolverColToSEquationsMapInitialise")
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_SOLVER_COL_TO_S_EQUATIONS_MAP_INITIALISE
+    
+  END SUBROUTINE SolverMapping_SolverColToSEquationsMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises the solver column to equations set map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_FINALISE(SOLVER_COL_TO_EQUATIONS_SET_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolColToEquatsSetMapFinalise(SOLVER_COL_TO_EQUATIONS_SET_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE) :: SOLVER_COL_TO_EQUATIONS_SET_MAP !<The solver column to equations set map to finalise
@@ -6185,11 +6215,11 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: col_idx
     
-    ENTERS("SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolColToEquatsSetMapFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(SOLVER_COL_TO_EQUATIONS_SET_MAP%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS)) THEN
       DO col_idx=1,SIZE(SOLVER_COL_TO_EQUATIONS_SET_MAP%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS,1)
-        CALL SOLVER_MAPPING_SOLVER_COL_TO_D_EQUATIONS_MAP_FINALISE(SOLVER_COL_TO_EQUATIONS_SET_MAP% &
+        CALL SolverMapping_SolverColToDEquationsMapFinalise(SOLVER_COL_TO_EQUATIONS_SET_MAP% &
           & SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS(col_idx),ERR,ERROR,*999)
       ENDDO !col_idx
       DEALLOCATE(SOLVER_COL_TO_EQUATIONS_SET_MAP%SOLVER_COL_TO_DYNAMIC_EQUATIONS_MAPS)
@@ -6197,25 +6227,25 @@ CONTAINS
     ENDIF
     IF(ALLOCATED(SOLVER_COL_TO_EQUATIONS_SET_MAP%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS)) THEN
       DO col_idx=1,SIZE(SOLVER_COL_TO_EQUATIONS_SET_MAP%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS,1)
-        CALL SOLVER_MAPPING_SOLVER_COL_TO_S_EQUATIONS_MAP_FINALISE(SOLVER_COL_TO_EQUATIONS_SET_MAP% &
+        CALL SolverMapping_SolverColToSEquationsMapFinalise(SOLVER_COL_TO_EQUATIONS_SET_MAP% &
           & SOLVER_COL_TO_STATIC_EQUATIONS_MAPS(col_idx),ERR,ERROR,*999)
       ENDDO !col_idx
       DEALLOCATE(SOLVER_COL_TO_EQUATIONS_SET_MAP%SOLVER_COL_TO_STATIC_EQUATIONS_MAPS)
       SOLVER_COL_TO_EQUATIONS_SET_MAP%HAVE_STATIC=.FALSE.
     ENDIF
        
-    EXITS("SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_FINALISE")
+    EXITS("SolverMapping_SolColToEquatsSetMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_FINALISE",ERR,ERROR)
+999 ERRORSEXITS("SolverMapping_SolColToEquatsSetMapFinalise",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_FINALISE
+  END SUBROUTINE SolverMapping_SolColToEquatsSetMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the solver column to equations set mapping and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_INITIALISE(SOLVER_COL_TO_EQUATIONS_SET_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolColToEquatsSetMapInitialise(SOLVER_COL_TO_EQUATIONS_SET_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_EQUATIONS_SET_MAP_TYPE) :: SOLVER_COL_TO_EQUATIONS_SET_MAP !<The solver column to equations set map to initialise
@@ -6223,25 +6253,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolColToEquatsSetMapInitialise",ERR,ERROR,*999)
 
     NULLIFY(SOLVER_COL_TO_EQUATIONS_SET_MAP%EQUATIONS)
     SOLVER_COL_TO_EQUATIONS_SET_MAP%HAVE_DYNAMIC=.FALSE.
     SOLVER_COL_TO_EQUATIONS_SET_MAP%HAVE_STATIC=.FALSE.
     
-    EXITS("SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_INITIALISE")
+    EXITS("SolverMapping_SolColToEquatsSetMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_INITIALISE",ERR,ERROR)
+999 ERRORS("SolverMapping_SolColToEquatsSetMapInitialise",ERR,ERROR)
+    EXITS("SolverMapping_SolColToEquatsSetMapInitialise")
     RETURN 1
     
-  END SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_SolColToEquatsSetMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises the solver column to equations map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_FINALISE(SOLVER_COL_TO_EQUATIONS_MAPS,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolColToEquationsMapsFinalise(SOLVER_COL_TO_EQUATIONS_MAPS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_EQUATIONS_MAPS_TYPE) :: SOLVER_COL_TO_EQUATIONS_MAPS !<The solver column to equations sets map to finalise
@@ -6250,36 +6281,37 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: col_idx,equations_set_idx
     
-    ENTERS("SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolColToEquationsMapsFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(SOLVER_COL_TO_EQUATIONS_MAPS%SOLVER_COL_TO_EQUATIONS_SET_MAPS)) THEN
       DO equations_set_idx=1,SIZE(SOLVER_COL_TO_EQUATIONS_MAPS%SOLVER_COL_TO_EQUATIONS_SET_MAPS,1)
-        CALL SOLVER_MAPPING_SOL_COL_TO_EQUATS_SET_MAP_FINALISE(SOLVER_COL_TO_EQUATIONS_MAPS% &
+        CALL SolverMapping_SolColToEquatsSetMapFinalise(SOLVER_COL_TO_EQUATIONS_MAPS% &
           SOLVER_COL_TO_EQUATIONS_SET_MAPS(equations_set_idx),ERR,ERROR,*999)
       ENDDO !equations_set_idx
       DEALLOCATE(SOLVER_COL_TO_EQUATIONS_MAPS%SOLVER_COL_TO_EQUATIONS_SET_MAPS)
     ENDIF
     IF(ALLOCATED(SOLVER_COL_TO_EQUATIONS_MAPS%SOLVER_DOF_TO_VARIABLE_MAPS)) THEN
       DO col_idx=1,SIZE(SOLVER_COL_TO_EQUATIONS_MAPS%SOLVER_DOF_TO_VARIABLE_MAPS,1)
-        CALL SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_FINALISE(SOLVER_COL_TO_EQUATIONS_MAPS%SOLVER_DOF_TO_VARIABLE_MAPS( &
+        CALL SolverMapping_SolverDofToVariableMapFinalise(SOLVER_COL_TO_EQUATIONS_MAPS%SOLVER_DOF_TO_VARIABLE_MAPS( &
           & col_idx),ERR,ERROR,*999)
       ENDDO !col_idx
       DEALLOCATE(SOLVER_COL_TO_EQUATIONS_MAPS%SOLVER_DOF_TO_VARIABLE_MAPS)
     ENDIF
     CALL DOMAIN_MAPPINGS_MAPPING_FINALISE(SOLVER_COL_TO_EQUATIONS_MAPS%COLUMN_DOFS_MAPPING,ERR,ERROR,*999)
     
-    EXITS("SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_FINALISE")
+    EXITS("SolverMapping_SolColToEquationsMapsFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_FINALISE",ERR,ERROR)
+999 ERRORSEXITS("SolverMapping_SolColToEquationsMapsFinalise",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_FINALISE
+    
+  END SUBROUTINE SolverMapping_SolColToEquationsMapsFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the solver column to equations mapping and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_INITIALISE(SOLVER_COL_TO_EQUATIONS_MAPS,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolColToEquationsMapsInitialise(SOLVER_COL_TO_EQUATIONS_MAPS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_EQUATIONS_MAPS_TYPE) :: SOLVER_COL_TO_EQUATIONS_MAPS !<The solver column to equations map to initialise
@@ -6287,7 +6319,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolColToEquationsMapsInitialise",ERR,ERROR,*999)
 
     SOLVER_COL_TO_EQUATIONS_MAPS%SOLVER_MATRIX_NUMBER=0
     NULLIFY(SOLVER_COL_TO_EQUATIONS_MAPS%SOLVER_MATRIX)
@@ -6298,18 +6330,20 @@ CONTAINS
     SOLVER_COL_TO_EQUATIONS_MAPS%NUMBER_OF_GLOBAL_DOFS=0
     NULLIFY(SOLVER_COL_TO_EQUATIONS_MAPS%COLUMN_DOFS_MAPPING)
     
-    EXITS("SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_INITIALISE")
+    EXITS("SolverMapping_SolColToEquationsMapsInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_INITIALISE",ERR,ERROR)
+999 ERRORS("SolverMapping_SolColToEquationsMapsInitialise",ERR,ERROR)
+    EXITS("SolverMapping_SolColToEquationsMapsInitialise")
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_EQUATIONS_MAPS_INITIALISE
+    
+  END SUBROUTINE SolverMapping_SolColToEquationsMapsInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises the solver column to interface map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_INTERF_MAP_FINALISE(SOLVER_COL_TO_INTERFACE_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolColToInterfMapFinalise(SOLVER_COL_TO_INTERFACE_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_INTERFACE_MAP_TYPE) :: SOLVER_COL_TO_INTERFACE_MAP !<The solver column to interface map to finalise
@@ -6318,29 +6352,29 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: column_idx
     
-    ENTERS("SOLVER_MAPPING_SOL_COL_TO_INTERF_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolColToInterfMapFinalise",ERR,ERROR,*999)
 
     NULLIFY(SOLVER_COL_TO_INTERFACE_MAP%INTERFACE_EQUATIONS)
     IF(ALLOCATED(SOLVER_COL_TO_INTERFACE_MAP%SOLVER_COL_TO_INTERFACE_EQUATIONS_MAPS)) THEN
       DO column_idx=1,SIZE(SOLVER_COL_TO_INTERFACE_MAP%SOLVER_COL_TO_INTERFACE_EQUATIONS_MAPS,1)
-        CALL SOLVER_MAPPING_SOL_COL_TO_INTERF_EQUATS_MAP_FINALISE(SOLVER_COL_TO_INTERFACE_MAP% &
+        CALL SolverMapping_SolColToInterfEquatsMapFinalise(SOLVER_COL_TO_INTERFACE_MAP% &
           & SOLVER_COL_TO_INTERFACE_EQUATIONS_MAPS(column_idx),ERR,ERROR,*999)
       ENDDO !column_idx
       DEALLOCATE(SOLVER_COL_TO_INTERFACE_MAP%SOLVER_COL_TO_INTERFACE_EQUATIONS_MAPS)
     ENDIF
      
-    EXITS("SOLVER_MAPPING_SOL_COL_TO_INTERF_MAP_FINALISE")
+    EXITS("SolverMapping_SolColToInterfMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOL_COL_TO_INTERF_MAP_FINALISE",ERR,ERROR)
+999 ERRORSEXITS("SolverMapping_SolColToInterfMapFinalise",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_INTERF_MAP_FINALISE
+  END SUBROUTINE SolverMapping_SolColToInterfMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the solver column to interface mapping.
-  SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_INTERF_MAP_INITIALISE(SOLVER_COL_TO_INTERFACE_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolColToInterfMapInitialise(SOLVER_COL_TO_INTERFACE_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_INTERFACE_MAP_TYPE) :: SOLVER_COL_TO_INTERFACE_MAP !<The solver column to interface map to initialise
@@ -6348,23 +6382,24 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_SOL_COL_TO_INTERF_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolColToInterfMapInitialise",ERR,ERROR,*999)
 
     NULLIFY(SOLVER_COL_TO_INTERFACE_MAP%INTERFACE_EQUATIONS)
     
-    EXITS("SOLVER_MAPPING_SOL_COL_TO_INTERF_MAP_INITIALISE")
+    EXITS("SolverMapping_SolColToInterfMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOL_COL_TO_INTERF_MAP_INITIALISE",ERR,ERROR)
+999 ERRORS("SolverMapping_SolColToInterfMapInitialise",ERR,ERROR)
+    EXITS("SolverMapping_SolColToInterfMapInitialise")
     RETURN 1
     
-  END SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_INTERF_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_SolColToInterfMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises the solver column to interface equations map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_INTERF_EQUATS_MAP_FINALISE(SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolColToInterfEquatsMapFinalise(SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP_TYPE) :: SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP !<The solver column to interface equatiosn map to finalise
@@ -6372,7 +6407,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_SOL_COL_TO_INTERF_EQUATS_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolColToInterfEquatsMapFinalise",ERR,ERROR,*999)
 
     SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP%NUMBER_OF_INTERFACE_MATRICES=0
     IF(ALLOCATED(SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP%INTERFACE_MATRIX_NUMBERS))  &
@@ -6382,18 +6417,20 @@ CONTAINS
     IF(ALLOCATED(SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP%COUPLING_COEFFICIENTS))  &
       & DEALLOCATE(SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP%COUPLING_COEFFICIENTS)
     
-    EXITS("SOLVER_MAPPING_SOL_COL_TO_INTERF_EQUATS_MAP_FINALISE")
+    EXITS("SolverMapping_SolColToInterfEquatsMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOL_COL_TO_INTERF_EQUATS_MAP_FINALISE",ERR,ERROR)
+999 ERRORS("SolverMapping_SolColToInterfEquatsMapFinalise",ERR,ERROR)
+    EXITS("SolverMapping_SolColToInterfEquatsMapFinalise")
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_INTERF_EQUATS_MAP_FINALISE
+    
+  END SUBROUTINE SolverMapping_SolColToInterfEquatsMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the solver column to interface equations mapping.
-  SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_INTERF_EQUATS_MAP_INITIALISE(SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolColToInterfEquatsMapInitialise(SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP_TYPE) :: SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP !<The solver column to interface equations map to initialise
@@ -6401,23 +6438,24 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_SOL_COL_TO_INTERF_EQUATS_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolColToInterfEquatsMapInitialise",ERR,ERROR,*999)
 
     SOLVER_COL_TO_INTERFACE_EQUATIONS_MAP%NUMBER_OF_INTERFACE_MATRICES=0
     
-    EXITS("SOLVER_MAPPING_SOL_COL_TO_INTERF_EQUATS_MAP_INITIALISE")
+    EXITS("SolverMapping_SolColToInterfEquatsMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOL_COL_TO_INTERF_EQUATS_MAP_INITIALISE",ERR,ERROR)
+999 ERRORS("SolverMapping_SolColToInterfEquatsMapInitialise",ERR,ERROR)
+    EXITS("SolverMapping_SolColToInterfEquatsMapInitialise")
     RETURN 1
     
-  END SUBROUTINE SOLVER_MAPPING_SOL_COL_TO_INTERF_EQUATS_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_SolColToInterfEquatsMapInitialise
 
   !
   !================================================================================================================================
   !
 
   !>Finalises the solver dof to variable mapping and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_FINALISE(SOLVER_DOF_TO_VARIABLE_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolverDofToVariableMapFinalise(SOLVER_DOF_TO_VARIABLE_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_DOF_TO_VARIABLE_MAP_TYPE) :: SOLVER_DOF_TO_VARIABLE_MAP !<The solver dof to variable map to finalise
@@ -6425,7 +6463,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolverDofToVariableMapFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(SOLVER_DOF_TO_VARIABLE_MAP%EQUATIONS_TYPES)) DEALLOCATE(SOLVER_DOF_TO_VARIABLE_MAP%EQUATIONS_TYPES)
     IF(ALLOCATED(SOLVER_DOF_TO_VARIABLE_MAP%EQUATIONS_INDICES)) DEALLOCATE(SOLVER_DOF_TO_VARIABLE_MAP%EQUATIONS_INDICES)
@@ -6434,18 +6472,20 @@ CONTAINS
     IF(ALLOCATED(SOLVER_DOF_TO_VARIABLE_MAP%VARIABLE_COEFFICIENT)) DEALLOCATE(SOLVER_DOF_TO_VARIABLE_MAP%VARIABLE_COEFFICIENT)
     IF(ALLOCATED(SOLVER_DOF_TO_VARIABLE_MAP%ADDITIVE_CONSTANT)) DEALLOCATE(SOLVER_DOF_TO_VARIABLE_MAP%ADDITIVE_CONSTANT)
     
-    EXITS("SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_FINALISE")
+    EXITS("SolverMapping_SolverDofToVariableMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_FINALISE",ERR,ERROR)
+999 ERRORS("SolverMapping_SolverDofToVariableMapFinalise",ERR,ERROR)
+    EXITS("SolverMapping_SolverDofToVariableMapFinalise")
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_FINALISE
+    
+  END SUBROUTINE SolverMapping_SolverDofToVariableMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises the solver dof to variable mapping.
-  SUBROUTINE SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_INITIALISE(SOLVER_DOF_TO_VARIABLE_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolverDofToVariableMapInitialise(SOLVER_DOF_TO_VARIABLE_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_DOF_TO_VARIABLE_MAP_TYPE) :: SOLVER_DOF_TO_VARIABLE_MAP !<The solver dof to variable map to initialise
@@ -6453,15 +6493,17 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolverDofToVariableMapInitialise",ERR,ERROR,*999)
 
     SOLVER_DOF_TO_VARIABLE_MAP%NUMBER_OF_EQUATION_DOFS=0
     
-    EXITS("SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_INITIALISE")
+    EXITS("SolverMapping_SolverDofToVariableMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_INITIALISE",ERR,ERROR)
+999 ERRORS("SolverMapping_SolverDofToVariableMapInitialise",ERR,ERROR)
+    EXITS("SolverMapping_SolverDofToVariableMapInitialise")
     RETURN 1
-  END SUBROUTINE SOLVER_MAPPING_SOLVER_DOF_TO_VARIABLE_MAP_INITIALISE
+    
+  END SUBROUTINE SolverMapping_SolverDofToVariableMapInitialise
 
   !
   !================================================================================================================================
@@ -6488,7 +6530,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_MAPPING)) THEN
       IF(SOLVER_MAPPING%SOLVER_MAPPING_FINISHED) THEN
-        CALL FLAG_ERROR("Solver mappings has been finished",ERR,ERROR,*999)
+        CALL FlagError("Solver mappings has been finished",ERR,ERROR,*999)
       ELSE
         IF(ASSOCIATED(SOLVER_MAPPING%CREATE_VALUES_CACHE)) THEN
           MAXIMUM_NUMBER_OF_EQUATIONS_MATRICES=1
@@ -6508,7 +6550,7 @@ CONTAINS
             IF(NUMBER_OF_SOLVER_MATRICES/=SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES) THEN
               ALLOCATE(OLD_MATRIX_VARIABLE_TYPES(0:FIELD_NUMBER_OF_VARIABLE_TYPES, &
                 & SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old matrix variable types",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate old matrix variable types",ERR,ERROR,*999)
               OLD_MATRIX_VARIABLE_TYPES(0:FIELD_NUMBER_OF_VARIABLE_TYPES,1:SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS, &
                 & 1:SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES)=SOLVER_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES( &
                 & 0:FIELD_NUMBER_OF_VARIABLE_TYPES,1:SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS, &
@@ -6516,7 +6558,7 @@ CONTAINS
               DEALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES)
               ALLOCATE(SOLVER_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(0:FIELD_NUMBER_OF_VARIABLE_TYPES, &
                 & SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS,NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate matrix variable types",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate matrix variable types",ERR,ERROR,*999)
               IF(NUMBER_OF_SOLVER_MATRICES>SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES) THEN
                 SOLVER_MAPPING%CREATE_VALUES_CACHE%MATRIX_VARIABLE_TYPES(:,:,1:SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES)= &
                   & OLD_MATRIX_VARIABLE_TYPES(:,:,1:SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES)
@@ -6537,14 +6579,14 @@ CONTAINS
               & TRIM(NUMBER_TO_VSTRING(NUMBER_OF_SOLVER_MATRICES,"*",ERR,ERROR))// &
               & " is invalid. The number must be >= 1 and <= "// &
               & TRIM(NUMBER_TO_VSTRING(MAXIMUM_NUMBER_OF_EQUATIONS_MATRICES,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver mapping create values cache is not associated",ERR,ERROR,*999)
+          CALL FlagError("Solver mapping create values cache is not associated",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver mapping is not associated",ERR,ERROR,*999)
+      CALL FlagError("Solver mapping is not associated",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_MAPPING_SOLVER_MATRICES_NUMBER_SET")
@@ -6559,7 +6601,7 @@ CONTAINS
   !
 
   !>Finalises a solver row to equations map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_FINALISE(SOLVER_ROW_TO_EQUATIONS_MAPS,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolRowToEquationsMapsFinalise(SOLVER_ROW_TO_EQUATIONS_MAPS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_ROW_TO_EQUATIONS_MAPS_TYPE) :: SOLVER_ROW_TO_EQUATIONS_MAPS !<The solver row to equations map to finalise
@@ -6567,7 +6609,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolRowToEquationsMapsFinalise",ERR,ERROR,*999)
 
     SOLVER_ROW_TO_EQUATIONS_MAPS%NUMBER_OF_EQUATIONS_SET_ROWS=0
     SOLVER_ROW_TO_EQUATIONS_MAPS%INTERFACE_CONDITION_INDEX=0
@@ -6578,19 +6620,19 @@ CONTAINS
     IF(ALLOCATED(SOLVER_ROW_TO_EQUATIONS_MAPS%COUPLING_COEFFICIENTS)) &
       & DEALLOCATE(SOLVER_ROW_TO_EQUATIONS_MAPS%COUPLING_COEFFICIENTS)
     
-    EXITS("SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_FINALISE")
+    EXITS("SolverMapping_SolRowToEquationsMapsFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_FINALISE",ERR,ERROR)    
+999 ERRORSEXITS("SolverMapping_SolRowToEquationsMapsFinalise",ERR,ERROR)    
     RETURN 1
     
-  END SUBROUTINE SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_FINALISE
+  END SUBROUTINE SolverMapping_SolRowToEquationsMapsFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises a solver row to equations map.
-  SUBROUTINE SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_INITIALISE(SOLVER_ROW_TO_EQUATIONS_MAPS,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_SolRowToEquationsMapsInitialise(SOLVER_ROW_TO_EQUATIONS_MAPS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_ROW_TO_EQUATIONS_MAPS_TYPE) :: SOLVER_ROW_TO_EQUATIONS_MAPS !<The solver row to equations map to initialise
@@ -6598,17 +6640,18 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_SolRowToEquationsMapsInitialise",ERR,ERROR,*999)
 
     SOLVER_ROW_TO_EQUATIONS_MAPS%NUMBER_OF_EQUATIONS_SET_ROWS=0
     SOLVER_ROW_TO_EQUATIONS_MAPS%INTERFACE_CONDITION_INDEX=0
         
-    EXITS("SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_INITIALISE")
+    EXITS("SolverMapping_SolRowToEquationsMapsInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_SolRowToEquationsMapsInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_SolRowToEquationsMapsInitialise")    
     RETURN 1
     
-  END SUBROUTINE SOLVER_MAPPING_SOL_ROW_TO_EQUATIONS_MAPS_INITIALISE
+  END SUBROUTINE SolverMapping_SolRowToEquationsMapsInitialise
 
   !
   !================================================================================================================================
@@ -6717,7 +6760,7 @@ CONTAINS
   !
 
   !>Finalises a variable to solver column map and deallocates all memory.
-  SUBROUTINE SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_FINALISE(VARIABLE_TO_SOLVER_COL_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_VariableToSolverColMapFinalise(VARIABLE_TO_SOLVER_COL_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(VARIABLE_TO_SOLVER_COL_MAP_TYPE) :: VARIABLE_TO_SOLVER_COL_MAP !<The variable to solver column map to finalise
@@ -6725,25 +6768,26 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_FINALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_VariableToSolverColMapFinalise",ERR,ERROR,*999)
 
     IF(ALLOCATED(VARIABLE_TO_SOLVER_COL_MAP%COLUMN_NUMBERS)) DEALLOCATE(VARIABLE_TO_SOLVER_COL_MAP%COLUMN_NUMBERS)
     IF(ALLOCATED(VARIABLE_TO_SOLVER_COL_MAP%COUPLING_COEFFICIENTS)) DEALLOCATE(VARIABLE_TO_SOLVER_COL_MAP%COUPLING_COEFFICIENTS)
     IF(ALLOCATED(VARIABLE_TO_SOLVER_COL_MAP%ADDITIVE_CONSTANTS)) DEALLOCATE(VARIABLE_TO_SOLVER_COL_MAP%ADDITIVE_CONSTANTS)
         
-    EXITS("SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_FINALISE")
+    EXITS("SolverMapping_VariableToSolverColMapFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_FINALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_VariableToSolverColMapFinalise",ERR,ERROR)    
+    EXITS("SolverMapping_VariableToSolverColMapFinalise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_FINALISE
+  END SUBROUTINE SolverMapping_VariableToSolverColMapFinalise
 
   !
   !================================================================================================================================
   !
 
   !>Initialises a variable to solver column map.
-  SUBROUTINE SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_INITIALISE(VARIABLE_TO_SOLVER_COL_MAP,ERR,ERROR,*)
+  SUBROUTINE SolverMapping_VariableToSolverColMapInitialise(VARIABLE_TO_SOLVER_COL_MAP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(VARIABLE_TO_SOLVER_COL_MAP_TYPE) :: VARIABLE_TO_SOLVER_COL_MAP !<The variable to solver column map to initalise
@@ -6751,16 +6795,17 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_INITIALISE",ERR,ERROR,*999)
+    ENTERS("SolverMapping_VariableToSolverColMapInitialise",ERR,ERROR,*999)
 
     !Nothing to do here, all members are allocatable
 
-    EXITS("SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_INITIALISE")
+    EXITS("SolverMapping_VariableToSolverColMapInitialise")
     RETURN
-999 ERRORSEXITS("SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_INITIALISE",ERR,ERROR)    
+999 ERRORS("SolverMapping_VariableToSolverColMapInitialise",ERR,ERROR)    
+    EXITS("SolverMapping_VariableToSolverColMapInitialise")    
     RETURN 1
    
-  END SUBROUTINE SOLVER_MAPPING_VARIABLE_TO_SOLVER_COL_MAP_INITIALISE
+  END SUBROUTINE SolverMapping_VariableToSolverColMapInitialise
 
   !
   !================================================================================================================================

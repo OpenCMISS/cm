@@ -473,8 +473,7 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_DAE_DIFFERENTIAL_ONLY,SOLVER_DAE_INDEX_1,SOLVER_DAE_INDEX_2,SOLVER_DAE_INDEX_3
 
   PUBLIC SOLVER_DAE_EULER,SOLVER_DAE_CRANK_NICOLSON,SOLVER_DAE_RUNGE_KUTTA,SOLVER_DAE_ADAMS_MOULTON,SOLVER_DAE_BDF, &
-    & SOLVER_DAE_RUSH_LARSON,SOLVER_DAE_EXTERNAL, SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE, &
-    & SOLVER_DAE_CELLML_PETSC_CONTEXT_SET
+    & SOLVER_DAE_RUSH_LARSON,SOLVER_DAE_EXTERNAL
 
   PUBLIC SOLVER_DAE_EULER_FORWARD,SOLVER_DAE_EULER_BACKWARD,SOLVER_DAE_EULER_IMPROVED
 
@@ -502,6 +501,8 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVER_DAE_TIMES_SET,SOLVER_DAE_TIME_STEP_SET
   
   PUBLIC SOLVER_DAE_EULER_SOLVER_TYPE_GET,SOLVER_DAE_EULER_SOLVER_TYPE_SET
+
+  PUBLIC Solver_DAECellMLRHSEvaluate
   
   PUBLIC SOLVER_DESTROY
   
@@ -539,7 +540,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_EQUATIONS_SPARSITY_TYPE_SET
 
-  PUBLIC SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH,SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_START
+  PUBLIC SolverEquations_BoundaryConditionsCreateFinish,SolverEquations_BoundaryConditionsCreateStart
 
   PUBLIC SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET
 
@@ -565,19 +566,19 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC Solver_MumpsSetIcntl,Solver_MumpsSetCntl
 
-  PUBLIC SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET
+  PUBLIC Solver_LinearIterativeAbsoluteToleranceSet
 
-  PUBLIC SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET
+  PUBLIC Solver_LinearIterativeDivergenceToleranceSet
   
   PUBLIC SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET
 
-  PUBLIC SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET
+  PUBLIC Solver_LinearIterativeMaximumIterationsSet
 
-  PUBLIC SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET
+  PUBLIC Solver_LinearIterativePreconditionerTypeSet
 
-  PUBLIC SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET
+  PUBLIC Solver_LinearIterativeRelativeToleranceSet
   
-  PUBLIC SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET
+  PUBLIC Solver_LinearIterativeSolutionInitTypeSet
 
   PUBLIC SOLVER_LINEAR_ITERATIVE_TYPE_SET
   
@@ -601,7 +602,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET
 
-  PUBLIC SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET
+  PUBLIC Solver_QuasiNewtonJacobianCalculationTypeSet
   
   PUBLIC SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET
 
@@ -615,7 +616,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET
 
-  PUBLIC SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET
+  PUBLIC Solver_QuasiNewtonMaximumFunctionEvaluationsSet
 
   PUBLIC SOLVER_QUASI_NEWTON_SOLUTION_INIT_TYPE_SET
 
@@ -625,7 +626,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET
 
-  PUBLIC SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET
+  PUBLIC Solver_QuasiNewtonTrustRegionToleranceSet
 
   PUBLIC SOLVER_QUASI_NEWTON_TYPE_SET
 
@@ -659,7 +660,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_NEWTON_MAXIMUM_ITERATIONS_SET
 
-  PUBLIC SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET
+  PUBLIC Solver_NewtonMaximumFunctionEvaluationsSet
 
   PUBLIC SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET
 
@@ -689,7 +690,7 @@ MODULE SOLVER_ROUTINES
 
   PUBLIC SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE
 
-  PUBLIC SOLVER_VARIABLES_DYNAMIC_FIELD_PREVIOUS_VALUES_UPDATE
+  PUBLIC Solver_VariablesDynamicFieldPreviousValuesUpdate
 
   PUBLIC SOLVER_VARIABLES_DYNAMIC_NONLINEAR_UPDATE
 
@@ -704,8 +705,6 @@ MODULE SOLVER_ROUTINES
   PUBLIC SOLVERS_SOLVER_GET
 
   PUBLIC SOLVER_NEWTON_CELLML_EVALUATOR_CREATE,SOLVER_CELLML_EVALUATOR_FINALISE
-
-  PUBLIC SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE
 
   PUBLIC SOLVER_LINKED_SOLVER_ADD,SOLVER_LINKED_SOLVER_REMOVE
   
@@ -735,14 +734,14 @@ CONTAINS
 
     IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
       IF(CELLML_EQUATIONS%CELLML_EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("CellML equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("CellML equations has already been finished.",ERR,ERROR,*999)
       ELSE
         SOLVER=>CELLML_EQUATIONS%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
           IF(ASSOCIATED(CELLML)) THEN
             IF(CELLML%CELLML_FINISHED) THEN
               ALLOCATE(NEW_CELLML_ENVIRONMENTS(CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS+1),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new CellML environments.",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate new CellML environments.",ERR,ERROR,*999)
               DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
                 NEW_CELLML_ENVIRONMENTS(cellml_idx)%PTR=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
               ENDDO !cellml_idx
@@ -751,17 +750,17 @@ CONTAINS
               CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS=CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS+1
               CELLML_INDEX=CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
             ELSE
-              CALL FLAG_ERROR("CellML environment has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("CellML environment has not been finished.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+            CALL FlagError("CellML environment is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("CellML equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("CellML equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("CellML equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("CellML equations is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("CELLML_EQUATIONS_CELLML_ADD")
@@ -790,17 +789,17 @@ CONTAINS
 
     IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
       IF(CELLML_EQUATIONS%CELLML_EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("CellML equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("CellML equations has already been finished.",ERR,ERROR,*999)
       ELSE
         SOLVER=>CELLML_EQUATIONS%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
           CELLML_EQUATIONS%CELLML_EQUATIONS_FINISHED=.TRUE.
         ELSE
-          CALL FLAG_ERROR("CellML equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("CellML equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("CellML equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("CellML equations is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("CELLML_EQUATIONS_CREATE_FINISH")
@@ -828,14 +827,14 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
-        CALL FLAG_ERROR("CellML equations is already associated.",ERR,ERROR,*999)
+        CALL FlagError("CellML equations is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(CELLML_EQUATIONS)
         CALL CELLML_EQUATIONS_INITIALISE(SOLVER,ERR,ERROR,*999)
         CELLML_EQUATIONS=>SOLVER%CELLML_EQUATIONS
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("CELLML_EQUATIONS_CREATE_START")
@@ -863,7 +862,7 @@ CONTAINS
     IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
       CALL CELLML_EQUATIONS_FINALISE(CELLML_EQUATIONS,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("CellML equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("CellML equations is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("CELLML_EQUATIONS_DESTROY")
@@ -919,16 +918,16 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(SOLVER%CELLML_EQUATIONS)) THEN
-        CALL FLAG_ERROR("CellML equations is already associated for this solver.",ERR,ERROR,*998)
+        CALL FlagError("CellML equations is already associated for this solver.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(SOLVER%CELLML_EQUATIONS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate CellML equations.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate CellML equations.",ERR,ERROR,*999)
         SOLVER%CELLML_EQUATIONS%SOLVER=>SOLVER
         SOLVER%CELLML_EQUATIONS%CELLML_EQUATIONS_FINISHED=.FALSE.
         SOLVER%CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS=0
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("CELLML_EQUATIONS_INITIALISE")
@@ -957,16 +956,16 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
-        CALL FLAG_ERROR("CellML equations is already associated.",ERR,ERROR,*998)
+        CALL FlagError("CellML equations is already associated.",ERR,ERROR,*998)
       ELSE
         CELLML_EQUATIONS=>SOLVER%CELLML_EQUATIONS
-        IF(.NOT.ASSOCIATED(CELLML_EQUATIONS)) CALL FLAG_ERROR("CellML equations is not associated.",ERR,ERROR,*999)
+        IF(.NOT.ASSOCIATED(CELLML_EQUATIONS)) CALL FlagError("CellML equations is not associated.",ERR,ERROR,*999)
       ENDIF
       !ELSE
-        !CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*998)
+        !CALL FlagError("Solver has not been finished.",ERR,ERROR,*998)
       !ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
        
     EXITS("SOLVER_CELLML_EQUATIONS_GET")
@@ -993,9 +992,9 @@ CONTAINS
     ENTERS("SOLVER_CELLML_EVALUATOR_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("CellML evaluastor solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("CellML evaluastor solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_CELLML_EVALUATOR_CREATE_FINISH")
@@ -1050,16 +1049,16 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(SOLVER%CELLML_EVALUATOR_SOLVER)) THEN
-        CALL FLAG_ERROR("CellML evaluator solver is already associated for this solver.",ERR,ERROR,*998)
+        CALL FlagError("CellML evaluator solver is already associated for this solver.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(SOLVER%CELLML_EVALUATOR_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver CellML evaluator solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate solver CellML evaluator solver.",ERR,ERROR,*999)
         SOLVER%CELLML_EVALUATOR_SOLVER%SOLVER=>SOLVER
         SOLVER%CELLML_EVALUATOR_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
         SOLVER%CELLML_EVALUATOR_SOLVER%CURRENT_TIME=0.0_DP
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_CELLML_EVALUATOR_INITIALISE")
@@ -1089,7 +1088,7 @@ CONTAINS
     IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
       SOLVER_LIBRARY_TYPE=CELLML_EVALUATOR_SOLVER%SOLVER_LIBRARY
     ELSE
-      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("CellML evaluator solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_GET")
@@ -1119,14 +1118,14 @@ CONTAINS
     IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
       SELECT CASE(SOLVER_LIBRARY_TYPE)
       CASE(SOLVER_CMISS_LIBRARY)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="The specified solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The specified solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
           & " is invalid for a CellML evaluator solver."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("CellML evaluator solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_SET")
@@ -1155,7 +1154,7 @@ CONTAINS
     IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
       TIME=CELLML_EVALUATOR_SOLVER%CURRENT_TIME
     ELSE
-      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("CellML evaluator solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_CELLML_EVALUATOR_TIME_GET")
@@ -1183,7 +1182,7 @@ CONTAINS
     IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
       CELLML_EVALUATOR_SOLVER%CURRENT_TIME=TIME
     ELSE
-      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("CellML evaluator solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_CELLML_EVALUATOR_TIME_SET")
@@ -1285,7 +1284,7 @@ CONTAINS
                       & MAXIMUM_NUMBER_OF_STATE,STATE_DATA,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_PARAMETERS, &
                       & PARAMETERS_DATA,CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_INTERMEDIATE,INTERMEDIATE_DATA,ERR,ERROR,*999)
                   CASE DEFAULT
-                    CALL FLAG_ERROR("Solver library not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Solver library not implemented.",ERR,ERROR,*999)
                   END SELECT
                    
                   !Restore field data
@@ -1303,28 +1302,28 @@ CONTAINS
                     
                 ELSE
                   LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
-                    & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
-                  & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="The CellML enviroment is not associated for for CellML index "// &
-                & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ENDDO !cellml_idx
         ELSE
-          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("CellML evaluator solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_CELLML_EVALUATOR_SOLVE")
@@ -1396,7 +1395,7 @@ CONTAINS
                     CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES,INTERMEDIATES, &
                       & PARAMETERS)
 #else
-                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                    CALL FlagError("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
 
                     !Copy temporary data back to CellML arrays
@@ -1409,9 +1408,9 @@ CONTAINS
                     
                   ELSE
                     LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                      & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
-                      & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                      & TRIM(NumberToVString(dof_idx,"*",ERR,ERROR))//"."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ENDIF !model_idx                  
               ENDDO !dof_idx
@@ -1438,7 +1437,7 @@ CONTAINS
                     CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,0.0_DP,STATES,RATES,INTERMEDIATES, &
                       & PARAMETERS)
 #else
-                    CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                    CALL FlagError("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
                     
                     !Copy temporary data back to CellML arrays
@@ -1452,8 +1451,8 @@ CONTAINS
                 ENDDO !dof_idx
               ELSE
                 LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                  & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDIF
           ELSE
@@ -1546,21 +1545,21 @@ CONTAINS
                           
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Invalid CellML model - there are no states or intermediates.",ERR,ERROR,*999)
+                        CALL FlagError("Invalid CellML model - there are no states or intermediates.",ERR,ERROR,*999)
                       ENDIF
                     ENDIF
 
                     
                   ELSE
                     LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                      & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
-                      & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                      & TRIM(NumberToVString(dof_idx,"*",ERR,ERROR))//"."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ENDIF  !model_idx                
               ENDDO !dof_idx
 #else
-              CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+              CALL FlagError("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
 
             ELSE
@@ -1676,27 +1675,27 @@ CONTAINS
                       ENDDO !dof_idx
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Invalid CellML model - there are no states or intermediates.",ERR,ERROR,*999)
+                    CALL FlagError("Invalid CellML model - there are no states or intermediates.",ERR,ERROR,*999)
                   ENDIF
                 ENDIF
 #else
-                CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                CALL FlagError("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
               ELSE
                 LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                  & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDIF
           ENDIF
         ELSE
-          CALL FLAG_ERROR("CellML environment models field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("CellML environment models field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+        CALL FlagError("CellML environment is not associated.",ERR,ERROR,*999)
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("CellML evaluator solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("CellML evaluator solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_CELLML_EVALUATE")
@@ -1724,7 +1723,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         !Set the finished flag. The final solver finish will be done once the solver equations have been finished.
         DO solver_idx=1,SOLVER%NUMBER_OF_LINKED_SOLVERS
@@ -1734,7 +1733,7 @@ CONTAINS
         SOLVER%SOLVER_FINISHED=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_CREATE_FINISH")
@@ -1789,19 +1788,19 @@ CONTAINS
 
     IF(ASSOCIATED(DAE_SOLVER)) THEN
       IF(ASSOCIATED(DAE_SOLVER%ADAMS_MOULTON_SOLVER)) THEN
-        CALL FLAG_ERROR("Adams-Moulton solver is already associated for this differential-algebraic equation solver.", &
+        CALL FlagError("Adams-Moulton solver is already associated for this differential-algebraic equation solver.", &
           & ERR,ERROR,*998)
       ELSE
         !Allocate the Adams-Moulton solver
         ALLOCATE(DAE_SOLVER%ADAMS_MOULTON_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Adams-Moulton solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate Adams-Moulton solver.",ERR,ERROR,*999)
         !Initialise
         DAE_SOLVER%ADAMS_MOULTON_SOLVER%DAE_SOLVER=>DAE_SOLVER
         DAE_SOLVER%ADAMS_MOULTON_SOLVER%SOLVER_LIBRARY=0
         !Defaults
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
     ENDIF
          
     EXITS("SOLVER_DAE_ADAMS_MOULTON_INITIALISE")
@@ -1828,9 +1827,9 @@ CONTAINS
     ENTERS("SOLVER_DAE_ADAMS_MOULTON_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(ADAMS_MOULTON_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Adams-Moulton differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Adams-Moulton differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_ADAMS_MOULTON_SOLVE")
@@ -1856,9 +1855,9 @@ CONTAINS
     ENTERS("SOLVER_DAE_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DAE_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_DAE_CREATE_FINISH")
@@ -1913,19 +1912,19 @@ CONTAINS
 
     IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
       IF(ASSOCIATED(EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER)) THEN
-        CALL FLAG_ERROR("Backward Euler solver is already associated for this Euler differential-algebraic equation solver.", &
+        CALL FlagError("Backward Euler solver is already associated for this Euler differential-algebraic equation solver.", &
           & ERR,ERROR,*998)
       ELSE
         !Allocate the backward Euler solver
         ALLOCATE(EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate backward Euler solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate backward Euler solver.",ERR,ERROR,*999)
         !Initialise
         EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER%EULER_DAE_SOLVER=>EULER_DAE_SOLVER
         EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER%SOLVER_LIBRARY=0
         !Defaults
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
     ENDIF
          
     EXITS("SOLVER_DAE_EULER_BACKWARD_INITIALISE")
@@ -1952,9 +1951,9 @@ CONTAINS
     ENTERS("SOLVER_DAE_EULER_BACKWARD_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(BACKWARD_EULER_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Backward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Backward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_EULER_BACKWARD_SOLVE")
@@ -2038,19 +2037,19 @@ CONTAINS
 
     IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
       IF(ASSOCIATED(EULER_DAE_SOLVER%FORWARD_EULER_SOLVER)) THEN
-        CALL FLAG_ERROR("Forward Euler solver is already associated for this Euler differential-algebraic equation solver.", &
+        CALL FlagError("Forward Euler solver is already associated for this Euler differential-algebraic equation solver.", &
           & ERR,ERROR,*998)
       ELSE
         !Allocate the forward Euler solver
         ALLOCATE(EULER_DAE_SOLVER%FORWARD_EULER_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate forward Euler solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate forward Euler solver.",ERR,ERROR,*999)
         !Initialise
         EULER_DAE_SOLVER%FORWARD_EULER_SOLVER%EULER_DAE_SOLVER=>EULER_DAE_SOLVER
         EULER_DAE_SOLVER%FORWARD_EULER_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
         !Defaults
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
     ENDIF
          
     EXITS("SOLVER_DAE_EULER_FORWARD_INITIALISE")
@@ -2128,7 +2127,7 @@ CONTAINS
                       CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATES,RATES,INTERMEDIATES, &
                         & PARAMETERS)
 #else
-                      CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                      CALL FlagError("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
 
                       !Copy temporary data back to CellML arrays
@@ -2141,9 +2140,9 @@ CONTAINS
                    
                     ELSE
                       LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                        & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
-                        & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                        & TRIM(NumberToVString(dof_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDIF !model_idx                  
                 ENDDO !dof_idx
@@ -2174,7 +2173,7 @@ CONTAINS
                       CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME,STATES,RATES,INTERMEDIATES, &
                         & PARAMETERS)
 #else
-                      CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                      CALL FlagError("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
                     
                       !Copy temporary data back to CellML arrays
@@ -2190,8 +2189,8 @@ CONTAINS
                 ENDDO !time
               ELSE
                 LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                  & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDIF
           ELSE
@@ -2265,25 +2264,25 @@ CONTAINS
                           ENDIF
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Invalid CellML model for integration - there are no states.",ERR,ERROR,*999)
+                        CALL FlagError("Invalid CellML model for integration - there are no states.",ERR,ERROR,*999)
                       ENDIF
                         
 #else
-                      CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                      CALL FlagError("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
                       STATE_DATA(STATE_START_DOF:STATE_END_DOF)=STATE_DATA(STATE_START_DOF:STATE_END_DOF)+ &
                         & TIME_INCREMENT*RATES(1:NUMBER_STATES)
                     ELSE
                       LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                        & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
-                        & TRIM(NUMBER_TO_VSTRING(dof_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//" belonging to dof index "// &
+                        & TRIM(NumberToVString(dof_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     LOCAL_ERROR="Invalid CellML model index: "// &
-                      & TRIM(NUMBER_TO_VSTRING(model_idx,"*",ERR,ERROR))//". The specified index should be between 1 and "// &
-                      & TRIM(NUMBER_TO_VSTRING(CELLML%NUMBER_OF_MODELS,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(model_idx,"*",ERR,ERROR))//". The specified index should be between 1 and "// &
+                      & TRIM(NumberToVString(CELLML%NUMBER_OF_MODELS,"*",ERR,ERROR))//"."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ENDDO !dof_idx
                 TIME=TIME+TIME_INCREMENT
@@ -2401,28 +2400,28 @@ CONTAINS
                     ENDIF
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Invalid CellML model for integration - there are no states.",ERR,ERROR,*999)
+                  CALL FlagError("Invalid CellML model for integration - there are no states.",ERR,ERROR,*999)
                 ENDIF
 
 #else
-                CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
+                CALL FlagError("Must compile with USECELLML=true to use CellML functionality.",ERR,ERROR,*999)
 #endif
                     
               ELSE
                 LOCAL_ERROR="CellML environment model is not associated for model index "// &
-                  & TRIM(NUMBER_TO_VSTRING(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(ONLY_ONE_MODEL_INDEX,"*",ERR,ERROR))//"."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDIF
           ENDIF
         ELSE
-          CALL FLAG_ERROR("CellML environment models field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("CellML environment models field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("CellML environment is not associated.",ERR,ERROR,*999)
+        CALL FlagError("CellML environment is not associated.",ERR,ERROR,*999)
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Forward Euler solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Forward Euler solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_DAE_EULER_FORWARD_INTEGRATE")
@@ -2540,34 +2539,34 @@ CONTAINS
                       
                     ELSE
                       LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
-                        & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
-                      & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   LOCAL_ERROR="The CellML enviroment is not associated for for CellML index "// &
-                    & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDDO !cellml_idx
             ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Forward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Forward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_EULER_FORWARD_SOLVE")
@@ -2622,19 +2621,19 @@ CONTAINS
 
     IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
       IF(ASSOCIATED(EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER)) THEN
-        CALL FLAG_ERROR("Improved Euler solver is already associated for this Euler differential-algebraic equation solver.", &
+        CALL FlagError("Improved Euler solver is already associated for this Euler differential-algebraic equation solver.", &
           & ERR,ERROR,*998)
       ELSE
         !Allocate the improved Euler solver
         ALLOCATE(EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate improved Euler solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate improved Euler solver.",ERR,ERROR,*999)
         !Initialise
         EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER%EULER_DAE_SOLVER=>EULER_DAE_SOLVER
         EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER%SOLVER_LIBRARY=0
         !Defaults
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
     ENDIF
          
     EXITS("SOLVER_DAE_EULER_IMPROVED_INITIALISE")
@@ -2661,9 +2660,9 @@ CONTAINS
     ENTERS("SOLVER_DAE_EULER_IMPROVED_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(IMPROVED_EULER_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Improved Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Improved Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_EULER_IMPROVED_SOLVE")
@@ -2692,11 +2691,11 @@ CONTAINS
 
     IF(ASSOCIATED(DAE_SOLVER)) THEN
       IF(ASSOCIATED(DAE_SOLVER%EULER_SOLVER)) THEN
-        CALL FLAG_ERROR("Euler solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
+        CALL FlagError("Euler solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
       ELSE
         !Allocate the Euler solver
         ALLOCATE(DAE_SOLVER%EULER_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Euler solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate Euler solver.",ERR,ERROR,*999)
         !Initialise
         DAE_SOLVER%EULER_SOLVER%DAE_SOLVER=>DAE_SOLVER
         NULLIFY(DAE_SOLVER%EULER_SOLVER%FORWARD_EULER_SOLVER)
@@ -2707,7 +2706,7 @@ CONTAINS
         DAE_SOLVER%EULER_SOLVER%EULER_TYPE=SOLVER_DAE_EULER_FORWARD
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
     ENDIF
          
     EXITS("SOLVER_DAE_EULER_INITIALISE")
@@ -2745,29 +2744,29 @@ CONTAINS
         IF(ASSOCIATED(FORWARD_EULER_DAE_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=FORWARD_EULER_DAE_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("The forward Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The forward Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_EULER_BACKWARD)
         BACKWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER
         IF(ASSOCIATED(BACKWARD_EULER_DAE_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=BACKWARD_EULER_DAE_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("The backward Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The backward Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_EULER_IMPROVED)
         IMPROVED_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER
         IF(ASSOCIATED(IMPROVED_EULER_DAE_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=IMPROVED_EULER_DAE_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("The improved Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The improved Euler differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The Euler differential-algebraic equations solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Euler DAE solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Euler DAE solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DAE_EULER_LIBRARY_TYPE_GET")
@@ -2804,56 +2803,56 @@ CONTAINS
         IF(ASSOCIATED(FORWARD_EULER_DAE_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a forward Euler DAE solver."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The forward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The forward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_EULER_BACKWARD)
         BACKWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER
         IF(ASSOCIATED(BACKWARD_EULER_DAE_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a backward Euler DAE solver."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The backward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The backward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_EULER_IMPROVED)
         IMPROVED_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER
         IF(ASSOCIATED(IMPROVED_EULER_DAE_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an improved Euler DAE solver."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The improved Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The improved Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The Euler differential-algebraic equations solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("The Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("The Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DAE_EULER_LIBRARY_TYPE_SET")
@@ -2889,11 +2888,11 @@ CONTAINS
         CALL SOLVER_DAE_EULER_IMPROVED_SOLVE(EULER_SOLVER%IMPROVED_EULER_SOLVER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The Euler differential-algebraic equation solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(EULER_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(EULER_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_EULER_SOLVE")
@@ -2931,23 +2930,23 @@ CONTAINS
               IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
                 DAE_EULER_TYPE=EULER_DAE_SOLVER%EULER_TYPE
               ELSE
-                CALL FLAG_ERROR("The differential-algebraic equation solver Euler solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The differential-algebraic equation solver Euler solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The solver differential-algebraic equation solver is not an Euler differential-algebraic "// &
+              CALL FlagError("The solver differential-algebraic equation solver is not an Euler differential-algebraic "// &
                 & "equation solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_EULER_SOLVER_TYPE_GET")
@@ -2978,7 +2977,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
           DAE_SOLVER=>SOLVER%DAE_SOLVER
@@ -2997,8 +2996,8 @@ CONTAINS
                     CALL SOLVER_DAE_EULER_IMPROVED_INITIALISE(EULER_DAE_SOLVER,ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The specified Euler differential-algebraic equation solver type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(DAE_EULER_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(DAE_EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   !Finalise the old Euler differential-algebraic equation solver type
                   SELECT CASE(EULER_DAE_SOLVER%EULER_TYPE)
@@ -3010,27 +3009,27 @@ CONTAINS
                     CALL SOLVER_DAE_EULER_IMPROVED_FINALISE(EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER,ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The Euler differential-algebraic equation solver type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   EULER_DAE_SOLVER%EULER_TYPE=DAE_EULER_TYPE
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The differential-algebraic equation solver Euler solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The differential-algebraic equation solver Euler solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The solver differential-algebraic equation solver is not an Euler differential-algebraic "// &
+              CALL FlagError("The solver differential-algebraic equation solver is not an Euler differential-algebraic "// &
                 & "equation solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_EULER_SOLVER_TYPE_SET")
@@ -3092,11 +3091,11 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(SOLVER%DAE_SOLVER)) THEN
-        CALL FLAG_ERROR("Differential-algebraic equation solver is already associated for this solver.",ERR,ERROR,*998)
+        CALL FlagError("Differential-algebraic equation solver is already associated for this solver.",ERR,ERROR,*998)
       ELSE
         !Allocate the differential-algebraic equation solver
         ALLOCATE(SOLVER%DAE_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver differential-algebraic equation solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate solver differential-algebraic equation solver.",ERR,ERROR,*999)
         !Initialise
         SOLVER%DAE_SOLVER%SOLVER=>SOLVER
         SOLVER%DAE_SOLVER%DAE_TYPE=0
@@ -3116,7 +3115,7 @@ CONTAINS
         SOLVER%DAE_SOLVER%DAE_SOLVE_TYPE=SOLVER_DAE_EULER
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_DAE_INITIALISE")
@@ -3157,52 +3156,52 @@ CONTAINS
         IF(ASSOCIATED(EULER_DAE_SOLVER)) THEN
           CALL SOLVER_DAE_EULER_LIBRARY_TYPE_GET(EULER_DAE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Euler differential-algebraic solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Euler differential-algebraic solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_CRANK_NICOLSON)
         CRANK_NICOLSON_DAE_SOLVER=>DAE_SOLVER%CRANK_NICOLSON_SOLVER
         IF(ASSOCIATED(CRANK_NICOLSON_DAE_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=CRANK_NICOLSON_DAE_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("The Crank-Nicolson differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The Crank-Nicolson differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_RUNGE_KUTTA)
         RUNGE_KUTTA_DAE_SOLVER=>DAE_SOLVER%RUNGE_KUTTA_SOLVER
         IF(ASSOCIATED(RUNGE_KUTTA_DAE_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=RUNGE_KUTTA_DAE_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("The Runge-Kutta differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The Runge-Kutta differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_ADAMS_MOULTON)
         ADAMS_MOULTON_DAE_SOLVER=>DAE_SOLVER%ADAMS_MOULTON_SOLVER
         IF(ASSOCIATED(ADAMS_MOULTON_DAE_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=ADAMS_MOULTON_DAE_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("The Adams-Moulton differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The Adams-Moulton differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_BDF)
         BDF_DAE_SOLVER=>DAE_SOLVER%BDF_SOLVER
         IF(ASSOCIATED(BDF_DAE_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=BDF_DAE_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("The BDF differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The BDF differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_RUSH_LARSON)
         RUSH_LARSON_DAE_SOLVER=>DAE_SOLVER%RUSH_LARSON_SOLVER
         IF(ASSOCIATED(RUSH_LARSON_DAE_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=RUSH_LARSON_DAE_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("The Rush-Larson differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The Rush-Larson differntial-algebraic equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_EXTERNAL)
-        CALL FLAG_ERROR("Can not get the solver library for an external differntial-algebraic equations solver.",ERR,ERROR,*999)
+        CALL FlagError("Can not get the solver library for an external differntial-algebraic equations solver.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The differential-algebraic equations solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("DAE solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("DAE solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DAE_LIBRARY_TYPE_GET")
@@ -3251,145 +3250,145 @@ CONTAINS
               CASE(SOLVER_CMISS_LIBRARY)
                 FORWARD_EULER_DAE_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
               CASE(SOLVER_PETSC_LIBRARY)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("The forward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+              CALL FlagError("The forward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE(SOLVER_DAE_EULER_BACKWARD)
             BACKWARD_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%BACKWARD_EULER_SOLVER
             IF(ASSOCIATED(BACKWARD_EULER_DAE_SOLVER)) THEN
               SELECT CASE(SOLVER_LIBRARY_TYPE)
               CASE(SOLVER_CMISS_LIBRARY)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(SOLVER_PETSC_LIBRARY)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("The backward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+              CALL FlagError("The backward Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE(SOLVER_DAE_EULER_IMPROVED)
             IMPROVED_EULER_DAE_SOLVER=>EULER_DAE_SOLVER%IMPROVED_EULER_SOLVER
             IF(ASSOCIATED(IMPROVED_EULER_DAE_SOLVER)) THEN
               SELECT CASE(SOLVER_LIBRARY_TYPE)
               CASE(SOLVER_CMISS_LIBRARY)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(SOLVER_PETSC_LIBRARY)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("The improved Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+              CALL FlagError("The improved Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The Euler differential-algebraic equations solver type of "// &
-              & TRIM(NUMBER_TO_VSTRING(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(EULER_DAE_SOLVER%EULER_TYPE,"*",ERR,ERROR))//" is invalid."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_CRANK_NICOLSON)
         CRANK_NICOLSON_DAE_SOLVER=>DAE_SOLVER%CRANK_NICOLSON_SOLVER
         IF(ASSOCIATED(CRANK_NICOLSON_DAE_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The Crank-Nicolson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The Crank-Nicolson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_RUNGE_KUTTA)
         RUNGE_KUTTA_DAE_SOLVER=>DAE_SOLVER%RUNGE_KUTTA_SOLVER
         IF(ASSOCIATED(RUNGE_KUTTA_DAE_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The Runge-Kutta differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The Runge-Kutta differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_ADAMS_MOULTON)
         ADAMS_MOULTON_DAE_SOLVER=>DAE_SOLVER%ADAMS_MOULTON_SOLVER
         IF(ASSOCIATED(ADAMS_MOULTON_DAE_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The Adams-Moulton differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The Adams-Moulton differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_BDF)
         BDF_DAE_SOLVER=>DAE_SOLVER%BDF_SOLVER
         IF(ASSOCIATED(BDF_DAE_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
             BDF_DAE_SOLVER%SOLVER_LIBRARY = SOLVER_PETSC_LIBRARY
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The BDF differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The BDF differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_RUSH_LARSON)
         RUSH_LARSON_DAE_SOLVER=>DAE_SOLVER%RUSH_LARSON_SOLVER
         IF(ASSOCIATED(RUSH_LARSON_DAE_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The Rush-Larson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("The Rush-Larson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_EXTERNAL)
-        CALL FLAG_ERROR("Can not set the library type for an external differential-algebraic equation solver is not associated.", &
+        CALL FlagError("Can not set the library type for an external differential-algebraic equation solver is not associated.", &
           & ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The differential-algebraic equations solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("DAE solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("DAE solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DAE_LIBRARY_TYPE_SET")
@@ -3444,18 +3443,18 @@ CONTAINS
 
     IF(ASSOCIATED(DAE_SOLVER)) THEN
       IF(ASSOCIATED(DAE_SOLVER%BDF_SOLVER)) THEN
-        CALL FLAG_ERROR("BDF solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
+        CALL FlagError("BDF solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
       ELSE
         !Allocate the BDF solver
         ALLOCATE(DAE_SOLVER%BDF_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate BDF solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate BDF solver.",ERR,ERROR,*999)
         !Initialise
         DAE_SOLVER%BDF_SOLVER%DAE_SOLVER=>DAE_SOLVER
         DAE_SOLVER%BDF_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
         !Defaults
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
     ENDIF
          
     EXITS("SOLVER_DAE_BDF_INITIALISE")
@@ -3469,97 +3468,117 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Finalise a CellML evaluator solver.
-  SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE(CTX,ERR,ERROR,*)
+  !>Finalise a CellML PETSc solver context.
+  SUBROUTINE Solver_DAECellMLPETScContextFinalise(ctx,err,error,*)
 
     !Argument variables
-    TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: CTX !<A pointer the CellML-PETSc solver context to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(CellMLPETScContextType), POINTER :: ctx !<A pointer the CellML-PETSc solver context to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE",ERR,ERROR,*999)
+    ENTERS("Solver_DAECellMLPETScContextFinalise",err,error,*999)
 
-    IF(ASSOCIATED(CTX)) THEN        
-      DEALLOCATE(CTX)
+    IF(ASSOCIATED(ctx)) THEN
+      IF(ASSOCIATED(ctx%rates)) DEALLOCATE(ctx%rates)
+      IF(ALLOCATED(ctx%ratesIndices)) DEALLOCATE(ctx%ratesIndices)
+      DEALLOCATE(ctx)
     ENDIF
          
-    EXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE")
+    EXITS("Solver_DAECellMLPETScContextFinalise")
     RETURN
-999 ERRORSEXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE",ERR,ERROR)
+999 ERRORSEXITS("Solver_DAECellMLPETScContextFinalise",err,error)
     RETURN 1
    
-  END SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE
+  END SUBROUTINE Solver_DAECellMLPETScContextFinalise
 
 
   !
   !================================================================================================================================
   !
 
-  !>Initialise a CELLML_PETSC_CONTEXT
-  SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE(CTX,ERR,ERROR,*)
+  !>Initialise a CellML PETSc context
+  SUBROUTINE Solver_DAECellMLPETScContextInitialise(ctx,err,error,*)
 
     !Argument variables
-    TYPE(CELLML_PETSC_CONTEXT_TYPE), INTENT(OUT), POINTER :: CTX !<A pointer to initialise a CELLML_PETSC_CONTEXT
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(CellMLPETScContextType), INTENT(OUT), POINTER :: ctx !<A pointer to CellML PETSc context to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_ERR
-    TYPE(VARYING_STRING) :: DUMMY_ERROR
+    INTEGER(INTG) :: dummyErr
+    TYPE(VARYING_STRING) :: dummyError
     
-    ENTERS("SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE",ERR,ERROR,*998)
+    ENTERS("Solver_DAECellMLPETScContextInitialise",err,error,*998)
 
-    IF(ASSOCIATED(CTX)) THEN
-      CALL FLAG_ERROR("CTX is already associated.",ERR,ERROR,*998)
+    IF(ASSOCIATED(ctx)) THEN
+      CALL FlagError("Context is already associated.",err,error,*998)
     ELSE
       !Allocate the CTX
-      ALLOCATE(CTX,STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate context.",ERR,ERROR,*999)
+      ALLOCATE(ctx,STAT=err)
+      IF(ERR/=0) CALL FlagError("Could not allocate context.",err,error,*999)
       !Initialise
-      NULLIFY(CTX%SOLVER)
-      CTX%DOF_NUMBER=0
-      !Defaults
+      NULLIFY(ctx%solver)
+      NULLIFY(ctx%cellml)
+      NULLIFY(ctx%rates)
+      ctx%dofIdx=0
     ENDIF
          
-    EXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE")
+    EXITS("Solver_DAECellMLPETScContextInitialise")
     RETURN
-999 CALL SOLVER_DAE_CELLML_PETSC_CONTEXT_FINALISE(CTX,DUMMY_ERR,DUMMY_ERROR,*998)
-998 ERRORSEXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE",ERR,ERROR)
+999 CALL Solver_DAECellMLPETScContextFinalise(ctx,dummyErr,dummyError,*998)
+998 ERRORSEXITS("Solver_DAECellMLPETScContextInitialise",err,error)
     RETURN 1
     
-  END SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE
+  END SUBROUTINE Solver_DAECellMLPETScContextInitialise
   !
   !================================================================================================================================
   !
 
-  !>Set a CELLML_PETSC_CONTEXT
-  SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_SET(CTX,SOLVER,DOF_NUMBER,ERR,ERROR,*)
+  !>Set a CellML PETSc context
+  SUBROUTINE Solver_DAECellMLPETScContextSet(ctx,solver,cellml,dofIdx,err,error,*)
 
     !Argument variables
-    TYPE(CELLML_PETSC_CONTEXT_TYPE), INTENT(IN), POINTER :: CTX !<A pointer to initialise a CELLML_PETSC_CONTEXT
-    TYPE(SOLVER_TYPE), POINTER, INTENT(IN) :: SOLVER !<A point to the solver to set to CTX
-    INTEGER(INTG), INTENT(IN) :: DOF_NUMBER !<The DOF ID of the cellml-petsc context
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(CellMLPETScContextType), INTENT(IN), POINTER :: ctx !<A pointer to initialise a CELLML_PETSC_CONTEXT
+    TYPE(SOLVER_TYPE), POINTER, INTENT(IN) :: solver !<A pointer to the solver to set to ctx
+    TYPE(CELLML_TYPE), POINTER, INTENT(IN) :: cellml !<A pointer to the CellML environment to set to ctx
+    INTEGER(INTG), INTENT(IN) :: dofIdx !<The DOF index of the cellml-petsc context
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
+    INTEGER(INTG) :: arrayIdx,dummyErr
+    TYPE(VARYING_STRING) :: dummyError
    
-    ENTERS("SOLVER_DAE_CELLML_PETSC_CONTEXT_SET",ERR,ERROR,*999)
+    ENTERS("Solver_DAECellMLPETScContextSet",ERR,ERROR,*998)
 
-    IF(ASSOCIATED(CTX)) THEN
-      !Set
-      CTX%SOLVER=>SOLVER
-      CTX%DOF_NUMBER=DOF_NUMBER
-      !Defaults
+    IF(ASSOCIATED(ctx)) THEN
+      IF(ASSOCIATED(solver)) THEN
+        IF(ASSOCIATED(cellml)) THEN
+          !Set
+          ctx%solver=>solver
+          ctx%cellml=>cellml
+          ctx%dofIdx=dofIdx
+          ALLOCATE(ctx%rates(cellml%MAXIMUM_NUMBER_OF_STATE),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate context rates.",err,error,*999)
+          ALLOCATE(ctx%ratesIndices(cellml%MAXIMUM_NUMBER_OF_STATE),STAT=err)
+          IF(err/=0) CALL FlagError("Could not allocate context rates.",err,error,*999)
+          ctx%ratesIndices=[(arrayIdx,arrayIdx=0,(cellml%MAXIMUM_NUMBER_OF_STATE-1))]
+        ELSE
+          CALL FlagError("CellML environment is not associated.",err,error,*999)
+        ENDIF
+      ELSE
+        CALL FlagError("Solver is not associated.",err,error,*998)
+      ENDIF      
     ELSE
-      CALL FLAG_ERROR("CTX is not associated.",ERR,ERROR,*999)
+      CALL FlagError("ctx is not associated.",err,error,*998)
     ENDIF
          
-    EXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_SET")
+    EXITS("Solver_DAECellMLPETScContextSet")
     RETURN
-999 ERRORSEXITS("SOLVER_DAE_CELLML_PETSC_CONTEXT_SET",ERR,ERROR)
+999 CALL Solver_DAECellMLPETScContextFinalise(ctx,dummyErr,dummyError,*998)
+998 ERRORSEXITS("Solver_DAECellMLPETScContextSet",ERR,ERROR)
     RETURN 1
     
-  END SUBROUTINE SOLVER_DAE_CELLML_PETSC_CONTEXT_SET
+  END SUBROUTINE Solver_DAECellMLPETScContextSet
 
   !
   !================================================================================================================================
@@ -3590,14 +3609,14 @@ CONTAINS
     TYPE(PetscTSType) :: ts !<The PETSc TS type
     REAL(DP) :: FINALSOLVEDTIME,TIMESTEP
     TYPE(PetscVecType) :: PETSC_CURRENT_STATES !<The initial and final states for the DAE
-    TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: CTX !<The passed through context
+    TYPE(CellMLPETScContextType), POINTER :: CTX !<The passed through context
     INTEGER(INTG) :: dof_idx,DOF_ORDER_TYPE,model_idx, NUMBER_STATES,STATE_END_DOF,state_idx,STATE_START_DOF,array_idx
     REAL(DP), ALLOCATABLE  :: STATES_TEMP(:),RATES_TEMP(:)
     INTEGER(INTG), ALLOCATABLE :: ARRAY_INDICES(:)
     TYPE(CELLML_MODEL_TYPE), POINTER :: MODEL
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     TYPE(PetscVecType) :: PETSC_RATES
-    EXTERNAL :: CELLML_DAE_RHS
+    EXTERNAL :: Problem_SolverDAECellMLRHSPetsc
   
     
     ENTERS("SOLVER_DAE_BFD_INTEGRATE",ERR,ERROR,*999)
@@ -3628,7 +3647,7 @@ CONTAINS
                   
                   
                   !initialize context for petsc solving.
-                  CALL SOLVER_DAE_CELLML_PETSC_CONTEXT_INITIALISE(CTX,ERR,ERROR,*999)
+                  CALL Solver_DAECellMLPETScContextInitialise(ctx,err,error,*999)
                   DO dof_idx=1,N     
                     model_idx = MODELS_DATA(dof_idx)
                     IF(model_idx>0) THEN !if model is assigned to dof
@@ -3679,9 +3698,8 @@ CONTAINS
                       ENDIF
                       
                       !set rhs function and pass through the cellml model context 
-                      CALL SOLVER_DAE_CELLML_PETSC_CONTEXT_SET(CTX, &
-                        & BDF_SOLVER%DAE_SOLVER%SOLVER,dof_idx,ERR,ERROR,*999)
-                      CALL Petsc_TSSetRHSFunction(TS,PETSC_RATES,CELLML_DAE_RHS,CTX,ERR,ERROR,*999)
+                      CALL Solver_DAECellMLPETScContextSet(ctx,BDF_SOLVER%DAE_SOLVER%SOLVER,cellML,dof_idx,ERR,ERROR,*999)
+                      CALL Petsc_TSSetRHSFunction(TS,PETSC_RATES,Problem_SolverDAECellMLRHSPetsc,CTX,ERR,ERROR,*999)
                       
                       CALL Petsc_TSSolve(TS,PETSC_CURRENT_STATES,FINALSOLVEDTIME,ERR,ERROR,*999) 
                       IF(DIAGNOSTICS1) THEN
@@ -3709,23 +3727,23 @@ CONTAINS
                   ENDDO !dof_idx
                   
                 ELSE
-                  CALL FLAG_ERROR("Cellml model is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Cellml model is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDIF
             ENDIF !dof continguous
           CASE DEFAULT
             LOCAL_ERROR="The BDF solver library type of  "// &
-              & TRIM(NUMBER_TO_VSTRING(BDF_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is not implemented."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(BDF_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is not implemented."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("CELLML models field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("CELLML models field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("CELLML environment is not associated.",ERR,ERROR,*999)
+        CALL FlagError("CELLML environment is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("BDF solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("BDF solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DAE_BDF_INTEGRATE")
@@ -3840,31 +3858,31 @@ CONTAINS
                                         
                   ELSE
                     LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
-                      & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
-                    & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 LOCAL_ERROR="The CellML enviroment is not associated for for CellML index "// &
-                  & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDDO !cellml_idx
           ELSE
-            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("BDF differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("BDF differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_BDF_SOLVE")
@@ -3919,19 +3937,19 @@ CONTAINS
 
     IF(ASSOCIATED(DAE_SOLVER)) THEN
       IF(ASSOCIATED(DAE_SOLVER%CRANK_NICOLSON_SOLVER)) THEN
-        CALL FLAG_ERROR("Crank-Nicolson solver is already associated for this differential-algebraic equation solver.", &
+        CALL FlagError("Crank-Nicolson solver is already associated for this differential-algebraic equation solver.", &
           & ERR,ERROR,*998)
       ELSE
         !Allocate the Crank-Nicholson solver
         ALLOCATE(DAE_SOLVER%CRANK_NICOLSON_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Crank-Nicolson solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate Crank-Nicolson solver.",ERR,ERROR,*999)
         !Initialise
         DAE_SOLVER%CRANK_NICOLSON_SOLVER%DAE_SOLVER=>DAE_SOLVER
         DAE_SOLVER%CRANK_NICOLSON_SOLVER%SOLVER_LIBRARY=0
         !Defaults
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
     ENDIF
          
     EXITS("SOLVER_DAE_CRANK_NICOLSON_INITIALISE")
@@ -3958,9 +3976,9 @@ CONTAINS
     ENTERS("SOLVER_DAE_CRANK_NICOLSON_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CRANK_NICOLSON_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Crank-Nicolson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Crank-Nicolson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_CRANK_NICOLSON_SOLVE")
@@ -4015,18 +4033,18 @@ CONTAINS
 
     IF(ASSOCIATED(DAE_SOLVER)) THEN
       IF(ASSOCIATED(DAE_SOLVER%EXTERNAL_SOLVER)) THEN
-        CALL FLAG_ERROR("External solver is already associated for this differential-algebraic equation solver.", &
+        CALL FlagError("External solver is already associated for this differential-algebraic equation solver.", &
           & ERR,ERROR,*998)
       ELSE
         !Allocate the external solver
         ALLOCATE(DAE_SOLVER%EXTERNAL_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate external solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate external solver.",ERR,ERROR,*999)
         !Initialise
         DAE_SOLVER%EXTERNAL_SOLVER%DAE_SOLVER=>DAE_SOLVER
         !Defaults
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
     ENDIF
          
     EXITS("SOLVER_DAE_EXTERNAL_INITIALISE")
@@ -4154,31 +4172,31 @@ CONTAINS
                     
                   ELSE
                     LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
-                      & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   LOCAL_ERROR="The CellML models field is not associated for CellML index "// &
-                    & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 LOCAL_ERROR="The CellML enviroment is not associated for for CellML index "// &
-                  & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDDO !cellml_idx
           ELSE
-            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("External Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("External Euler differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_EXTERNAL_SOLVE")
@@ -4188,6 +4206,372 @@ CONTAINS
    
   END SUBROUTINE SOLVER_DAE_EXTERNAL_SOLVE
   
+  !
+  !================================================================================================================================
+  !
+
+  !>Integrate using a forward Euler differential-algebraic equation solver.
+  SUBROUTINE Solver_DAECellMLRHSEvaluate(model,time,stateStartIdx,stateDataOffset,stateData,parameterStartIdx,parameterDataOffset, &
+    & parameterData,intermediateStartIdx,intermediateDataOffset,intermediateData,rateStartIdx,rateDataOffset,rateData,err,error,*)
+
+    !Argument variables
+    TYPE(CELLML_MODEL_TYPE), POINTER :: model !<The CellML model to evaluate
+    REAL(DP), INTENT(IN) :: time !<The time to evaluate the CellML model at
+    INTEGER(INTG), INTENT(IN) :: stateStartIdx !<The state start data offset.
+    INTEGER(INTG), INTENT(IN) :: stateDataOffset !<The offset to the next state data
+    REAL(DP), POINTER :: stateData(:) !<A pointer to the state data
+    INTEGER(INTG), INTENT(IN) :: parameterStartIdx !<The parameter start data offset.
+    INTEGER(INTG), INTENT(IN) :: parameterDataOffset !<The offset to the next parameters data
+    REAL(DP), POINTER :: parameterData(:) !<A pointer to the parameters data
+    INTEGER(INTG), INTENT(IN) :: intermediateStartIdx !<The intermediate start data offset.
+    INTEGER(INTG), INTENT(IN) :: intermediateDataOffset !<The offset to the next intermediate data
+    REAL(DP), POINTER :: intermediateData(:) !<A pointer to the intermediate data
+    INTEGER(INTG), INTENT(IN) :: rateStartIdx !<The rate start data offset.
+    INTEGER(INTG), INTENT(IN) :: rateDataOffset !<The offset to the next rates data
+    REAL(DP), POINTER :: rateData(:) !<On exit, the rate data.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: intermediateIdx,intermediateEndDOF,intermediateStartDOF,numberOfIntermediates,numberOfParameters, &
+      & numberOfStates,parameterIdx,parameterEndDOF,parameterStartDOF,rateIdx,rateEndDOF,rateStartDOF,stateIdx,stateEndDOF, &
+      & stateStartDOF
+    REAL(DP) :: intermediates(MAX(1,intermediateDataOffset)),parameters(MAX(1,parameterDataOffset)),rates(MAX(1,rateDataOffset)), &
+      & states(MAX(1,stateDataOffset))
+    
+    ENTERS("Solver_DAECellMLRHSEvaluate",err,error,*999)
+
+#ifdef USECELLML                    
+
+    IF(ASSOCIATED(model)) THEN
+      numberOfStates=model%NUMBER_OF_STATE
+      numberOfIntermediates=model%NUMBER_OF_INTERMEDIATE
+      numberOfParameters=model%NUMBER_OF_PARAMETERS
+      IF(numberOfStates>0) THEN
+        IF(.NOT.ASSOCIATED(stateData)) CALL FlagError("State data is not associated.",err,error,*999)
+        IF(.NOT.ASSOCIATED(rateData)) CALL FlagError("Rate data is not associated.",err,error,*999)
+      ENDIF
+      IF(numberOfParameters>0) THEN
+        IF(.NOT.ASSOCIATED(parameterData)) CALL FlagError("Parameter data is not associated.",err,error,*999)
+      ENDIF
+      IF(numberOfIntermediates>0) THEN
+        IF(.NOT.ASSOCIATED(intermediateData)) CALL FlagError("Intermediate data is not associated.",err,error,*999)
+      ENDIF
+      IF(stateDataOffset>1.OR.numberOfStates==0) THEN
+        !State data is not contiguous or there are no states
+        
+        !Copy state data to temporary array
+        DO stateIdx=1,numberOfStates
+          states(stateIdx)=stateData((stateStartIdx-1)*stateDataOffset+stateIdx)
+        ENDDO !stateIdx
+        
+        IF(parameterDataOffset>1.OR.numberOfParameters==0) THEN
+          !Parameter data is not contiguous or there are no parameters
+          
+          !Copy parameter data to temporary array
+          DO parameterIdx=1,numberOfParameters
+            parameters(parameterIdx)=parameterData((parameterStartIdx-1)*parameterDataOffset+parameterIdx)
+          ENDDO !parameterIdx
+          
+          IF(intermediateDataOffset>1.OR.numberOfIntermediates==0) THEN
+            !Intermediate data is not contiguous or there are no intermediates
+            
+            IF(rateDataOffset>1.OR.numberOfStates==0) THEN
+              !Rates data is not contiguous or there are no rates
+                
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states,rates,intermediates,parameters)          
+              
+              !Copy intermediate data from temporary array
+              DO intermediateIdx=1,numberOfIntermediates
+                intermediateData((intermediateStartIdx-1)*intermediateDataOffset+intermediateIdx)=intermediates(intermediateIdx)
+              ENDDO !intermediateIdx
+              
+              !Copy rate data from temporary array
+              DO rateIdx=1,numberOfStates
+                rateData((rateStartIdx-1)*rateDataOffset+rateIdx)=rates(rateIdx)
+              ENDDO !rateIdx
+                
+            ELSE
+              !Rates data is contiguous
+              
+              rateStartDOF=(rateStartIdx-1)*rateDataOffset+1
+              rateEndDOF=rateStartDOF+numberOfStates-1
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states,rateData(rateStartDOF:rateEndDOF), &
+                & intermediates,parameters)          
+              
+              !Copy intermediate data from temporary array
+              DO intermediateIdx=1,numberOfIntermediates
+                intermediateData((intermediateStartIdx-1)*intermediateDataOffset+intermediateIdx)=intermediates(intermediateIdx)
+              ENDDO !intermediateIdx
+              
+            ENDIF
+            
+          ELSE
+            !Intermediate data is contiguous
+            
+            intermediateStartDOF=(intermediateStartIdx-1)*intermediateDataOffset+1
+            intermediateEndDOF=intermediateStartDOF+numberOfIntermediates-1
+            
+            IF(rateDataOffset>1.OR.numberOfStates==0) THEN
+              !Rates data is not contiguous or there are no rates
+                
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states,rates, &
+                & intermediateData(intermediateStartDOF:intermediateEndDOF),parameters)          
+              
+              !Copy rate data from temporary array
+              DO rateIdx=1,numberOfStates
+                rateData((rateStartIdx-1)*rateDataOffset+rateIdx)=rates(rateIdx)
+              ENDDO !rateIdx
+              
+            ELSE
+              !Rates data is contiguous
+              
+              rateStartDOF=(rateStartIdx-1)*rateDataOffset+1
+              rateEndDOF=rateStartDOF+numberOfStates-1
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states,rateData(rateStartDOF:rateEndDOF), &
+                & intermediateData(intermediateStartDOF:intermediateEndDOF),parameters)          
+              
+            ENDIF
+          ENDIF
+        ELSE
+          !Parameters data is contiguous
+          
+          parameterStartDOF=(parameterStartIdx-1)*parameterDataOffset+1
+          parameterEndDOF=parameterStartDOF+numberOfParameters-1
+          
+          IF(intermediateDataOffset>1.OR.numberOfIntermediates==0) THEN
+            !Intermediate data is not contiguous or there are no intermediates
+              
+            IF(rateDataOffset>1.OR.numberOfStates==0) THEN
+              !Rates data is not contiguous or there are no rates
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states,rates,intermediates, &
+                & parameters(parameterStartDOF:parameterEndDOF))     
+              
+              !Copy intermediate data from temporary array
+              DO intermediateIdx=1,numberOfIntermediates
+                intermediateData((intermediateStartIdx-1)*intermediateDataOffset+intermediateIdx)=intermediates(intermediateIdx)
+              ENDDO !intermediateIdx
+                
+              !Copy rate data from temporary array
+              DO rateIdx=1,numberOfStates
+                rateData((rateStartIdx-1)*rateDataOffset+rateIdx)=rates(rateIdx)
+              ENDDO !rateIdx
+                
+            ELSE
+              !Rates data is contiguous
+                
+              rateStartDOF=(rateStartIdx-1)*rateDataOffset+1
+              rateEndDOF=rateStartDOF+numberOfStates-1
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states,rateData(rateStartDOF:rateEndDOF), &
+                & intermediates,parameters(parameterStartDOF:parameterEndDOF))          
+              
+              !Copy intermediate data from temporary array
+              DO intermediateIdx=1,numberOfIntermediates
+                intermediateData((intermediateStartIdx-1)*intermediateDataOffset+intermediateIdx)=intermediates(intermediateIdx)
+              ENDDO !intermediateIdx
+              
+            ENDIF
+                
+          ELSE
+            !Intermediate data is contiguous
+            
+            intermediateStartDOF=(intermediateStartIdx-1)*intermediateDataOffset+1
+            intermediateEndDOF=intermediateStartDOF+numberOfIntermediates-1
+            
+            IF(rateDataOffset>1.OR.numberOfStates==0) THEN
+              !Rates data is not contiguous or there are no rates
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states,rates, &
+                & intermediateData(intermediateStartDOF:intermediateEndDOF), &
+                & parameters(parameterStartDOF:parameterEndDOF))
+              
+              !Copy rate data from temporary array
+              DO rateIdx=1,numberOfStates
+                rateData((rateStartIdx-1)*rateDataOffset+rateIdx)=rates(rateIdx)
+              ENDDO !rateIdx
+              
+            ELSE
+              !Rates data is contiguous
+              
+              rateStartDOF=(rateStartIdx-1)*rateDataOffset+1
+              rateEndDOF=rateStartDOF+numberOfStates-1
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states,rateData(rateStartDOF:rateEndDOF), &
+                & intermediateData(intermediateStartDOF:intermediateEndDOF), &
+                & parameters(parameterStartDOF:parameterEndDOF))
+              
+            ENDIF
+          ENDIF
+        ENDIF
+      ELSE
+        !State data is contiguous
+        
+        stateStartDOF=(stateStartIdx-1)*stateDataOffset+1
+        stateEndDOF=stateStartDOF+numberOfStates-1
+        
+        IF(parameterDataOffset>1.OR.numberOfParameters==0) THEN
+          !Parameter data is not contiguous or there are no parameters
+          
+          !Copy parameter data to temporary array
+          DO parameterIdx=1,numberOfParameters
+            parameters(parameterIdx)=parameterData((parameterStartIdx-1)*parameterDataOffset+parameterIdx)
+          ENDDO !parameterIdx
+          
+          IF(intermediateDataOffset>1.OR.numberOfIntermediates==0) THEN
+            !Intermediate data is not contiguous or there are no intermediates
+            
+            IF(rateDataOffset>1.OR.numberOfStates==0) THEN
+              !Rates data is not contiguous or there are no rates
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states(stateStartDOF:stateEndDOF), &
+                & rates,intermediates,parameters)          
+              
+              !Copy intermediate data from temporary array
+              DO intermediateIdx=1,numberOfIntermediates
+                intermediateData((intermediateStartIdx-1)*intermediateDataOffset+intermediateIdx)=intermediates(intermediateIdx)
+              ENDDO !intermediateIdx
+              
+              !Copy rate data from temporary array
+              DO rateIdx=1,numberOfStates
+                rateData((rateStartIdx-1)*rateDataOffset+rateIdx)=rates(rateIdx)
+              ENDDO !rateIdx
+              
+            ELSE
+              !Rates data is contiguous
+              
+              rateStartDOF=(rateStartIdx-1)*rateDataOffset+1
+              rateEndDOF=rateStartDOF+numberOfStates-1
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states(stateStartDOF:stateEndDOF), &
+                & rateData(rateStartDOF:rateEndDOF),intermediates,parameters)          
+              
+              !Copy intermediate data from temporary array
+              DO intermediateIdx=1,numberOfIntermediates
+                intermediateData((intermediateStartIdx-1)*intermediateDataOffset+intermediateIdx)=intermediates(intermediateIdx)
+              ENDDO !intermediateIdx
+              
+            ENDIF
+            
+          ELSE
+            !Intermediate data is contiguous
+            
+            intermediateStartDOF=(intermediateStartIdx-1)*intermediateDataOffset+1
+            intermediateEndDOF=intermediateStartDOF+numberOfIntermediates-1
+            
+            IF(rateDataOffset>1.OR.numberOfStates==0) THEN
+              !Rates data is not contiguous or there are no rates
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states(stateStartDOF:stateEndDOF),rates, &
+                & intermediateData(intermediateStartDOF:intermediateEndDOF),parameters)          
+              
+              !Copy rate data from temporary array
+              DO rateIdx=1,numberOfStates
+                rateData((rateStartIdx-1)*rateDataOffset+rateIdx)=rates(rateIdx)
+              ENDDO !rateIdx
+              
+            ELSE
+              !Rates data is contiguous
+              
+              rateStartDOF=(rateStartIdx-1)*rateDataOffset+1
+              rateEndDOF=rateStartDOF+numberOfStates-1
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states(stateStartDOF:stateEndDOF), &
+                & rateData(rateStartDOF:rateEndDOF),intermediateData(intermediateStartDOF:intermediateEndDOF), &
+                & parameters)
+              
+            ENDIF
+          ENDIF
+        ELSE
+          !Parameters data is contiguous
+          
+          parameterStartDOF=(parameterStartIdx-1)*parameterDataOffset+1
+          parameterEndDOF=parameterStartDOF+numberOfParameters-1
+          
+          IF(intermediateDataOffset>1.OR.numberOfIntermediates==0) THEN
+            !Intermediate data is not contiguous or there are no intermediates
+            
+            IF(rateDataOffset>1.OR.numberOfStates==0) THEN
+              !Rates data is not contiguous or there are no rates
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states(stateStartDOF:stateEndDOF), &
+                & rates,intermediates,parameters(parameterStartDOF:parameterEndDOF))     
+              
+              !Copy intermediate data from temporary array
+              DO intermediateIdx=1,numberOfIntermediates
+                intermediateData((intermediateStartIdx-1)*intermediateDataOffset+intermediateIdx)=intermediates(intermediateIdx)
+              ENDDO !intermediateIdx
+                
+              !Copy rate data from temporary array
+              DO rateIdx=1,numberOfStates
+                rateData((rateStartIdx-1)*rateDataOffset+rateIdx)=rates(rateIdx)
+              ENDDO !rateIdx
+              
+            ELSE
+              !Rates data is contiguous
+              
+              rateStartDOF=(rateStartIdx-1)*rateDataOffset+1
+              rateEndDOF=rateStartDOF+numberOfStates-1
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states(stateStartDOF:stateEndDOF), &
+                & rateData(rateStartDOF:rateEndDOF),intermediates,parameters(parameterStartDOF:parameterEndDOF))          
+              
+              !Copy intermediate data from temporary array
+              DO intermediateIdx=1,numberOfIntermediates
+                intermediateData((intermediateStartIdx-1)*intermediateDataOffset+intermediateIdx)=intermediates(intermediateIdx)
+              ENDDO !intermediateIdx
+              
+            ENDIF
+            
+          ELSE
+            !Intermediate data is contiguous
+            
+            intermediateStartDOF=(intermediateStartIdx-1)*intermediateDataOffset+1
+            intermediateEndDOF=intermediateStartDOF+numberOfIntermediates-1
+            
+            IF(rateDataOffset>1.OR.numberOfStates==0) THEN
+              !Rates data is not contiguous or there are no rates
+                
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states(stateStartDOF:stateEndDOF), &
+                & rates,intermediateData(intermediateStartDOF:intermediateEndDOF), &
+                & parameters(parameterStartDOF:parameterEndDOF))
+              
+              !Copy rate data from temporary array
+              DO rateIdx=1,numberOfStates
+                rateData((rateStartIdx-1)*rateDataOffset+rateIdx)=rates(rateIdx)
+              ENDDO !rateIdx
+              
+            ELSE
+              !Rates data is contiguous
+                
+              rateStartDOF=(rateStartIdx-1)*rateDataOffset+1
+              rateEndDOF=rateStartDOF+numberOfStates-1
+              
+              CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(model%ptr,time,states(stateStartDOF:stateEndDOF), &
+                & rateData(rateStartDOF:rateEndDOF),intermediateData(intermediateStartDOF:intermediateEndDOF), &
+                & parameters(parameterStartDOF:parameterEndDOF))
+              
+            ENDIF
+          ENDIF
+        ENDIF
+      ENDIF
+    ELSE
+      CALL FlagError("Model is not associated.",err,error,*999)
+    ENDIF
+    
+#else
+    CALL FlagError("Must compile with USECELLML=true to use CellML functionality.",err,error,*999)
+#endif 
+        
+    EXITS("Solver_DAECellMLRHSEvaluate")
+    RETURN
+999 ERRORSEXITS("Solver_DAECellMLRHSEvaluate",err,error)
+    RETURN 1
+   
+  END SUBROUTINE Solver_DAECellMLRHSEvaluate
+
   !
   !================================================================================================================================
   !
@@ -4233,18 +4617,18 @@ CONTAINS
 
     IF(ASSOCIATED(DAE_SOLVER)) THEN
       IF(ASSOCIATED(DAE_SOLVER%RUNGE_KUTTA_SOLVER)) THEN
-        CALL FLAG_ERROR("Runge-Kutta solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
+        CALL FlagError("Runge-Kutta solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
       ELSE
         !Allocate the Runge-Kutta solver
         ALLOCATE(DAE_SOLVER%RUNGE_KUTTA_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Runge-Kutta solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate Runge-Kutta solver.",ERR,ERROR,*999)
         !Initialise
         DAE_SOLVER%RUNGE_KUTTA_SOLVER%DAE_SOLVER=>DAE_SOLVER
         DAE_SOLVER%RUNGE_KUTTA_SOLVER%SOLVER_LIBRARY=0
         !Defaults
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
     ENDIF
          
     EXITS("SOLVER_DAE_RUNGE_KUTTA_INITIALISE")
@@ -4271,9 +4655,9 @@ CONTAINS
     ENTERS("SOLVER_DAE_RUNGE_KUTTA_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(RUNGE_KUTTA_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Runge-Kutta differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Runge-Kutta differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_RUNGE_KUTTA_SOLVE")
@@ -4328,18 +4712,18 @@ CONTAINS
 
     IF(ASSOCIATED(DAE_SOLVER)) THEN
       IF(ASSOCIATED(DAE_SOLVER%RUSH_LARSON_SOLVER)) THEN
-        CALL FLAG_ERROR("Rush-Larson solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
+        CALL FlagError("Rush-Larson solver is already associated for this differential-algebraic equation solver.",ERR,ERROR,*998)
       ELSE
         !Allocate the Rush-Larson solver
         ALLOCATE(DAE_SOLVER%RUSH_LARSON_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Rush-Larson solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate Rush-Larson solver.",ERR,ERROR,*999)
         !Initialise
         DAE_SOLVER%RUSH_LARSON_SOLVER%DAE_SOLVER=>DAE_SOLVER
         DAE_SOLVER%RUSH_LARSON_SOLVER%SOLVER_LIBRARY=0
         !Defaults
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*998)
     ENDIF
          
     EXITS("SOLVER_DAE_RUSH_LARSON_INITIALISE")
@@ -4366,9 +4750,9 @@ CONTAINS
     ENTERS("SOLVER_DAE_RUSH_LARSON_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(RUSH_LARSON_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Rush-Larson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Rush-Larson differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_RUSH_LARSON_SOLVE")
@@ -4419,8 +4803,8 @@ CONTAINS
           CALL SOLVER_DAE_EXTERNAL_SOLVE(DAE_SOLVER%EXTERNAL_SOLVER,ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The differential-algebraic equation solver solve type of "// &
-            & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            & TRIM(NumberToVString(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         IF(SOLVER%OUTPUT_TYPE>SOLVER_SOLVER_OUTPUT) THEN
 #ifdef TAUPROF
@@ -4441,27 +4825,27 @@ CONTAINS
                    CALL FIELD_PARAMETER_SET_OUTPUT(GENERAL_OUTPUT_TYPE,CELLML_STATE_FIELD%STATE_FIELD,FIELD_U_VARIABLE_TYPE, &
                      & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                  ELSE
-                   CALL FLAG_ERROR("CellML environment state field is not associated.",ERR,ERROR,*999)
+                   CALL FlagError("CellML environment state field is not associated.",ERR,ERROR,*999)
                  ENDIF
                ELSE
                  LOCAL_ERROR="CellML environment is not associated for CellML index "// &
-                   & TRIM(NUMBER_TO_VSTRING(cellml_idx,"*",ERR,ERROR))//"."
-                 CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   & TRIM(NumberToVString(cellml_idx,"*",ERR,ERROR))//"."
+                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                ENDIF
              ENDDO !cellml_idx
               
            ELSE
-             CALL FLAG_ERROR("Solver CellML equations is not associated.",ERR,ERROR,*999)
+             CALL FlagError("Solver CellML equations is not associated.",ERR,ERROR,*999)
            ENDIF
 #ifdef TAUPROF
            CALL TAU_STATIC_PHASE_STOP("Solution Output Phase")
 #endif
          ENDIF
      ELSE
-        CALL FLAG_ERROR("Differential-algebraic solver solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Differential-algebraic solver solver is not associated.",ERR,ERROR,*999)
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_SOLVE")
@@ -4495,16 +4879,16 @@ CONTAINS
           IF(ASSOCIATED(DAE_SOLVER)) THEN
             DAE_SOLVE_TYPE=DAE_SOLVER%DAE_SOLVE_TYPE
          ELSE
-            CALL FLAG_ERROR("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_SOLVER_TYPE_GET")
@@ -4534,7 +4918,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_DAE_TYPE) THEN
           DAE_SOLVER=>SOLVER%DAE_SOLVER
@@ -4558,8 +4942,8 @@ CONTAINS
                 CALL SOLVER_DAE_EXTERNAL_INITIALISE(DAE_SOLVER,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The specified differential-algebraic equation solver type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               !Finalise the old differential-algebraic equation solver type
               SELECT CASE(DAE_SOLVER%DAE_SOLVE_TYPE)
@@ -4579,20 +4963,20 @@ CONTAINS
                 CALL SOLVER_DAE_EXTERNAL_FINALISE(DAE_SOLVER%EXTERNAL_SOLVER,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The differential-algebraic equation solve type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(DAE_SOLVER%DAE_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               DAE_SOLVER%DAE_SOLVE_TYPE=DAE_SOLVE_TYPE
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_SOLVER_TYPE_SET")
@@ -4629,18 +5013,18 @@ CONTAINS
             DAE_SOLVER%START_TIME=START_TIME
             DAE_SOLVER%END_TIME=END_TIME
           ELSE
-            LOCAL_ERROR="The specified end time of "//TRIM(NUMBER_TO_VSTRING(END_TIME,"*",ERR,ERROR))// &
-              & " is not > than the specified start time of "//TRIM(NUMBER_TO_VSTRING(START_TIME,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            LOCAL_ERROR="The specified end time of "//TRIM(NumberToVString(END_TIME,"*",ERR,ERROR))// &
+              & " is not > than the specified start time of "//TRIM(NumberToVString(START_TIME,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+        CALL FlagError("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_TIMES_SET")
@@ -4673,20 +5057,20 @@ CONTAINS
         DAE_SOLVER=>SOLVER%DAE_SOLVER
         IF(ASSOCIATED(DAE_SOLVER)) THEN
           IF(ABS(TIME_STEP)<=ZERO_TOLERANCE) THEN
-            LOCAL_ERROR="The specified time step of "//TRIM(NUMBER_TO_VSTRING(TIME_STEP,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The specified time step of "//TRIM(NumberToVString(TIME_STEP,"*",ERR,ERROR))// &
               & " is invalid. The time step must not be zero."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             DAE_SOLVER%INITIAL_STEP=TIME_STEP
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
+        CALL FlagError("The solver is not a differential-algebraic equation solver.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DAE_TIME_STEP_SET")
@@ -4712,9 +5096,9 @@ CONTAINS
     ENTERS("SOLVER_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_DESTROY")
@@ -4833,7 +5217,7 @@ CONTAINS
                                       IF(ASSOCIATED(DAMPING_MATRIX)) THEN
                                         DYNAMIC_SOLVER%EXPLICIT=DYNAMIC_SOLVER%EXPLICIT.AND.DAMPING_MATRIX%LUMPED
                                       ELSE
-                                        CALL FLAG_ERROR("Damping matrix is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Damping matrix is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ENDIF
                                     IF(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER/=0) THEN
@@ -4841,19 +5225,19 @@ CONTAINS
                                       IF(ASSOCIATED(MASS_MATRIX)) THEN
                                         DYNAMIC_SOLVER%EXPLICIT=DYNAMIC_SOLVER%EXPLICIT.AND.MASS_MATRIX%LUMPED
                                       ELSE
-                                        CALL FLAG_ERROR("Mass matrix is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Mass matrix is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ENDIF
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Equations matrices dynamic matrices are not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Equations matrices dynamic matrices are not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                               VariableType=DYNAMIC_VARIABLE_TYPE
                             ELSE
-                              CALL FLAG_ERROR("Dynamic mapping dynamic variable is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Dynamic mapping dynamic variable is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ENDIF
                           
@@ -4868,13 +5252,13 @@ CONTAINS
                                 IF(ASSOCIATED(ResidualVariable)) THEN
                                   VariableType=ResidualVariable%VARIABLE_TYPE
                                 ELSE
-                                  CALL FLAG_ERROR("Residual variable is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Residual variable is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
                                 LOCAL_ERROR="The specified dynamic solver linearity type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%LINEARITY,"*",ERR,ERROR))// &
+                                  & TRIM(NumberToVString(DYNAMIC_SOLVER%LINEARITY,"*",ERR,ERROR))// &
                                   & " is invalid for a nonlinear equations mapping."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               ENDIF
                             ENDIF
                           ENDIF
@@ -4913,37 +5297,37 @@ CONTAINS
                                           & DISTRIBUTED_MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
                                         CALL DISTRIBUTED_VECTOR_CREATE_FINISH(EQUATIONS_MATRIX%TEMP_VECTOR,ERR,ERROR,*999)
                                       ELSE
-                                        CALL FLAG_ERROR("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Equations matrix is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ENDDO !equations_matrix_idx
                               ELSE
-                                CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Equations set dependent field is not associated for equations set index "// &
-                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="Equations equations set is not associated for equations set index "// &
-                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     LOCAL_ERROR="Equations is not associated for equations set index "// &
-                      & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ENDDO !equations_set_idx
                 !Create the solver matrices and vectors
@@ -4967,9 +5351,9 @@ CONTAINS
                           & ERR,ERROR,*999)
                       CASE DEFAULT
                         LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
+                          & TRIM(NumberToVString(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
                           & " is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ENDIF
                     CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
@@ -4978,7 +5362,7 @@ CONTAINS
                     !Finish the creation of the linear solver
                     CALL SOLVER_LINEAR_CREATE_FINISH(LINEAR_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
                   NONLINEAR_SOLVER=>DYNAMIC_SOLVER%NONLINEAR_SOLVER
@@ -5000,9 +5384,9 @@ CONTAINS
                           & ERR,ERROR,*999)
                       CASE DEFAULT
                         LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
+                          & TRIM(NumberToVString(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
                           & " is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ENDIF
                     CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
@@ -5011,30 +5395,30 @@ CONTAINS
                     !Finish the creation of the nonlinear solver
                     CALL SOLVER_NONLINEAR_CREATE_FINISH(NONLINEAR_SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE(SOLVER_PETSC_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The solver library type of "// &
-              & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(DYNAMIC_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Dynamic solver solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Dynamic solver solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_DYNAMIC_CREATE_FINISH")
@@ -5068,16 +5452,16 @@ CONTAINS
           IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
             DEGREE=DYNAMIC_SOLVER%DEGREE
           ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The solver has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The solver has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DYNAMIC_DEGREE_GET")
@@ -5109,7 +5493,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("The solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("The solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
           DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
@@ -5119,11 +5503,11 @@ CONTAINS
                 SELECT CASE(DEGREE)
                 CASE(SOLVER_DYNAMIC_FIRST_DEGREE,SOLVER_DYNAMIC_SECOND_DEGREE,SOLVER_DYNAMIC_THIRD_DEGREE)
                   ALLOCATE(OLD_THETA(DYNAMIC_SOLVER%DEGREE),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old theta.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate old theta.",ERR,ERROR,*999)
                   OLD_THETA(1:DYNAMIC_SOLVER%DEGREE)=DYNAMIC_SOLVER%THETA(1:DYNAMIC_SOLVER%DEGREE)
                   IF(ALLOCATED(DYNAMIC_SOLVER%THETA)) DEALLOCATE(DYNAMIC_SOLVER%THETA)
                   ALLOCATE(DYNAMIC_SOLVER%THETA(DEGREE),STAT=ERR)
-                  IF(ERR/=0) CALL FLAG_ERROR("Could not allocate theta.",ERR,ERROR,*999)
+                  IF(ERR/=0) CALL FlagError("Could not allocate theta.",ERR,ERROR,*999)
                   IF(DEGREE>DYNAMIC_SOLVER%DEGREE) THEN
                     DO degree_idx=1,DYNAMIC_SOLVER%DEGREE
                       DYNAMIC_SOLVER%THETA(degree_idx)=OLD_THETA(degree_idx)
@@ -5139,25 +5523,25 @@ CONTAINS
                   IF(ALLOCATED(OLD_THETA)) DEALLOCATE(OLD_THETA)
                   DYNAMIC_SOLVER%DEGREE=DEGREE
                 CASE DEFAULT
-                  LOCAL_ERROR="The specified degree of "//TRIM(NUMBER_TO_VSTRING(DEGREE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  LOCAL_ERROR="The specified degree of "//TRIM(NumberToVString(DEGREE,"*",ERR,ERROR))//" is invalid."
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
                 LOCAL_ERROR="Invalid dynamic solver setup. The specfied degree of "// &
-                  & TRIM(NUMBER_TO_VSTRING(DEGREE,"*",ERR,ERROR))//" must be >= the current dynamic order of "// &
-                  & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//"."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(DEGREE,"*",ERR,ERROR))//" must be >= the current dynamic order of "// &
+                  & TRIM(NumberToVString(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//"."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DYNAMIC_DEGREE_SET")
@@ -5218,11 +5602,11 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(SOLVER%DYNAMIC_SOLVER)) THEN
-        CALL FLAG_ERROR("Dynamic solver is already associated for this solver.",ERR,ERROR,*999)
+        CALL FlagError("Dynamic solver is already associated for this solver.",ERR,ERROR,*999)
       ELSE
         !Allocate memory for dynamic solver and set default values (link solver later on)
         ALLOCATE(SOLVER%DYNAMIC_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver dynamic solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate solver dynamic solver.",ERR,ERROR,*999)
         DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
         DYNAMIC_SOLVER%SOLVER=>SOLVER
         DYNAMIC_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
@@ -5231,7 +5615,7 @@ CONTAINS
         DYNAMIC_SOLVER%DEGREE=SOLVER_DYNAMIC_FIRST_DEGREE
         DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_CRANK_NICOLSON_SCHEME
         ALLOCATE(SOLVER%DYNAMIC_SOLVER%THETA(1),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate theta.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate theta.",ERR,ERROR,*999)
         DYNAMIC_SOLVER%THETA(1)=1.0_DP/2.0_DP
         DYNAMIC_SOLVER%EXPLICIT=.FALSE.
         DYNAMIC_SOLVER%RESTART=.FALSE.
@@ -5246,7 +5630,7 @@ CONTAINS
         CALL SOLVER_DYNAMIC_LINEARITY_TYPE_SET(SOLVER,SOLVER_DYNAMIC_LINEAR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_DYNAMIC_INITIALISE")
@@ -5275,7 +5659,7 @@ CONTAINS
     IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
       SOLVER_LIBRARY_TYPE=DYNAMIC_SOLVER%SOLVER_LIBRARY
     ELSE
-      CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DYNAMIC_LIBRARY_TYPE_GET")
@@ -5307,12 +5691,12 @@ CONTAINS
       CASE(SOLVER_CMISS_LIBRARY)
         DYNAMIC_SOLVER%SOLVER_LIBRARY=SOLVER_CMISS_LIBRARY
       CASE DEFAULT
-        LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
           & " is invalid for a dynamic solver."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_DYNAMIC_LIBRARY_TYPE_SET")
@@ -5345,13 +5729,13 @@ CONTAINS
         IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
           LINEARITY_TYPE=DYNAMIC_SOLVER%LINEARITY
         ELSE
-          CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     END IF
     
     EXITS("SOLVER_DYNAMIC_LINEARITY_TYPE_GET")
@@ -5381,7 +5765,7 @@ CONTAINS
     
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
         IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
@@ -5393,20 +5777,20 @@ CONTAINS
           SELECT CASE(LINEARITY_TYPE)
           CASE(SOLVER_DYNAMIC_LINEAR)
             ALLOCATE(DYNAMIC_SOLVER%LINEAR_SOLVER,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver linear solver.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate solver linear solver.",ERR,ERROR,*999)
             NULLIFY(DYNAMIC_SOLVER%LINEAR_SOLVER%SOLVERS)
             DYNAMIC_SOLVER%LINEARITY=SOLVER_DYNAMIC_LINEAR
             CALL SOLVER_INITIALISE_PTR(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
             CALL SOLVER_LINEAR_INITIALISE(DYNAMIC_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
             CALL SOLVER_LINKED_SOLVER_ADD(SOLVER,DYNAMIC_SOLVER%LINEAR_SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
             IF(DYNAMIC_SOLVER%LINEAR_SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE==SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE) THEN
-              CALL SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET(DYNAMIC_SOLVER%LINEAR_SOLVER,SOLVER_SOLUTION_INITIALISE_ZERO, &
+              CALL Solver_LinearIterativeSolutionInitTypeSet(DYNAMIC_SOLVER%LINEAR_SOLVER,SOLVER_SOLUTION_INITIALISE_ZERO, &
                 & ERR,ERROR,*999)
             ENDIF
 
           CASE(SOLVER_DYNAMIC_NONLINEAR)
             ALLOCATE(DYNAMIC_SOLVER%NONLINEAR_SOLVER,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver nonlinear solver.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate solver nonlinear solver.",ERR,ERROR,*999)
             NULLIFY(DYNAMIC_SOLVER%NONLINEAR_SOLVER%SOLVERS)
             DYNAMIC_SOLVER%LINEARITY=SOLVER_DYNAMIC_NONLINEAR
             CALL SOLVER_INITIALISE_PTR(DYNAMIC_SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
@@ -5418,21 +5802,21 @@ CONTAINS
             ENDIF
             IF(DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE== &
               & SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE) THEN
-              CALL SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET(DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER% &
+              CALL Solver_LinearIterativeSolutionInitTypeSet(DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER% &
                 & LINEAR_SOLVER,SOLVER_SOLUTION_INITIALISE_ZERO,ERR,ERROR,*999)
             ENDIF
 
           CASE DEFAULT
             LOCAL_ERROR="The specified solver equations linearity type of "// &
-              & TRIM(NUMBER_TO_VSTRING(LINEARITY_TYPE,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LINEARITY_TYPE,"*",ERR,ERROR))//" is invalid."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     END IF
     
     EXITS("SOLVER_DYNAMIC_LINEARITY_TYPE_SET")
@@ -5461,24 +5845,24 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
-        CALL FLAG_ERROR("Nonlinear solver is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Nonlinear solver is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(NONLINEAR_SOLVER)
         IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
           DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
           IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
             NONLINEAR_SOLVER=>DYNAMIC_SOLVER%NONLINEAR_SOLVER
-            IF(.NOT.ASSOCIATED(NONLINEAR_SOLVER)) CALL FLAG_ERROR("Dynamic solver nonlinear solver is not associated.", & 
+            IF(.NOT.ASSOCIATED(NONLINEAR_SOLVER)) CALL FlagError("Dynamic solver nonlinear solver is not associated.", & 
               & ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_DYNAMIC_NONLINEAR_SOLVER_GET")
@@ -5507,23 +5891,23 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(LINEAR_SOLVER)) THEN
-        CALL FLAG_ERROR("Linear solver is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Linear solver is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(LINEAR_SOLVER)
         IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
           DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
           IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
             LINEAR_SOLVER=>DYNAMIC_SOLVER%LINEAR_SOLVER
-            IF(.NOT.ASSOCIATED(LINEAR_SOLVER)) CALL FLAG_ERROR("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
+            IF(.NOT.ASSOCIATED(LINEAR_SOLVER)) CALL FlagError("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_DYNAMIC_LINEAR_SOLVER_GET")
@@ -5585,9 +5969,9 @@ CONTAINS
             SECOND_PREDICTION_FACTOR=DELTA_T
             THIRD_PREDICTION_FACTOR=DELTA_T*DELTA_T
           CASE DEFAULT
-            LOCAL_ERROR="The dynamic solver degree of "//TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The dynamic solver degree of "//TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ENDIF
         SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
@@ -5683,8 +6067,8 @@ CONTAINS
                                 END IF
                               CASE DEFAULT
                                 LOCAL_ERROR="The dynamic solver degree of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                        
+                                  & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)                        
                               END SELECT
                             ENDIF
                           ELSE
@@ -5761,46 +6145,46 @@ CONTAINS
                                   END IF
                                 CASE DEFAULT
                                   LOCAL_ERROR="The dynamic solver degree of "// &
-                                    & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)                        
+                                    & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
+                                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)                        
                                 END SELECT
                               ENDIF!initialised
                               NULLIFY(NONLINEAR_MAPPING)
                             ELSE
                               LOCAL_ERROR="Neither equations mapping dynamic mapping nor equations mapping nonlinear "// &
                                 & "mapping is associated for equations set index number "// &
-                                & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF!nonlinear mapping
                           ENDIF!dynamic mapping
                         ELSE
-                          CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ENDDO !equations_set_idx
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver solver matrices is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver matrices is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver dynamic solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("SOLVER_DYNAMIC_MEAN_PREDICTED_CALCULATE")
@@ -5833,16 +6217,16 @@ CONTAINS
           IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
             RESTART=DYNAMIC_SOLVER%RESTART
           ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The solver has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The solver has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DYNAMIC_RESTART_GET")
@@ -5871,21 +6255,21 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("The solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("The solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
           DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
           IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
             DYNAMIC_SOLVER%RESTART=RESTART
           ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DYNAMIC_RESTART_SET")
@@ -5921,7 +6305,7 @@ CONTAINS
       CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Current time    = ",TIME,ERR,ERROR,*999)
         
     ELSE
-      CALL FLAG_ERROR("Differential-algebraic equations solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Differential-algebraic equations solver is not associated.",ERR,ERROR,*999)
     ENDIF
      
     EXITS("SOLVER_TIME_STEPPING_MONITOR")
@@ -5950,7 +6334,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("The solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("The solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
           DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
@@ -5958,7 +6342,7 @@ CONTAINS
             IF(ORDER==SOLVER_DYNAMIC_SECOND_ORDER.AND.DYNAMIC_SOLVER%DEGREE==SOLVER_DYNAMIC_FIRST_DEGREE) THEN
               LOCAL_ERROR="Invalid dynamic solver degree. You must have at least a second degree polynomial "// &
                 & "interpolation for a second order dynamic solver."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ELSE
               SELECT CASE(ORDER)
               CASE(SOLVER_DYNAMIC_FIRST_ORDER)
@@ -5966,19 +6350,19 @@ CONTAINS
               CASE(SOLVER_DYNAMIC_SECOND_ORDER)
                 DYNAMIC_SOLVER%ORDER=SOLVER_DYNAMIC_SECOND_ORDER
               CASE DEFAULT
-                LOCAL_ERROR="The specified order of "//TRIM(NUMBER_TO_VSTRING(ORDER,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                LOCAL_ERROR="The specified order of "//TRIM(NumberToVString(ORDER,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DYNAMIC_ORDER_SET")
@@ -6008,7 +6392,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("The solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("The solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
           DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
@@ -6138,18 +6522,18 @@ CONTAINS
             CASE(SOLVER_DYNAMIC_USER_DEFINED_SCHEME)
               DYNAMIC_SOLVER%SCHEME=SOLVER_DYNAMIC_USER_DEFINED_SCHEME
             CASE DEFAULT
-              LOCAL_ERROR="The specified scheme of "//TRIM(NUMBER_TO_VSTRING(SCHEME,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The specified scheme of "//TRIM(NumberToVString(SCHEME,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DYNAMIC_SCHEME_SET")
@@ -6212,7 +6596,7 @@ CONTAINS
                 DYNAMIC_SOLVER%SOLVER_INITIALISED=.TRUE.
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Dynamic solver linear solver is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE(SOLVER_DYNAMIC_NONLINEAR) 
             !Solve the nonlinear dynamic problem
@@ -6235,12 +6619,12 @@ CONTAINS
                 DYNAMIC_SOLVER%SOLVER_INITIALISED=.TRUE.
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Dynamic solver nonlinear solver is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Dynamic solver nonlinear solver is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The dynamic solver linearity type of "// &
-              & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%LINEARITY,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(DYNAMIC_SOLVER%LINEARITY,"*",ERR,ERROR))//" is invalid."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
           
           IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
@@ -6263,10 +6647,10 @@ CONTAINS
                     & SOLVER_VECTOR,ERR,ERROR,*999)
                 ENDDO !solver_matrix_idx
               ELSE
-                CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
             
 #ifdef TAUPROF
@@ -6274,17 +6658,17 @@ CONTAINS
 #endif
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Dynamic solver solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Dynamic solver solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_PETSC_LIBRARY)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The solver library type of "// &
-          & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(DYNAMIC_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DYNAMIC_SOLVE")
@@ -6339,7 +6723,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("The solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("The solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
           DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
@@ -6349,27 +6733,27 @@ CONTAINS
                 IF(THETA(degree_idx)>=0.0_DP) THEN
                   DYNAMIC_SOLVER%THETA(degree_idx)=THETA(degree_idx)
                 ELSE
-                  LOCAL_ERROR="The specified theta "//TRIM(NUMBER_TO_VSTRING(degree_idx,"*",ERR,ERROR))// &
-                    & " value of "//TRIM(NUMBER_TO_VSTRING(THETA(degree_idx),"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified theta "//TRIM(NumberToVString(degree_idx,"*",ERR,ERROR))// &
+                    & " value of "//TRIM(NumberToVString(THETA(degree_idx),"*",ERR,ERROR))// &
                     & " is invalid. The theta value must be >= 0.0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDDO !degree_idx
             ELSE
               LOCAL_ERROR="Invalid number of the thetas. The supplied number of thetas ("// &
-                & TRIM(NUMBER_TO_VSTRING(SIZE(THETA,1),"*",ERR,ERROR))//") must be equal to the interpolation degree ("// &
-                & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//")."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(SIZE(THETA,1),"*",ERR,ERROR))//") must be equal to the interpolation degree ("// &
+                & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//")."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DYNAMIC_THETA_SET_DP")
@@ -6399,21 +6783,21 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("The solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("The solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
           DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
           IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
             DYNAMIC_SOLVER%ALE=ALE
           ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DYNAMIC_ALE_SET")
@@ -6443,21 +6827,21 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("The solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("The solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
           DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
           IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
             DYNAMIC_SOLVER%UPDATE_BC=UPDATE_BC
           ELSE
-            CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_DYNAMIC_UPDATE_BC_SET")
@@ -6491,21 +6875,21 @@ CONTAINS
         DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
         IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
           IF(ABS(TIME_INCREMENT)<=ZERO_TOLERANCE) THEN
-            LOCAL_ERROR="The specified time increment of "//TRIM(NUMBER_TO_VSTRING(TIME_INCREMENT,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The specified time increment of "//TRIM(NumberToVString(TIME_INCREMENT,"*",ERR,ERROR))// &
               & " is invalid. The time increment must not be zero."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             DYNAMIC_SOLVER%CURRENT_TIME=CURRENT_TIME
             DYNAMIC_SOLVER%TIME_INCREMENT=TIME_INCREMENT
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+        CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
      
     EXITS("SOLVER_DYNAMIC_TIMES_SET")
@@ -6530,9 +6914,9 @@ CONTAINS
     ENTERS("SOLVER_EIGENPROBLEM_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EIGENPROBLEM_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Eigenproblem solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Eigenproblem solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_EIGENPROBLEM_CREATE_FINISH")
@@ -6587,16 +6971,16 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(SOLVER%EIGENPROBLEM_SOLVER)) THEN
-        CALL FLAG_ERROR("Eigenproblem solver is already associated for this solver.",ERR,ERROR,*998)
+        CALL FlagError("Eigenproblem solver is already associated for this solver.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(SOLVER%EIGENPROBLEM_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver eigenproblem solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate solver eigenproblem solver.",ERR,ERROR,*999)
         SOLVER%EIGENPROBLEM_SOLVER%SOLVER=>SOLVER
         SOLVER%EIGENPROBLEM_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
         SOLVER%EIGENPROBLEM_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_EIGENPROBLEM_INITIALISE")
@@ -6626,7 +7010,7 @@ CONTAINS
     IF(ASSOCIATED(EIGENPROBLEM_SOLVER)) THEN
       SOLVER_LIBRARY_TYPE=EIGENPROBLEM_SOLVER%SOLVER_LIBRARY
     ELSE
-      CALL FLAG_ERROR("Eigenproblem solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Eigenproblem solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_EIGENPROBLEM_LIBRARY_TYPE_GET")
@@ -6656,14 +7040,14 @@ CONTAINS
     IF(ASSOCIATED(EIGENPROBLEM_SOLVER)) THEN
       SELECT CASE(SOLVER_LIBRARY_TYPE)
       CASE(SOLVER_CMISS_LIBRARY)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="The specified solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The specified solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
           & " is invalid for an eigenproblem solver."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Dynamic solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Dynamic solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_EIGENPROBLEM_LIBRARY_TYPE_SET")
@@ -6678,7 +7062,7 @@ CONTAINS
   !
 
   !>Returns the type of library to use for an eigenproblem solver matrices.
-  SUBROUTINE SOLVER_EIGENPROBLEM_MATRICES_LIBRARY_TYPE_GET(EIGENPROBLEM_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*)
+  SUBROUTINE Solver_EigenproblemMatricesLibraryTypeGet(EIGENPROBLEM_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EIGENPROBLEM_SOLVER_TYPE), POINTER :: EIGENPROBLEM_SOLVER !<A pointer the eigenproblem solver to get the library type for.
@@ -6687,20 +7071,20 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    ENTERS("SOLVER_EIGENPROBLEM_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+    ENTERS("Solver_EigenproblemMatricesLibraryTypeGet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EIGENPROBLEM_SOLVER)) THEN
       MATRICES_LIBRARY_TYPE=EIGENPROBLEM_SOLVER%SOLVER_MATRICES_LIBRARY
     ELSE
-      CALL FLAG_ERROR("Eigenproblem solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Eigenproblem solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_EIGENPROBLEM_MATRICES_LIBRARY_TYPE_GET")
+    EXITS("Solver_EigenproblemMatricesLibraryTypeGet")
     RETURN
-999 ERRORSEXITS("SOLVER_EIGENPROBLEM_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR)
+999 ERRORSEXITS("Solver_EigenproblemMatricesLibraryTypeGet",ERR,ERROR)
     RETURN 1
    
-  END SUBROUTINE SOLVER_EIGENPROBLEM_MATRICES_LIBRARY_TYPE_GET
+  END SUBROUTINE Solver_EigenproblemMatricesLibraryTypeGet
 
   !
   !================================================================================================================================
@@ -6718,9 +7102,9 @@ CONTAINS
     ENTERS("SOLVER_EIGENPROBLEM_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EIGENPROBLEM_SOLVER)) THEN        
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Eigenproblem solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Eigenproblem solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_EIGENPROBLEM_SOLVE")
@@ -6749,17 +7133,17 @@ CONTAINS
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
         IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-          CALL FLAG_ERROR("Boundary conditions is already associated.",ERR,ERROR,*999)
+          CALL FlagError("Boundary conditions is already associated.",ERR,ERROR,*999)
         ELSE
           BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
-          IF(.NOT.ASSOCIATED(BOUNDARY_CONDITIONS)) CALL FLAG_ERROR("Solver equations boundary conditions is not associated.", &
+          IF(.NOT.ASSOCIATED(BOUNDARY_CONDITIONS)) CALL FlagError("Solver equations boundary conditions is not associated.", &
             & ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver equations has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver equations has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_GET")
@@ -6787,21 +7171,21 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Solver equations has already been finished.",ERR,ERROR,*998)
+        CALL FlagError("Solver equations has already been finished.",ERR,ERROR,*998)
       ELSE
         SOLVER=>SOLVER_EQUATIONS%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
           IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-            CALL FLAG_ERROR("Can not finish solver equations creation for a solver that has been linked.",ERR,ERROR,*999)
+            CALL FlagError("Can not finish solver equations creation for a solver that has been linked.",ERR,ERROR,*999)
           ELSE
             SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED=.TRUE.
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver equations is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_EQUATIONS_CREATE_FINISH")
@@ -6833,10 +7217,10 @@ CONTAINS
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
         IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-          CALL FLAG_ERROR("Can not start solver equations creation for a solver that has been linked.",ERR,ERROR,*999)
+          CALL FlagError("Can not start solver equations creation for a solver that has been linked.",ERR,ERROR,*999)
         ELSE
           IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-            CALL FLAG_ERROR("Solver equations is already associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver equations is already associated.",ERR,ERROR,*999)
           ELSE
             NULLIFY(SOLVER_EQUATIONS)
             CALL SOLVER_EQUATIONS_INITIALISE(SOLVER,ERR,ERROR,*999)
@@ -6854,17 +7238,17 @@ CONTAINS
             CASE(SOLVER_EIGENPROBLEM_TYPE)
               CALL SOLVER_MAPPING_SOLVER_MATRICES_NUMBER_SET(SOLVER_MAPPING,2,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The solver type of "//TRIM(NumberToVString(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
             SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_EQUATIONS_CREATE_START")
@@ -6892,7 +7276,7 @@ CONTAINS
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       CALL SOLVER_EQUATIONS_FINALISE(SOLVER_EQUATIONS,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_EQUATIONS_DESTROY")
@@ -6926,12 +7310,12 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Solver equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver equations has already been finished.",ERR,ERROR,*999)
       ELSE
         SOLVER=>SOLVER_EQUATIONS%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
           IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-            CALL FLAG_ERROR("Can not add an equations set for a solver that has been linked.",ERR,ERROR,*999)
+            CALL FlagError("Can not add an equations set for a solver that has been linked.",ERR,ERROR,*999)
           ELSE
             SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
             IF(ASSOCIATED(SOLVER_MAPPING)) THEN
@@ -6959,7 +7343,7 @@ CONTAINS
                       !Not yet implemented, this needs to be checked to see that it works
                       TIME_COMPATIBLE=.FALSE.
                       LOCAL_ERROR="Static equations set equations with dynamic solver equations is not yet implemented."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(EQUATIONS_FIRST_ORDER_DYNAMIC)
                       !OK
                     CASE DEFAULT
@@ -6972,7 +7356,7 @@ CONTAINS
                       TIME_COMPATIBLE=.FALSE.
                       LOCAL_ERROR="Static or first order dynamic equations set equations with a second order dynamic "// &
                         & "solver equations is not yet implemented."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     CASE(EQUATIONS_SECOND_ORDER_DYNAMIC)
                       !OK
                     CASE DEFAULT
@@ -6981,15 +7365,15 @@ CONTAINS
                   CASE DEFAULT
                     TIME_COMPATIBLE=.FALSE.
                     LOCAL_ERROR="Invalid time dependence for solver equations, "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//"."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   IF (.NOT. TIME_COMPATIBLE) THEN
                     LOCAL_ERROR="Invalid equations set up. The time dependence of the equations set to add ("// &
-                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
+                      & TRIM(NumberToVString(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
                       & ") is not compatible with the solver equations time dependence ("// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//")."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//")."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                   !Check solver equations and equations set linearity is compatible
                   SELECT CASE(SOLVER_EQUATIONS%LINEARITY)
@@ -7010,35 +7394,35 @@ CONTAINS
                   CASE DEFAULT
                     LINEARITY_COMPATIBLE=.FALSE.
                     LOCAL_ERROR="Invalid linearity for solver equations, "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(SOLVER_EQUATIONS%LINEARITY,"*",ERR,ERROR))//"."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   IF (.NOT. LINEARITY_COMPATIBLE) THEN
                     LOCAL_ERROR="Invalid equations set up. The linearity of the equations set to add ("// &
-                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
+                      & TRIM(NumberToVString(EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))// &
                       & ") is not compatible with the solver equations linearity ("// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//")."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(SOLVER_EQUATIONS%TIME_DEPENDENCE,"*",ERR,ERROR))//")."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                   IF (TIME_COMPATIBLE .AND. LINEARITY_COMPATIBLE) THEN
                     CALL SOLVER_MAPPING_EQUATIONS_SET_ADD(SOLVER_MAPPING,EQUATIONS_SET,EQUATIONS_SET_INDEX,ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_EQUATIONS_EQUATIONS_SET_ADD")
@@ -7096,10 +7480,10 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(SOLVER%SOLVER_EQUATIONS)) THEN
-        CALL FLAG_ERROR("Solver equations is already associated for this solver.",ERR,ERROR,*998)
+        CALL FlagError("Solver equations is already associated for this solver.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(SOLVER%SOLVER_EQUATIONS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver equations.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate solver equations.",ERR,ERROR,*999)
         SOLVER%SOLVER_EQUATIONS%SOLVER=>SOLVER
         SOLVER%SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED=.FALSE.
         SOLVER%SOLVER_EQUATIONS%SPARSITY_TYPE=SOLVER_SPARSE_MATRICES
@@ -7108,7 +7492,7 @@ CONTAINS
         NULLIFY(SOLVER%SOLVER_EQUATIONS%BOUNDARY_CONDITIONS)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_EQUATIONS_INITIALISE")
@@ -7141,12 +7525,12 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Solver equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver equations has already been finished.",ERR,ERROR,*999)
       ELSE
         SOLVER=>SOLVER_EQUATIONS%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
           IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-            CALL FLAG_ERROR("Can not add an equations set for a solver that has been linked.",ERR,ERROR,*999)
+            CALL FlagError("Can not add an equations set for a solver that has been linked.",ERR,ERROR,*999)
           ELSE
             SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
             IF(ASSOCIATED(SOLVER_MAPPING)) THEN          
@@ -7156,21 +7540,21 @@ CONTAINS
                   CALL SOLVER_MAPPING_INTERFACE_CONDITION_ADD(SOLVER_MAPPING,INTERFACE_CONDITION,INTERFACE_CONDITION_INDEX, &
                     & ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Interface condition interface equations is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Interface condition interface equations is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_EQUATIONS_INTERFACE_CONDITION_ADD")
@@ -7200,12 +7584,12 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Solver equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver equations has already been finished.",ERR,ERROR,*999)
       ELSE
         SOLVER=>SOLVER_EQUATIONS%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
           IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-            CALL FLAG_ERROR("Can not set equations linearity for a solver that has been linked.",ERR,ERROR,*999)
+            CALL FlagError("Can not set equations linearity for a solver that has been linked.",ERR,ERROR,*999)
           ELSE
             SELECT CASE(LINEARITY_TYPE)
             CASE(SOLVER_EQUATIONS_LINEAR)
@@ -7214,16 +7598,16 @@ CONTAINS
               SOLVER_EQUATIONS%LINEARITY=SOLVER_EQUATIONS_NONLINEAR
             CASE DEFAULT
               LOCAL_ERROR="The specified solver equations linearity type of "// &
-                & TRIM(NUMBER_TO_VSTRING(LINEARITY_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LINEARITY_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
     ENDIF
    
     EXITS("SOLVER_EQUATIONS_LINEARITY_TYPE_SET")
@@ -7238,7 +7622,7 @@ CONTAINS
   !
 
   !>Finishes the creation of boundary conditions for the given solver equations
-  SUBROUTINE SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH(SOLVER_EQUATIONS,ERR,ERROR,*)
+  SUBROUTINE SolverEquations_BoundaryConditionsCreateFinish(SOLVER_EQUATIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER, INTENT(IN) :: SOLVER_EQUATIONS !<A pointer to the solver equations to create boundary conditions for
@@ -7249,7 +7633,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR,*999)
+    ENTERS("SolverEquations_BoundaryConditionsCreateFinish",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
@@ -7259,7 +7643,7 @@ CONTAINS
           SOLVER=>SOLVER_EQUATIONS%SOLVER
           IF(ASSOCIATED(SOLVER)) THEN
             IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-              CALL FLAG_ERROR("Can not finish solver equations creation for a solver that has been linked.",ERR,ERROR,*999)
+              CALL FlagError("Can not finish solver equations creation for a solver that has been linked.",ERR,ERROR,*999)
             ELSE
               !Finish of the solver mapping
               CALL SOLVER_MAPPING_CREATE_FINISH(SOLVER_EQUATIONS%SOLVER_MAPPING,ERR,ERROR,*999)
@@ -7276,34 +7660,35 @@ CONTAINS
               CASE(SOLVER_EIGENPROBLEM_TYPE)
                 CALL SOLVER_EIGENPROBLEM_CREATE_FINISH(SOLVER%EIGENPROBLEM_SOLVER,ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                LOCAL_ERROR="The solver type of "//TRIM(NumberToVString(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver equations boundary conditions is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver equations boundary conditions is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver equations are not finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver equations are not finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    EXITS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH")
+    EXITS("SolverEquations_BoundaryConditionsCreateFinish")
     RETURN
-999 ERRORSEXITS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH",ERR,ERROR)
+999 ERRORS("SolverEquations_BoundaryConditionsCreateFinish",ERR,ERROR)
+    EXITS("SolverEquations_BoundaryConditionsCreateFinish")
     RETURN 1
 
-  END SUBROUTINE SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_FINISH
+  END SUBROUTINE SolverEquations_BoundaryConditionsCreateFinish
 
   !
   !================================================================================================================================
   !
 
   !>Starts the creation of boundary conditions for the given solver equations, and returns a pointer to the boundary conditions
-  SUBROUTINE SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_START(SOLVER_EQUATIONS,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+  SUBROUTINE SolverEquations_BoundaryConditionsCreateStart(SOLVER_EQUATIONS,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER, INTENT(IN) :: SOLVER_EQUATIONS !<A pointer to the solver equations to create boundary conditions for
@@ -7312,28 +7697,29 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    ENTERS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_START",ERR,ERROR,*999)
+    ENTERS("SolverEquations_BoundaryConditionsCreateStart",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
         IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS%BOUNDARY_CONDITIONS)) THEN
           CALL BOUNDARY_CONDITIONS_CREATE_START(SOLVER_EQUATIONS,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Solver equations boundary conditions is already associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver equations boundary conditions is already associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver equations are not finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver equations are not finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    EXITS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_START")
+    EXITS("SolverEquations_BoundaryConditionsCreateStart")
     RETURN
-999 ERRORSEXITS("SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_START",ERR,ERROR)
+999 ERRORS("SolverEquations_BoundaryConditionsCreateStart",ERR,ERROR)
+    EXITS("SolverEquations_BoundaryConditionsCreateStart")
     RETURN 1
 
-  END SUBROUTINE SOLVER_EQUATIONS_BOUNDARY_CONDITIONS_CREATE_START
+  END SUBROUTINE SolverEquations_BoundaryConditionsCreateStart
 
   !
   !================================================================================================================================
@@ -7355,12 +7741,12 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Solver equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver equations has already been finished.",ERR,ERROR,*999)
       ELSE
         SOLVER=>SOLVER_EQUATIONS%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
           IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-            CALL FLAG_ERROR("Can not set equations sparsity for a solver that has been linked.",ERR,ERROR,*999)
+            CALL FlagError("Can not set equations sparsity for a solver that has been linked.",ERR,ERROR,*999)
           ELSE
 !!TODO: Maybe set the sparsity in the different types of solvers. e.g., a sparse integrator doesn't mean much.
             SELECT CASE(SPARSITY_TYPE)
@@ -7370,16 +7756,16 @@ CONTAINS
               SOLVER_EQUATIONS%SPARSITY_TYPE=SOLVER_FULL_MATRICES
             CASE DEFAULT
               LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                & TRIM(NUMBER_TO_VSTRING(SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_EQUATIONS_SPARSITY_TYPE_SET")
@@ -7409,12 +7795,12 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
-        CALL FLAG_ERROR("Solver equations has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver equations has already been finished.",ERR,ERROR,*999)
       ELSE
         SOLVER=>SOLVER_EQUATIONS%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
           IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-            CALL FLAG_ERROR("Can not set equations time dependence for a solver that has been linked.",ERR,ERROR,*999)
+            CALL FlagError("Can not set equations time dependence for a solver that has been linked.",ERR,ERROR,*999)
           ELSE
             SELECT CASE(TIME_DEPENDENCE_TYPE)
             CASE(SOLVER_EQUATIONS_STATIC)
@@ -7427,16 +7813,16 @@ CONTAINS
               SOLVER_EQUATIONS%TIME_DEPENDENCE=SOLVER_EQUATIONS_SECOND_ORDER_DYNAMIC
             CASE DEFAULT
               LOCAL_ERROR="The specified solver equations time dependence type of "// &
-                & TRIM(NUMBER_TO_VSTRING(TIME_DEPENDENCE_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(TIME_DEPENDENCE_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver equations solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver equations solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
     ENDIF
    
     EXITS("SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET")
@@ -7768,16 +8154,16 @@ CONTAINS
       IF(ASSOCIATED(solver%geometricTransformationSolver)) THEN
         solver%geometricTransformationSolver%arbitraryPath=arbitraryPath
       ELSE
-        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
+        CALL FlagError("Geometric transformation solver is not associated for this solver.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
         
     EXITS("Solver_GeometricTransformationArbitraryPathSet")
     RETURN
-    
-999 ERRORSEXITS("Solver_GeometricTransformationArbitraryPathSet",err,error)
+999 ERRORS("Solver_GeometricTransformationArbitraryPathSet",err,error)
+    EXITS("Solver_GeometricTransformationArbitraryPathSet")
     RETURN 1
    
   END SUBROUTINE Solver_GeometricTransformationArbitraryPathSet
@@ -7808,10 +8194,10 @@ CONTAINS
         ENDDO !incrementIdx
         IF(ALLOCATED(solver%geometricTransformationSolver%scalings)) DEALLOCATE(solver%geometricTransformationSolver%scalings)
       ELSE
-        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
+        CALL FlagError("Geometric transformation solver is not associated for this solver.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
         
     EXITS("Solver_GeometricTransformationClear")
@@ -7853,12 +8239,12 @@ CONTAINS
                 IF(solver%geometricTransformationSolver%arbitraryPath) THEN !Allocate memory for transformation matrix at each load increment if the transformation is arbitrary at each step
                   ALLOCATE(solver%geometricTransformationSolver%transformationMatrices(numberOfGeoemtricComponents+1, &
                     & numberOfGeoemtricComponents+1,solver%geometricTransformationSolver%numberOfIncrements),STAT=err)
-                  IF(err/=0) CALL FLAG_ERROR("Could not allocate transform matrices for geometric transformation sovler", &
+                  IF(err/=0) CALL FlagError("Could not allocate transform matrices for geometric transformation sovler", &
                     & err,error,*999)
                 ELSE !Only allocate 1 matrix if the transformation is uni-directional.
                   ALLOCATE(solver%geometricTransformationSolver%transformationMatrices(numberOfGeoemtricComponents+1, &
                     & numberOfGeoemtricComponents+1,1),STAT=err)
-                  IF(err/=0) CALL FLAG_ERROR("Could not allocate transform matrices for geometric transformation sovler", &
+                  IF(err/=0) CALL FlagError("Could not allocate transform matrices for geometric transformation sovler", &
                     & err,error,*999)
                 ENDIF
                 solver%geometricTransformationSolver%transformationMatrices=0.0_DP
@@ -7871,22 +8257,22 @@ CONTAINS
                 solver%geometricTransformationSolver%field=>field
                 solver%geometricTransformationSolver%fieldVariableType=variableType
               ELSE
-                CALL FLAG_ERROR("Field's geometric field variable is not associated.",err,error,*999)
+                CALL FlagError("Field's geometric field variable is not associated.",err,error,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Field's geometric field is not associated.",err,error,*999)
+              CALL FlagError("Field's geometric field is not associated.",err,error,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Field variable to be transformed is not associated.",err,error,*999)
+            CALL FlagError("Field variable to be transformed is not associated.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Field is not associated.",err,error,*999)
+          CALL FlagError("Field is not associated.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
+        CALL FlagError("Geometric transformation solver is not associated for this solver.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
         
     EXITS("Solver_GeometricTransformationFieldSet")
@@ -7921,20 +8307,20 @@ CONTAINS
             IF(SIZE(matrix)==SIZE(solver%geometricTransformationSolver%transformationMatrices(:,:,incrementIdx))) THEN
               solver%geometricTransformationSolver%transformationMatrices(:,:,incrementIdx)=matrix
             ELSE
-              CALL FLAG_ERROR("Size of matrix input does not match the transformation matrix size.", &
+              CALL FlagError("Size of matrix input does not match the transformation matrix size.", &
                 & err,error,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Load increment number out of range.",err,error,*999)
+            CALL FlagError("Load increment number out of range.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Field is not associated for this geometric transformation solver.",err,error,*999)
+          CALL FlagError("Field is not associated for this geometric transformation solver.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
+        CALL FlagError("Geometric transformation solver is not associated for this solver.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
     
     EXITS("Solver_GeometricTransformationMatrixSet")
@@ -7965,16 +8351,17 @@ CONTAINS
       IF(ASSOCIATED(solver%geometricTransformationSolver)) THEN
         solver%geometricTransformationSolver%numberOfIncrements=numberOfIncrements
       ELSE
-        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
+        CALL FlagError("Geometric transformation solver is not associated for this solver.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
         
     EXITS("Solver_GeometricTransformationNumberOfLoadIncrementsSet")
     RETURN
     
-999 ERRORSEXITS("Solver_GeometricTransformationNumberOfLoadIncrementsSet",err,error)
+999 ERRORS("Solver_GeometricTransformationNumberOfLoadIncrementsSet",err,error)
+    EXITS("Solver_GeometricTransformationNumberOfLoadIncrementsSet")
     RETURN 1
    
   END SUBROUTINE Solver_GeometricTransformationNumberOfLoadIncrementsSet
@@ -8005,7 +8392,7 @@ CONTAINS
         IF(ASSOCIATED(solver%geometricTransformationSolver%field)) THEN 
           IF(incrementIdx>0 .AND. incrementIdx<=solver%geometricTransformationSolver%numberOfIncrements) THEN
             IF(incrementIdx>1 .AND. .NOT.solver%geometricTransformationSolver%arbitraryPath) &
-              & CALL FLAG_ERROR("Rotating a field through multiple load increments must be specified through arbitrary path.", &
+              & CALL FlagError("Rotating a field through multiple load increments must be specified through arbitrary path.", &
                 & err,error,*999) ! Due to difficulty to scale rotation
             numberOfGeomComp=SIZE(solver%geometricTransformationSolver%transformationMatrices,1)-1
             !Add rotation to matrix at a specific step
@@ -8035,7 +8422,7 @@ CONTAINS
                   rotationMatrix(3,4)=(pt(3)*(u**2+v**2)-w*(pt(1)*u+pt(2)*v))*(1-COS(theta))+(pt(1)*v-pt(2)*u)*SIN(theta)
                   rotationMatrix(4,4)=1.0_DP
                 CASE DEFAULT
-                  CALL FLAG_ERROR("Number of geometric components out of range.",err,error,*999)
+                  CALL FlagError("Number of geometric components out of range.",err,error,*999)
                 END SELECT
                 ! Calculate new transformation matrix by multiplying the old matrix stored with the new rotation matrix
                 transformationMatrix(1:numberOfGeomComp+1,1:numberOfGeomComp+1)=MATMUL(solver%geometricTransformationSolver% & 
@@ -8044,24 +8431,24 @@ CONTAINS
                 solver%geometricTransformationSolver%transformationMatrices(:,:,incrementIdx)= &
                   & transformationMatrix(1:numberOfGeomComp+1,1:numberOfGeomComp+1)
               ELSE
-                CALL FLAG_ERROR("Dimension of the rotation axis does not match no. field geometric components.", &
+                CALL FlagError("Dimension of the rotation axis does not match no. field geometric components.", &
                   & err,error,*999)
               ENDIF    
             ELSE
-              CALL FLAG_ERROR("Dimension of the pivot point does not match no. field geometric components.", &
+              CALL FlagError("Dimension of the pivot point does not match no. field geometric components.", &
                 & err,error,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Load increment number out of range.",err,error,*999)
+            CALL FlagError("Load increment number out of range.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Field is not associated for this geometric transformation solver.",err,error,*999)
+          CALL FlagError("Field is not associated for this geometric transformation solver.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
+        CALL FlagError("Geometric transformation solver is not associated for this solver.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
     
     EXITS("Solver_GeometricTransformationRotationSet")
@@ -8091,23 +8478,23 @@ CONTAINS
     IF(ASSOCIATED(solver)) THEN
       IF(ASSOCIATED(solver%geometricTransformationSolver)) THEN
         IF(solver%geometricTransformationSolver%arbitraryPath) THEN
-          CALL FLAG_ERROR("Transformation with arbitrary path does not have uni-directional scalings.",err,error,*999)
+          CALL FlagError("Transformation with arbitrary path does not have uni-directional scalings.",err,error,*999)
         ELSE
           IF(solver%geometricTransformationSolver%numberOfIncrements==SIZE(scalings)) THEN
             IF(ALLOCATED(solver%geometricTransformationSolver%scalings)) &
               & DEALLOCATE(solver%geometricTransformationSolver%scalings)
             ALLOCATE(solver%geometricTransformationSolver%scalings(SIZE(scalings)),STAT=err)
-            IF(err/=0) CALL FLAG_ERROR("Could not allocate scalings for geometric transformation sovler",err,error,*999)
+            IF(err/=0) CALL FlagError("Could not allocate scalings for geometric transformation sovler",err,error,*999)
             solver%geometricTransformationSolver%scalings(1:SIZE(scalings))=scalings(1:SIZE(scalings))
           ELSE
-            CALL FLAG_ERROR("Number of scalings does not match the number of increments.",err,error,*999)
+            CALL FlagError("Number of scalings does not match the number of increments.",err,error,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
+        CALL FlagError("Geometric transformation solver is not associated for this solver.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
         
     EXITS("Solver_GeometricTransformationScalingsSet")
@@ -8157,26 +8544,26 @@ CONTAINS
               solver%geometricTransformationSolver%transformationMatrices(:,:,incrementIdx)= &
                 & transformationMatrix(1:1+numberOfGeomComp,1:1+numberOfGeomComp)
             ELSE
-              CALL FLAG_ERROR("Number of components for translation vector does not match no. field geometric components.", &
+              CALL FlagError("Number of components for translation vector does not match no. field geometric components.", &
                 & err,error,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Load increment number out of range.",err,error,*999)
+            CALL FlagError("Load increment number out of range.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Field is not associated for this geometric transformation solver.",err,error,*999)
+          CALL FlagError("Field is not associated for this geometric transformation solver.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Geometric transformation solver is not associated for this solver.",err,error,*999)
+        CALL FlagError("Geometric transformation solver is not associated for this solver.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
     
     EXITS("Solver_GeometricTransformationTranslationSet")
     RETURN
-
-999 ERRORSEXITS("Solver_GeometricTransformationTranslationSet",err,error)
+999 ERRORS("Solver_GeometricTransformationTranslationSet",err,error)
+    EXITS("Solver_GeometricTransformationTranslationSet")
     RETURN 1
    
   END SUBROUTINE Solver_GeometricTransformationTranslationSet
@@ -8238,11 +8625,11 @@ CONTAINS
 
     IF(ASSOCIATED(solver)) THEN
       IF(ASSOCIATED(solver%geometricTransformationSolver)) THEN
-        CALL FLAG_ERROR("Geometric transformation solver is already associated for this solver.",err,error,*998)
+        CALL FlagError("Geometric transformation solver is already associated for this solver.",err,error,*998)
       ELSE
         !Allocate and initialise a geometric transformation solver
         ALLOCATE(solver%geometricTransformationSolver,STAT=err)
-        IF(err/=0) CALL FLAG_ERROR("Could not allocate solver geometric transformation solver.",err,error,*999)
+        IF(err/=0) CALL FlagError("Could not allocate solver geometric transformation solver.",err,error,*999)
         solver%geometricTransformationSolver%solver=>solver
         solver%geometricTransformationSolver%arbitraryPath=.FALSE.
         ! Set default number of load increment
@@ -8255,30 +8642,30 @@ CONTAINS
               IF(ASSOCIATED(whileLoop)) THEN
                 solver%geometricTransformationSolver%numberOfIncrements=whileLoop%MAXIMUM_NUMBER_OF_ITERATIONS
               ELSE
-                CALL FLAG_ERROR("Control loop while loop is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Control loop while loop is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSEIF(controlLoop%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
               loadIncrementLoop=>controlLoop%LOAD_INCREMENT_LOOP
               IF(ASSOCIATED(loadIncrementLoop)) THEN
                 solver%geometricTransformationSolver%numberOfIncrements=loadIncrementLoop%MAXIMUM_NUMBER_OF_ITERATIONS
               ELSE
-                CALL FLAG_ERROR("Control loop load increment loop is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Control loop load increment loop is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE ! For other loop types set number of increment to be 1
               solver%geometricTransformationSolver%numberOfIncrements=1
             ENDIF
           ELSE
-            CALL FLAG_ERROR("control loop is not associated.",err,error,*998)
+            CALL FlagError("control loop is not associated.",err,error,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solvers is not associated.",err,error,*998)
+          CALL FlagError("Solvers is not associated.",err,error,*998)
         ENDIF
         ! nullify field
         NULLIFY(solver%geometricTransformationSolver%field)
         solver%geometricTransformationSolver%fieldVariableType=0
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*998)
+      CALL FlagError("Solver is not associated.",err,error,*998)
     ENDIF
         
     EXITS("Solver_GeometricTransformationInitialise")
@@ -8321,19 +8708,19 @@ CONTAINS
         IF(ASSOCIATED(NEWTON_SOLVER)) THEN
           !Create the CellML evaluator solver
           ALLOCATE(NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Cannot allocate CellML evaluator solver.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Cannot allocate CellML evaluator solver.",ERR,ERROR,*999)
           CELLML_SOLVER=>NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
           NULLIFY(CELLML_SOLVER%SOLVERS)
           CALL SOLVER_INITIALISE_PTR(CELLML_SOLVER,ERR,ERROR,*999)
           CALL SOLVER_CELLML_EVALUATOR_INITIALISE(CELLML_SOLVER,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Nonlinear solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_NEWTON_CELLML_EVALUATOR_CREATE")
@@ -8365,10 +8752,10 @@ CONTAINS
       IF(SOLVER_INDEX>0.AND.SOLVER_INDEX<=SOLVERS%NUMBER_OF_SOLVERS) THEN
         IF(ALLOCATED(SOLVERS%SOLVERS)) THEN
           IF(ASSOCIATED(SOLVERS%SOLVERS(SOLVER_INDEX)%PTR)) THEN
-            CALL FLAG_ERROR("Solver pointer is already associated for this solver index.",ERR,ERROR,*998)
+            CALL FlagError("Solver pointer is already associated for this solver index.",ERR,ERROR,*998)
           ELSE
             ALLOCATE(SOLVERS%SOLVERS(SOLVER_INDEX)%PTR,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate solver.",ERR,ERROR,*999)
             SOLVERS%SOLVERS(SOLVER_INDEX)%PTR%SOLVERS=>SOLVERS
             CALL SOLVER_INITIALISE_PTR(SOLVERS%SOLVERS(SOLVER_INDEX)%PTR,ERR,ERROR,*999)
             SOLVERS%SOLVERS(SOLVER_INDEX)%PTR%GLOBAL_NUMBER=SOLVER_INDEX
@@ -8377,16 +8764,16 @@ CONTAINS
             CALL SOLVER_LINEAR_INITIALISE(SOLVERS%SOLVERS(SOLVER_INDEX)%PTR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solvers solvers is not allocated.",ERR,ERROR,*998)
+          CALL FlagError("Solvers solvers is not allocated.",ERR,ERROR,*998)
         ENDIF
       ELSE
-        LOCAL_ERROR="The solver index of "//TRIM(NUMBER_TO_VSTRING(SOLVER_INDEX,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The solver index of "//TRIM(NumberToVString(SOLVER_INDEX,"*",ERR,ERROR))// &
           & " is invalid. The solver index must be > 0 and <= "// &
-          & TRIM(NUMBER_TO_VSTRING(SOLVERS%NUMBER_OF_SOLVERS,"*",ERR,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+          & TRIM(NumberToVString(SOLVERS%NUMBER_OF_SOLVERS,"*",ERR,ERROR))//"."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solvers is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_INITIALISE")
@@ -8416,7 +8803,7 @@ CONTAINS
     IF(ASSOCIATED(SOLVER)) THEN
       NULLIFY(SOLVER%LINKING_SOLVER)
       ALLOCATE(SOLVER%LINKED_SOLVER_TYPE_MAP(SOLVER_NUMBER_OF_SOLVER_TYPES),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linked solver type map.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate linked solver type map.",ERR,ERROR,*999)
       DO solver_idx=1,SOLVER_NUMBER_OF_SOLVER_TYPES
         NULLIFY(SOLVER%LINKED_SOLVER_TYPE_MAP(solver_idx)%PTR)
       ENDDO !solver_idx
@@ -8435,7 +8822,7 @@ CONTAINS
       NULLIFY(SOLVER%CELLML_EQUATIONS)
       NULLIFY(SOLVER%geometricTransformationSolver)
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_INITIALISE_PTR")
@@ -8471,7 +8858,7 @@ CONTAINS
         LABEL=CHAR(SOLVER%LABEL,C_LENGTH)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LABEL_GET_C")
@@ -8500,7 +8887,7 @@ CONTAINS
     IF(ASSOCIATED(SOLVER)) THEN
       LABEL=VAR_STR(CHAR(SOLVER%LABEL))
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LABEL_GET_VS")
@@ -8528,12 +8915,12 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has been finished.",ERR,ERROR,*999)
       ELSE
         SOLVER%LABEL=LABEL
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LABEL_SET_C")
@@ -8561,12 +8948,12 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has been finished.",ERR,ERROR,*999)
       ELSE
         SOLVER%LABEL=LABEL
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LABEL_SET_VS")
@@ -8606,14 +8993,14 @@ CONTAINS
         IF(ASSOCIATED(LINEAR_SOLVER)) THEN
           CALL SOLVER_LINEAR_LIBRARY_TYPE_GET(LINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Solver linear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver linear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_NONLINEAR_TYPE)
         NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
         IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
           CALL SOLVER_NONLINEAR_LIBRARY_TYPE_GET(NONLINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver nonlinear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DYNAMIC_TYPE)
         DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
@@ -8621,43 +9008,43 @@ CONTAINS
           CALL SOLVER_DYNAMIC_LIBRARY_TYPE_GET(DYNAMIC_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           SOLVER_LIBRARY_TYPE=DYNAMIC_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver dynamic solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DAE_TYPE)
         DAE_SOLVER=>SOLVER%DAE_SOLVER
         IF(ASSOCIATED(DAE_SOLVER)) THEN
           CALL SOLVER_DAE_LIBRARY_TYPE_GET(DAE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Solver differential-algebraic solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver differential-algebraic solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_EIGENPROBLEM_TYPE)
         EIGENPROBLEM_SOLVER=>SOLVER%EIGENPROBLEM_SOLVER
         IF(ASSOCIATED(EIGENPROBLEM_SOLVER)) THEN
           CALL SOLVER_EIGENPROBLEM_LIBRARY_TYPE_GET(EIGENPROBLEM_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Solver eigenproblem solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver eigenproblem solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_OPTIMISER_TYPE)
         OPTIMISER_SOLVER=>SOLVER%OPTIMISER_SOLVER
         IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
           CALL SOLVER_OPTIMISER_LIBRARY_TYPE_GET(OPTIMISER_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Solver optimiser solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver optimiser solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_CELLML_EVALUATOR_TYPE)
         CELLML_EVALUATOR_SOLVER=>SOLVER%CELLML_EVALUATOR_SOLVER
         IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
           CALL SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_GET(CELLML_EVALUATOR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Solver CellML evaluator solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver CellML evaluator solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
-        LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        LOCAL_ERROR="The solver type of "//TRIM(NumberToVString(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_LIBRARY_TYPE_GET")
@@ -8693,7 +9080,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has alredy been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has alredy been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(SOLVER%SOLVE_TYPE)
         CASE(SOLVER_LINEAR_TYPE)
@@ -8701,28 +9088,28 @@ CONTAINS
           IF(ASSOCIATED(LINEAR_SOLVER)) THEN
             CALL SOLVER_LINEAR_LIBRARY_TYPE_SET(LINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Solver linear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(SOLVER_NONLINEAR_TYPE)
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
           IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
             CALL SOLVER_NONLINEAR_LIBRARY_TYPE_SET(NONLINEAR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(SOLVER_DYNAMIC_TYPE)
           DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
           IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
             CALL SOLVER_DYNAMIC_LIBRARY_TYPE_SET(DYNAMIC_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver dynamic solver is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(SOLVER_DAE_TYPE)
           DAE_SOLVER=>SOLVER%DAE_SOLVER
           IF(ASSOCIATED(DAE_SOLVER)) THEN
             CALL SOLVER_DAE_LIBRARY_TYPE_SET(DAE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver differential-algebraic equation solver is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(SOLVER_EIGENPROBLEM_TYPE)
           EIGENPROBLEM_SOLVER=>SOLVER%EIGENPROBLEM_SOLVER
@@ -8730,37 +9117,37 @@ CONTAINS
             CALL SOLVER_EIGENPROBLEM_LIBRARY_TYPE_SET(EIGENPROBLEM_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
             SELECT CASE(SOLVER_LIBRARY_TYPE)
             CASE(SOLVER_CMISS_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(SOLVER_PETSC_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Solver eigenproblem solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver eigenproblem solver is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(SOLVER_OPTIMISER_TYPE)
           OPTIMISER_SOLVER=>SOLVER%OPTIMISER_SOLVER
           IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
             CALL SOLVER_OPTIMISER_LIBRARY_TYPE_SET(OPTIMISER_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Solver optimiser solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver optimiser solver is not associated.",ERR,ERROR,*999)
           ENDIF
         CASE(SOLVER_CELLML_EVALUATOR_TYPE)
           CELLML_EVALUATOR_SOLVER=>SOLVER%CELLML_EVALUATOR_SOLVER
           IF(ASSOCIATED(CELLML_EVALUATOR_SOLVER)) THEN
             CALL SOLVER_CELLML_EVALUATOR_LIBRARY_TYPE_SET(CELLML_EVALUATOR_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Solver CellML evaluator solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver CellML evaluator solver is not associated.",ERR,ERROR,*999)
           ENDIF          
         CASE DEFAULT
-          LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          LOCAL_ERROR="The solver type of "//TRIM(NumberToVString(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_LIBRARY_TYPE_SET")
@@ -8811,7 +9198,7 @@ CONTAINS
                     IF(ASSOCIATED(NEWTON_LINESEARCH_SOLVER)) THEN
                       LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER=NEWTON_LINESEARCH_SOLVER%SOLVER_LIBRARY==SOLVER_PETSC_LIBRARY
                     ELSE
-                      CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                     ENDIF
                   CASE(SOLVER_NEWTON_TRUSTREGION)
                     NEWTON_TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
@@ -8819,15 +9206,15 @@ CONTAINS
                       LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER= &
                         & NEWTON_TRUSTREGION_SOLVER%SOLVER_LIBRARY==SOLVER_PETSC_LIBRARY
                     ELSE
-                      CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                     ENDIF
                   CASE DEFAULT
                     LOCAL_ERROR="The Newton solve type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ELSE
-                  CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSEIF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
                 QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
@@ -8839,7 +9226,7 @@ CONTAINS
                       LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER= &
                         & QUASI_NEWTON_LINESEARCH_SOLVER%SOLVER_LIBRARY==SOLVER_PETSC_LIBRARY
                     ELSE
-                      CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                     ENDIF
                   CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
                     QUASI_NEWTON_TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
@@ -8847,19 +9234,19 @@ CONTAINS
                       LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER= &
                         & QUASI_NEWTON_TRUSTREGION_SOLVER%SOLVER_LIBRARY==SOLVER_PETSC_LIBRARY
                     ELSE
-                      CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                     ENDIF
                   CASE DEFAULT
                     LOCAL_ERROR="The Quasi-Newton solve type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ELSE
-                  CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Linking solver nonlinear solver is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Linking solver nonlinear solver is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDIF
         ENDIF
@@ -8869,15 +9256,15 @@ CONTAINS
         CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
           CALL SOLVER_LINEAR_ITERATIVE_CREATE_FINISH(LINEAR_SOLVER%ITERATIVE_SOLVER,ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="The linear solver type of "//TRIM(NUMBER_TO_VSTRING(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The linear solver type of "//TRIM(NumberToVString(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
             & " is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Linear solver solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Linear solver solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_LINEAR_CREATE_FINISH")
@@ -8903,7 +9290,7 @@ CONTAINS
     ENTERS("SOLVER_LINEAR_DIRECT_CHOLESKY_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DIRECT_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("SOLVER_LINEAR_DIRECT_CHOLESKY_FINALISE")
@@ -8929,9 +9316,9 @@ CONTAINS
     ENTERS("SOLVER_LINEAR_DIRECT_CHOLESKY_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DIRECT_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Direct linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_LINEAR_DIRECT_CHOLESKY_INITIALISE")
@@ -8973,15 +9360,15 @@ CONTAINS
               !Matrices have already been set up by linking solver
               SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
               CASE(SOLVER_CMISS_LIBRARY) !All non-PETSc libraries
-                CALL FLAG_ERROR("Non-PETSc linear solver cannot be linked to PETSc nonlinear solver.",ERR,ERROR,*999)
+                CALL FlagError("Non-PETSc linear solver cannot be linked to PETSc nonlinear solver.",ERR,ERROR,*999)
               END SELECT
               SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                 SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
                 IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
-                  & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
+                  & CALL FlagError("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Linked solver solver equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               !Set up solver matrices
@@ -9000,11 +9387,11 @@ CONTAINS
                   CALL SOLVER_MATRICES_LIBRARY_TYPE_SET(SOLVER_MATRICES,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
                 CASE(SOLVER_SPOOLES_LIBRARY,SOLVER_UMFPACK_LIBRARY, &
                     & SOLVER_LUSOL_LIBRARY,SOLVER_ESSL_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The solver library type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    & TRIM(NumberToVString(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
 
                 SELECT CASE(SOLVER_EQUATIONS%SPARSITY_TYPE)
@@ -9016,13 +9403,13 @@ CONTAINS
                     & ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
+                    & TRIM(NumberToVString(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
                     & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
                 CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDIF
 
@@ -9048,13 +9435,13 @@ CONTAINS
                     CASE(SOLVER_FULL_MATRICES)
                       SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
                       CASE(SOLVER_MUMPS_LIBRARY,SOLVER_SUPERLU_LIBRARY,SOLVER_PASTIX_LIBRARY)
-                          CALL FLAG_ERROR("Solver library does not support full matrices. Please use sparse matrices "// &
+                          CALL FlagError("Solver library does not support full matrices. Please use sparse matrices "// &
                             & "or select the LAPACK library type for the linear direct solver.",ERR,ERROR,*999)
                       END SELECT
                     CASE(SOLVER_SPARSE_MATRICES)
                       SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
                       CASE(SOLVER_LAPACK_LIBRARY)
-                          CALL FLAG_ERROR("Solver library does not support sparse matrices. Please use full matrices "// &
+                          CALL FlagError("Solver library does not support sparse matrices. Please use full matrices "// &
                             & "or select another solver library type for the linear direct solver.",ERR,ERROR,*999)
                       END SELECT
                     END SELECT
@@ -9073,54 +9460,54 @@ CONTAINS
                       CALL Petsc_PCFactorSetMatSolverPackage(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_SUPERLU_DIST, &
                         & ERR,ERROR,*999)
                     CASE(SOLVER_LAPACK_LIBRARY)
-                      CALL FLAG_ERROR("LAPACK not available in this version of PETSc.",ERR,ERROR,*999)
+                      CALL FlagError("LAPACK not available in this version of PETSc.",ERR,ERROR,*999)
                     CASE(SOLVER_PASTIX_LIBRARY)
                       !Set the PC factorisation package to PaStiX
                       CALL Petsc_PCFactorSetMatSolverPackage(LINEAR_DIRECT_SOLVER%PC,PETSC_MAT_SOLVER_PASTIX,ERR,ERROR,*999)
                     END SELECT
                   ELSE
-                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
                 LOCAL_ERROR="The given number of solver matrices of "// &
-                  & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                  & TRIM(NumberToVString(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
                   & " is invalid. There should only be one solver matrix for a linear direct solver."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             CASE(SOLVER_SPOOLES_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(SOLVER_UMFPACK_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(SOLVER_LUSOL_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(SOLVER_ESSL_LIBRARY)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The solver library type of "// &
-                & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(SOLVER_DIRECT_CHOLESKY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_DIRECT_SVD)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The direct solver type of "// &
-              & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Linear solver solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Linear solver solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linear direct solver linear solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Linear direct solver linear solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linear direct solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Linear direct solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LINEAR_DIRECT_CREATE_FINISH")
@@ -9182,17 +9569,17 @@ CONTAINS
 
     IF(ASSOCIATED(LINEAR_SOLVER)) THEN
       IF(ASSOCIATED(LINEAR_SOLVER%DIRECT_SOLVER)) THEN
-        CALL FLAG_ERROR("Direct solver is already associated for this linear solver.",ERR,ERROR,*998)
+        CALL FlagError("Direct solver is already associated for this linear solver.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(LINEAR_SOLVER%DIRECT_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear solver direct solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate linear solver direct solver.",ERR,ERROR,*999)
         LINEAR_SOLVER%DIRECT_SOLVER%LINEAR_SOLVER=>LINEAR_SOLVER
         !Default to an LU direct linear solver
         LINEAR_SOLVER%DIRECT_SOLVER%DIRECT_SOLVER_TYPE=SOLVER_DIRECT_LU
         CALL SOLVER_LINEAR_DIRECT_LU_INITIALISE(LINEAR_SOLVER%DIRECT_SOLVER,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Linear solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_LINEAR_DIRECT_INITIALISE")
@@ -9230,11 +9617,11 @@ CONTAINS
         SOLVER_LIBRARY_TYPE=DIRECT_SOLVER%SOLVER_LIBRARY
       CASE DEFAULT
         LOCAL_ERROR="The direct linear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Direct linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_GET")
@@ -9266,7 +9653,7 @@ CONTAINS
       CASE(SOLVER_DIRECT_LU)
         SELECT CASE(SOLVER_LIBRARY_TYPE)
         CASE(SOLVER_CMISS_LIBRARY)
-          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+          CALL FlagError("Not implemeted.",ERR,ERROR,*999)
         CASE(SOLVER_MUMPS_LIBRARY)
           DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_MUMPS_LIBRARY
           DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
@@ -9274,11 +9661,11 @@ CONTAINS
           DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_SUPERLU_LIBRARY
           DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
         CASE(SOLVER_SPOOLES_LIBRARY)
-          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+          CALL FlagError("Not implemeted.",ERR,ERROR,*999)
         CASE(SOLVER_LUSOL_LIBRARY)
-          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+          CALL FlagError("Not implemeted.",ERR,ERROR,*999)
         CASE(SOLVER_ESSL_LIBRARY)
-          CALL FLAG_ERROR("Not implemeted.",ERR,ERROR,*999)
+          CALL FlagError("Not implemeted.",ERR,ERROR,*999)
         CASE(SOLVER_LAPACK_LIBRARY)
           DIRECT_SOLVER%SOLVER_LIBRARY=SOLVER_LAPACK_LIBRARY
           DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
@@ -9287,21 +9674,21 @@ CONTAINS
           DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
         CASE DEFAULT
           LOCAL_ERROR="The specified solver library type of "// &
-            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a LU direct linear solver."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE(SOLVER_DIRECT_CHOLESKY)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_DIRECT_SVD)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The direct linear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Direct linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_SET")
@@ -9330,7 +9717,7 @@ CONTAINS
     IF(ASSOCIATED(DIRECT_SOLVER)) THEN
       SELECT CASE(DIRECT_SOLVER%SOLVER_LIBRARY)
       CASE(SOLVER_CMISS_LIBRARY)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_MUMPS_LIBRARY)
         !Call MUMPS through PETSc
         CALL Petsc_PCFinalise(DIRECT_SOLVER%PC,ERR,ERROR,*999)
@@ -9340,13 +9727,13 @@ CONTAINS
         CALL Petsc_PCFinalise(DIRECT_SOLVER%PC,ERR,ERROR,*999)
         CALL Petsc_KSPFinalise(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
       CASE(SOLVER_SPOOLES_LIBRARY)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_UMFPACK_LIBRARY)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_LUSOL_LIBRARY)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_ESSL_LIBRARY)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_LAPACK_LIBRARY)
         !Call SuperLU through PETSc
         CALL Petsc_PCFinalise(DIRECT_SOLVER%PC,ERR,ERROR,*999)
@@ -9357,9 +9744,9 @@ CONTAINS
         CALL Petsc_KSPFinalise(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The solver library type of "// &
-          & TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
+          & TRIM(NumberToVString(DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
           & " is invalid for a LU direct linear solver."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ENDIF
 
@@ -9395,7 +9782,7 @@ CONTAINS
       CALL Petsc_PCInitialise(DIRECT_SOLVER%PC,ERR,ERROR,*999)
       CALL Petsc_KSPInitialise(DIRECT_SOLVER%KSP,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Direct linear solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_LINEAR_DIRECT_LU_INITIALISE")
@@ -9411,7 +9798,7 @@ CONTAINS
   !
 
   !>Returns the type of library to use for a direct linear solver matrices.
-  SUBROUTINE SOLVER_LINEAR_DIRECT_MATRICES_LIBRARY_TYPE_GET(DIRECT_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*)
+  SUBROUTINE Solver_LinearDirectMatricesLibraryTypeGet(DIRECT_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(LINEAR_DIRECT_SOLVER_TYPE), POINTER :: DIRECT_SOLVER !<A pointer the direct linear solver to get the library type for.
@@ -9420,20 +9807,20 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    ENTERS("SOLVER_LINEAR_DIRECT_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+    ENTERS("Solver_LinearDirectMatricesLibraryTypeGet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DIRECT_SOLVER)) THEN
       MATRICES_LIBRARY_TYPE=DIRECT_SOLVER%SOLVER_MATRICES_LIBRARY
     ELSE
-      CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Direct linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_LINEAR_DIRECT_MATRICES_LIBRARY_TYPE_GET")
+    EXITS("Solver_LinearDirectMatricesLibraryTypeGet")
     RETURN
-999 ERRORSEXITS("SOLVER_LINEAR_DIRECT_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR)
+999 ERRORSEXITS("Solver_LinearDirectMatricesLibraryTypeGet",ERR,ERROR)
     RETURN 1
    
-  END SUBROUTINE SOLVER_LINEAR_DIRECT_MATRICES_LIBRARY_TYPE_GET
+  END SUBROUTINE Solver_LinearDirectMatricesLibraryTypeGet
 
   !
   !================================================================================================================================
@@ -9603,7 +9990,7 @@ CONTAINS
                   IF(ASSOCIATED(linkingSolverEquations)) THEN
                     solverMatrices=>linkingSolverEquations%SOLVER_MATRICES
                   ELSE
-                    CALL FLAG_ERROR("Solver equations is not associated for the linking solver.",ERR,ERROR,*999)
+                    CALL FlagError("Solver equations is not associated for the linking solver.",ERR,ERROR,*999)
                   ENDIF
                 ENDIF
               ENDIF
@@ -9618,44 +10005,44 @@ CONTAINS
                       !Set CNTL(icntl)=val
                       CALL Petsc_MatMumpsSetCntl(petscFactoredMatrix,icntl,val,err,error,*999)
                     ELSE
-                      CALL FLAG_ERROR("Solver matrix PETSc is not associated.",err,error,*999)
+                      CALL FlagError("Solver matrix PETSc is not associated.",err,error,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",err,error,*999)
+                    CALL FlagError("Solver matrices distributed matrix is not associated.",err,error,*999)
                   ENDIF
                 ELSE
                   localError="The given number of solver matrices of "// &
-                    & TRIM(NUMBER_TO_VSTRING(solverMatrices%NUMBER_OF_MATRICES,"*",err,error))// &
+                    & TRIM(NumberToVString(solverMatrices%NUMBER_OF_MATRICES,"*",err,error))// &
                     & " is invalid. There should only be one solver matrix for a linear direct solver."
-                  CALL FLAG_ERROR(localError,err,error,*999)
+                  CALL FlagError(localError,err,error,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver matrices not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver matrices not associated.",ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
               localError="The solver library type of "// &
-                & TRIM(NUMBER_TO_VSTRING(linearDirectSolver%SOLVER_LIBRARY,"*",err,error))//" is invalid. "// &
+                & TRIM(NumberToVString(linearDirectSolver%SOLVER_LIBRARY,"*",err,error))//" is invalid. "// &
                 & "Use MUMPS library when calling Solver_MumpsSetCntl"
-              CALL FLAG_ERROR(localError,err,error,*999)
+              CALL FlagError(localError,err,error,*999)
             END SELECT
           CASE(SOLVER_DIRECT_CHOLESKY)
-            CALL FLAG_ERROR("Not implemented.",err,error,*999)
+            CALL FlagError("Not implemented.",err,error,*999)
           CASE(SOLVER_DIRECT_SVD)
-            CALL FLAG_ERROR("Not implemented.",err,error,*999)
+            CALL FlagError("Not implemented.",err,error,*999)
           CASE DEFAULT
             localError="The direct solver type of "// &
-              & TRIM(NUMBER_TO_VSTRING(linearDirectSolver%DIRECT_SOLVER_TYPE,"*",err,error))// &
+              & TRIM(NumberToVString(linearDirectSolver%DIRECT_SOLVER_TYPE,"*",err,error))// &
               & " is invalid."
-            CALL FLAG_ERROR(localError,err,error,*999)
+            CALL FlagError(localError,err,error,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Linear solver solver is not associated.",err,error,*999)
+          CALL FlagError("Linear solver solver is not associated.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linear direct solver linear solver is not associated.",err,error,*999)
+        CALL FlagError("Linear direct solver linear solver is not associated.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linear direct solver is not associated.",err,error,*999)
+      CALL FlagError("Linear direct solver is not associated.",err,error,*999)
     ENDIF
     
     EXITS("Solver_MumpsSetCntl")
@@ -9723,23 +10110,23 @@ CONTAINS
                                 CALL DISTRIBUTED_VECTOR_VALUES_SET(SOLVER_VECTOR,local_row,SOLVER_VALUE,ERR,ERROR,*999)
                               ELSE
                                 LOCAL_ERROR="The linear solver matrix has a zero pivot on row "// &
-                                  & TRIM(NUMBER_TO_VSTRING(local_row,"*",ERR,ERROR))//"."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  & TRIM(NumberToVString(local_row,"*",ERR,ERROR))//"."
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               ENDIF
                             ENDDO !matrix_idx
                             CALL DISTRIBUTED_VECTOR_DATA_RESTORE(RHS_VECTOR,RHS_DATA,ERR,ERROR,*999)
                           ELSE
-                            CALL FLAG_ERROR("Solver mapping row dofs mapping is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Solver mapping row dofs mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         SELECT CASE(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE)
                         CASE(SOLVER_DIRECT_LU)
                           SELECT CASE(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY)
                           CASE(SOLVER_CMISS_LIBRARY)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(SOLVER_MUMPS_LIBRARY)
                             !Call MUMPS through PETSc
                             IF(ASSOCIATED(RHS_VECTOR%PETSC)) THEN
@@ -9756,16 +10143,16 @@ CONTAINS
                                     CALL Petsc_KSPSolve(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
                                       & SOLVER_VECTOR%PETSC%VECTOR,ERR,ERROR,*999) 
                                   ELSE
-                                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                   CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                   CALL FlagError("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
                             ENDIF
                           CASE(SOLVER_SUPERLU_LIBRARY)
                             !Call SuperLU through PETSc
@@ -9783,25 +10170,25 @@ CONTAINS
                                     CALL Petsc_KSPSolve(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
                                       & SOLVER_VECTOR%PETSC%VECTOR,ERR,ERROR,*999) 
                                   ELSE
-                                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                   CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                   CALL FlagError("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
                             ENDIF
                           CASE(SOLVER_SPOOLES_LIBRARY)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(SOLVER_UMFPACK_LIBRARY)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(SOLVER_LUSOL_LIBRARY)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(SOLVER_ESSL_LIBRARY)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(SOLVER_LAPACK_LIBRARY)
                             !Call LAPACK through PETSc
                             IF(ASSOCIATED(RHS_VECTOR%PETSC)) THEN
@@ -9818,16 +10205,16 @@ CONTAINS
                                     CALL Petsc_KSPSolve(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
                                       & SOLVER_VECTOR%PETSC%VECTOR,ERR,ERROR,*999) 
                                   ELSE
-                                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
                             ENDIF
                           CASE(SOLVER_PASTIX_LIBRARY)
                             !Call PASTIX through PETSc
@@ -9845,63 +10232,63 @@ CONTAINS
                                     CALL Petsc_KSPSolve(LINEAR_DIRECT_SOLVER%KSP,RHS_VECTOR%PETSC%VECTOR, &
                                       & SOLVER_VECTOR%PETSC%VECTOR,ERR,ERROR,*999) 
                                   ELSE
-                                    CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                   CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                   CALL FlagError("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
                             ENDIF
                           CASE DEFAULT
                             LOCAL_ERROR="The solver library type of "// &
-                              & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
+                              & TRIM(NumberToVString(LINEAR_DIRECT_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
                               & " is invalid for a LU direct linear solver."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT
                         CASE(SOLVER_DIRECT_CHOLESKY)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                         CASE(SOLVER_DIRECT_SVD)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                         CASE DEFAULT
                           LOCAL_ERROR="The direct linear solver type of "// &
-                            & TRIM(NUMBER_TO_VSTRING(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
+                            & TRIM(NumberToVString(LINEAR_DIRECT_SOLVER%DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
                             & " is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Solver vector is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("RHS vector is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("RHS vector is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
                 LOCAL_ERROR="The number of solver matrices of "// &
-                  & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                  & TRIM(NumberToVString(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
                   & " is invalid. There should only be one solver matrix for a linear direct solver."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Linear solver solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Linear solver solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linear direct solver linear solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Linear direct solver linear solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linear direct solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Linear direct solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_LINEAR_DIRECT_SOLVE")
@@ -9927,7 +10314,7 @@ CONTAINS
     ENTERS("SOLVER_LINEAR_DIRECT_SVD_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LINEAR_DIRECT_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("SOLVER_LINEAR_DIRECT_SVD_FINALISE")
@@ -9953,9 +10340,9 @@ CONTAINS
     ENTERS("SOLVER_LINEAR_DIRECT_SVD_INITIALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(DIRECT_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Direct linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Direct linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_LINEAR_DIRECT_SVD_INITIALISE")
@@ -9984,7 +10371,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
@@ -10000,9 +10387,9 @@ CONTAINS
                   CASE(SOLVER_DIRECT_SVD)
                     CALL SOLVER_LINEAR_DIRECT_SVD_FINALISE(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER,ERR,ERROR,*999)
                   CASE DEFAULT
-                    LOCAL_ERROR="The direct solver type of "//TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
+                    LOCAL_ERROR="The direct solver type of "//TRIM(NumberToVString(DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   !Initialise the new library
                   SELECT CASE(DIRECT_SOLVER_TYPE)
@@ -10013,26 +10400,26 @@ CONTAINS
                   CASE(SOLVER_DIRECT_SVD)
                     CALL SOLVER_LINEAR_DIRECT_SVD_INITIALISE(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER,ERR,ERROR,*999)
                   CASE DEFAULT
-                    LOCAL_ERROR="The direct solver type of "//TRIM(NUMBER_TO_VSTRING(DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
+                    LOCAL_ERROR="The direct solver type of "//TRIM(NumberToVString(DIRECT_SOLVER_TYPE,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The solver linear solver direct solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The solver linear solver direct solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The solver is not a linear direct solver.",ERR,ERROR,*999)
+              CALL FlagError("The solver is not a linear direct solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a linear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LINEAR_DIRECT_TYPE_SET")
@@ -10089,11 +10476,11 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
-        CALL FLAG_ERROR("Linear solver is already associated for this solver.",ERR,ERROR,*998)
+        CALL FlagError("Linear solver is already associated for this solver.",ERR,ERROR,*998)
       ELSE
         !Allocate and initialise a linear solver
         ALLOCATE(SOLVER%LINEAR_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver linear solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate solver linear solver.",ERR,ERROR,*999)
         SOLVER%LINEAR_SOLVER%SOLVER=>SOLVER
         SOLVER%LINEAR_SOLVER%LINKED_NEWTON_PETSC_SOLVER=.FALSE.
         NULLIFY(SOLVER%LINEAR_SOLVER%DIRECT_SOLVER)
@@ -10103,7 +10490,7 @@ CONTAINS
         CALL SOLVER_LINEAR_ITERATIVE_INITIALISE(SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_LINEAR_INITIALISE")
@@ -10119,7 +10506,7 @@ CONTAINS
   !
 
   !>Sets/changes the maximum absolute tolerance for an iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativeAbsoluteToleranceSet
-  SUBROUTINE SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET(SOLVER,ABSOLUTE_TOLERANCE,ERR,ERROR,*)
+  SUBROUTINE Solver_LinearIterativeAbsoluteToleranceSet(SOLVER,ABSOLUTE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set 
@@ -10129,11 +10516,11 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET",ERR,ERROR,*999)
+    ENTERS("Solver_LinearIterativeAbsoluteToleranceSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
@@ -10142,33 +10529,33 @@ CONTAINS
                 IF(ABSOLUTE_TOLERANCE>ZERO_TOLERANCE) THEN
                   SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ABSOLUTE_TOLERANCE=ABSOLUTE_TOLERANCE
                 ELSE
-                  LOCAL_ERROR="The specified absolute tolerance of "//TRIM(NUMBER_TO_VSTRING(ABSOLUTE_TOLERANCE,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified absolute tolerance of "//TRIM(NumberToVString(ABSOLUTE_TOLERANCE,"*",ERR,ERROR))// &
                     & " is invalid. The absolute tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The solver is not a linear iterative solver.",ERR,ERROR,*999)
+              CALL FlagError("The solver is not a linear iterative solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a linear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET")
+    EXITS("Solver_LinearIterativeAbsoluteToleranceSet")
     RETURN
-999 ERRORSEXITS("SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET",ERR,ERROR)
+999 ERRORSEXITS("Solver_LinearIterativeAbsoluteToleranceSet",ERR,ERROR)
     RETURN 1
    
-  END SUBROUTINE SOLVER_LINEAR_ITERATIVE_ABSOLUTE_TOLERANCE_SET
+  END SUBROUTINE Solver_LinearIterativeAbsoluteToleranceSet
         
   !
   !================================================================================================================================
@@ -10206,16 +10593,16 @@ CONTAINS
           !Should really check iterative types here and then the solver library but as they are all PETSc for now hold off.
           SELECT CASE(LINEAR_ITERATIVE_SOLVER%SOLVER_LIBRARY)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
             IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
               SOLVER_EQUATIONS=>SOLVER%LINKING_SOLVER%SOLVER_EQUATIONS
               IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
                 SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
                 IF(.NOT.ASSOCIATED(SOLVER_MATRICES)) &
-                  & CALL FLAG_ERROR("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
+                  & CALL FlagError("Linked solver equation solver matrices is not associated.",ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Linked solver solver equations is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Linked solver solver equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
@@ -10233,13 +10620,13 @@ CONTAINS
                     & ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
+                    & TRIM(NumberToVString(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))// &
                     & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
                 CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDIF
             !Create the PETSc KSP solver
@@ -10257,22 +10644,22 @@ CONTAINS
                         IF(ASSOCIATED(NEWTON_LINESEARCH_SOLVER)) THEN
                           CALL Petsc_SnesGetKSP(NEWTON_LINESEARCH_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE(SOLVER_NEWTON_TRUSTREGION)
                         NEWTON_TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
                         IF(ASSOCIATED(NEWTON_TRUSTREGION_SOLVER)) THEN
                           CALL Petsc_SnesGetKSP(NEWTON_TRUSTREGION_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE DEFAULT
                         LOCAL_ERROR="The Newton solve type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSEIF(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE==SOLVER_NONLINEAR_QUASI_NEWTON) THEN
                     QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
@@ -10283,29 +10670,29 @@ CONTAINS
                         IF(ASSOCIATED(QUASI_NEWTON_LINESEARCH_SOLVER)) THEN
                           CALL Petsc_SnesGetKSP(QUASI_NEWTON_LINESEARCH_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
                         QUASI_NEWTON_TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
                         IF(ASSOCIATED(QUASI_NEWTON_TRUSTREGION_SOLVER)) THEN
                           CALL Petsc_SnesGetKSP(QUASI_NEWTON_TRUSTREGION_SOLVER%snes,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Quasi-Newton solver linesearch solver is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE DEFAULT
                         LOCAL_ERROR="The Quasi-Newton solve type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//"is invalid."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Linking solver nonlinear solver is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Linking solver nonlinear solver is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver linking solve is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver linking solve is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               CALL Petsc_KSPCreate(COMPUTATIONAL_ENVIRONMENT%MPI_COMM,LINEAR_ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
@@ -10329,8 +10716,8 @@ CONTAINS
               CALL Petsc_KSPSetType(LINEAR_ITERATIVE_SOLVER%KSP,PETSC_KSPCGS,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The iterative solver type of "// &
-                & TRIM(NUMBER_TO_VSTRING(LINEAR_ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LINEAR_ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
             !Get the pre-conditioner
             CALL Petsc_KSPGetPC(LINEAR_ITERATIVE_SOLVER%KSP,LINEAR_ITERATIVE_SOLVER%PC,ERR,ERROR,*999)
@@ -10352,8 +10739,8 @@ CONTAINS
               CALL Petsc_PCSetType(LINEAR_ITERATIVE_SOLVER%PC,PETSC_PCASM,ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="The iterative preconditioner type of "// &
-                & TRIM(NUMBER_TO_VSTRING(LINEAR_ITERATIVE_SOLVER%ITERATIVE_PRECONDITIONER_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LINEAR_ITERATIVE_SOLVER%ITERATIVE_PRECONDITIONER_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
             !Set the tolerances for the KSP solver
             CALL Petsc_KSPSetTolerances(LINEAR_ITERATIVE_SOLVER%KSP,LINEAR_ITERATIVE_SOLVER%RELATIVE_TOLERANCE, &
@@ -10369,30 +10756,30 @@ CONTAINS
                   CALL Petsc_KSPSetOperators(LINEAR_ITERATIVE_SOLVER%KSP,SOLVER_MATRIX%PETSC%MATRIX,SOLVER_MATRIX%PETSC%MATRIX, &
                     & ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver matrix PETSc is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver matrices distributed matrix is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="The given number of solver matrices of "// &
-                & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                & TRIM(NumberToVString(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
                 & " is invalid. There should only be one solver matrix for a linear iterative solver."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The solver library type of "// &
-              & TRIM(NUMBER_TO_VSTRING(LINEAR_ITERATIVE_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LINEAR_ITERATIVE_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Linear solver solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Linear solver solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linear iterative solver linear solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Linear iterative solver linear solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linear iterative solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Linear iterative solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_LINEAR_ITERATIVE_CREATE_FINISH")
@@ -10407,7 +10794,7 @@ CONTAINS
   !
 
   !>Sets/changes the maximum divergence tolerance for an iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativeDivergenceToleranceSet
-  SUBROUTINE SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET(SOLVER,DIVERGENCE_TOLERANCE,ERR,ERROR,*)
+  SUBROUTINE Solver_LinearIterativeDivergenceToleranceSet(SOLVER,DIVERGENCE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set 
@@ -10417,11 +10804,11 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET",ERR,ERROR,*999)
+    ENTERS("Solver_LinearIterativeDivergenceToleranceSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
@@ -10431,33 +10818,34 @@ CONTAINS
                   SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%DIVERGENCE_TOLERANCE=DIVERGENCE_TOLERANCE
                 ELSE
                   LOCAL_ERROR="The specified divergence tolerance of "// &
-                    & TRIM(NUMBER_TO_VSTRING(DIVERGENCE_TOLERANCE,"*",ERR,ERROR))// &
+                    & TRIM(NumberToVString(DIVERGENCE_TOLERANCE,"*",ERR,ERROR))// &
                     & " is invalid. The divergence tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The solver is not a linear iterative solver.",ERR,ERROR,*999)
+              CALL FlagError("The solver is not a linear iterative solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a linear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET")
+    EXITS("Solver_LinearIterativeDivergenceToleranceSet")
     RETURN
-999 ERRORSEXITS("SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET",ERR,ERROR)
+999 ERRORS("Solver_LinearIterativeDivergenceToleranceSet",ERR,ERROR)
+    EXITS("Solver_LinearIterativeDivergenceToleranceSet")
     RETURN 1
    
-  END SUBROUTINE SOLVER_LINEAR_ITERATIVE_DIVERGENCE_TOLERANCE_SET
+  END SUBROUTINE Solver_LinearIterativeDivergenceToleranceSet
         
   !
   !================================================================================================================================
@@ -10514,7 +10902,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           LINEAR_SOLVER=>SOLVER%LINEAR_SOLVER
@@ -10526,28 +10914,28 @@ CONTAINS
                   IF(GMRES_RESTART>0) THEN
                     ITERATIVE_SOLVER%GMRES_RESTART=GMRES_RESTART
                   ELSE
-                    LOCAL_ERROR="The specified GMRES restart value of "//TRIM(NUMBER_TO_VSTRING(GMRES_RESTART,"*",ERR,ERROR))// &
+                    LOCAL_ERROR="The specified GMRES restart value of "//TRIM(NumberToVString(GMRES_RESTART,"*",ERR,ERROR))// &
                       & " is invalid. The GMRES restart value must be > 0."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The linear iterative solver is not a GMRES linear iterative solver.",ERR,ERROR,*999)
+                  CALL FlagError("The linear iterative solver is not a GMRES linear iterative solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The solver is not a linear iterative solver.",ERR,ERROR,*999)
+              CALL FlagError("The solver is not a linear iterative solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a linear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LINEAR_ITERATIVE_GMRES_RESTART_SET")
@@ -10576,11 +10964,11 @@ CONTAINS
 
     IF(ASSOCIATED(LINEAR_SOLVER)) THEN
       IF(ASSOCIATED(LINEAR_SOLVER%ITERATIVE_SOLVER)) THEN
-        CALL FLAG_ERROR("Iterative solver is already associated for this linear solver.",ERR,ERROR,*998)
+        CALL FlagError("Iterative solver is already associated for this linear solver.",ERR,ERROR,*998)
       ELSE
         !Allocate and initialise an iterative solver
         ALLOCATE(LINEAR_SOLVER%ITERATIVE_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linear solver iterative solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate linear solver iterative solver.",ERR,ERROR,*999)
         LINEAR_SOLVER%ITERATIVE_SOLVER%LINEAR_SOLVER=>LINEAR_SOLVER
         LINEAR_SOLVER%ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
         LINEAR_SOLVER%ITERATIVE_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
@@ -10596,7 +10984,7 @@ CONTAINS
         CALL Petsc_KSPInitialise(LINEAR_SOLVER%ITERATIVE_SOLVER%KSP,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Linear solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_LINEAR_ITERATIVE_INITIALISE")
@@ -10640,11 +11028,11 @@ CONTAINS
         SOLVER_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_LIBRARY
       CASE DEFAULT
         LOCAL_ERROR="The iterative linear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Iterative linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Iterative linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_GET")
@@ -10676,82 +11064,82 @@ CONTAINS
       CASE(SOLVER_ITERATIVE_RICHARDSON)
         SELECT CASE(SOLVER_LIBRARY_TYPE)
         CASE(SOLVER_CMISS_LIBRARY)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(SOLVER_PETSC_LIBRARY)
           ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
           ITERATIVE_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
         CASE DEFAULT
           LOCAL_ERROR="The specified solver library type of "// &
-            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a Richardson iterative linear solver."
         END SELECT
       CASE(SOLVER_ITERATIVE_CHEBYSHEV)
         SELECT CASE(SOLVER_LIBRARY_TYPE)
         CASE(SOLVER_CMISS_LIBRARY)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(SOLVER_PETSC_LIBRARY)
           ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
           ITERATIVE_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
        CASE DEFAULT
           LOCAL_ERROR="The specified solver library type of "// &
-            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a Chebychev iterative linear solver."
         END SELECT
       CASE(SOLVER_ITERATIVE_CONJUGATE_GRADIENT)
         SELECT CASE(SOLVER_LIBRARY_TYPE)
         CASE(SOLVER_CMISS_LIBRARY)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(SOLVER_PETSC_LIBRARY)
           ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
           ITERATIVE_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
         CASE DEFAULT
           LOCAL_ERROR="The specified solver library type of "// &
-            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a Conjugate gradient iterative linear solver."
         END SELECT
       CASE(SOLVER_ITERATIVE_GMRES)
         SELECT CASE(SOLVER_LIBRARY_TYPE)
         CASE(SOLVER_CMISS_LIBRARY)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(SOLVER_PETSC_LIBRARY)
           ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
           ITERATIVE_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
        CASE DEFAULT
           LOCAL_ERROR="The specified solver library type of "// &
-            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a GMRES iterative linear solver."
         END SELECT
       CASE(SOLVER_ITERATIVE_BiCGSTAB)
         SELECT CASE(SOLVER_LIBRARY_TYPE)
         CASE(SOLVER_CMISS_LIBRARY)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(SOLVER_PETSC_LIBRARY)
           ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
           ITERATIVE_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
        CASE DEFAULT
           LOCAL_ERROR="The specified solver library type of "// &
-            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a BiCGSTAB iterative linear solver."
         END SELECT
       CASE(SOLVER_ITERATIVE_CONJGRAD_SQUARED)
         SELECT CASE(SOLVER_LIBRARY_TYPE)
         CASE(SOLVER_CMISS_LIBRARY)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(SOLVER_PETSC_LIBRARY)
           ITERATIVE_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
           ITERATIVE_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
        CASE DEFAULT
           LOCAL_ERROR="The specified solver library type of "// &
-            & TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a Conjugate gradient squared iterative linear solver."
         END SELECT
       CASE DEFAULT
         LOCAL_ERROR="The iterative linear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Iterative linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Iterative linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_SET")
@@ -10766,7 +11154,7 @@ CONTAINS
   !
 
   !>Returns the type of library to use for an iterative linear solver matrices.
-  SUBROUTINE SOLVER_LINEAR_ITERATIVE_MATRICES_LIBRARY_TYPE_GET(ITERATIVE_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*)
+  SUBROUTINE Solver_LinearIterativeMatricesLibraryTypeGet(ITERATIVE_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(LINEAR_ITERATIVE_SOLVER_TYPE), POINTER :: ITERATIVE_SOLVER !<A pointer the iterative linear solver to get the library type for.
@@ -10775,27 +11163,28 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("SOLVER_LINEAR_ITERATIVE_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+    ENTERS("Solver_LinearIterativeMatricesLibraryTypeGet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(ITERATIVE_SOLVER)) THEN
       MATRICES_LIBRARY_TYPE=ITERATIVE_SOLVER%SOLVER_MATRICES_LIBRARY
     ELSE
-      CALL FLAG_ERROR("Iterative linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Iterative linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_LINEAR_ITERATIVE_MATRICES_LIBRARY_TYPE_GET")
+    EXITS("Solver_LinearIterativeMatricesLibraryTypeGet")
     RETURN
-999 ERRORSEXITS("SOLVER_LINEAR_ITERATIVE_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR)
+999 ERRORS("Solver_LinearIterativeMatricesLibraryTypeGet",ERR,ERROR)
+    EXITS("Solver_LinearIterativeMatricesLibraryTypeGet")
     RETURN 1
    
-  END SUBROUTINE SOLVER_LINEAR_ITERATIVE_MATRICES_LIBRARY_TYPE_GET
+  END SUBROUTINE Solver_LinearIterativeMatricesLibraryTypeGet
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the maximum number of iterations for an iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativeMaximumIterationsSet
-  SUBROUTINE SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET(SOLVER,MAXIMUM_ITERATIONS,ERR,ERROR,*)
+  SUBROUTINE Solver_LinearIterativeMaximumIterationsSet(SOLVER,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the maximum number of iterations
@@ -10805,11 +11194,11 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET",ERR,ERROR,*999)
+    ENTERS("Solver_LinearIterativeMaximumIterationsSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
@@ -10818,40 +11207,40 @@ CONTAINS
                 IF(MAXIMUM_ITERATIONS>0) THEN
                   SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS=MAXIMUM_ITERATIONS
                 ELSE
-                  LOCAL_ERROR="The specified maximum iterations of "//TRIM(NUMBER_TO_VSTRING(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified maximum iterations of "//TRIM(NumberToVString(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
                     & " is invalid. The maximum number of iterations must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The solver is not a linear iterative solver.",ERR,ERROR,*999)
+              CALL FlagError("The solver is not a linear iterative solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a linear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET")
+    EXITS("Solver_LinearIterativeMaximumIterationsSet")
     RETURN
-999 ERRORSEXITS("SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET",ERR,ERROR)
+999 ERRORSEXITS("Solver_LinearIterativeMaximumIterationsSet",ERR,ERROR)
     RETURN 1
    
-  END SUBROUTINE SOLVER_LINEAR_ITERATIVE_MAXIMUM_ITERATIONS_SET
+  END SUBROUTINE Solver_LinearIterativeMaximumIterationsSet
         
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the type of preconditioner for an iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativePreconditionerTypeSet
-  SUBROUTINE SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET(SOLVER,ITERATIVE_PRECONDITIONER_TYPE,ERR,ERROR,*)
+  SUBROUTINE Solver_LinearIterativePreconditionerTypeSet(SOLVER,ITERATIVE_PRECONDITIONER_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the iterative linear solver type
@@ -10861,11 +11250,11 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET",ERR,ERROR,*999)
+    ENTERS("Solver_LinearIterativePreconditionerTypeSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
@@ -10879,7 +11268,7 @@ CONTAINS
                     CASE(SOLVER_ITERATIVE_NO_PRECONDITIONER)
                       SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_PRECONDITIONER_TYPE=SOLVER_ITERATIVE_NO_PRECONDITIONER
                     CASE(SOLVER_ITERATIVE_JACOBI_PRECONDITIONER)
-                      CALL FLAG_ERROR("Iterative Jacobi preconditioning is not implemented for a PETSc library.",ERR,ERROR,*999)
+                      CALL FlagError("Iterative Jacobi preconditioning is not implemented for a PETSc library.",ERR,ERROR,*999)
                     CASE(SOLVER_ITERATIVE_BLOCK_JACOBI_PRECONDITIONER)
                       SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_PRECONDITIONER_TYPE= &
                         & SOLVER_ITERATIVE_BLOCK_JACOBI_PRECONDITIONER
@@ -10897,46 +11286,46 @@ CONTAINS
                         & SOLVER_ITERATIVE_ADDITIVE_SCHWARZ_PRECONDITIONER
                    CASE DEFAULT
                       LOCAL_ERROR="The iterative preconditioner type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(ITERATIVE_PRECONDITIONER_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(ITERATIVE_PRECONDITIONER_TYPE,"*",ERR,ERROR))//" is invalid."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
                   CASE DEFAULT
                     LOCAL_ERROR="The solver library type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
+                      & TRIM(NumberToVString(SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT                  
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The solver is not a linear iterative solver.",ERR,ERROR,*999)
+              CALL FlagError("The solver is not a linear iterative solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a linear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET")
+    EXITS("Solver_LinearIterativePreconditionerTypeSet")
     RETURN
-999 ERRORSEXITS("SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET",ERR,ERROR)
+999 ERRORSEXITS("Solver_LinearIterativePreconditionerTypeSet",ERR,ERROR)
     RETURN 1
    
-  END SUBROUTINE SOLVER_LINEAR_ITERATIVE_PRECONDITIONER_TYPE_SET
+  END SUBROUTINE Solver_LinearIterativePreconditionerTypeSet
         
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the relative tolerance for an iterative linear solver. \see OPENCMISS::CMISSSolverLinearIterativeRelativeToleranceSet
-  SUBROUTINE SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET(SOLVER,RELATIVE_TOLERANCE,ERR,ERROR,*)
+  SUBROUTINE Solver_LinearIterativeRelativeToleranceSet(SOLVER,RELATIVE_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set 
@@ -10946,11 +11335,11 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET",ERR,ERROR,*999)
+    ENTERS("Solver_LinearIterativeRelativeToleranceSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
@@ -10959,40 +11348,40 @@ CONTAINS
                 IF(RELATIVE_TOLERANCE>ZERO_TOLERANCE) THEN
                   SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%RELATIVE_TOLERANCE=RELATIVE_TOLERANCE
                 ELSE
-                  LOCAL_ERROR="The specified relative tolerance of "//TRIM(NUMBER_TO_VSTRING(RELATIVE_TOLERANCE,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified relative tolerance of "//TRIM(NumberToVString(RELATIVE_TOLERANCE,"*",ERR,ERROR))// &
                     & " is invalid. The relative tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The solver is not a linear iterative solver.",ERR,ERROR,*999)
+              CALL FlagError("The solver is not a linear iterative solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a linear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET")
+    EXITS("Solver_LinearIterativeRelativeToleranceSet")
     RETURN
-999 ERRORSEXITS("SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET",ERR,ERROR)
+999 ERRORSEXITS("Solver_LinearIterativeRelativeToleranceSet",ERR,ERROR)
     RETURN 1
    
-  END SUBROUTINE SOLVER_LINEAR_ITERATIVE_RELATIVE_TOLERANCE_SET
+  END SUBROUTINE Solver_LinearIterativeRelativeToleranceSet
         
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the solution initialise type for an iterative linear solver
-  SUBROUTINE SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET(SOLVER,SOLUTION_INITIALISE_TYPE,ERR,ERROR,*)
+  SUBROUTINE Solver_LinearIterativeSolutionInitTypeSet(SOLVER,SOLUTION_INITIALISE_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set 
@@ -11002,11 +11391,11 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET",ERR,ERROR,*999)
+    ENTERS("Solver_LinearIterativeSolutionInitTypeSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
@@ -11021,32 +11410,32 @@ CONTAINS
                   SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_NO_CHANGE
                 CASE DEFAULT
                   LOCAL_ERROR="The specified solution initialise type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    & TRIM(NumberToVString(SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))//" is invalid."
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
-                CALL FLAG_ERROR("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The solver is not a linear iterative solver.",ERR,ERROR,*999)
+              CALL FlagError("The solver is not a linear iterative solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a linear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET")
+    EXITS("Solver_LinearIterativeSolutionInitTypeSet")
     RETURN
-999 ERRORSEXITS("SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET",ERR,ERROR)
+999 ERRORSEXITS("Solver_LinearIterativeSolutionInitTypeSet",ERR,ERROR)
     RETURN 1
    
-  END SUBROUTINE SOLVER_LINEAR_ITERATIVE_SOLUTION_INIT_TYPE_SET
+  END SUBROUTINE Solver_LinearIterativeSolutionInitTypeSet
         
   !
   !================================================================================================================================
@@ -11106,21 +11495,21 @@ CONTAINS
                                 CALL DISTRIBUTED_VECTOR_VALUES_SET(SOLVER_VECTOR,local_row,SOLVER_VALUE,ERR,ERROR,*999)
                               ELSE
                                 LOCAL_ERROR="The linear solver matrix has a zero pivot on row "// &
-                                  & TRIM(NUMBER_TO_VSTRING(local_row,"*",ERR,ERROR))//"."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  & TRIM(NumberToVString(local_row,"*",ERR,ERROR))//"."
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               ENDIF
                             ENDDO !matrix_idx
                             CALL DISTRIBUTED_VECTOR_DATA_RESTORE(RHS_VECTOR,RHS_DATA,ERR,ERROR,*999)
                           ELSE
-                            CALL FLAG_ERROR("Solver mapping row dofs mapping is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Solver mapping row dofs mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         SELECT CASE(LINEAR_ITERATIVE_SOLVER%SOLVER_LIBRARY)
                         CASE(SOLVER_CMISS_LIBRARY)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                         CASE(SOLVER_PETSC_LIBRARY)
                           IF(ASSOCIATED(RHS_VECTOR%PETSC)) THEN
                             IF(ASSOCIATED(SOLVER_VECTOR%PETSC)) THEN
@@ -11139,9 +11528,9 @@ CONTAINS
                                 !Do nothing
                               CASE DEFAULT
                                 LOCAL_ERROR="The linear iterative solver solution initialise type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(LINEAR_ITERATIVE_SOLVER%SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))// &
+                                  & TRIM(NumberToVString(LINEAR_ITERATIVE_SOLVER%SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))// &
                                   & " is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                               !Solver the linear system
 #ifdef TAUPROF
@@ -11215,46 +11604,46 @@ CONTAINS
                                 END SELECT
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Solver vector PETSc vector is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("RHS vector petsc PETSc is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE DEFAULT
                           LOCAL_ERROR="The solver library type of "// &
-                            & TRIM(NUMBER_TO_VSTRING(LINEAR_ITERATIVE_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(LINEAR_ITERATIVE_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Solver vector is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("RHS vector is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("RHS vector is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
                 LOCAL_ERROR="The given number of solver matrices of "// &
-                  & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                  & TRIM(NumberToVString(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
                   & " is invalid. There should only be one solver matrix for a linear iterative solver."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver solver matrices is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver matrices is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Linear solver solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Linear solver solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linear itreative solver linear solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Linear itreative solver linear solver is not associated.",ERR,ERROR,*999)
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Linear iterative solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Linear iterative solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LINEAR_ITERATIVE_SOLVE")
@@ -11283,7 +11672,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
@@ -11309,32 +11698,32 @@ CONTAINS
                     CASE(SOLVER_ITERATIVE_CONJGRAD_SQUARED)
                       SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%ITERATIVE_SOLVER_TYPE=SOLVER_ITERATIVE_CONJGRAD_SQUARED
                     CASE DEFAULT
-                      LOCAL_ERROR="The iterative solver type of "//TRIM(NUMBER_TO_VSTRING(ITERATIVE_SOLVER_TYPE,"*",ERR,ERROR))// &
+                      LOCAL_ERROR="The iterative solver type of "//TRIM(NumberToVString(ITERATIVE_SOLVER_TYPE,"*",ERR,ERROR))// &
                         & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
                   CASE DEFAULT
                     LOCAL_ERROR="The solver library type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
+                      & TRIM(NumberToVString(SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT                  
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The solver linear solver iterative solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The solver is not a linear iterative solver.",ERR,ERROR,*999)
+              CALL FlagError("The solver is not a linear iterative solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver linear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a linear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LINEAR_ITERATIVE_TYPE_SET")
@@ -11370,22 +11759,22 @@ CONTAINS
         IF(ASSOCIATED(DIRECT_SOLVER)) THEN
           CALL SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_GET(DIRECT_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Linear solver direct solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Linear solver direct solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
         ITERATIVE_SOLVER=>LINEAR_SOLVER%ITERATIVE_SOLVER
         IF(ASSOCIATED(ITERATIVE_SOLVER)) THEN
           CALL SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_GET(ITERATIVE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Linear solver iterative solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Linear solver iterative solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
-        LOCAL_ERROR="The linear solver type of "//TRIM(NUMBER_TO_VSTRING(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The linear solver type of "//TRIM(NumberToVString(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
           & " is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LINEAR_LIBRARY_TYPE_GET")
@@ -11421,22 +11810,22 @@ CONTAINS
         IF(ASSOCIATED(DIRECT_SOLVER)) THEN
           CALL SOLVER_LINEAR_DIRECT_LIBRARY_TYPE_SET(DIRECT_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Linear solver direct solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Linear solver direct solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
         ITERATIVE_SOLVER=>LINEAR_SOLVER%ITERATIVE_SOLVER
         IF(ASSOCIATED(ITERATIVE_SOLVER)) THEN
           CALL SOLVER_LINEAR_ITERATIVE_LIBRARY_TYPE_SET(ITERATIVE_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Linear solver iterative solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Linear solver iterative solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
-        LOCAL_ERROR="The linear solver type of "//TRIM(NUMBER_TO_VSTRING(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The linear solver type of "//TRIM(NumberToVString(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
           & " is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_LINEAR_LIBRARY_TYPE_SET")
@@ -11470,24 +11859,24 @@ CONTAINS
       CASE(SOLVER_LINEAR_DIRECT_SOLVE_TYPE)
         DIRECT_SOLVER=>LINEAR_SOLVER%DIRECT_SOLVER
         IF(ASSOCIATED(DIRECT_SOLVER)) THEN
-          CALL SOLVER_LINEAR_DIRECT_MATRICES_LIBRARY_TYPE_GET(DIRECT_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
+          CALL Solver_LinearDirectMatricesLibraryTypeGet(DIRECT_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Linear solver direct solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Linear solver direct solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
         ITERATIVE_SOLVER=>LINEAR_SOLVER%ITERATIVE_SOLVER
         IF(ASSOCIATED(ITERATIVE_SOLVER)) THEN
-          CALL SOLVER_LINEAR_ITERATIVE_MATRICES_LIBRARY_TYPE_GET(ITERATIVE_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
+          CALL Solver_LinearIterativeMatricesLibraryTypeGet(ITERATIVE_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Linear solver iterative solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Linear solver iterative solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
-        LOCAL_ERROR="The linear solver type of "//TRIM(NUMBER_TO_VSTRING(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The linear solver type of "//TRIM(NumberToVString(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
           & " is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_LINEAR_MATRICES_LIBRARY_TYPE_GET")
@@ -11542,9 +11931,9 @@ CONTAINS
         CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
           CALL SOLVER_LINEAR_ITERATIVE_SOLVE(LINEAR_SOLVER%ITERATIVE_SOLVER,ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="The linear solver type of "//TRIM(NUMBER_TO_VSTRING(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The linear solver type of "//TRIM(NumberToVString(LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))// &
             & " is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 #ifdef TAUPROF
         CALL TAU_STATIC_PHASE_STOP("Solve Phase")
@@ -11570,10 +11959,10 @@ CONTAINS
                   & SOLVER_VECTOR,ERR,ERROR,*999)
               ENDDO !solver_matrix_idx
             ELSE
-              CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
           ENDIF
           
 #ifdef TAUPROF
@@ -11592,10 +11981,10 @@ CONTAINS
 #endif
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linear solver solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Linear solver solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Linear solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_LINEAR_SOLVE")
@@ -11625,7 +12014,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*998)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*998)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_LINEAR_TYPE) THEN
           IF(ASSOCIATED(SOLVER%LINEAR_SOLVER)) THEN
@@ -11637,8 +12026,8 @@ CONTAINS
               CASE(SOLVER_LINEAR_ITERATIVE_SOLVE_TYPE)
                 CALL SOLVER_LINEAR_ITERATIVE_INITIALISE(SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="The linear solver type of "//TRIM(NUMBER_TO_VSTRING(LINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                LOCAL_ERROR="The linear solver type of "//TRIM(NumberToVString(LINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               !Finalise the old solver type
               SELECT CASE(SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE)
@@ -11648,20 +12037,20 @@ CONTAINS
                 CALL SOLVER_LINEAR_ITERATIVE_FINALISE(SOLVER%LINEAR_SOLVER%ITERATIVE_SOLVER,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The linear solver type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               SOLVER%LINEAR_SOLVER%LINEAR_SOLVE_TYPE=LINEAR_SOLVE_TYPE
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver linear solver is not associated.",ERR,ERROR,*998)
+            CALL FlagError("The solver linear solver is not associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a linear solver.",ERR,ERROR,*998)
+          CALL FlagError("The solver is not a linear solver.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("SOLVER_LINEAR_TYPE_SET")
@@ -11834,7 +12223,7 @@ CONTAINS
       ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN 
         DYNAMIC_SOLVER=>SOLVER%LINKING_SOLVER%DYNAMIC_SOLVER
       ELSE
-        CALL FLAG_ERROR("Dynamic solver solve type is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Dynamic solver solve type is not associated.",ERR,ERROR,*999)
       END IF
       IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
         IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) THEN
@@ -11865,9 +12254,9 @@ CONTAINS
             DYNAMIC_VELOCITY_FACTOR=DELTA_T*DELTA_T/2.0_DP
             DYNAMIC_ACCELERATION_FACTOR=DELTA_T
           CASE DEFAULT
-            LOCAL_ERROR="The dynamic solver degree of "//TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The dynamic solver degree of "//TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ENDIF
         SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
@@ -11935,7 +12324,7 @@ CONTAINS
                                             CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
                                               & STIFFNESS_MATRIX_COEFFICIENT,STIFFNESS_MATRIX,ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
 
@@ -11945,7 +12334,7 @@ CONTAINS
                                             CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
                                               & DAMPING_MATRIX_COEFFICIENT,DAMPING_MATRIX,ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
 
@@ -11955,7 +12344,7 @@ CONTAINS
                                             CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
                                               & MASS_MATRIX_COEFFICIENT,MASS_MATRIX,ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Dynamic mass matrix is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Dynamic mass matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
 
@@ -11968,10 +12357,10 @@ CONTAINS
                                               CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
                                                 & -1.0_DP,MASS_MATRIX,ERR,ERROR,*999)
                                             ELSE
-                                              CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
+                                              CALL FlagError("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
                                             ENDIF
                                           ELSE
-                                            CALL FLAG_ERROR("Can not perform initial solve with no mass matrix.",ERR,ERROR,*999)
+                                            CALL FlagError("Can not perform initial solve with no mass matrix.",ERR,ERROR,*999)
                                           ENDIF
                                         ELSE
                                           IF(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER/=0) THEN
@@ -11980,38 +12369,38 @@ CONTAINS
                                               CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, &
                                                 & -1.0_DP,DAMPING_MATRIX,ERR,ERROR,*999)
                                             ELSE
-                                              CALL FLAG_ERROR("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
+                                              CALL FlagError("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
                                             ENDIF
                                           ELSE
-                                            CALL FLAG_ERROR("Can not perform initial solve with no damping matrix.",ERR,ERROR,*999)
+                                            CALL FlagError("Can not perform initial solve with no damping matrix.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Equations matrices dynamic matrices is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrices dynamic matrices is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
                                   NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
                                   IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
                                     EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
                                     IF(.NOT.ASSOCIATED(EQUATIONS_MATRICES)) THEN
-                                      CALL FLAG_ERROR("Equations matrices not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrices not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                                   ENDIF
-                                  !CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
+                                  !CALL FlagError("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
                               LOCAL_ERROR="Solver mapping equations is not associated for equations set number "// &
-                                & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                             NULLIFY(JACOBIAN_TO_SOLVER_MAP)
                             NULLIFY(JACOBIAN_MATRIX)
@@ -12032,12 +12421,12 @@ CONTAINS
                                       CALL SOLVER_MATRIX_JACOBIAN_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx, & 
                                         & JACOBIAN_MATRIX_COEFFICIENT,JACOBIAN_MATRIX,ERR,ERROR,*999)
                                     ELSE
-                                      CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Jacobian matrix is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
                                     LOCAL_ERROR="Jacobian to solver map is not associated for Jacobian number "// &
-                                      & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      & TRIM(NumberToVString(equations_matrix_idx,"*",ERR,ERROR))//"."
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   ENDIF
                                 ENDDO
                               ENDIF
@@ -12060,7 +12449,7 @@ CONTAINS
                                   CASE(INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC)
                                     MatrixCoefficients(1)=DAMPING_MATRIX_COEFFICIENT
                                   CASE DEFAULT
-                                    CALL FLAG_ERROR("Not implemented.",Err,Error,*999)
+                                    CALL FlagError("Not implemented.",Err,Error,*999)
                                   END SELECT
                                   IF(INTERFACE_MATRIX%HAS_TRANSPOSE) THEN
                                     SELECT CASE(INTERFACE_MATRIX%INTERFACE_MATRIX_TRANSPOSE_TIME_DEPENDENCE_TYPE)
@@ -12069,7 +12458,7 @@ CONTAINS
                                     CASE(INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC)
                                       MatrixCoefficients(2)=DAMPING_MATRIX_COEFFICIENT
                                     CASE DEFAULT
-                                      CALL FLAG_ERROR("Not implemented.",Err,Error,*999)
+                                      CALL FlagError("Not implemented.",Err,Error,*999)
                                     END SELECT
                                   ELSE
                                     MatrixCoefficients(2)=0.0_DP
@@ -12077,10 +12466,10 @@ CONTAINS
                                   CALL SOLVER_MATRIX_INTERFACE_MATRIX_ADD(SOLVER_MATRIX,interface_condition_idx, &
                                     & MatrixCoefficients,INTERFACE_MATRIX,Err,Error,*999)
                                 ELSE
-                                  CALL FLAG_ERROR("The interface matrix is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("The interface matrix is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("The interface matrix interface to solver map is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("The interface matrix interface to solver map is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ENDDO !interface_matrix_idx
                           ENDDO !interface_condition_idx
@@ -12092,7 +12481,7 @@ CONTAINS
                           ENDIF
                           PREVIOUS_SOLVER_DISTRIBUTED_MATRIX=>SOLVER_DISTRIBUTED_MATRIX
                         ELSE
-                          CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
                         ENDIF
 
                         IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
@@ -12100,15 +12489,15 @@ CONTAINS
                         ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN 
                           IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) SOLVER_MATRIX%UPDATE_MATRIX=.TRUE.
                         ELSE
-                          CALL FLAG_ERROR("Dynamic solver solve type is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Dynamic solver solve type is not associated.",ERR,ERROR,*999)
                         END IF
 
                       ENDIF !Update matrix
                     ELSE
-                      CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Invalid number of solver matrices.",ERR,ERROR,*999)
+                    CALL FlagError("Invalid number of solver matrices.",ERR,ERROR,*999)
                   ENDIF
                   IF(ASSOCIATED(PREVIOUS_SOLVER_DISTRIBUTED_MATRIX)) THEN
                     CALL DISTRIBUTED_MATRIX_UPDATE_FINISH(PREVIOUS_SOLVER_DISTRIBUTED_MATRIX,ERR,ERROR,*999)
@@ -12188,7 +12577,7 @@ CONTAINS
 !                                              & -DYNAMIC_SOLVER%THETA(1),STIFFNESS_MATRIX%MATRIX, &
                                               & PREDICTED_MEAN_DISPLACEMENT_VECTOR,DYNAMIC_TEMP_VECTOR,ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
                                         IF(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER/=0.AND. &
@@ -12203,7 +12592,7 @@ CONTAINS
                                               & DAMPING_MATRIX%MATRIX,PREDICTED_MEAN_VELOCITY_VECTOR,DYNAMIC_TEMP_VECTOR, &
                                               & ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
                                         IF(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER/=0.AND. &
@@ -12215,14 +12604,14 @@ CONTAINS
                                               & FIELD_MEAN_PREDICTED_ACCELERATION_SET_TYPE,PREDICTED_MEAN_ACCELERATION_VECTOR, &
                                               & ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Dynamic mass matrix is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Dynamic mass matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
                                       ELSE
-                                        CALL FLAG_ERROR("Equations matrices dynamic matrices is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Equations matrices dynamic matrices is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Dynamic variable is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Dynamic variable is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
                                     NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
@@ -12231,9 +12620,9 @@ CONTAINS
                                       DYNAMIC_VARIABLE_TYPE=FIELD_U_VARIABLE_TYPE
                                       IF(ASSOCIATED(DYNAMIC_TEMP_VECTOR)) NULLIFY(DYNAMIC_TEMP_VECTOR)
                                     ELSE
-                                      CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                                     ENDIF
-                                    !CALL FLAG_ERROR("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
+                                    !CALL FlagError("Equations mapping dynamic mapping is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                   !Calculate the contributions from any linear matrices 
                                   LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
@@ -12257,16 +12646,16 @@ CONTAINS
                                             CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
                                               & LINEAR_MATRIX%MATRIX,DEPENDENT_VECTOR,LINEAR_TEMP_VECTOR,ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Linear variable is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Linear variable is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ELSE
                                           LOCAL_ERROR="Linear matrix is not associated for linear matrix number "// &
-                                            & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            & TRIM(NumberToVString(equations_matrix_idx,"*",ERR,ERROR))//"."
+                                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         ENDIF
                                       ENDDO !equations_matrix_idx
                                     ELSE
-                                      CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ENDIF
                                   SOURCE_MAPPING=>EQUATIONS_MAPPING%SOURCE_MAPPING
@@ -12275,7 +12664,7 @@ CONTAINS
                                     IF(ASSOCIATED(SOURCE_VECTOR)) THEN
                                       DISTRIBUTED_SOURCE_VECTOR=>SOURCE_VECTOR%VECTOR
                                     ELSE
-                                      CALL FLAG_ERROR("Source vector vector is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Source vector vector is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ENDIF
                                   RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
@@ -12397,9 +12786,9 @@ CONTAINS
                                               FIELD_PREVIOUS_ACCELERATION_SET_TYPE,PREVIOUS_ACCELERATION_VECTOR,ERR,ERROR,*999)
                                           CASE DEFAULT
                                             LOCAL_ERROR="The dynamic solver degree of "// &
-                                              & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
+                                              & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
                                               & " is invalid."
-                                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                           END SELECT
 
                                           DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
@@ -12482,9 +12871,9 @@ CONTAINS
                                                           & DYNAMIC_ACCELERATION_FACTOR
                                                        CASE DEFAULT
                                                         LOCAL_ERROR="The dynamic solver degree of "// &
-                                                          & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
+                                                          & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
                                                           & " is invalid."
-                                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                                       END SELECT
                                                          
 
@@ -12581,9 +12970,9 @@ CONTAINS
                                                                   ENDDO !solver_row_idx
                                                                 ENDIF
                                                               CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                                               CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                                               CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                                                                 SPARSITY_INDICES=>DEPENDENT_BOUNDARY_CONDITIONS% &
                                                                   & DIRICHLET_BOUNDARY_CONDITIONS%DYNAMIC_SPARSITY_INDICES( &
@@ -12623,22 +13012,22 @@ CONTAINS
                                                                     ENDIF
                                                                   ENDDO !equations_row_number2
                                                                 ELSE
-                                                                  CALL FLAG_ERROR("Sparsity indices are not associated.", &
+                                                                  CALL FlagError("Sparsity indices are not associated.", &
                                                                     & ERR,ERROR,*999)
                                                                 ENDIF
                                                               CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                                               CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                                                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                                               CASE DEFAULT
                                                                 LOCAL_ERROR="The storage type of "// &
-                                                                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_MATRIX%STORAGE_TYPE,"*", &
+                                                                  & TRIM(NumberToVString(EQUATIONS_MATRIX%STORAGE_TYPE,"*", &
                                                                   & ERR,ERROR))//" is invalid."
-                                                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                                               END SELECT
                                                             ENDIF
                                                           ELSE
-                                                            CALL FLAG_ERROR("Dirichlet boundary conditions is &
+                                                            CALL FlagError("Dirichlet boundary conditions is &
                                                               & not associated.",ERR,ERROR,*999)
                                                           ENDIF
                                                         ENDDO !matrix_idx
@@ -12672,43 +13061,43 @@ CONTAINS
                                               ENDDO !solver_row_idx
                                             CASE(BOUNDARY_CONDITION_DOF_MIXED)
                                               !Set Robin or is it Cauchy??? boundary conditions
-                                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                             CASE DEFAULT
                                               LOCAL_ERROR="The RHS boundary condition of "// &
-                                                & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                                & TRIM(NumberToVString(rhs_boundary_condition,"*",ERR,ERROR))// &
                                                 & " for RHS variable dof number "// &
-                                                & TRIM(NUMBER_TO_VSTRING(rhs_variable_dof,"*",ERR,ERROR))//" is invalid."
-                                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                                & TRIM(NumberToVString(rhs_variable_dof,"*",ERR,ERROR))//" is invalid."
+                                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                             END SELECT
                                           ENDDO !equations_row_number
                                         ELSE
-                                          CALL FLAG_ERROR("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
+                                          CALL FlagError("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
                                         ENDIF
                                       ELSE
-                                        CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Equations matrices RHS vector is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrices RHS vector is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                     CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,RHS_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                                       & RHS_PARAMETERS,ERR,ERROR,*999)
                                   ELSE
-                                    CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !equations_set_idx
               !!!! TODO TODO !!!! ???
@@ -12752,38 +13141,38 @@ CONTAINS
                                             ENDDO !solver_row_idx
                                           ENDDO !interface_column_idx
                                         ELSE
-                                          CALL FLAG_ERROR("Interface matrices RHS vector is not associated.",ERR,ERROR,*999)
+                                          CALL FlagError("Interface matrices RHS vector is not associated.",ERR,ERROR,*999)
                                         ENDIF
                                       ELSE
-                                        CALL FLAG_ERROR("Interface equations interface matrices is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Interface equations interface matrices is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Interface mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Interface mapping RHS mapping is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Interface Lagrange field is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Interface Lagrange field is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Interface Lagrange is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Interface Lagrange is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Interface equations interface mapping is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Interface equations interface mapping is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Interface condition equations is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Interface condition equations is not associated.",ERR,ERROR,*999)
                             ENDIF
                           CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE DEFAULT
                             LOCAL_ERROR="The interface condition method of "// &
-                              & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
+                              & TRIM(NumberToVString(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
                               & " is invalid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT
                         ELSE
-                          CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !interface_condition_idx
               !        
@@ -12794,7 +13183,7 @@ CONTAINS
                       CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_RHS_VECTOR,CHECK_DATA,ERR,ERROR,*999)
 
                     ELSE
-                      CALL FLAG_ERROR("The solver RHS vector is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("The solver RHS vector is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ENDIF
                   IF(SOLVER%OUTPUT_TYPE>=SOLVER_TIMING_OUTPUT) THEN
@@ -12870,7 +13259,7 @@ CONTAINS
                                               & STIFFNESS_MATRIX_COEFFICIENT,STIFFNESS_MATRIX%MATRIX,INCREMENTAL_VECTOR, & 
                                               & DYNAMIC_TEMP_VECTOR,ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Dynamic stiffness matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
                                         IF(DYNAMIC_MAPPING%DAMPING_MATRIX_NUMBER/=0.AND. &
@@ -12881,7 +13270,7 @@ CONTAINS
                                               & DAMPING_MATRIX_COEFFICIENT,DAMPING_MATRIX%MATRIX,INCREMENTAL_VECTOR, & 
                                               & DYNAMIC_TEMP_VECTOR,ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Dynamic damping matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
                                         IF(DYNAMIC_MAPPING%MASS_MATRIX_NUMBER/=0.AND. &
@@ -12892,14 +13281,14 @@ CONTAINS
                                               & MASS_MATRIX_COEFFICIENT,MASS_MATRIX%MATRIX,INCREMENTAL_VECTOR, & 
                                               & DYNAMIC_TEMP_VECTOR,ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Dynamic mass matrix is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Dynamic mass matrix is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ENDIF
                                       ELSE
-                                        CALL FLAG_ERROR("Dynamic variable is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Dynamic variable is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Equations matrices dynamic matrices is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrices dynamic matrices is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ENDIF
                                   !Calculate the contributions from any linear matrices 
@@ -12924,16 +13313,16 @@ CONTAINS
                                             CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE, &
                                               & 1.0_DP,LINEAR_MATRIX%MATRIX,DEPENDENT_VECTOR,LINEAR_TEMP_VECTOR,ERR,ERROR,*999)
                                           ELSE
-                                            CALL FLAG_ERROR("Linear variable is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Linear variable is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ELSE
                                           LOCAL_ERROR="Linear matrix is not associated for linear matrix number "// &
-                                            & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            & TRIM(NumberToVString(equations_matrix_idx,"*",ERR,ERROR))//"."
+                                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         ENDIF
                                       ENDDO !equations_matrix_idx
                                     ELSE
-                                      CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ENDIF
                                   !Calculate the solver residual
@@ -12990,25 +13379,25 @@ CONTAINS
                                         ENDIF
                                       ENDDO !equations_row_number
                                     ELSE
-                                      CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !equations_set_idx
 
@@ -13052,7 +13441,7 @@ CONTAINS
                                         CASE(INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC)
                                           MatrixCoefficients(1)=DAMPING_MATRIX_COEFFICIENT
                                         CASE DEFAULT
-                                          CALL FLAG_ERROR("Not implemented.",Err,Error,*999)
+                                          CALL FlagError("Not implemented.",Err,Error,*999)
                                         END SELECT
                                         IF(INTERFACE_MATRIX%HAS_TRANSPOSE) THEN
                                           SELECT CASE(INTERFACE_MATRIX%INTERFACE_MATRIX_TRANSPOSE_TIME_DEPENDENCE_TYPE)
@@ -13061,7 +13450,7 @@ CONTAINS
                                           CASE(INTERFACE_MATRIX_FIRST_ORDER_DYNAMIC)
                                             MatrixCoefficients(2)=DAMPING_MATRIX_COEFFICIENT
                                           CASE DEFAULT
-                                            CALL FLAG_ERROR("Not implemented.",Err,Error,*999)
+                                            CALL FlagError("Not implemented.",Err,Error,*999)
                                           END SELECT
                                         ELSE
                                           MatrixCoefficients(2)=0.0_DP
@@ -13099,7 +13488,7 @@ CONTAINS
                                           ENDIF
                                         ENDDO !interface_row_number
                                       ELSE
-                                        CALL FLAG_ERROR("Interface variable is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Interface variable is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                       !Calculate the transposed interface matrix-dependent variable product residual contribution
                                       dependent_variable_type=INTERFACE_MAPPING% &
@@ -13155,12 +13544,12 @@ CONTAINS
                                           ENDIF
                                         ENDDO !interface_row_number
                                       ELSE
-                                        CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Dependent variable is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
                                       LOCAL_ERROR="Interface matrix is not associated for linear matrix number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        & TRIM(NumberToVString(equations_matrix_idx,"*",ERR,ERROR))//"."
+                                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     ENDIF
                                   ENDDO !interface_matrix_idx
                                   SELECT CASE(INTERFACE_CONDITION%METHOD)
@@ -13204,28 +13593,28 @@ CONTAINS
                                           ENDIF
                                         ENDDO !interface_row_number
                                       ELSE
-                                        CALL FLAG_ERROR("Interface variable is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Interface variable is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
                                       LOCAL_ERROR="Interface matrix is not associated for linear matrix number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        & TRIM(NumberToVString(equations_matrix_idx,"*",ERR,ERROR))//"."
+                                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     ENDIF
                                   ENDSELECT
                                 ELSE
-                                  CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Interface equations is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Interface equations is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Interface Lagrange field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Interface Lagrange field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !interface_condition_idx
                   !
@@ -13236,7 +13625,7 @@ CONTAINS
                       CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_RESIDUAL_VECTOR,CHECK_DATA2,ERR,ERROR,*999)
 
                     ELSE
-                      CALL FLAG_ERROR("The solver residual vector is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("The solver residual vector is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ENDIF
                   IF(ASSOCIATED(SOLVER_RESIDUAL_VECTOR)) THEN
@@ -13287,33 +13676,33 @@ CONTAINS
                                   & FIELD_PREVIOUS_ACCELERATION_SET_TYPE,FIELD_VELOCITY_VALUES_SET_TYPE,ERR,ERROR,*999)
                               CASE DEFAULT
                                 LOCAL_ERROR="The dynamic solver degree of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                             ELSE
                               LOCAL_ERROR="Equations mapping dynamic mapping is not associated for equations set index number "// &
-                                & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ELSE
                             LOCAL_ERROR="Equations equations mapping is not associated for equations set index number "// &
-                              & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           ENDIF
                         ELSE
                           LOCAL_ERROR="Equations set equations is not associated for equations set index number "// &
-                            & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Equations set dependent field is not associated for equations set index number "// &
-                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="Equations set is not associated for equations set index number "// &
-                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDDO !equations_set_idx
                 ENDIF
@@ -13323,19 +13712,19 @@ CONTAINS
                 CALL SOLVER_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,SELECTION_TYPE,SOLVER_MATRICES,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver solver matrices is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver matrices is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver dynamic solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_MATRICES_DYNAMIC_ASSEMBLE")
@@ -13452,10 +13841,10 @@ CONTAINS
                               CALL SOLVER_MATRIX_EQUATIONS_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx,1.0_DP,EQUATIONS_MATRIX, &
                                 & ERR,ERROR,*999)
                             ELSE
-                              CALL FLAG_ERROR("The equations matrix is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("The equations matrix is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("The equations matrix equations to solver map is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("The equations matrix equations to solver map is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !equations_matrix_idx
                         IF(SELECTION_TYPE==SOLVER_MATRICES_ALL.OR. &
@@ -13473,12 +13862,12 @@ CONTAINS
                                 CALL SOLVER_MATRIX_JACOBIAN_MATRIX_ADD(SOLVER_MATRIX,equations_set_idx,1.0_DP,JACOBIAN_MATRIX, &
                                   & ERR,ERROR,*999)
                               ELSE
-                                CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Jacobian matrix is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
                               LOCAL_ERROR="Jacobian to solver map is not associated for Jacobian number "// &
-                                & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                & TRIM(NumberToVString(equations_matrix_idx,"*",ERR,ERROR))//"."
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ENDDO
                         ENDIF
@@ -13497,10 +13886,10 @@ CONTAINS
                               CALL SOLVER_MATRIX_INTERFACE_MATRIX_ADD(SOLVER_MATRIX,interface_condition_idx,(/1.0_DP,1.0_DP/), &
                                 & INTERFACE_MATRIX,ERR,ERROR,*999)
                             ELSE
-                              CALL FLAG_ERROR("The interface matrix is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("The interface matrix is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("The interface matrix interface to solver map is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("The interface matrix interface to solver map is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !interface_matrix_idx
                       ENDDO !interface_condition_idx
@@ -13511,11 +13900,11 @@ CONTAINS
                       ENDIF
                       PREVIOUS_SOLVER_DISTRIBUTED_MATRIX=>SOLVER_DISTRIBUTED_MATRIX
                     ELSE
-                      CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ENDIF !Update matrix
                 ELSE
-                  CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !solver_matrix_idx
               IF(ASSOCIATED(PREVIOUS_SOLVER_DISTRIBUTED_MATRIX)) THEN
@@ -13586,16 +13975,16 @@ CONTAINS
                                         CALL DISTRIBUTED_MATRIX_BY_VECTOR_ADD(DISTRIBUTED_MATRIX_VECTOR_NO_GHOSTS_TYPE,1.0_DP, &
                                           & LINEAR_MATRIX%MATRIX,DEPENDENT_VECTOR,LINEAR_TEMP_VECTOR,ERR,ERROR,*999)
                                       ELSE
-                                        CALL FLAG_ERROR("Linear variable is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Linear variable is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
                                       LOCAL_ERROR="Linear matrix is not associated for linear matrix number "// &
-                                        & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        & TRIM(NumberToVString(equations_matrix_idx,"*",ERR,ERROR))//"."
+                                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     ENDIF
                                   ENDDO !equations_matrix_idx
                                 ELSE
-                                  CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ENDIF
                               !Calculate the solver residual
@@ -13641,7 +14030,7 @@ CONTAINS
                                     ENDIF
                                   ENDDO !equations_row_number
                                 ELSE
-                                  CALL FLAG_ERROR("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Equations matrices nonlinear matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                                 DO equations_row_number=1,EQUATIONS_MAPPING%TOTAL_NUMBER_OF_ROWS
@@ -13675,19 +14064,19 @@ CONTAINS
                                 ENDDO !equations_row_number
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !equations_set_idx
                   !Loop over the interface conditions
@@ -13748,7 +14137,7 @@ CONTAINS
                                       ENDIF
                                     ENDDO !interface_row_number
                                   ELSE
-                                    CALL FLAG_ERROR("Interface variable is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Interface variable is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                   !Calculate the transposed interface matrix-dependent variable product residual contribution
                                   dependent_variable_type=INTERFACE_MAPPING% &
@@ -13787,12 +14176,12 @@ CONTAINS
                                       ENDIF
                                     ENDDO !interface_row_number
                                   ELSE
-                                    CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Dependent variable is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
                                   LOCAL_ERROR="Interface matrix is not associated for linear matrix number "// &
-                                    & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    & TRIM(NumberToVString(equations_matrix_idx,"*",ERR,ERROR))//"."
+                                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                 ENDIF
                               ENDDO !interface_matrix_idx
                               SELECT CASE(INTERFACE_CONDITION%METHOD)
@@ -13836,34 +14225,34 @@ CONTAINS
                                       ENDIF
                                     ENDDO !interface_row_number
                                   ELSE
-                                    CALL FLAG_ERROR("Interface variable is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Interface variable is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
                                   LOCAL_ERROR="Interface matrix is not associated for linear matrix number "// &
-                                    & TRIM(NUMBER_TO_VSTRING(equations_matrix_idx,"*",ERR,ERROR))//"."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    & TRIM(NumberToVString(equations_matrix_idx,"*",ERR,ERROR))//"."
+                                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                 ENDIF
                               ENDSELECT
                             ELSE
-                              CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Interface equations is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Interface equations is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Interface Lagrange field is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Interface Lagrange field is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !interface_condition_idx
                   !Start the update the solver residual vector values
                   CALL DISTRIBUTED_VECTOR_UPDATE_START(SOLVER_RESIDUAL_VECTOR,ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("The solver residual vector is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("The solver residual vector is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDIF
               IF(ASSOCIATED(SOLVER_RESIDUAL_VECTOR)) THEN
@@ -13907,7 +14296,7 @@ CONTAINS
                       IF(ASSOCIATED(SOLVER_RESIDUAL_VECTOR)) THEN
                         SUBTRACT_FIXED_BCS_FROM_RESIDUAL=.TRUE.
                       ELSE
-                        CALL FLAG_ERROR("The solver residual vector is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("The solver residual vector is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ENDIF
                   ENDIF
@@ -13929,7 +14318,7 @@ CONTAINS
                                 IF(ASSOCIATED(SOURCE_VECTOR)) THEN
                                   DISTRIBUTED_SOURCE_VECTOR=>SOURCE_VECTOR%VECTOR
                                 ELSE
-                                  CALL FLAG_ERROR("Source vector vector is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Source vector vector is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ENDIF
                               RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
@@ -13948,7 +14337,7 @@ CONTAINS
                                     LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
                                     IF(ASSOCIATED(LINEAR_MATRICES)) THEN
                                       ALLOCATE(DEPENDENT_PARAMETERS(LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES),STAT=ERR)
-                                      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate dependent_parameters.",ERR,ERROR,*999)
+                                      IF(ERR/=0) CALL FlagError("Could not allocate dependent_parameters.",ERR,ERROR,*999)
                                       DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
                                         variable_type=LINEAR_MAPPING%LINEAR_MATRIX_VARIABLE_TYPES(variable_idx)
                                         NULLIFY(DEPENDENT_PARAMETERS(variable_idx)%PTR)
@@ -13956,7 +14345,7 @@ CONTAINS
                                           & DEPENDENT_PARAMETERS(variable_idx)%PTR,ERR,ERROR,*999)
                                       ENDDO !variable_idx
                                     ELSE
-                                      CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ENDIF
                                   BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
@@ -14113,9 +14502,9 @@ CONTAINS
                                                             ENDDO !solver_row_idx
                                                           ENDIF
                                                         CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                                         CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                                         CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                                                           SPARSITY_INDICES=>DEPENDENT_BOUNDARY_CONDITIONS% &
                                                             & DIRICHLET_BOUNDARY_CONDITIONS%LINEAR_SPARSITY_INDICES( &
@@ -14151,21 +14540,21 @@ CONTAINS
                                                               ENDIF
                                                             ENDDO !equations_row_number2
                                                           ELSE
-                                                            CALL FLAG_ERROR("Sparsity indices are not associated.",ERR,ERROR,*999)
+                                                            CALL FlagError("Sparsity indices are not associated.",ERR,ERROR,*999)
                                                           ENDIF
                                                         CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                                         CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                                         CASE DEFAULT
                                                           LOCAL_ERROR="The storage type of "// &
-                                                            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_MATRIX%STORAGE_TYPE,"*", &
+                                                            & TRIM(NumberToVString(EQUATIONS_MATRIX%STORAGE_TYPE,"*", &
                                                             & ERR,ERROR))//" is invalid."
-                                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                                         END SELECT
                                                       ENDIF
                                                     ELSE
-                                                      CALL FLAG_ERROR("Dirichlet boundary conditions is not associated.",ERR, &
+                                                      CALL FlagError("Dirichlet boundary conditions is not associated.",ERR, &
                                                         & ERROR,*999)
                                                     ENDIF
                                                   ENDDO !matrix_idx
@@ -14201,13 +14590,13 @@ CONTAINS
                                           ENDIF
                                         CASE(BOUNDARY_CONDITION_DOF_MIXED)
                                           !Set Robin or is it Cauchy??? boundary conditions
-                                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The RHS boundary condition of "// &
-                                            & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
+                                            & TRIM(NumberToVString(rhs_boundary_condition,"*",ERR,ERROR))// &
                                             & " for RHS variable dof number "// &
-                                            & TRIM(NUMBER_TO_VSTRING(rhs_variable_dof,"*",ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            & TRIM(NumberToVString(rhs_variable_dof,"*",ERR,ERROR))//" is invalid."
+                                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       ENDDO !equations_row_number
                                       IF(ASSOCIATED(SOLVER_RESIDUAL_VECTOR)) THEN
@@ -14221,10 +14610,10 @@ CONTAINS
                                       NULLIFY(CHECK_DATA4)
                                       CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_RHS_VECTOR,CHECK_DATA4,ERR,ERROR,*999)    
                                     ELSE
-                                      CALL FLAG_ERROR("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Equations set boundary conditions is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                   IF(ASSOCIATED(LINEAR_MAPPING)) THEN
                                     DO variable_idx=1,LINEAR_MAPPING%NUMBER_OF_LINEAR_MATRIX_VARIABLES
@@ -14235,24 +14624,24 @@ CONTAINS
                                     IF(ALLOCATED(DEPENDENT_PARAMETERS)) DEALLOCATE(DEPENDENT_PARAMETERS)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Equations matrices RHS vector is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Equations matrices RHS vector is not associated.",ERR,ERROR,*999)
                                 ENDIF
                                 CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,RHS_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                                   & RHS_PARAMETERS,ERR,ERROR,*999)
                               ELSE
-                                CALL FLAG_ERROR("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ENDIF
                   ENDDO !equations_set_idx
@@ -14296,38 +14685,38 @@ CONTAINS
                                         ENDDO !solver_row_idx
                                       ENDDO !interface_column_idx
                                     ELSE
-                                      CALL FLAG_ERROR("Interface matrices RHS vector is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Interface matrices RHS vector is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Interface equations interface matrices is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Interface equations interface matrices is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Interface mapping RHS mapping is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Interface mapping RHS mapping is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Interface Lagrange field is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Interface Lagrange field is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Interface Lagrange is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Interface Lagrange is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Interface equations interface mapping is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Interface equations interface mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Interface condition equations is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Interface condition equations is not associated.",ERR,ERROR,*999)
                         ENDIF
                       CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                       CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                       CASE DEFAULT
                         LOCAL_ERROR="The interface condition method of "// &
-                          & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
+                          & TRIM(NumberToVString(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
                           & " is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !interface_condition_idx
                   !Start the update the solver RHS vector values
@@ -14335,7 +14724,7 @@ CONTAINS
                   NULLIFY(CHECK_DATA)
                   CALL DISTRIBUTED_VECTOR_DATA_GET(SOLVER_RHS_VECTOR,CHECK_DATA,ERR,ERROR,*999)   
                 ELSE
-                  CALL FLAG_ERROR("The solver RHS vector is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("The solver RHS vector is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDIF
               IF(SOLVER%OUTPUT_TYPE>=SOLVER_TIMING_OUTPUT) THEN
@@ -14358,16 +14747,16 @@ CONTAINS
               CALL SOLVER_MATRICES_OUTPUT(GENERAL_OUTPUT_TYPE,SELECTION_TYPE,SOLVER_MATRICES,ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver solver matrices is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver solver matrices is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver matrices solution mapping is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver matrices solution mapping is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("SOLVER_MATRICES_STATIC_ASSEMBLE")
@@ -14405,41 +14794,41 @@ CONTAINS
         IF(ASSOCIATED(LINEAR_SOLVER)) THEN
           CALL SOLVER_LINEAR_MATRICES_LIBRARY_TYPE_GET(LINEAR_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Solver linear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver linear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_NONLINEAR_TYPE)
         NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
         IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
           CALL SOLVER_NONLINEAR_MATRICES_LIBRARY_TYPE_GET(NONLINEAR_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver nonlinear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_DYNAMIC_TYPE)
-        CALL FLAG_ERROR("Cannot get the solver matrices library for a dynamic solver.",ERR,ERROR,*999)
+        CALL FlagError("Cannot get the solver matrices library for a dynamic solver.",ERR,ERROR,*999)
       CASE(SOLVER_DAE_TYPE)
-        CALL FLAG_ERROR("Cannot get the solver matrices library for an differential-algebraic equations solver.",ERR,ERROR,*999)
+        CALL FlagError("Cannot get the solver matrices library for an differential-algebraic equations solver.",ERR,ERROR,*999)
       CASE(SOLVER_EIGENPROBLEM_TYPE)
         EIGENPROBLEM_SOLVER=>SOLVER%EIGENPROBLEM_SOLVER
         IF(ASSOCIATED(EIGENPROBLEM_SOLVER)) THEN
-          CALL SOLVER_EIGENPROBLEM_MATRICES_LIBRARY_TYPE_GET(EIGENPROBLEM_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
+          CALL Solver_EigenproblemMatricesLibraryTypeGet(EIGENPROBLEM_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Solver eigenproblem solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver eigenproblem solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_OPTIMISER_TYPE)
         OPTIMISER_SOLVER=>SOLVER%OPTIMISER_SOLVER
         IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
           CALL SOLVER_OPTIMISER_MATRICES_LIBRARY_TYPE_GET(OPTIMISER_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Solver optimiser solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver optimiser solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_CELLML_EVALUATOR_TYPE)
-        CALL FLAG_ERROR("Cannot get the solver matrices library for a CellML evaluator solver.",ERR,ERROR,*999)
+        CALL FlagError("Cannot get the solver matrices library for a CellML evaluator solver.",ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        LOCAL_ERROR="The solver type of "//TRIM(NumberToVString(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_MATRICES_LIBRARY_TYPE_GET")
@@ -14470,7 +14859,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -14481,25 +14870,25 @@ CONTAINS
                 IF(ABSOLUTE_TOLERANCE>ZERO_TOLERANCE) THEN
                   QUASI_NEWTON_SOLVER%ABSOLUTE_TOLERANCE=ABSOLUTE_TOLERANCE
                 ELSE
-                  LOCAL_ERROR="The specified absolute tolerance of "//TRIM(NUMBER_TO_VSTRING(ABSOLUTE_TOLERANCE,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified absolute tolerance of "//TRIM(NumberToVString(ABSOLUTE_TOLERANCE,"*",ERR,ERROR))// &
                     & " is invalid. The absolute tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_ABSOLUTE_TOLERANCE_SET")
@@ -14530,7 +14919,7 @@ CONTAINS
 
     IF(ASSOCIATED(solver)) THEN
       IF(solver%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",err,error,*999)
+        CALL FlagError("Solver has already been finished.",err,error,*999)
       ELSE
         IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           nonlinearSolver=>solver%NONLINEAR_SOLVER
@@ -14543,31 +14932,32 @@ CONTAINS
                   IF(ASSOCIATED(linesearchSolver)) THEN
                     linesearchSolver%linesearchMonitorOutput=linesearchMonitorOutputFlag
                   ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton linesearch solver is not associated.",err,error,*999)
+                    CALL FlagError("The Quasi-Newton linesearch solver is not associated.",err,error,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a linesearch solver.",err,error,*999)
+                  CALL FlagError("The Quasi-Newton solver is not a linesearch solver.",err,error,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",err,error,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",err,error,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",err,error,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",err,error,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",err,error,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",err,error,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",err,error,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
     
     EXITS("Solver_QuasiNewtonLineSearchMonitorOutputSet")
     RETURN
-999 ERRORSEXITS("Solver_QuasiNewtonLineSearchMonitorOutputSet",err,error)    
+999 ERRORS("Solver_QuasiNewtonLineSearchMonitorOutputSet",err,error)    
+    EXITS("Solver_QuasiNewtonLineSearchMonitorOutputSet")    
     RETURN 1
    
   END SUBROUTINE Solver_QuasiNewtonLineSearchMonitorOutputSet
@@ -14591,18 +14981,18 @@ CONTAINS
     IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
       SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE)
       CASE(SOLVER_QUASI_NEWTON_LINESEARCH)
-        CALL SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH(QUASI_NEWTON_SOLVER% &
+        CALL Solver_QuasiNewtonLinesearchCreateFinish(QUASI_NEWTON_SOLVER% &
           & LINESEARCH_SOLVER,ERR,ERROR,*999)
       CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
-        CALL SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH(QUASI_NEWTON_SOLVER% &
+        CALL Solver_QuasiNewtonTrustRegionCreateFinish(QUASI_NEWTON_SOLVER% &
           & TRUSTREGION_SOLVER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The Quasi-Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_QUASI_NEWTON_CREATE_FINISH")
@@ -14661,13 +15051,13 @@ CONTAINS
 
     IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
       IF(ASSOCIATED(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER)) THEN
-        CALL FLAG_ERROR("Quasi-Newton solver is already associated for this nonlinear solver.",ERR,ERROR,*998)
+        CALL FlagError("Quasi-Newton solver is already associated for this nonlinear solver.",ERR,ERROR,*998)
       ELSE        
         SOLVER=>NONLINEAR_SOLVER%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
           !Allocate and initialise a Quasi-Newton solver
           ALLOCATE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nonlinear solver Quasi-Newton solver.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate nonlinear solver Quasi-Newton solver.",ERR,ERROR,*999)
           NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER=>NONLINEAR_SOLVER
           NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD
           NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS=0
@@ -14684,7 +15074,7 @@ CONTAINS
           NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER)
           NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%convergenceTest)
           ALLOCATE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%convergenceTest,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate convergence test object.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate convergence test object.",ERR,ERROR,*999)
           NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%convergenceTest%energyFirstIter = 0.0_DP
           NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%convergenceTest%normalisedEnergy = 0.0_DP
           !Default to a Quasi-Newton linesearch solver
@@ -14697,17 +15087,17 @@ CONTAINS
           NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%SCALE_TYPE=SOLVER_QUASI_NEWTON_SCALE_JACOBIAN
           !Create the linked linear solver
           ALLOCATE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%LINEAR_SOLVER,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Quasi-Newton solver linear solver.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate Quasi-Newton solver linear solver.",ERR,ERROR,*999)
           NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%LINEAR_SOLVER%SOLVERS)
           CALL SOLVER_INITIALISE_PTR(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
           CALL SOLVER_LINEAR_INITIALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
           CALL SOLVER_LINKED_SOLVER_ADD(SOLVER,NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER%LINEAR_SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*998)
+          CALL FlagError("Nonlinear solver solver is not associated.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Nonlinear solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_QUASI_NEWTON_INITIALISE")
@@ -14723,7 +15113,7 @@ CONTAINS
   !
 
   !>Sets/changes the type of Jacobian calculation type for a Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonJacobianCalculationSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET(SOLVER,JACOBIAN_CALCULATION_TYPE,ERR,ERROR,*)
+  SUBROUTINE Solver_QuasiNewtonJacobianCalculationTypeSet(SOLVER,JACOBIAN_CALCULATION_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the Jacobian calculation type
@@ -14735,11 +15125,11 @@ CONTAINS
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET",ERR,ERROR,*999)
+    ENTERS("Solver_QuasiNewtonJacobianCalculationTypeSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -14757,33 +15147,34 @@ CONTAINS
                     QUASI_NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE=SOLVER_NEWTON_JACOBIAN_FD_CALCULATED
                   CASE DEFAULT
                     LOCAL_ERROR="The Jacobian calculation type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The Solver nonlinear solver is not associated",ERR,ERROR,*999)
+            CALL FlagError("The Solver nonlinear solver is not associated",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET")
+    EXITS("Solver_QuasiNewtonJacobianCalculationTypeSet")
     RETURN
-999 ERRORSEXITS("SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET",ERR,ERROR)
+999 ERRORS("Solver_QuasiNewtonJacobianCalculationTypeSet",ERR,ERROR)
+    EXITS("Solver_QuasiNewtonJacobianCalculationTypeSet")
     RETURN 1
     
-  END SUBROUTINE SOLVER_QUASI_NEWTON_JACOBIAN_CALCULATION_TYPE_SET
+  END SUBROUTINE Solver_QuasiNewtonJacobianCalculationTypeSet
         
   !
   !================================================================================================================================
@@ -14811,22 +15202,22 @@ CONTAINS
         IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=LINESEARCH_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("Quasi-Newton line search solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Quasi-Newton line search solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
         TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
         IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=TRUSTREGION_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("Quasi-Newton trust region solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Quasi-Newton trust region solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The Quasi-Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_LIBRARY_TYPE_GET")
@@ -14862,42 +15253,42 @@ CONTAINS
         IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
             LINESEARCH_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
             LINESEARCH_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Quasi-Newton linesearch solver."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Quasi-Newton line search solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Quasi-Newton line search solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
         TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
         IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
             TRUSTREGION_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
             TRUSTREGION_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Quasi-Newton trustregion solver."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Quasi-Newton trust region solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Quasi-Newton trust region solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The Quasi-Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_QUASI_NEWTON_LIBRARY_TYPE_SET")
@@ -14927,7 +15318,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(LINEAR_SOLVER)) THEN
-        CALL FLAG_ERROR("Linear solver is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Linear solver is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(LINEAR_SOLVER)
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
@@ -14938,22 +15329,22 @@ CONTAINS
               IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
                 LINEAR_SOLVER=>QUASI_NEWTON_SOLVER%LINEAR_SOLVER
                 IF(.NOT.ASSOCIATED(LINEAR_SOLVER)) &
-                  & CALL FLAG_ERROR("Quasi-Newton solver linear solver is not associated.",ERR,ERROR,*999)
+                  & CALL FlagError("Quasi-Newton solver linear solver is not associated.",ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_LINEAR_SOLVER_GET")
@@ -14983,7 +15374,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(CELLML_SOLVER)) THEN
-        CALL FLAG_ERROR("Linear solver is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Linear solver is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(CELLML_SOLVER)
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
@@ -14994,15 +15385,15 @@ CONTAINS
               IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
                 CELLML_SOLVER=>QUASI_NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
                 IF(.NOT.ASSOCIATED(CELLML_SOLVER)) &
-                  & CALL FLAG_ERROR("Quasi-Newton solver CellML solver is not associated.",ERR,ERROR,*999)
+                  & CALL FlagError("Quasi-Newton solver CellML solver is not associated.",ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER
@@ -15012,22 +15403,22 @@ CONTAINS
               IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
                 CELLML_SOLVER=>QUASI_NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
                 IF(.NOT.ASSOCIATED(CELLML_SOLVER)) &
-                  & CALL FLAG_ERROR("Quasi-Newton solver CellML solver is not associated.",ERR,ERROR,*999)
+                  & CALL FlagError("Quasi-Newton solver CellML solver is not associated.",ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Dynamic nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Dynamic nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The Dynamic nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The Dynamic nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver dynamic nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver dynamic nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a nonlinear or dynamic nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a nonlinear or dynamic nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_CELLML_SOLVER_GET")
@@ -15058,7 +15449,7 @@ CONTAINS
 
     IF(ASSOCIATED(solver)) THEN
       IF(solver%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",err,error,*999)
+        CALL FlagError("Solver has already been finished.",err,error,*999)
       ELSE
         IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           nonlinearSolver=>solver%NONLINEAR_SOLVER
@@ -15074,25 +15465,25 @@ CONTAINS
                 CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
                   quasiNewtonSolver%convergenceTestType=SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO
                 CASE DEFAULT
-                  localError="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING(convergenceTestType, &
+                  localError="The specified convergence test type of "//TRIM(NumberToVString(convergenceTestType, &
                     & "*",err,error))//" is invalid."
-                  CALL FLAG_ERROR(localError,err,error,*999)
+                  CALL FlagError(localError,err,error,*999)
                 END SELECT
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-    CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("Solver_QuasiNewtonConvergenceTestTypeSet")
@@ -15107,7 +15498,7 @@ CONTAINS
   !
 
   !>Finishes the process of creating nonlinear Quasi-Newton line search solver
-  SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH(LINESEARCH_SOLVER,ERR,ERROR,*)
+  SUBROUTINE Solver_QuasiNewtonLinesearchCreateFinish(LINESEARCH_SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER !<A pointer the nonlinear Quasi-Newton line search solver to finish the creation of
@@ -15146,7 +15537,7 @@ CONTAINS
 
     TYPE(VARYING_STRING) :: LOCAL_ERROR
   
-    ENTERS("SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH",ERR,ERROR,*999)
+    ENTERS("Solver_QuasiNewtonLinesearchCreateFinish",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
       QUASI_NEWTON_SOLVER=>LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER
@@ -15159,7 +15550,7 @@ CONTAINS
             IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
               SELECT CASE(LINESEARCH_SOLVER%SOLVER_LIBRARY)
               CASE(SOLVER_CMISS_LIBRARY)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(SOLVER_PETSC_LIBRARY)
                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
@@ -15192,37 +15583,37 @@ CONTAINS
                                             & DISTRIBUTED_MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
                                           CALL DISTRIBUTED_VECTOR_CREATE_FINISH(EQUATIONS_MATRIX%TEMP_VECTOR,ERR,ERROR,*999)
                                         ELSE
-                                          CALL FLAG_ERROR("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
+                                          CALL FlagError("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
                                         ENDIF
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrix is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ENDDO !equations_matrix_idx
                                 ELSE
-                                  CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
                           LOCAL_ERROR="Equations set dependent field is not associated for equations set index "// &
-                            & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Equations equations set is not associated for equations set index "// &
-                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="Equations is not associated for equations set index "// &
-                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDDO !equations_set_idx
                   !Loop over the interface conditions
@@ -15261,36 +15652,36 @@ CONTAINS
                                         CALL DISTRIBUTED_VECTOR_CREATE_FINISH(INTERFACE_MATRIX%TEMP_TRANSPOSE_VECTOR, &
                                           & ERR,ERROR,*999)
                                       ELSE
-                                        CALL FLAG_ERROR("Interface mapping variable is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Interface mapping variable is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Interface matrix is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ENDDO !interface_matrix_idx
                               ELSE
-                                CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Interface matrix is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("interface condition mapping is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("interface condition mapping is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
                           LOCAL_ERROR="Interface eqauations is not associated for interface condition index "// &
-                            & TRIM(NUMBER_TO_VSTRING(interface_condition_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(interface_condition_idx,"*",ERR,ERROR))//"."
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Interface condition Lagrange field is not associated for interface condition "// &
-                          & TRIM(NUMBER_TO_VSTRING(interface_condition_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(interface_condition_idx,"*",ERR,ERROR))//"."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="Interface condition is not associated for interface condition index "// &
-                        & TRIM(NUMBER_TO_VSTRING(interface_condition_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(interface_condition_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDDO !interface_idx
                   !Create the PETSc SNES solver
@@ -15308,8 +15699,8 @@ CONTAINS
                     CALL Petsc_SnesQNSetType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_BADBROYDEN,ERR,ERROR,*999)
                   CASE DEFAULT
                       LOCAL_ERROR="The specified nonlinear Quasi-Newton type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE,"*",ERR,ERROR))//" is invalid."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   !Set the nonlinear Quasi-Newton restart type
                   SELECT CASE(QUASI_NEWTON_SOLVER%RESTART_TYPE)
@@ -15321,8 +15712,8 @@ CONTAINS
                     CALL Petsc_SnesQNSetRestartType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_RESTART_PERIODIC,ERR,ERROR,*999)
                   CASE DEFAULT
                       LOCAL_ERROR="The specified nonlinear Quasi-Newton restart type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%RESTART_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%RESTART_TYPE,"*",ERR,ERROR))//" is invalid."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   !Set the nonlinear Quasi-Newton scale type
                   SELECT CASE(QUASI_NEWTON_SOLVER%SCALE_TYPE)
@@ -15336,8 +15727,8 @@ CONTAINS
                     CALL Petsc_SnesQNSetScaleType(LINESEARCH_SOLVER%snes,PETSC_SNES_QN_SCALE_JACOBIAN,ERR,ERROR,*999)
                   CASE DEFAULT
                       LOCAL_ERROR="The specified nonlinear Quasi-Newton scale type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%SCALE_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%SCALE_TYPE,"*",ERR,ERROR))//" is invalid."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
 
                   !Set the Quasi-Newton restart
@@ -15357,8 +15748,8 @@ CONTAINS
                         & ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
                     CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
                     !Link linear solver
@@ -15388,15 +15779,15 @@ CONTAINS
                           CALL Petsc_SnesSetConvergenceTest(LINESEARCH_SOLVER%snes,Problem_SolverConvergenceTestPetsc, &
                             & LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                         CASE DEFAULT
-                          LOCAL_ERROR="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER% &
+                          LOCAL_ERROR="The specified convergence test type of "//TRIM(NumberToVString(LINESEARCH_SOLVER% &
                             & QUASI_NEWTON_SOLVER%convergenceTestType,"*",err,error))//" is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ELSE
-                        CALL FLAG_ERROR("The residual vector PETSc is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("The residual vector PETSc is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Solver matrices residual vector is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Solver matrices residual vector is not associated.",ERR,ERROR,*999)
                     ENDIF
                   
                     !Set the Jacobian
@@ -15408,7 +15799,7 @@ CONTAINS
                           IF(ASSOCIATED(JACOBIAN_MATRIX%PETSC)) THEN
                             SELECT CASE(QUASI_NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE)
                             CASE(SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED)
-                              CALL FLAG_ERROR("Cannot have no Jacobian calculation for a PETSc nonlinear linesearch solver.", &
+                              CALL FlagError("Cannot have no Jacobian calculation for a PETSc nonlinear linesearch solver.", &
                                 & ERR,ERROR,*999)
                             CASE(SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED)
                               SOLVER_JACOBIAN%UPDATE_MATRIX=.TRUE. !CMISS will fill in the Jacobian values
@@ -15442,31 +15833,31 @@ CONTAINS
                                 !Do nothing
                               CASE DEFAULT
                                 LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  & TRIM(NumberToVString(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                               CALL Petsc_SnesSetJacobian(LINESEARCH_SOLVER%snes,JACOBIAN_MATRIX%PETSC%MATRIX, &
                                 & JACOBIAN_MATRIX%PETSC%MATRIX,Problem_SolverJacobianFDCalculatePetsc,LINESEARCH_SOLVER% &
                                 & QUASI_NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                             CASE DEFAULT
                               LOCAL_ERROR="The Jacobian calculation type of "// &
-                                & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))// &
+                                & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))// &
                                 & " is invalid."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             END SELECT
                           ELSE
-                            CALL FLAG_ERROR("Jacobian matrix PETSc is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Jacobian matrix PETSc is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Solver Jacobian matrix is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Solver Jacobian matrix is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("The solver Jacobian is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("The solver Jacobian is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="Invalid number of solver matrices. The number of solver matrices is "// &
-                        & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))//" and it should be 1."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))//" and it should be 1."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                     IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
                       !Set the monitor
@@ -15485,7 +15876,7 @@ CONTAINS
                       CALL Petsc_SnesLineSearchSetType(linesearch_solver%snesLineSearch,PETSC_SNES_LINESEARCH_CP,err,error,*999)
                     CASE DEFAULT
                       local_error="The nonlinear Quasi-Newton line search type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(linesearch_solver%linesearch_type,"*",err,error))//" is invalid."
+                        & TRIM(NumberToVString(linesearch_solver%linesearch_type,"*",err,error))//" is invalid."
                       CALL FlagError(local_error,err,error,*999)
                     END SELECT
                     ! Set step tolerances, leave iterative line search options as defaults
@@ -15506,38 +15897,38 @@ CONTAINS
                     !Set any further SNES options from the command line options
                     CALL Petsc_SnesSetFromOptions(LINESEARCH_SOLVER%snes,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Quasi-Newton linesearch solver linear solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Quasi-Newton linesearch solver linear solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE DEFAULT
                 LOCAL_ERROR="The solver library type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(LINESEARCH_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linesearch solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Linesearch solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Line search solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Line search solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH")
+    EXITS("Solver_QuasiNewtonLinesearchCreateFinish")
     RETURN
-999 ERRORSEXITS("SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH",ERR,ERROR)
+999 ERRORSEXITS("Solver_QuasiNewtonLinesearchCreateFinish",ERR,ERROR)
     RETURN 1
     
-  END SUBROUTINE SOLVER_QUASI_NEWTON_LINESEARCH_CREATE_FINISH
+  END SUBROUTINE Solver_QuasiNewtonLinesearchCreateFinish
 
   !
   !================================================================================================================================
@@ -15589,11 +15980,11 @@ CONTAINS
 
     IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
       IF(ASSOCIATED(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER)) THEN
-        CALL FLAG_ERROR("Quasi-Newton line search solver is already associated for this Quasi-Newton solver.",ERR,ERROR,*998)
+        CALL FlagError("Quasi-Newton line search solver is already associated for this Quasi-Newton solver.",ERR,ERROR,*998)
       ELSE
         !Allocate and initialise the Quasi-Newton linesearch solver
         ALLOCATE(QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nonlinear solver Quasi-Newton line search solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate nonlinear solver Quasi-Newton line search solver.",ERR,ERROR,*999)
         QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%QUASI_NEWTON_SOLVER=>QUASI_NEWTON_SOLVER
         QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
         QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
@@ -15608,7 +15999,7 @@ CONTAINS
         QUASI_NEWTON_SOLVER%LINESEARCH_SOLVER%linesearchMonitorOutput=.false.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Quasi-Newton solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_INITIALISE")
@@ -15641,7 +16032,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -15656,31 +16047,31 @@ CONTAINS
                       LINESEARCH_SOLVER%LINESEARCH_MAXSTEP=LINESEARCH_MAXSTEP
                     ELSE
                       LOCAL_ERROR="The specified line search maximum step of "// &
-                        & TRIM(NUMBER_TO_VSTRING(LINESEARCH_MAXSTEP,"*",ERR,ERROR))// &
+                        & TRIM(NumberToVString(LINESEARCH_MAXSTEP,"*",ERR,ERROR))// &
                         & " is invalid. The line search maximum step must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton solver line search solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("The Quasi-Newton solver line search solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a line search solver.",ERR,ERROR,*999)
+                  CALL FlagError("The Quasi-Newton solver is not a line search solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_MAXSTEP_SET")
@@ -15734,7 +16125,7 @@ CONTAINS
                     IF(ASSOCIATED(SOLVER_VECTOR)) THEN
                       SELECT CASE(LINESEARCH_SOLVER%SOLVER_LIBRARY)
                       CASE(SOLVER_CMISS_LIBRARY)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                       CASE(SOLVER_PETSC_LIBRARY)
                         SELECT CASE(QUASI_NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE)
                         CASE(SOLVER_SOLUTION_INITIALISE_ZERO)
@@ -15747,9 +16138,9 @@ CONTAINS
                           !Do nothing
                         CASE DEFAULT
                           LOCAL_ERROR="The Quasi-Newton solver solution initialise type of "// &
-                            & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))// &
+                            & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))// &
                             & " is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                         !Solve the nonlinear equations
                         CALL Petsc_SnesSolve(LINESEARCH_SOLVER%snes,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
@@ -15802,38 +16193,38 @@ CONTAINS
                         ENDIF
                       CASE DEFAULT
                         LOCAL_ERROR="The Quasi-Newton line search solver library type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(LINESEARCH_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Solver vector is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver RHS vector is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver RHS vector is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   LOCAL_ERROR="The number of solver matrices of "// &
-                    & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                    & TRIM(NumberToVString(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
                     & " is invalid. There should only be one solver matrix for a Quasi-Newton linesearch solver."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver matrices is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linesearch solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Linesearch solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linesearch solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Linesearch solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_SOLVE")
@@ -15865,7 +16256,7 @@ CONTAINS
     
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -15880,31 +16271,31 @@ CONTAINS
                       LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE=LINESEARCH_STEPTOL
                     ELSE
                       LOCAL_ERROR="The specified line search step tolerance of "// &
-                        & TRIM(NUMBER_TO_VSTRING(LINESEARCH_STEPTOL,"*",ERR,ERROR))// &
+                        & TRIM(NumberToVString(LINESEARCH_STEPTOL,"*",ERR,ERROR))// &
                         & " is invalid. The line search step tolerance must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton solver line search solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("The Quasi-Newton solver line search solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a line search solver.",ERR,ERROR,*999)
+                  CALL FlagError("The Quasi-Newton solver is not a line search solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_STEPTOL_SET")
@@ -15936,7 +16327,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -15955,31 +16346,31 @@ CONTAINS
                     CASE(SOLVER_QUASI_NEWTON_LINESEARCH_CP)
                       LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_QUASI_NEWTON_LINESEARCH_CP
                     CASE DEFAULT
-                      LOCAL_ERROR="The specified line search type of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_TYPE,"*",ERR,ERROR))// &
+                      LOCAL_ERROR="The specified line search type of "//TRIM(NumberToVString(LINESEARCH_TYPE,"*",ERR,ERROR))// &
                         & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
                   ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton solver line search solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("The Quasi-Newton solver line search solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a line search solver.",ERR,ERROR,*999)
+                  CALL FlagError("The Quasi-Newton solver is not a line search solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_LINESEARCH_TYPE_SET")
@@ -15994,7 +16385,7 @@ CONTAINS
   !
 
   !>Returns the type of library to use for a Quasi-Newton solver matrices.
-  SUBROUTINE SOLVER_QUASI_NEWTON_MATRICES_LIBRARY_TYPE_GET(QUASI_NEWTON_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*)
+  SUBROUTINE Solver_QuasiNewtonMatricesLibraryTypeGet(QUASI_NEWTON_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer the Quasi-Newton solver to get the library type for.
@@ -16015,37 +16406,37 @@ CONTAINS
         IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
           MATRICES_LIBRARY_TYPE=LINESEARCH_SOLVER%SOLVER_MATRICES_LIBRARY
         ELSE
-          CALL FLAG_ERROR("Quasi-Newton line search solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Quasi-Newton line search solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_QUASI_NEWTON_TRUSTREGION)
         TRUSTREGION_SOLVER=>QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER
         IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
           MATRICES_LIBRARY_TYPE=TRUSTREGION_SOLVER%SOLVER_MATRICES_LIBRARY
         ELSE
-          CALL FLAG_ERROR("Quasi-Newton trust region solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Quasi-Newton trust region solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The Quasi-Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_QUASI_NEWTON_MATRICES_LIBRARY_TYPE_GET")
+    EXITS("Solver_QuasiNewtonMatricesLibraryTypeGet")
     RETURN
-999 ERRORSEXITS("SOLVER_QUASI_NEWTON_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR)
+999 ERRORSEXITS("Solver_QuasiNewtonMatricesLibraryTypeGet",ERR,ERROR)
     RETURN 1
    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_MATRICES_LIBRARY_TYPE_GET
+  END SUBROUTINE Solver_QuasiNewtonMatricesLibraryTypeGet
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the maximum number of function evaluations for a nonlinear Quasi-Newton solver. \see OPENCMISS::CMISSSolverQuasiNewtonMaximumFunctionEvaluationsSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,MAXIMUM_FUNCTION_EVALUATIONS,ERR,ERROR,*)
+  SUBROUTINE Solver_QuasiNewtonMaximumFunctionEvaluationsSet(SOLVER,MAXIMUM_FUNCTION_EVALUATIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the maximum function evaluations for
@@ -16057,11 +16448,11 @@ CONTAINS
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET",ERR,ERROR,*999)
+    ENTERS("Solver_QuasiNewtonMaximumFunctionEvaluationsSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -16073,33 +16464,34 @@ CONTAINS
                   QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS=MAXIMUM_FUNCTION_EVALUATIONS
                 ELSE
                   LOCAL_ERROR="The specified maximum number of function evaluations of "// &
-                    & TRIM(NUMBER_TO_VSTRING(MAXIMUM_FUNCTION_EVALUATIONS,"*",ERR,ERROR))// &
+                    & TRIM(NumberToVString(MAXIMUM_FUNCTION_EVALUATIONS,"*",ERR,ERROR))// &
                     & " is invalid. The maximum number of function evaluations must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET")
+    EXITS("Solver_QuasiNewtonMaximumFunctionEvaluationsSet")
     RETURN
-999 ERRORSEXITS("SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET",ERR,ERROR)
+999 ERRORS("Solver_QuasiNewtonMaximumFunctionEvaluationsSet",ERR,ERROR)
+    EXITS("Solver_QuasiNewtonMaximumFunctionEvaluationsSet")
     RETURN 1
    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET
+  END SUBROUTINE Solver_QuasiNewtonMaximumFunctionEvaluationsSet
         
   !
   !================================================================================================================================
@@ -16122,7 +16514,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -16133,25 +16525,25 @@ CONTAINS
                 IF(MAXIMUM_ITERATIONS>0) THEN
                   QUASI_NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS=MAXIMUM_ITERATIONS
                 ELSE
-                  LOCAL_ERROR="The specified maximum iterations of "//TRIM(NUMBER_TO_VSTRING(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified maximum iterations of "//TRIM(NumberToVString(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
                     & " is invalid. The maximum number of iterations must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear sovler Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear sovler Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_MAXIMUM_ITERATIONS_SET")
@@ -16182,7 +16574,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -16193,25 +16585,25 @@ CONTAINS
                 IF(RELATIVE_TOLERANCE>ZERO_TOLERANCE) THEN
                   QUASI_NEWTON_SOLVER%RELATIVE_TOLERANCE=RELATIVE_TOLERANCE
                 ELSE
-                  LOCAL_ERROR="The specified relative tolerance of "//TRIM(NUMBER_TO_VSTRING(RELATIVE_TOLERANCE,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified relative tolerance of "//TRIM(NumberToVString(RELATIVE_TOLERANCE,"*",ERR,ERROR))// &
                     & " is invalid. The relative tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_RELATIVE_TOLERANCE_SET")
@@ -16242,7 +16634,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -16259,24 +16651,24 @@ CONTAINS
                   QUASI_NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_NO_CHANGE
                 CASE DEFAULT
                   LOCAL_ERROR="The specified solution initialise type  of "// &
-                    & TRIM(NUMBER_TO_VSTRING(SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    & TRIM(NumberToVString(SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))//" is invalid."
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF            
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_SOLUTION_INIT_TYPE_SET")
@@ -16307,7 +16699,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -16318,25 +16710,25 @@ CONTAINS
                 IF(SOLUTION_TOLERANCE>ZERO_TOLERANCE) THEN
                   QUASI_NEWTON_SOLVER%SOLUTION_TOLERANCE=SOLUTION_TOLERANCE
                 ELSE
-                  LOCAL_ERROR="The specified solution tolerance of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_TOLERANCE,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified solution tolerance of "//TRIM(NumberToVString(SOLUTION_TOLERANCE,"*",ERR,ERROR))// &
                     & " is invalid. The relative tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF            
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_SOLUTION_TOLERANCE_SET")
@@ -16370,11 +16762,11 @@ CONTAINS
         CALL SOLVER_QUASI_NEWTON_TRUSTREGION_SOLVE(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Quasi-Newton solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_QUASI_NEWTON_SOLVE")
@@ -16389,7 +16781,7 @@ CONTAINS
   !
 
   !>Finishes the process of creating nonlinear Quasi-Newton trust region solver
-  SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH(TRUSTREGION_SOLVER,ERR,ERROR,*)
+  SUBROUTINE Solver_QuasiNewtonTrustRegionCreateFinish(TRUSTREGION_SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer the nonlinear Quasi-Newton trust region solver to finish the creation of
@@ -16416,7 +16808,7 @@ CONTAINS
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
   
-    ENTERS("SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH",ERR,ERROR,*999)
+    ENTERS("Solver_QuasiNewtonTrustRegionCreateFinish",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
       QUASI_NEWTON_SOLVER=>TRUSTREGION_SOLVER%QUASI_NEWTON_SOLVER
@@ -16429,7 +16821,7 @@ CONTAINS
             IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
               SELECT CASE(TRUSTREGION_SOLVER%SOLVER_LIBRARY)
               CASE(SOLVER_CMISS_LIBRARY)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(SOLVER_PETSC_LIBRARY)
                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
@@ -16462,37 +16854,37 @@ CONTAINS
                                             & DISTRIBUTED_MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
                                           CALL DISTRIBUTED_VECTOR_CREATE_FINISH(EQUATIONS_MATRIX%TEMP_VECTOR,ERR,ERROR,*999)
                                         ELSE
-                                          CALL FLAG_ERROR("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
+                                          CALL FlagError("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
                                         ENDIF
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrix is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ENDDO !equations_matrix_idx
                                 ELSE
-                                  CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
                           LOCAL_ERROR="Equations set dependent field is not associated for equations set index "// &
-                            & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Equations equations set is not associated for equations set index "// &
-                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="Equations is not associated for equations set index "// &
-                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDDO !equations_set_idx
                   
@@ -16511,10 +16903,10 @@ CONTAINS
                     IF(ASSOCIATED(RESIDUAL_VECTOR%PETSC)) THEN
                       CALL Petsc_SnesSetFunction(TRUSTREGION_SOLVER%snes,RESIDUAL_VECTOR%PETSC%VECTOR, &
                         & Problem_SolverResidualEvaluatePetsc,SOLVER,ERR,ERROR,*999)
-                      CALL FLAG_ERROR("The residual vector PETSc is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("The residual vector PETSc is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver matrices residual vector is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver matrices residual vector is not associated.",ERR,ERROR,*999)
                   ENDIF
                   !Set the Jacobian if necessary
                   !Set the trust region delta ???
@@ -16530,35 +16922,35 @@ CONTAINS
                   !Set any further SNES options from the command line options
                   CALL Petsc_SnesSetFromOptions(TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE DEFAULT
                 LOCAL_ERROR="The solver library type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(TRUSTREGION_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Trust region Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Trust region Quasi-Newton solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Trust region solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Trust region solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
-    EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH")
+    EXITS("Solver_QuasiNewtonTrustRegionCreateFinish")
     RETURN
-999 ERRORSEXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH",ERR,ERROR)
+999 ERRORSEXITS("Solver_QuasiNewtonTrustRegionCreateFinish",ERR,ERROR)
     RETURN 1
     
-  END SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_CREATE_FINISH
+  END SUBROUTINE Solver_QuasiNewtonTrustRegionCreateFinish
 
   !
   !================================================================================================================================
@@ -16582,7 +16974,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -16597,31 +16989,31 @@ CONTAINS
                       TRUSTREGION_SOLVER%TRUSTREGION_DELTA0=TRUSTREGION_DELTA0
                     ELSE
                       LOCAL_ERROR="The specified trust region delta0 of "// &
-                        & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_DELTA0,"*",ERR,ERROR))// &
+                        & TRIM(NumberToVString(TRUSTREGION_DELTA0,"*",ERR,ERROR))// &
                         & " is invalid. The trust region delta0 must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton solver trust region solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("The Quasi-Newton solver trust region solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a trust region solver.",ERR,ERROR,*999)
+                  CALL FlagError("The Quasi-Newton solver is not a trust region solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("Nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_DELTA0_SET")
@@ -16677,10 +17069,10 @@ CONTAINS
 
     IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
       IF(ASSOCIATED(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER)) THEN
-        CALL FLAG_ERROR("Trust region solver is already associated for this nonlinear solver.",ERR,ERROR,*998)
+        CALL FlagError("Trust region solver is already associated for this nonlinear solver.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Quasi-Newton solver trust region solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate Quasi-Newton solver trust region solver.",ERR,ERROR,*999)
         QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%QUASI_NEWTON_SOLVER=>QUASI_NEWTON_SOLVER
         QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
         QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
@@ -16689,7 +17081,7 @@ CONTAINS
         CALL Petsc_SnesInitialise(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Quasi-Newton solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Quasi-Newton solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_INITIALISE")
@@ -16734,31 +17126,31 @@ CONTAINS
               IF(ASSOCIATED(SOLVER_MATRICES)) THEN
                 SELECT CASE(TRUSTREGION_SOLVER%SOLVER_LIBRARY)
                 CASE(SOLVER_CMISS_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(SOLVER_PETSC_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The nonlinear Quasi-Newton trust region solver library type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    & TRIM(NumberToVString(TRUSTREGION_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
-                CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver matrices is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Quasi-Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Trust region solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Trust region solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Trust region solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Trust region solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_SOLVE")
@@ -16773,7 +17165,7 @@ CONTAINS
   !
 
   !>Sets/changes the trust region tolerance for a nonlinear Quasi-Newton trust region solver. \see OPENCMISS::CMISSSolverQuasiNewtonTrustRegionToleranceSet
-  SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET(SOLVER,TRUSTREGION_TOLERANCE,ERR,ERROR,*)
+  SUBROUTINE Solver_QuasiNewtonTrustRegionToleranceSet(SOLVER,TRUSTREGION_TOLERANCE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the trust region tolerance for
@@ -16786,11 +17178,11 @@ CONTAINS
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET",ERR,ERROR,*999)
+    ENTERS("Solver_QuasiNewtonTrustRegionToleranceSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -16805,39 +17197,39 @@ CONTAINS
                       TRUSTREGION_SOLVER%TRUSTREGION_TOLERANCE=TRUSTREGION_TOLERANCE
                     ELSE
                       LOCAL_ERROR="The specified trust region tolerance of "// &
-                        & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_TOLERANCE,"*",ERR,ERROR))// &
+                        & TRIM(NumberToVString(TRUSTREGION_TOLERANCE,"*",ERR,ERROR))// &
                         & " is invalid. The trust region tolerance must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("The Quasi-Newton solver trust region solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("The Quasi-Newton solver trust region solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Quasi-Newton solver is not a trust region solver.",ERR,ERROR,*999)
+                  CALL FlagError("The Quasi-Newton solver is not a trust region solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET")
+    EXITS("Solver_QuasiNewtonTrustRegionToleranceSet")
     RETURN
-999 ERRORSEXITS("SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET",ERR,ERROR)
+999 ERRORSEXITS("Solver_QuasiNewtonTrustRegionToleranceSet",ERR,ERROR)
     RETURN 1
    
-  END SUBROUTINE SOLVER_QUASI_NEWTON_TRUSTREGION_TOLERANCE_SET
+  END SUBROUTINE Solver_QuasiNewtonTrustRegionToleranceSet
         
   !
   !================================================================================================================================
@@ -16859,7 +17251,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -16869,20 +17261,20 @@ CONTAINS
               IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
                 QUASI_NEWTON_SOLVER%RESTART=RESTART
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_RESTART_SET")
@@ -16913,7 +17305,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -16931,27 +17323,27 @@ CONTAINS
                   CASE(SOLVER_QUASI_NEWTON_RESTART_PERIODIC)
                     QUASI_NEWTON_SOLVER%RESTART_TYPE=SOLVER_QUASI_NEWTON_RESTART_PERIODIC
                   CASE DEFAULT
-                    LOCAL_ERROR="The Quasi-Newton restart type of "//TRIM(NUMBER_TO_VSTRING( &
+                    LOCAL_ERROR="The Quasi-Newton restart type of "//TRIM(NumberToVString( &
                       & QUASI_NEWTON_RESTART_TYPE,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_RESTART_TYPE_SET")
@@ -16982,7 +17374,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -17002,27 +17394,27 @@ CONTAINS
                   CASE(SOLVER_QUASI_NEWTON_SCALE_JACOBIAN)
                     QUASI_NEWTON_SOLVER%SCALE_TYPE=SOLVER_QUASI_NEWTON_SCALE_JACOBIAN
                   CASE DEFAULT
-                    LOCAL_ERROR="The Quasi-Newton scale type of "//TRIM(NUMBER_TO_VSTRING( &
+                    LOCAL_ERROR="The Quasi-Newton scale type of "//TRIM(NumberToVString( &
                       & QUASI_NEWTON_SCALE_TYPE,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_SCALE_TYPE_SET")
@@ -17053,7 +17445,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -17071,26 +17463,26 @@ CONTAINS
                   CASE(SOLVER_QUASI_NEWTON_BADBROYDEN)
                     QUASI_NEWTON_SOLVER%QUASI_NEWTON_TYPE=SOLVER_QUASI_NEWTON_BADBROYDEN
                   CASE DEFAULT
-                    LOCAL_ERROR="The Quasi-Newton type of "//TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_TYPE,"*",ERR,ERROR))// &
+                    LOCAL_ERROR="The Quasi-Newton type of "//TRIM(NumberToVString(QUASI_NEWTON_TYPE,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_TYPE_SET")
@@ -17122,7 +17514,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*998)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*998)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -17139,9 +17531,9 @@ CONTAINS
                     CALL SOLVER_QUASI_NEWTON_TRUSTREGION_INITIALISE(QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The Quasi-Newton solver type of " &
-                      & //TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))// &
+                      & //TRIM(NumberToVString(QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   !Finalise the old solver type
                   SELECT CASE(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE)
@@ -17151,26 +17543,26 @@ CONTAINS
                     CALL SOLVER_QUASI_NEWTON_TRUSTREGION_FINALISE(QUASI_NEWTON_SOLVER%TRUSTREGION_SOLVER,ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The Quasi-Newton solver type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   QUASI_NEWTON_SOLVER%QUASI_NEWTON_SOLVE_TYPE=QUASI_NEWTON_SOLVE_TYPE
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*998)
+                CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*998)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*998)
+              CALL FlagError("The nonlinear solver is not a Quasi-Newton solver.",ERR,ERROR,*998)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*998)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*998)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("SOLVER_QUASI_NEWTON_SOLVE_TYPE_SET")
@@ -17207,7 +17599,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -17218,25 +17610,25 @@ CONTAINS
                 IF(ABSOLUTE_TOLERANCE>ZERO_TOLERANCE) THEN
                   NEWTON_SOLVER%ABSOLUTE_TOLERANCE=ABSOLUTE_TOLERANCE
                 ELSE
-                  LOCAL_ERROR="The specified absolute tolerance of "//TRIM(NUMBER_TO_VSTRING(ABSOLUTE_TOLERANCE,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified absolute tolerance of "//TRIM(NumberToVString(ABSOLUTE_TOLERANCE,"*",ERR,ERROR))// &
                     & " is invalid. The absolute tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_ABSOLUTE_TOLERANCE_SET")
@@ -17267,7 +17659,7 @@ CONTAINS
 
     IF(ASSOCIATED(solver)) THEN
       IF(solver%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",err,error,*999)
+        CALL FlagError("Solver has already been finished.",err,error,*999)
       ELSE
         IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           nonlinearSolver=>solver%NONLINEAR_SOLVER
@@ -17280,26 +17672,26 @@ CONTAINS
                   IF(ASSOCIATED(linesearchSolver)) THEN
                     linesearchSolver%linesearchMonitorOutput=linesearchMonitorOutputFlag
                   ELSE
-                    CALL FLAG_ERROR("The Newton linesearch solver is not associated.",err,error,*999)
+                    CALL FlagError("The Newton linesearch solver is not associated.",err,error,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Newton solver is not a linesearch solver.",err,error,*999)
+                  CALL FlagError("The Newton solver is not a linesearch solver.",err,error,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",err,error,*999)
+                CALL FlagError("Nonlinear solver Newton solver is not associated.",err,error,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",err,error,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",err,error,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",err,error,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",err,error,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",err,error,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
     
     EXITS("Solver_NewtonLineSearchMonitorOutputSet")
@@ -17333,11 +17725,11 @@ CONTAINS
         CALL SOLVER_NEWTON_TRUSTREGION_CREATE_FINISH(NEWTON_SOLVER%TRUSTREGION_SOLVER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Newton solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_NEWTON_CREATE_FINISH")
@@ -17396,13 +17788,13 @@ CONTAINS
 
     IF(ASSOCIATED(NONLINEAR_SOLVER)) THEN
       IF(ASSOCIATED(NONLINEAR_SOLVER%NEWTON_SOLVER)) THEN
-        CALL FLAG_ERROR("Newton solver is already associated for this nonlinear solver.",ERR,ERROR,*998)
+        CALL FlagError("Newton solver is already associated for this nonlinear solver.",ERR,ERROR,*998)
       ELSE        
         SOLVER=>NONLINEAR_SOLVER%SOLVER
         IF(ASSOCIATED(SOLVER)) THEN
           !Allocate and initialise a Newton solver
           ALLOCATE(NONLINEAR_SOLVER%NEWTON_SOLVER,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nonlinear solver Newton solver.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate nonlinear solver Newton solver.",ERR,ERROR,*999)
           NONLINEAR_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER=>NONLINEAR_SOLVER
           NONLINEAR_SOLVER%NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_CURRENT_FIELD
           NONLINEAR_SOLVER%NEWTON_SOLVER%TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS=0
@@ -17419,7 +17811,7 @@ CONTAINS
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER)
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%convergenceTest)
           ALLOCATE(NONLINEAR_SOLVER%NEWTON_SOLVER%convergenceTest,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate convergence test object.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate convergence test object.",ERR,ERROR,*999)
           NONLINEAR_SOLVER%NEWTON_SOLVER%convergenceTest%energyFirstIter = 0.0_DP
           NONLINEAR_SOLVER%NEWTON_SOLVER%convergenceTest%normalisedEnergy = 0.0_DP
           !Default to a Newton linesearch solver
@@ -17427,17 +17819,17 @@ CONTAINS
           CALL SOLVER_NEWTON_LINESEARCH_INITIALISE(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
           !Create the linked linear solver
           ALLOCATE(NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Newton solver linear solver.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate Newton solver linear solver.",ERR,ERROR,*999)
           NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER%SOLVERS)
           CALL SOLVER_INITIALISE_PTR(NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
           CALL SOLVER_LINEAR_INITIALISE(NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER,ERR,ERROR,*999)
           CALL SOLVER_LINKED_SOLVER_ADD(SOLVER,NONLINEAR_SOLVER%NEWTON_SOLVER%LINEAR_SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*998)
+          CALL FlagError("Nonlinear solver solver is not associated.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Nonlinear solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_NEWTON_INITIALISE")
@@ -17469,7 +17861,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -17487,25 +17879,25 @@ CONTAINS
                     NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE=SOLVER_NEWTON_JACOBIAN_FD_CALCULATED
                   CASE DEFAULT
                     LOCAL_ERROR="The Jacobian calculation type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The Solver nonlinear solver is not associated",ERR,ERROR,*999)
+            CALL FlagError("The Solver nonlinear solver is not associated",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_JACOBIAN_CALCULATION_TYPE_SET")
@@ -17541,22 +17933,22 @@ CONTAINS
         IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=LINESEARCH_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("Newton line search solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton line search solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_NEWTON_TRUSTREGION)
         TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
         IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
           SOLVER_LIBRARY_TYPE=TRUSTREGION_SOLVER%SOLVER_LIBRARY
         ELSE
-          CALL FLAG_ERROR("Newton trust region solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton trust region solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Newton solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_LIBRARY_TYPE_GET")
@@ -17592,42 +17984,42 @@ CONTAINS
         IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
             LINESEARCH_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
             LINESEARCH_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Newton linesearch solver."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Newton line search solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton line search solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_NEWTON_TRUSTREGION)
         TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
         IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
           SELECT CASE(SOLVER_LIBRARY_TYPE)
           CASE(SOLVER_CMISS_LIBRARY)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(SOLVER_PETSC_LIBRARY)
             TRUSTREGION_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
             TRUSTREGION_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
           CASE DEFAULT
-            LOCAL_ERROR="The solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Newton trustregion solver."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Newton trust region solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton trust region solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Newton solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_NEWTON_LIBRARY_TYPE_SET")
@@ -17657,7 +18049,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(LINEAR_SOLVER)) THEN
-        CALL FLAG_ERROR("Linear solver is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Linear solver is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(LINEAR_SOLVER)
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
@@ -17668,22 +18060,22 @@ CONTAINS
               IF(ASSOCIATED(NEWTON_SOLVER)) THEN
                 LINEAR_SOLVER=>NEWTON_SOLVER%LINEAR_SOLVER
                 IF(.NOT.ASSOCIATED(LINEAR_SOLVER)) &
-                  & CALL FLAG_ERROR("Newton solver linear solver is not associated.",ERR,ERROR,*999)
+                  & CALL FlagError("Newton solver linear solver is not associated.",ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a dynamic solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_LINEAR_SOLVER_GET")
@@ -17713,7 +18105,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(CELLML_SOLVER)) THEN
-        CALL FLAG_ERROR("Linear solver is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Linear solver is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(CELLML_SOLVER)
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
@@ -17724,15 +18116,15 @@ CONTAINS
               IF(ASSOCIATED(NEWTON_SOLVER)) THEN
                 CELLML_SOLVER=>NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
                 IF(.NOT.ASSOCIATED(CELLML_SOLVER)) &
-                  & CALL FLAG_ERROR("Newton solver CellML solver is not associated.",ERR,ERROR,*999)
+                  & CALL FlagError("Newton solver CellML solver is not associated.",ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%DYNAMIC_SOLVER%NONLINEAR_SOLVER%NONLINEAR_SOLVER
@@ -17742,22 +18134,22 @@ CONTAINS
               IF(ASSOCIATED(NEWTON_SOLVER)) THEN
                 CELLML_SOLVER=>NEWTON_SOLVER%CELLML_EVALUATOR_SOLVER
                 IF(.NOT.ASSOCIATED(CELLML_SOLVER)) &
-                  & CALL FLAG_ERROR("Newton solver CellML solver is not associated.",ERR,ERROR,*999)
+                  & CALL FlagError("Newton solver CellML solver is not associated.",ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Dynamic nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Dynamic nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The Dynamic nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The Dynamic nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver dynamic nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver dynamic nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified solver is not a nonlinear or dynamic nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The specified solver is not a nonlinear or dynamic nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_CELLML_SOLVER_GET")
@@ -17788,7 +18180,7 @@ CONTAINS
 
     IF(ASSOCIATED(solver)) THEN
       IF(solver%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",err,error,*999)
+        CALL FlagError("Solver has already been finished.",err,error,*999)
       ELSE
         IF(solver%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           nonlinearSolver=>solver%NONLINEAR_SOLVER
@@ -17804,25 +18196,25 @@ CONTAINS
                 CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
                   newtonSolver%convergenceTestType=SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO
                 CASE DEFAULT
-                  localError="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING(convergenceTestType, &
+                  localError="The specified convergence test type of "//TRIM(NumberToVString(convergenceTestType, &
                     & "*",err,error))//" is invalid."
-                  CALL FLAG_ERROR(localError,err,error,*999)
+                  CALL FlagError(localError,err,error,*999)
                 END SELECT
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-    CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("Solver_NewtonConvergenceTestTypeSet")
@@ -17854,7 +18246,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -17868,31 +18260,31 @@ CONTAINS
                     IF(LINESEARCH_ALPHA>ZERO_TOLERANCE) THEN
                       LINESEARCH_SOLVER%LINESEARCH_ALPHA=LINESEARCH_ALPHA
                     ELSE
-                      LOCAL_ERROR="The specified line search alpha of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_ALPHA,"*",ERR,ERROR))// &
+                      LOCAL_ERROR="The specified line search alpha of "//TRIM(NumberToVString(LINESEARCH_ALPHA,"*",ERR,ERROR))// &
                         & " is invalid. The line search alpha must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("The Newton solver line search solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("The Newton solver line search solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Newton solver is not a line search solver.",ERR,ERROR,*999)
+                  CALL FlagError("The Newton solver is not a line search solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_LINESEARCH_ALPHA_SET")
@@ -17959,7 +18351,7 @@ CONTAINS
             IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
               SELECT CASE(LINESEARCH_SOLVER%SOLVER_LIBRARY)
               CASE(SOLVER_CMISS_LIBRARY)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(SOLVER_PETSC_LIBRARY)
                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
@@ -17992,37 +18384,37 @@ CONTAINS
                                             & DISTRIBUTED_MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
                                           CALL DISTRIBUTED_VECTOR_CREATE_FINISH(EQUATIONS_MATRIX%TEMP_VECTOR,ERR,ERROR,*999)
                                         ELSE
-                                          CALL FLAG_ERROR("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
+                                          CALL FlagError("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
                                         ENDIF
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrix is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ENDDO !equations_matrix_idx
                                 ELSE
-                                  CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
                           LOCAL_ERROR="Equations set dependent field is not associated for equations set index "// &
-                            & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Equations equations set is not associated for equations set index "// &
-                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="Equations is not associated for equations set index "// &
-                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDDO !equations_set_idx
                   !Loop over the interface conditions
@@ -18061,36 +18453,36 @@ CONTAINS
                                         CALL DISTRIBUTED_VECTOR_CREATE_FINISH(INTERFACE_MATRIX%TEMP_TRANSPOSE_VECTOR, &
                                           & ERR,ERROR,*999)
                                       ELSE
-                                        CALL FLAG_ERROR("Interface mapping variable is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Interface mapping variable is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Interface matrix is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ENDDO !interface_matrix_idx
                               ELSE
-                                CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Interface matrix is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("interface condition mapping is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("interface condition mapping is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Interface matrices is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Interface matrices is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
                           LOCAL_ERROR="Interface eqauations is not associated for interface condition index "// &
-                            & TRIM(NUMBER_TO_VSTRING(interface_condition_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(interface_condition_idx,"*",ERR,ERROR))//"."
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Interface condition Lagrange field is not associated for interface condition "// &
-                          & TRIM(NUMBER_TO_VSTRING(interface_condition_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(interface_condition_idx,"*",ERR,ERROR))//"."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="Interface condition is not associated for interface condition index "// &
-                        & TRIM(NUMBER_TO_VSTRING(interface_condition_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(interface_condition_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDDO !interface_idx
                   !Create the PETSc SNES solver
@@ -18113,8 +18505,8 @@ CONTAINS
                         & ERR,ERROR,*999)
                     CASE DEFAULT
                       LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
                     CALL SOLVER_MATRICES_CREATE_FINISH(SOLVER_MATRICES,ERR,ERROR,*999)
                     !Link linear solver
@@ -18147,15 +18539,15 @@ CONTAINS
                           CALL Petsc_SnesSetConvergenceTest(LINESEARCH_SOLVER%snes,Problem_SolverConvergenceTestPetsc, &
                             & LINESEARCH_SOLVER%NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,ERR,ERROR,*999)
                         CASE DEFAULT
-                          LOCAL_ERROR="The specified convergence test type of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER% &
+                          LOCAL_ERROR="The specified convergence test type of "//TRIM(NumberToVString(LINESEARCH_SOLVER% &
                             & NEWTON_SOLVER%convergenceTestType,"*",err,error))//" is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ELSE
-                        CALL FLAG_ERROR("The residual vector PETSc is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("The residual vector PETSc is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Solver matrices residual vector is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Solver matrices residual vector is not associated.",ERR,ERROR,*999)
                     ENDIF
                   
                     !Set the Jacobian
@@ -18167,7 +18559,7 @@ CONTAINS
                           IF(ASSOCIATED(JACOBIAN_MATRIX%PETSC)) THEN
                             SELECT CASE(NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE)
                             CASE(SOLVER_NEWTON_JACOBIAN_NOT_CALCULATED)
-                              CALL FLAG_ERROR("Cannot have no Jacobian calculation for a PETSc nonlinear linesearch solver.", &
+                              CALL FlagError("Cannot have no Jacobian calculation for a PETSc nonlinear linesearch solver.", &
                                 & ERR,ERROR,*999)
                             CASE(SOLVER_NEWTON_JACOBIAN_EQUATIONS_CALCULATED)
                               SOLVER_JACOBIAN%UPDATE_MATRIX=.TRUE. !CMISS will fill in the Jacobian values
@@ -18203,31 +18595,31 @@ CONTAINS
                                 !Do nothing
                               CASE DEFAULT
                                 LOCAL_ERROR="The specified solver equations sparsity type of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  & TRIM(NumberToVString(SOLVER_EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                               CALL Petsc_SnesSetJacobian(LINESEARCH_SOLVER%snes,JACOBIAN_MATRIX%petsc%matrix, &
                                 & JACOBIAN_MATRIX%petsc%matrix,Problem_SolverJacobianFDCalculatePetsc,LINESEARCH_SOLVER% &
                                 & NEWTON_SOLVER%NONLINEAR_SOLVER%SOLVER,err,error,*999)
                             CASE DEFAULT
                               LOCAL_ERROR="The Jacobian calculation type of "// &
-                                & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))// &
+                                & TRIM(NumberToVString(NEWTON_SOLVER%JACOBIAN_CALCULATION_TYPE,"*",ERR,ERROR))// &
                                 & " is invalid."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             END SELECT
                           ELSE
-                            CALL FLAG_ERROR("Jacobian matrix PETSc is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Jacobian matrix PETSc is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Solver Jacobian matrix is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Solver Jacobian matrix is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("The solver Jacobian is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("The solver Jacobian is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="Invalid number of solver matrices. The number of solver matrices is "// &
-                        & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))//" and it should be 1."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))//" and it should be 1."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                     IF(SOLVER%OUTPUT_TYPE>=SOLVER_PROGRESS_OUTPUT) THEN
                       !Set the monitor
@@ -18255,7 +18647,7 @@ CONTAINS
                         & err,error,*999)
                     CASE DEFAULT
                       local_error="The nonlinear Newton line search type of "// &
-                        & TRIM(NUMBER_TO_VSTRING(linesearch_solver%linesearch_type,"*",err,error))//" is invalid."
+                        & TRIM(NumberToVString(linesearch_solver%linesearch_type,"*",err,error))//" is invalid."
                       CALL FlagError(local_error,err,error,*999)
                     END SELECT
                     SELECT CASE(linesearch_solver%linesearch_type)
@@ -18282,30 +18674,30 @@ CONTAINS
                     !Set any further SNES options from the command line options
                     CALL Petsc_SnesSetFromOptions(LINESEARCH_SOLVER%snes,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Newton linesearch solver linear solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Newton linesearch solver linear solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE DEFAULT
                 LOCAL_ERROR="The solver library type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(LINESEARCH_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linesearch solver Newton solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Linesearch solver Newton solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Line search solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Line search solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_LINESEARCH_CREATE_FINISH")
@@ -18365,11 +18757,11 @@ CONTAINS
 
     IF(ASSOCIATED(NEWTON_SOLVER)) THEN
       IF(ASSOCIATED(NEWTON_SOLVER%LINESEARCH_SOLVER)) THEN
-        CALL FLAG_ERROR("Netwon line search solver is already associated for this Newton solver.",ERR,ERROR,*998)
+        CALL FlagError("Netwon line search solver is already associated for this Newton solver.",ERR,ERROR,*998)
       ELSE
         !Allocate and initialise the Newton linesearch solver
         ALLOCATE(NEWTON_SOLVER%LINESEARCH_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate nonlinear solver Newton line search solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate nonlinear solver Newton line search solver.",ERR,ERROR,*999)
         NEWTON_SOLVER%LINESEARCH_SOLVER%NEWTON_SOLVER=>NEWTON_SOLVER
         NEWTON_SOLVER%LINESEARCH_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
         NEWTON_SOLVER%LINESEARCH_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
@@ -18385,7 +18777,7 @@ CONTAINS
         NEWTON_SOLVER%LINESEARCH_SOLVER%linesearchMonitorOutput=.false.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Newton solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_NEWTON_LINESEARCH_INITIALISE")
@@ -18418,7 +18810,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -18433,31 +18825,31 @@ CONTAINS
                       LINESEARCH_SOLVER%LINESEARCH_MAXSTEP=LINESEARCH_MAXSTEP
                     ELSE
                       LOCAL_ERROR="The specified line search maximum step of "// &
-                        & TRIM(NUMBER_TO_VSTRING(LINESEARCH_MAXSTEP,"*",ERR,ERROR))// &
+                        & TRIM(NumberToVString(LINESEARCH_MAXSTEP,"*",ERR,ERROR))// &
                         & " is invalid. The line search maximum step must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("The Newton solver line search solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("The Newton solver line search solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Newton solver is not a line search solver.",ERR,ERROR,*999)
+                  CALL FlagError("The Newton solver is not a line search solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_LINESEARCH_MAXSTEP_SET")
@@ -18510,7 +18902,7 @@ CONTAINS
                     IF(ASSOCIATED(SOLVER_VECTOR)) THEN
                       SELECT CASE(LINESEARCH_SOLVER%SOLVER_LIBRARY)
                       CASE(SOLVER_CMISS_LIBRARY)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                       CASE(SOLVER_PETSC_LIBRARY)
                         SELECT CASE(NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE)
                         CASE(SOLVER_SOLUTION_INITIALISE_ZERO)
@@ -18523,9 +18915,9 @@ CONTAINS
                           !Do nothing
                         CASE DEFAULT
                           LOCAL_ERROR="The Newton solver solution initialise type of "// &
-                            & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))// &
+                            & TRIM(NumberToVString(NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))// &
                             & " is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                         !Solve the nonlinear equations
                         CALL Petsc_SnesSolve(LINESEARCH_SOLVER%snes,RHS_VECTOR%PETSC%VECTOR,SOLVER_VECTOR%PETSC%VECTOR, &
@@ -18534,25 +18926,25 @@ CONTAINS
                         CALL Petsc_SnesGetConvergedReason(LINESEARCH_SOLVER%snes,CONVERGED_REASON,ERR,ERROR,*999)
                         SELECT CASE(CONVERGED_REASON)
                         CASE(PETSC_SNES_DIVERGED_FUNCTION_DOMAIN)
-                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged function domain.", &
+                          CALL FlagError("Nonlinear line search solver did not converge. PETSc diverged function domain.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
-                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged function count.", &
+                          CALL FlagError("Nonlinear line search solver did not converge. PETSc diverged function count.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_LINEAR_SOLVE)
-                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged linear solve.", &
+                          CALL FlagError("Nonlinear line search solver did not converge. PETSc diverged linear solve.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_FNORM_NAN)
-                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged F Norm NaN.", &
+                          CALL FlagError("Nonlinear line search solver did not converge. PETSc diverged F Norm NaN.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_MAX_IT)
-                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged maximum iterations.", &
+                          CALL FlagError("Nonlinear line search solver did not converge. PETSc diverged maximum iterations.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_LINE_SEARCH)
-                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged line search.", &
+                          CALL FlagError("Nonlinear line search solver did not converge. PETSc diverged line search.", &
                             & ERR,ERROR,*999)
                         CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
-                          CALL FLAG_ERROR("Nonlinear line search solver did not converge. PETSc diverged local minimum.", &
+                          CALL FlagError("Nonlinear line search solver did not converge. PETSc diverged local minimum.", &
                             & ERR,ERROR,*999)
                         END SELECT
                         IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
@@ -18584,38 +18976,38 @@ CONTAINS
                         ENDIF
                       CASE DEFAULT
                         LOCAL_ERROR="The Newton line search solver library type of "// &
-                          & TRIM(NUMBER_TO_VSTRING(LINESEARCH_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(LINESEARCH_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Solver vector is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver RHS vector is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver RHS vector is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
                   LOCAL_ERROR="The number of solver matrices of "// &
-                    & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
+                    & TRIM(NumberToVString(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))// &
                     & " is invalid. There should only be one solver matrix for a Newton linesearch solver."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver matrices is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Linesearch solver Newton solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Linesearch solver Newton solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Linesearch solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Linesearch solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_LINESEARCH_SOLVE")
@@ -18647,7 +19039,7 @@ CONTAINS
     
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -18662,31 +19054,31 @@ CONTAINS
                       LINESEARCH_SOLVER%LINESEARCH_STEPTOLERANCE=LINESEARCH_STEPTOL
                     ELSE
                       LOCAL_ERROR="The specified line search step tolerance of "// &
-                        & TRIM(NUMBER_TO_VSTRING(LINESEARCH_STEPTOL,"*",ERR,ERROR))// &
+                        & TRIM(NumberToVString(LINESEARCH_STEPTOL,"*",ERR,ERROR))// &
                         & " is invalid. The line search step tolerance must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("The Newton solver line search solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("The Newton solver line search solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Newton solver is not a line search solver.",ERR,ERROR,*999)
+                  CALL FlagError("The Newton solver is not a line search solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_LINESEARCH_STEPTOL_SET")
@@ -18718,7 +19110,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -18739,31 +19131,31 @@ CONTAINS
                     CASE(SOLVER_NEWTON_LINESEARCH_CUBIC)
                       LINESEARCH_SOLVER%LINESEARCH_TYPE=SOLVER_NEWTON_LINESEARCH_CUBIC
                     CASE DEFAULT
-                      LOCAL_ERROR="The specified line search type of "//TRIM(NUMBER_TO_VSTRING(LINESEARCH_TYPE,"*",ERR,ERROR))// &
+                      LOCAL_ERROR="The specified line search type of "//TRIM(NumberToVString(LINESEARCH_TYPE,"*",ERR,ERROR))// &
                         & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
                   ELSE
-                    CALL FLAG_ERROR("The Newton solver line search solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("The Newton solver line search solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Newton solver is not a line search solver.",ERR,ERROR,*999)
+                  CALL FlagError("The Newton solver is not a line search solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_LINESEARCH_TYPE_SET")
@@ -18799,22 +19191,22 @@ CONTAINS
         IF(ASSOCIATED(LINESEARCH_SOLVER)) THEN
           MATRICES_LIBRARY_TYPE=LINESEARCH_SOLVER%SOLVER_MATRICES_LIBRARY
         ELSE
-          CALL FLAG_ERROR("Newton line search solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton line search solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_NEWTON_TRUSTREGION)
         TRUSTREGION_SOLVER=>NEWTON_SOLVER%TRUSTREGION_SOLVER
         IF(ASSOCIATED(TRUSTREGION_SOLVER)) THEN
           MATRICES_LIBRARY_TYPE=TRUSTREGION_SOLVER%SOLVER_MATRICES_LIBRARY
         ELSE
-          CALL FLAG_ERROR("Newton trust region solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton trust region solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The Newton solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Newton solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_MATRICES_LIBRARY_TYPE_GET")
@@ -18829,7 +19221,7 @@ CONTAINS
   !
 
   !>Sets/changes the maximum number of function evaluations for a nonlinear Newton solver. \todo should this be SOLVER_NONLINEAR_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET??? \see OPENCMISS::CMISSSolverNewtonMaximumFunctionEvaluationsSet
-  SUBROUTINE SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET(SOLVER,MAXIMUM_FUNCTION_EVALUATIONS,ERR,ERROR,*)
+  SUBROUTINE Solver_NewtonMaximumFunctionEvaluationsSet(SOLVER,MAXIMUM_FUNCTION_EVALUATIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to set the maximum function evaluations for
@@ -18841,11 +19233,11 @@ CONTAINS
     TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET",ERR,ERROR,*999)
+    ENTERS("Solver_NewtonMaximumFunctionEvaluationsSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -18857,33 +19249,33 @@ CONTAINS
                   NEWTON_SOLVER%MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS=MAXIMUM_FUNCTION_EVALUATIONS
                 ELSE
                   LOCAL_ERROR="The specified maximum number of function evaluations of "// &
-                    & TRIM(NUMBER_TO_VSTRING(MAXIMUM_FUNCTION_EVALUATIONS,"*",ERR,ERROR))// &
+                    & TRIM(NumberToVString(MAXIMUM_FUNCTION_EVALUATIONS,"*",ERR,ERROR))// &
                     & " is invalid. The maximum number of function evaluations must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    EXITS("SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET")
+    EXITS("Solver_NewtonMaximumFunctionEvaluationsSet")
     RETURN
-999 ERRORSEXITS("SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET",ERR,ERROR)
+999 ERRORSEXITS("Solver_NewtonMaximumFunctionEvaluationsSet",ERR,ERROR)
     RETURN 1
    
-  END SUBROUTINE SOLVER_NEWTON_MAXIMUM_FUNCTION_EVALUATIONS_SET
+  END SUBROUTINE Solver_NewtonMaximumFunctionEvaluationsSet
         
   !
   !================================================================================================================================
@@ -18906,7 +19298,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -18917,25 +19309,25 @@ CONTAINS
                 IF(MAXIMUM_ITERATIONS>0) THEN
                   NEWTON_SOLVER%MAXIMUM_NUMBER_OF_ITERATIONS=MAXIMUM_ITERATIONS
                 ELSE
-                  LOCAL_ERROR="The specified maximum iterations of "//TRIM(NUMBER_TO_VSTRING(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified maximum iterations of "//TRIM(NumberToVString(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
                     & " is invalid. The maximum number of iterations must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear sovler Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear sovler Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_MAXIMUM_ITERATIONS_SET")
@@ -18966,7 +19358,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -18977,25 +19369,25 @@ CONTAINS
                 IF(RELATIVE_TOLERANCE>ZERO_TOLERANCE) THEN
                   NEWTON_SOLVER%RELATIVE_TOLERANCE=RELATIVE_TOLERANCE
                 ELSE
-                  LOCAL_ERROR="The specified relative tolerance of "//TRIM(NUMBER_TO_VSTRING(RELATIVE_TOLERANCE,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified relative tolerance of "//TRIM(NumberToVString(RELATIVE_TOLERANCE,"*",ERR,ERROR))// &
                     & " is invalid. The relative tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("The nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_RELATIVE_TOLERANCE_SET")
@@ -19026,7 +19418,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -19043,24 +19435,24 @@ CONTAINS
                   NEWTON_SOLVER%SOLUTION_INITIALISE_TYPE=SOLVER_SOLUTION_INITIALISE_NO_CHANGE
                 CASE DEFAULT
                   LOCAL_ERROR="The specified solution initialise type  of "// &
-                    & TRIM(NUMBER_TO_VSTRING(SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    & TRIM(NumberToVString(SOLUTION_INITIALISE_TYPE,"*",ERR,ERROR))//" is invalid."
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF            
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_SOLUTION_INIT_TYPE_SET")
@@ -19091,7 +19483,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -19102,25 +19494,25 @@ CONTAINS
                 IF(SOLUTION_TOLERANCE>ZERO_TOLERANCE) THEN
                   NEWTON_SOLVER%SOLUTION_TOLERANCE=SOLUTION_TOLERANCE
                 ELSE
-                  LOCAL_ERROR="The specified solution tolerance of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_TOLERANCE,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The specified solution tolerance of "//TRIM(NumberToVString(SOLUTION_TOLERANCE,"*",ERR,ERROR))// &
                     & " is invalid. The relative tolerance must be > 0."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF            
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_SOLUTION_TOLERANCE_SET")
@@ -19154,11 +19546,11 @@ CONTAINS
         CALL SOLVER_NEWTON_TRUSTREGION_SOLVE(NEWTON_SOLVER%TRUSTREGION_SOLVER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Newton solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_NEWTON_SOLVE")
@@ -19213,7 +19605,7 @@ CONTAINS
             IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
               SELECT CASE(TRUSTREGION_SOLVER%SOLVER_LIBRARY)
               CASE(SOLVER_CMISS_LIBRARY)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(SOLVER_PETSC_LIBRARY)
                 SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
@@ -19246,37 +19638,37 @@ CONTAINS
                                             & DISTRIBUTED_MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
                                           CALL DISTRIBUTED_VECTOR_CREATE_FINISH(EQUATIONS_MATRIX%TEMP_VECTOR,ERR,ERROR,*999)
                                         ELSE
-                                          CALL FLAG_ERROR("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
+                                          CALL FlagError("Linear mapping linear variable is not associated.",ERR,ERROR,*999)
                                         ENDIF
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Equations matrix is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ENDDO !equations_matrix_idx
                                 ELSE
-                                  CALL FLAG_ERROR("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Equations equations matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations equations matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
                           LOCAL_ERROR="Equations set dependent field is not associated for equations set index "// &
-                            & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="Equations equations set is not associated for equations set index "// &
-                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="Equations is not associated for equations set index "// &
-                        & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDDO !equations_set_idx
                   
@@ -19297,10 +19689,10 @@ CONTAINS
                     IF(ASSOCIATED(RESIDUAL_VECTOR%PETSC)) THEN
                       CALL Petsc_SnesSetFunction(TRUSTREGION_SOLVER%snes,RESIDUAL_VECTOR%PETSC%VECTOR, &
                         & Problem_SolverResidualEvaluatePetsc,SOLVER,ERR,ERROR,*999)
-                      CALL FLAG_ERROR("The residual vector PETSc is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("The residual vector PETSc is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver matrices residual vector is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver matrices residual vector is not associated.",ERR,ERROR,*999)
                   ENDIF
                   !Set the Jacobian if necessary
                   !Set the trust region delta ???
@@ -19316,27 +19708,27 @@ CONTAINS
                   !Set any further SNES options from the command line options
                   CALL Petsc_SnesSetFromOptions(TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
                 ENDIF
               CASE DEFAULT
                 LOCAL_ERROR="The solver library type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(TRUSTREGION_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Trust region Newton solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Trust region Newton solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Trust region solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Trust region solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_NEWTON_TRUSTREGION_CREATE_FINISH")
@@ -19368,7 +19760,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -19383,31 +19775,31 @@ CONTAINS
                       TRUSTREGION_SOLVER%TRUSTREGION_DELTA0=TRUSTREGION_DELTA0
                     ELSE
                       LOCAL_ERROR="The specified trust region delta0 of "// &
-                        & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_DELTA0,"*",ERR,ERROR))// &
+                        & TRIM(NumberToVString(TRUSTREGION_DELTA0,"*",ERR,ERROR))// &
                         & " is invalid. The trust region delta0 must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("The Newton solver trust region solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("The Newton solver trust region solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Newton solver is not a trust region solver.",ERR,ERROR,*999)
+                  CALL FlagError("The Newton solver is not a trust region solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("Nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_TRUSTREGION_DELTA0_SET")
@@ -19463,10 +19855,10 @@ CONTAINS
 
     IF(ASSOCIATED(NEWTON_SOLVER)) THEN
       IF(ASSOCIATED(NEWTON_SOLVER%TRUSTREGION_SOLVER)) THEN
-        CALL FLAG_ERROR("Trust region solver is already associated for this nonlinear solver.",ERR,ERROR,*998)
+        CALL FlagError("Trust region solver is already associated for this nonlinear solver.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(NEWTON_SOLVER%TRUSTREGION_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate Newton solver trust region solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate Newton solver trust region solver.",ERR,ERROR,*999)
         NEWTON_SOLVER%TRUSTREGION_SOLVER%NEWTON_SOLVER=>NEWTON_SOLVER
         NEWTON_SOLVER%TRUSTREGION_SOLVER%SOLVER_LIBRARY=SOLVER_PETSC_LIBRARY
         NEWTON_SOLVER%TRUSTREGION_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
@@ -19475,7 +19867,7 @@ CONTAINS
         CALL Petsc_SnesInitialise(NEWTON_SOLVER%TRUSTREGION_SOLVER%snes,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Newton solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_NEWTON_TRUSTREGION_INITIALISE")
@@ -19520,31 +19912,31 @@ CONTAINS
               IF(ASSOCIATED(SOLVER_MATRICES)) THEN
                 SELECT CASE(TRUSTREGION_SOLVER%SOLVER_LIBRARY)
                 CASE(SOLVER_CMISS_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE(SOLVER_PETSC_LIBRARY)
-                  CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The nonlinear Newton trust region solver library type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    & TRIM(NumberToVString(TRUSTREGION_SOLVER%SOLVER_LIBRARY,"*",ERR,ERROR))//" is invalid."
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ELSE
-                CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver matrices is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton solver nonlinear solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Trust region solver Newton solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Trust region solver Newton solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Trust region solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Trust region solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_NEWTON_TRUSTREGION_SOLVE")
@@ -19576,7 +19968,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -19591,31 +19983,31 @@ CONTAINS
                       TRUSTREGION_SOLVER%TRUSTREGION_TOLERANCE=TRUSTREGION_TOLERANCE
                     ELSE
                       LOCAL_ERROR="The specified trust region tolerance of "// &
-                        & TRIM(NUMBER_TO_VSTRING(TRUSTREGION_TOLERANCE,"*",ERR,ERROR))// &
+                        & TRIM(NumberToVString(TRUSTREGION_TOLERANCE,"*",ERR,ERROR))// &
                         & " is invalid. The trust region tolerance must be > 0."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("The Newton solver trust region solver is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("The Newton solver trust region solver is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("The Newton solver is not a trust region solver.",ERR,ERROR,*999)
+                  CALL FlagError("The Newton solver is not a trust region solver.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*999)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NEWTON_TRUSTREGION_TOLERANCE_SET")
@@ -19647,7 +20039,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*998)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*998)
       ELSE
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
           NONLINEAR_SOLVER=>SOLVER%NONLINEAR_SOLVER
@@ -19663,9 +20055,9 @@ CONTAINS
                   CASE(SOLVER_NEWTON_TRUSTREGION)
                     CALL SOLVER_NEWTON_TRUSTREGION_INITIALISE(NEWTON_SOLVER,ERR,ERROR,*999)
                   CASE DEFAULT
-                    LOCAL_ERROR="The Newton solver type of "//TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVE_TYPE,"*",ERR,ERROR))// &
+                    LOCAL_ERROR="The Newton solver type of "//TRIM(NumberToVString(NEWTON_SOLVE_TYPE,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   !Finalise the old solver type
                   SELECT CASE(NEWTON_SOLVER%NEWTON_SOLVE_TYPE)
@@ -19675,26 +20067,26 @@ CONTAINS
                     CALL SOLVER_NEWTON_TRUSTREGION_FINALISE(NEWTON_SOLVER%TRUSTREGION_SOLVER,ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The Newton solver type of "// &
-                      & TRIM(NUMBER_TO_VSTRING(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      & TRIM(NumberToVString(NEWTON_SOLVER%NEWTON_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   NEWTON_SOLVER%NEWTON_SOLVE_TYPE=NEWTON_SOLVE_TYPE
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*998)
+                CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*998)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("The nonlinear solver is not a Newton solver.",ERR,ERROR,*998)
+              CALL FlagError("The nonlinear solver is not a Newton solver.",ERR,ERROR,*998)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*998)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*998)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("SOLVER_NEWTON_TYPE_SET")
@@ -19736,18 +20128,18 @@ CONTAINS
       CASE(SOLVER_NONLINEAR_NEWTON)
         CALL SOLVER_NEWTON_CREATE_FINISH(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         CALL SOLVER_QUASI_NEWTON_CREATE_FINISH(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nonlinear solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_NONLINEAR_CREATE_FINISH")
@@ -19791,32 +20183,32 @@ CONTAINS
               CALL Petsc_SnesGetConvergedReason(NEWTON_LINESEARCH_SOLVER%snes,CONVERGED_REASON,ERR,ERROR,*999)
                 SELECT CASE(CONVERGED_REASON)
                 CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
+                  CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
                     & ERR,ERROR,*999)
                 CASE(PETSC_SNES_DIVERGED_LINEAR_SOLVE)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged linear solve.", &
+                  CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged linear solve.", &
                     & ERR,ERROR,*999)
                 CASE(PETSC_SNES_DIVERGED_FNORM_NAN)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged F Norm NaN.", &
+                  CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged F Norm NaN.", &
                     & ERR,ERROR,*999)
                 CASE(PETSC_SNES_DIVERGED_MAX_IT)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged maximum iterations.", &
+                  CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged maximum iterations.", &
                     & ERR,ERROR,*999)
                 CASE(PETSC_SNES_DIVERGED_LINE_SEARCH)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search.", &
+                  CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search.", &
                     & ERR,ERROR,*999)
                 CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
-                  CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged local minimum.", &
+                  CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged local minimum.", &
                     & ERR,ERROR,*999)
                 END SELECT
             ELSE
-              CALL FLAG_ERROR("Linesearch solver is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Linesearch solver is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE(SOLVER_NEWTON_TRUSTREGION)
             !Not yet implemented. Don't kick up a fuss, just exit
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
         !Not yet implemented. Don't kick up a fuss, just exit
@@ -19830,33 +20222,33 @@ CONTAINS
             CALL Petsc_SnesGetConvergedReason(QUASI_NEWTON_LINESEARCH_SOLVER%snes,CONVERGED_REASON,ERR,ERROR,*999)
             SELECT CASE(CONVERGED_REASON)
             CASE(PETSC_SNES_DIVERGED_FUNCTION_COUNT)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
+              CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged function count.", &
                 & ERR,ERROR,*999)
             CASE(PETSC_SNES_DIVERGED_LINEAR_SOLVE)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged linear solve.", &
+              CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged linear solve.", &
                 & ERR,ERROR,*999)
             CASE(PETSC_SNES_DIVERGED_FNORM_NAN)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged F Norm NaN.", &
+              CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged F Norm NaN.", &
                 & ERR,ERROR,*999)
             CASE(PETSC_SNES_DIVERGED_MAX_IT)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged maximum iterations.", &
+              CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged maximum iterations.", &
                 & ERR,ERROR,*999)
             CASE(PETSC_SNES_DIVERGED_LINE_SEARCH)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search.", &
+              CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged line search.", &
                 & ERR,ERROR,*999)
             CASE(PETSC_SNES_DIVERGED_LOCAL_MIN)
-              CALL FLAG_ERROR("Nonlinear line search solver did not converge. Exit due to PETSc diverged local minimum.", &
+              CALL FlagError("Nonlinear line search solver did not converge. Exit due to PETSc diverged local minimum.", &
                 & ERR,ERROR,*999)
             END SELECT
           ELSE
-              CALL FLAG_ERROR("Linesearch solver is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Linesearch solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Newton solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nonlinear solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("SOLVER_NONLINEAR_DIVERGENCE_EXIT")
@@ -19886,15 +20278,15 @@ CONTAINS
       CASE(SOLVER_NONLINEAR_NEWTON)
         CALL SOLVER_NEWTON_FINALISE(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
       DEALLOCATE(NONLINEAR_SOLVER)
     ENDIF
@@ -19925,11 +20317,11 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(SOLVER%NONLINEAR_SOLVER)) THEN
-        CALL FLAG_ERROR("Nonlinear solver is already associated for this solver.",ERR,ERROR,*998)
+        CALL FlagError("Nonlinear solver is already associated for this solver.",ERR,ERROR,*998)
       ELSE
         !Allocate and initialise a Nonlinear solver
         ALLOCATE(SOLVER%NONLINEAR_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver nonlinear solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate solver nonlinear solver.",ERR,ERROR,*999)
         SOLVER%NONLINEAR_SOLVER%SOLVER=>SOLVER
         NULLIFY(SOLVER%NONLINEAR_SOLVER%NEWTON_SOLVER)
         !Default to a nonlinear Newton solver
@@ -19937,7 +20329,7 @@ CONTAINS
         CALL SOLVER_NEWTON_INITIALISE(SOLVER%NONLINEAR_SOLVER,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_NONLINEAR_INITIALISE")
@@ -19974,27 +20366,27 @@ CONTAINS
         IF(ASSOCIATED(NEWTON_SOLVER)) THEN
           CALL SOLVER_NEWTON_LIBRARY_TYPE_GET(NEWTON_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
           CALL SOLVER_QUASI_NEWTON_LIBRARY_TYPE_GET(QUASI_NEWTON_SOLVER, &
             & SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nonlinear solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NONLINEAR_LIBRARY_TYPE_GET")
@@ -20030,27 +20422,27 @@ CONTAINS
         IF(ASSOCIATED(NEWTON_SOLVER)) THEN
           CALL SOLVER_NEWTON_LIBRARY_TYPE_SET(NEWTON_SOLVER,SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
           CALL SOLVER_QUASI_NEWTON_LIBRARY_TYPE_SET(QUASI_NEWTON_SOLVER, &
             & SOLVER_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nonlinear solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NONLINEAR_LIBRARY_TYPE_SET")
@@ -20086,27 +20478,27 @@ CONTAINS
         IF(ASSOCIATED(NEWTON_SOLVER)) THEN
           CALL SOLVER_NEWTON_MATRICES_LIBRARY_TYPE_GET(NEWTON_SOLVER,MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Nonlinear solver Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_SQP)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
         QUASI_NEWTON_SOLVER=>NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER
         IF(ASSOCIATED(QUASI_NEWTON_SOLVER)) THEN
-          CALL SOLVER_QUASI_NEWTON_MATRICES_LIBRARY_TYPE_GET(QUASI_NEWTON_SOLVER, &
+          CALL Solver_QuasiNewtonMatricesLibraryTypeGet(QUASI_NEWTON_SOLVER, &
             & MATRICES_LIBRARY_TYPE,ERR,ERROR,*999)
         ELSE
-          CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",ERR,ERROR,*999)
         ENDIF
       CASE DEFAULT
         LOCAL_ERROR="The nonlinear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nonlinear solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_NONLINEAR_MATRICES_LIBRARY_TYPE_GET")
@@ -20166,17 +20558,17 @@ CONTAINS
                   CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Normalised Energy Norm = ", &
                     & newtonSolver%convergenceTest%normalisedEnergy,err,error,*999)
                 ELSE
-                  CALL FLAG_ERROR("Newton solver linesearch solver is not associated.",err,error,*999)
+                  CALL FlagError("Newton solver linesearch solver is not associated.",err,error,*999)
                 ENDIF
               CASE(SOLVER_NEWTON_TRUSTREGION)
-                CALL FLAG_ERROR("The Newton Trust region solver is not implemented.",err,error,*999)
+                CALL FlagError("The Newton Trust region solver is not implemented.",err,error,*999)
               CASE DEFAULT
                 localError="The Newton solve type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(newtonSolver%NEWTON_SOLVE_TYPE,"*",err,error))//"is invalid."
-                CALL FLAG_ERROR(localError,err,error,*999)
+                  & TRIM(NumberToVString(newtonSolver%NEWTON_SOLVE_TYPE,"*",err,error))//"is invalid."
+                CALL FlagError(localError,err,error,*999)
               END SELECT
             CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
-              CALL FLAG_ERROR("The Sum of differentiated ratios of unconstrained to constrained residuals"// &
+              CALL FlagError("The Sum of differentiated ratios of unconstrained to constrained residuals"// &
                 &  "convergence test type is not implemented.",err,error,*999)
             END SELECT
           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Newton solver information: ",err,error,*999)          
@@ -20185,7 +20577,7 @@ CONTAINS
           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"    Number of Jacobian evaluations = ",newtonSolver% &
             & TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS,err,error,*999)            
         ELSE
-          CALL FLAG_ERROR("Nonlinear solver Newton solver is not associated.",err,error,*999)
+          CALL FlagError("Nonlinear solver Newton solver is not associated.",err,error,*999)
         ENDIF
       CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
         !Do nothing
@@ -20208,10 +20600,10 @@ CONTAINS
                 CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"  Normalised Energy Norm = ", &
                   & QUASI_NEWTON_SOLVER%convergenceTest%normalisedEnergy,err,error,*999)
               ELSE
-                CALL FLAG_ERROR("Quasi-Newton solver linesearch solver is not associated.",err,error,*999)
+                CALL FlagError("Quasi-Newton solver linesearch solver is not associated.",err,error,*999)
               ENDIF
             CASE(SOLVER_NEWTON_CONVERGENCE_DIFFERENTIATED_RATIO)
-              CALL FLAG_ERROR("The Sum of differentiated ratios of unconstrained to constrained residuals"// &
+              CALL FlagError("The Sum of differentiated ratios of unconstrained to constrained residuals"// &
                 &  "convergence test type is not implemented.",err,error,*999)
             END SELECT
           CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"  Quasi-Newton solver information: ",err,error,*999)          
@@ -20220,16 +20612,16 @@ CONTAINS
           CALL WRITE_STRING_VALUE(GENERAL_OUTPUT_TYPE,"    Number of Jacobian evaluations = ",QUASI_NEWTON_SOLVER% &
             & TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS,err,error,*999)            
         ELSE
-          CALL FLAG_ERROR("Nonlinear solver Quasi-Newton solver is not associated.",err,error,*999)
+          CALL FlagError("Nonlinear solver Quasi-Newton solver is not associated.",err,error,*999)
         ENDIF
       CASE DEFAULT
         localError="The nonlinear solver type of "// &
-          & TRIM(NUMBER_TO_VSTRING(nonlinearSolver%NONLINEAR_SOLVE_TYPE,"*",err,error))// &
+          & TRIM(NumberToVString(nonlinearSolver%NONLINEAR_SOLVE_TYPE,"*",err,error))// &
           & " is invalid."
-        CALL FLAG_ERROR(localError,err,error,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Nonlinear solver is not associated.",err,error,*999)
+      CALL FlagError("Nonlinear solver is not associated.",err,error,*999)
     ENDIF
      
     EXITS("SOLVER_NONLINEAR_MONITOR")
@@ -20265,15 +20657,15 @@ CONTAINS
         CASE(SOLVER_NONLINEAR_NEWTON)
           CALL SOLVER_NEWTON_SOLVE(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
         CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(SOLVER_NONLINEAR_SQP)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
           CALL SOLVER_QUASI_NEWTON_SOLVE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The nonlinear solver type of "// &
-            & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            & TRIM(NumberToVString(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         
         IF(SOLVER%OUTPUT_TYPE>=SOLVER_SOLVER_OUTPUT) THEN
@@ -20297,10 +20689,10 @@ CONTAINS
                   & SOLVER_VECTOR,ERR,ERROR,*999)
               ENDDO !solver_matrix_idx
             ELSE
-              CALL FLAG_ERROR("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver equations solver matrices is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
           ENDIF
           
 #ifdef TAUPROF
@@ -20308,10 +20700,10 @@ CONTAINS
 #endif
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Nonlinear solver solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Nonlinear solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Nonlinear solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_NONLINEAR_SOLVE")
@@ -20342,7 +20734,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*998)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*998)
       ELSE
         CALL SOLVER_LINKED_SOLVER_REMOVE(SOLVER,SOLVER_LINEAR_TYPE,ERR,ERROR,*999)
         IF(SOLVER%SOLVE_TYPE==SOLVER_NONLINEAR_TYPE) THEN
@@ -20354,15 +20746,15 @@ CONTAINS
               CASE(SOLVER_NONLINEAR_NEWTON)
                 CALL SOLVER_NEWTON_FINALISE(NONLINEAR_SOLVER%NEWTON_SOLVER,ERR,ERROR,*999)
               CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)                
               CASE(SOLVER_NONLINEAR_SQP)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
                 CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The nonlinear solver type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               NONLINEAR_SOLVER%NONLINEAR_SOLVE_TYPE=NONLINEAR_SOLVE_TYPE
               !Intialise the new solver type
@@ -20371,27 +20763,27 @@ CONTAINS
                 NULLIFY(NONLINEAR_SOLVER%NEWTON_SOLVER)
                 CALL SOLVER_NEWTON_INITIALISE(NONLINEAR_SOLVER,ERR,ERROR,*999)
               CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(SOLVER_NONLINEAR_SQP)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
                 NULLIFY(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER)
                 CALL SOLVER_QUASI_NEWTON_INITIALISE(NONLINEAR_SOLVER,ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The specified nonlinear solver type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(NONLINEAR_SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The solver nonlinear solver is not associated.",ERR,ERROR,*998)
+            CALL FlagError("The solver nonlinear solver is not associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The solver is not a nonlinear solver.",ERR,ERROR,*998)
+          CALL FlagError("The solver is not a nonlinear solver.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("SOLVER_NONLINEAR_TYPE_SET")
@@ -20400,9 +20792,9 @@ CONTAINS
     CASE(SOLVER_NONLINEAR_NEWTON)
       CALL SOLVER_NEWTON_FINALISE(NONLINEAR_SOLVER%NEWTON_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
     CASE(SOLVER_NONLINEAR_BFGS_INVERSE)
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*998)                
+      CALL FlagError("Not implemented.",ERR,ERROR,*998)                
     CASE(SOLVER_NONLINEAR_SQP)
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*998)      
+      CALL FlagError("Not implemented.",ERR,ERROR,*998)      
     CASE(SOLVER_NONLINEAR_QUASI_NEWTON)
       CALL SOLVER_QUASI_NEWTON_FINALISE(NONLINEAR_SOLVER%QUASI_NEWTON_SOLVER,DUMMY_ERR,DUMMY_ERROR,*998)
     END SELECT
@@ -20427,9 +20819,9 @@ CONTAINS
     ENTERS("SOLVER_OPTIMISER_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Optimiser solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Optimiser solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_OPTIMISER_CREATE_FINISH")
@@ -20484,16 +20876,16 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(ASSOCIATED(SOLVER%OPTIMISER_SOLVER)) THEN
-        CALL FLAG_ERROR("Optimiser solver is already associated for this solver.",ERR,ERROR,*998)
+        CALL FlagError("Optimiser solver is already associated for this solver.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(SOLVER%OPTIMISER_SOLVER,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver optimiser solver.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate solver optimiser solver.",ERR,ERROR,*999)
         SOLVER%OPTIMISER_SOLVER%SOLVER=>SOLVER
         SOLVER%OPTIMISER_SOLVER%SOLVER_LIBRARY=SOLVER_TAO_LIBRARY
         SOLVER%OPTIMISER_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
         
     EXITS("SOLVER_OPTIMISER_INITIALISE")
@@ -20523,7 +20915,7 @@ CONTAINS
     IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
       SOLVER_LIBRARY_TYPE=OPTIMISER_SOLVER%SOLVER_LIBRARY
     ELSE
-      CALL FLAG_ERROR("Optimiser solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Optimiser solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_OPTIMISER_LIBRARY_TYPE_GET")
@@ -20553,17 +20945,17 @@ CONTAINS
     IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
       SELECT CASE(SOLVER_LIBRARY_TYPE)
       CASE(SOLVER_CMISS_LIBRARY)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(SOLVER_TAO_LIBRARY)
         OPTIMISER_SOLVER%SOLVER_LIBRARY=SOLVER_TAO_LIBRARY
         OPTIMISER_SOLVER%SOLVER_MATRICES_LIBRARY=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
       CASE DEFAULT
-        LOCAL_ERROR="The specified solver library type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The specified solver library type of "//TRIM(NumberToVString(SOLVER_LIBRARY_TYPE,"*",ERR,ERROR))// &
           & " is invalid for an optimiser solver."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Optimiser solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Optimiser solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_OPTIMISER_LIBRARY_TYPE_SET")
@@ -20592,7 +20984,7 @@ CONTAINS
     IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN
       MATRICES_LIBRARY_TYPE=OPTIMISER_SOLVER%SOLVER_MATRICES_LIBRARY
     ELSE
-      CALL FLAG_ERROR("Optimiser solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Optimiser solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_OPTIMISER_MATRICES_LIBRARY_TYPE_GET")
@@ -20618,9 +21010,9 @@ CONTAINS
     ENTERS("SOLVER_OPTIMISER_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(OPTIMISER_SOLVER)) THEN        
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Optimiser solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Optimiser solver is not associated.",ERR,ERROR,*999)
     ENDIF
          
     EXITS("SOLVER_OPTIMISER_SOLVE")
@@ -20649,7 +21041,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*999)
       ELSE        
         SELECT CASE(OUTPUT_TYPE)
         CASE(SOLVER_NO_OUTPUT)
@@ -20664,12 +21056,12 @@ CONTAINS
           SOLVER%OUTPUT_TYPE=SOLVER_MATRIX_OUTPUT         
         CASE DEFAULT
           LOCAL_ERROR="The specified solver output type of "// &
-            & TRIM(NUMBER_TO_VSTRING(OUTPUT_TYPE,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            & TRIM(NumberToVString(OUTPUT_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_OUTPUT_TYPE_SET")
@@ -20753,7 +21145,7 @@ CONTAINS
                             CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
                               & VARIABLE_DATA,ERR,ERROR,*999)
                           ELSE
-                            CALL FLAG_ERROR("Variable is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Variable is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !variable_idx
                       ENDDO !equations_set_idx
@@ -20785,35 +21177,35 @@ CONTAINS
                           CALL FIELD_PARAMETER_SET_DATA_RESTORE(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
                             & VARIABLE_DATA,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Variable is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Variable is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ENDDO !equations_set_idx
                     ELSE
-                      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Domain mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
                     CALL DISTRIBUTED_VECTOR_UPDATE_START(SOLVER_VECTOR,ERR,ERROR,*999)
                     CALL DISTRIBUTED_VECTOR_UPDATE_FINISH(SOLVER_VECTOR,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver vector is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !solver_matrix_idx
             ELSE
-              CALL FLAG_ERROR("Solver matrices solution mapping is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver matrices solution mapping is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver equations solver matrices are not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver equations solver matrices are not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVER_SOLUTION_UPDATE")
@@ -20842,16 +21234,16 @@ CONTAINS
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN 
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
-          CALL FLAG_ERROR("Solver equations is already associated.",ERR,ERROR,*998)
+          CALL FlagError("Solver equations is already associated.",ERR,ERROR,*998)
         ELSE
           SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
-          IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS)) CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+          IF(.NOT.ASSOCIATED(SOLVER_EQUATIONS)) CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*998)
+        CALL FlagError("Solver has not been finished.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
        
     EXITS("SOLVER_SOLVER_EQUATIONS_GET")
@@ -20909,8 +21301,8 @@ CONTAINS
           !Solve a CellML evaluator
           CALL SOLVER_CELLML_EVALUATOR_SOLVE(SOLVER%CELLML_EVALUATOR_SOLVER,ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="The solver type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          LOCAL_ERROR="The solver type of "//TRIM(NumberToVString(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         !If necessary output the timing information
         IF(SOLVER%OUTPUT_TYPE>=SOLVER_TIMING_OUTPUT) THEN
@@ -20925,10 +21317,10 @@ CONTAINS
             & ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
         
     EXITS("SOLVER_SOLVE")
@@ -20958,10 +21350,10 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
-        CALL FLAG_ERROR("Solver has already been finished.",ERR,ERROR,*998)
+        CALL FlagError("Solver has already been finished.",ERR,ERROR,*998)
       ELSE
         IF(ASSOCIATED(SOLVER%LINKING_SOLVER)) THEN
-          CALL FLAG_ERROR("Can not changed the solver type for a solve that has been linked.",ERR,ERROR,*998)
+          CALL FlagError("Can not changed the solver type for a solve that has been linked.",ERR,ERROR,*998)
         ELSE
           IF(SOLVE_TYPE/=SOLVER%SOLVE_TYPE) THEN
             !Initialise the new solver type 
@@ -20983,8 +21375,8 @@ CONTAINS
             CASE(SOLVER_GEOMETRIC_TRANSFORMATION_TYPE)
               CALL Solver_GeometricTransformationInitialise(SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The specified solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The specified solve type of "//TRIM(NumberToVString(SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
             !Finalise the old solve type
             SELECT CASE(SOLVER%SOLVE_TYPE)
@@ -21005,8 +21397,8 @@ CONTAINS
             CASE(SOLVER_GEOMETRIC_TRANSFORMATION_TYPE)
               CALL Solver_GeometricTransformationFinalise(SOLVER%geometricTransformationSolver,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The solver solve type of "//TRIM(NUMBER_TO_VSTRING(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The solver solve type of "//TRIM(NumberToVString(SOLVER%SOLVE_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
             !Set the solve type
             SOLVER%SOLVE_TYPE=SOLVE_TYPE
@@ -21014,7 +21406,7 @@ CONTAINS
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("SOLVER_TYPE_SET")
@@ -21209,9 +21601,9 @@ CONTAINS
                                       & FIELD_ACCELERATION_VALUES_SET_TYPE,variable_dof,ACCELERATION_VALUE,ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The dynamic solver degree of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
+                                      & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
                                       & " is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 ELSE
                                   SELECT CASE(DYNAMIC_SOLVER%ORDER)
@@ -21229,8 +21621,8 @@ CONTAINS
                                         & FIELD_INITIAL_ACCELERATION_SET_TYPE,variable_dof,0.0_DP,ERR,ERROR,*999)
                                     CASE DEFAULT
                                       LOCAL_ERROR="The dynamic solver degree of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
+                                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE(SOLVER_DYNAMIC_SECOND_ORDER)
                                     IF(DYNAMIC_SOLVER%DEGREE==SOLVER_DYNAMIC_THIRD_DEGREE) THEN
@@ -21239,25 +21631,25 @@ CONTAINS
                                     ENDIF
                                   CASE DEFAULT
                                     LOCAL_ERROR="The dynamic solver order of "// &
-                                      & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//" is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      & TRIM(NumberToVString(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//" is invalid."
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Dependent field is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Dependent variable is not associated.",ERR,ERROR,*999)
                             ENDIF
                           CASE(SOLVER_MAPPING_EQUATIONS_INTERFACE_CONDITION)
                             !
                           CASE DEFAULT
-                            LOCAL_ERROR="The equations type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING% &
+                            LOCAL_ERROR="The equations type of "//TRIM(NumberToVString(SOLVER_MAPPING% &
                               & SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)% &
                               & EQUATIONS_TYPES(equations_idx),"*",ERR,ERROR))//" of equations index "// &
-                              & TRIM(NUMBER_TO_VSTRING(equations_idx,"*",ERR,ERROR))//" for solver degree-of-freedom "// &
-                              & TRIM(NUMBER_TO_VSTRING(solver_dof_idx,"*",ERR,ERROR))//" is invalid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              & TRIM(NumberToVString(equations_idx,"*",ERR,ERROR))//" for solver degree-of-freedom "// &
+                              & TRIM(NumberToVString(solver_dof_idx,"*",ERR,ERROR))//" is invalid."
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT
                         ENDDO !equations_idx
                       ENDDO !solver_dof_idx
@@ -21303,8 +21695,8 @@ CONTAINS
                                           & FIELD_INITIAL_ACCELERATION_SET_TYPE,ERR,ERROR,*999)
                                       CASE DEFAULT
                                         LOCAL_ERROR="The dynamic solver degree of "// &
-                                          & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                          & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
+                                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     CASE(SOLVER_DYNAMIC_SECOND_ORDER)
                                       IF(DYNAMIC_SOLVER%DEGREE==SOLVER_DYNAMIC_THIRD_DEGREE) THEN
@@ -21313,8 +21705,8 @@ CONTAINS
                                       ENDIF
                                     CASE DEFAULT
                                       LOCAL_ERROR="The dynamic solver order of "// &
-                                        & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//" is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                        & TRIM(NumberToVString(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//" is invalid."
+                                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   ENDIF
                                 ELSE
@@ -21349,8 +21741,8 @@ CONTAINS
                                             & FIELD_INITIAL_ACCELERATION_SET_TYPE,ERR,ERROR,*999)
                                         CASE DEFAULT
                                           LOCAL_ERROR="The dynamic solver degree of "// &
-                                            & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                            & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
+                                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                         END SELECT
                                       CASE(SOLVER_DYNAMIC_SECOND_ORDER)
                                         IF(DYNAMIC_SOLVER%DEGREE==SOLVER_DYNAMIC_THIRD_DEGREE) THEN
@@ -21359,36 +21751,36 @@ CONTAINS
                                         ENDIF
                                       CASE DEFAULT
                                         LOCAL_ERROR="The dynamic solver order of "// &
-                                          & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//" is invalid."
-                                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                          & TRIM(NumberToVString(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//" is invalid."
+                                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                       END SELECT
                                     ENDIF
                                   ELSE
                                     LOCAL_ERROR="Neither equations mapping dynamic mapping nor equations mapping nonlinear "// &
                                       & "mapping is associated for equations set index number "// &
-                                      & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   ENDIF
                                 ENDIF
                               ELSE
                                 LOCAL_ERROR="Equations equations mapping is not associated for equations set index number "// &
-                                  & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               ENDIF
                             ELSE
                               LOCAL_ERROR="Equations set equations is not associated for equations set index number "// &
-                                & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                           ELSE
                             LOCAL_ERROR="Equations set dependent field is not associated for equations set index number "// &
-                              & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           ENDIF
                         ELSE
                           LOCAL_ERROR="Equations set is not associated for equations set index number "// &
-                            & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ENDDO !equations_set_idx
                       !Finish the transfer of the field dofs
@@ -21429,8 +21821,8 @@ CONTAINS
                                   & FIELD_INITIAL_ACCELERATION_SET_TYPE,ERR,ERROR,*999)
                               CASE DEFAULT
                                 LOCAL_ERROR="The dynamic solver degree of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                             CASE(SOLVER_DYNAMIC_SECOND_ORDER)
                               IF(DYNAMIC_SOLVER%DEGREE==SOLVER_DYNAMIC_THIRD_DEGREE) THEN
@@ -21439,8 +21831,8 @@ CONTAINS
                               ENDIF
                             CASE DEFAULT
                               LOCAL_ERROR="The dynamic solver order of "// &
-                                & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//" is invalid."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                & TRIM(NumberToVString(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//" is invalid."
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             END SELECT
                           ENDIF
                         !
@@ -21475,8 +21867,8 @@ CONTAINS
                                     & FIELD_INITIAL_ACCELERATION_SET_TYPE,ERR,ERROR,*999)
                                 CASE DEFAULT
                                   LOCAL_ERROR="The dynamic solver degree of "// &
-                                    & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    & TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))//" is invalid."
+                                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                 END SELECT
                               CASE(SOLVER_DYNAMIC_SECOND_ORDER)
                                 IF(DYNAMIC_SOLVER%DEGREE==SOLVER_DYNAMIC_THIRD_DEGREE) THEN
@@ -21485,40 +21877,40 @@ CONTAINS
                                 ENDIF
                               CASE DEFAULT
                                 LOCAL_ERROR="The dynamic solver order of "// &
-                                  & TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  & TRIM(NumberToVString(DYNAMIC_SOLVER%ORDER,"*",ERR,ERROR))//" is invalid."
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Neither dynamic nor nonlinear mapping is associated",ERR,ERROR,*999)
+                            CALL FlagError("Neither dynamic nor nonlinear mapping is associated",ERR,ERROR,*999)
                           ENDIF
                         ENDIF
                         !
                       ENDDO !equations_set_idx
                     ELSE
-                      CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*998)
+                      CALL FlagError("Solver vector is not associated.",ERR,ERROR,*998)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*998)
+                    CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*998)
                   ENDIF
                 ENDDO !solver_matrix_idx
               ELSE
-                CALL FLAG_ERROR("Solver matrices solution mapping is not associated.",ERR,ERROR,*998)
+                CALL FlagError("Solver matrices solution mapping is not associated.",ERR,ERROR,*998)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver equations solver matrices are not associated.",ERR,ERROR,*998)
+              CALL FlagError("Solver equations solver matrices are not associated.",ERR,ERROR,*998)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver dynamic solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*998)
+        CALL FlagError("Solver has not been finished.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("SOLVER_VARIABLES_DYNAMIC_FIELD_UPDATE")
@@ -21534,7 +21926,7 @@ CONTAINS
   !
 
   !>Updates the previous values from the solver solution for dynamic solvers
-  SUBROUTINE SOLVER_VARIABLES_DYNAMIC_FIELD_PREVIOUS_VALUES_UPDATE(SOLVER,ERR,ERROR,*)
+  SUBROUTINE Solver_VariablesDynamicFieldPreviousValuesUpdate(SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer the solver to update the variables from
@@ -21555,7 +21947,7 @@ CONTAINS
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("SOLVER_VARIABLES_DYNAMIC_FIELD_PREVIOUS_VALUES_UPDATE",ERR,ERROR,*999)
+    ENTERS("Solver_VariablesDynamicFieldPreviousValuesUpdate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       IF(SOLVER%SOLVER_FINISHED) THEN
@@ -21589,8 +21981,8 @@ CONTAINS
                       ENDIF
                     ELSE
                       LOCAL_ERROR="The solver mapping variables list variable is not associated for variable index "// &
-                        & TRIM(NUMBER_TO_VSTRING(variable_idx,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        & TRIM(NumberToVString(variable_idx,"*",ERR,ERROR))//"."
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ENDDO !variable_idx
                   IF(DYNAMIC_SOLVER%LINEARITY==SOLVER_DYNAMIC_NONLINEAR) THEN
@@ -21612,54 +22004,55 @@ CONTAINS
                                       & FIELD_RESIDUAL_SET_TYPE,FIELD_PREVIOUS_RESIDUAL_SET_TYPE,1.0_DP,ERR,ERROR,*999)
                                   ELSE
                                     LOCAL_ERROR="Nonlinear mapping residual variable is not associated for "// &
-                                      "residual variable index "//TRIM(NUMBER_TO_VSTRING(residual_variable_idx,"*",ERR,ERROR))// &
+                                      "residual variable index "//TRIM(NumberToVString(residual_variable_idx,"*",ERR,ERROR))// &
                                       & "."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   ENDIF
                                 ENDDO !residual_variable_idx
                               ELSE
-                                CALL FLAG_ERROR("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations mapping nonlinear mapping is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations equations mapping is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Equations equations mapping is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="The solver mapping equations set is not associated for equations set index "// &
-                          & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          & TRIM(NumberToVString(equations_set_idx,"*",ERR,ERROR))//"."
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ENDDO !equations_set_idx
                   ENDIF
                 ENDDO !solver_matrix_idx
               ELSE
-                CALL FLAG_ERROR("Solver matrices solution mapping is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver matrices solution mapping is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver equations solver matrices are not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver equations solver matrices are not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver dynamic solver is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    EXITS("SOLVER_VARIABLES_DYNAMIC_FIELD_PREVIOUS_VALUES_UPDATE")
+    EXITS("Solver_VariablesDynamicFieldPreviousValuesUpdate")
     RETURN
-999 ERRORSEXITS("SOLVER_VARIABLES_DYNAMIC_FIELD_PREVIOUS_VALUES_UPDATE",ERR,ERROR)
+999 ERRORS("Solver_VariablesDynamicFieldPreviousValuesUpdate",ERR,ERROR)
+    EXITS("Solver_VariablesDynamicFieldPreviousValuesUpdate")
     RETURN 1
 
-  END SUBROUTINE SOLVER_VARIABLES_DYNAMIC_FIELD_PREVIOUS_VALUES_UPDATE
+  END SUBROUTINE Solver_VariablesDynamicFieldPreviousValuesUpdate
 
   !
   !================================================================================================================================
@@ -21730,14 +22123,14 @@ CONTAINS
                   DYNAMIC_ALPHA_FACTOR=DELTA_T*DELTA_T*DELTA_T/6.0_DP
                   DYNAMIC_U_FACTOR=1.0_DP
                 CASE DEFAULT
-                  LOCAL_ERROR="The dynamic solver degree of "//TRIM(NUMBER_TO_VSTRING(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The dynamic solver degree of "//TRIM(NumberToVString(DYNAMIC_SOLVER%DEGREE,"*",ERR,ERROR))// &
                     & " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Dynamic solver linking solver is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Dynamic solver linking solver is not associated.",ERR,ERROR,*999)
         ENDIF
         !Set the dependent field for calculating the nonlinear residual and Jacobian values
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -21838,25 +22231,25 @@ CONTAINS
                                         CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE, &
                                           & FIELD_VALUES_SET_TYPE,variable_dof,VALUE,ERR,ERROR,*999)
                                       ELSE
-                                        CALL FLAG_ERROR("Neither dynamic nor nonlinear mapping is associated",ERR,ERROR,*999)
+                                        CALL FlagError("Neither dynamic nor nonlinear mapping is associated",ERR,ERROR,*999)
                                       ENDIF
-                                      !CALL FLAG_ERROR("Dynamic mapping is not associated.",ERR,ERROR,*999)
+                                      !CALL FlagError("Dynamic mapping is not associated.",ERR,ERROR,*999)
                                       !
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Equations mapping is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Dependent field is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Dependent variable is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE(SOLVER_MAPPING_EQUATIONS_INTERFACE_CONDITION)
                           !
@@ -21898,27 +22291,27 @@ CONTAINS
                                     CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE, &
                                       & FIELD_VALUES_SET_TYPE,variable_dof,VALUE,ERR,ERROR,*999)
                                   ELSE
-                                    CALL FLAG_ERROR("Interface mapping is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Interface mapping is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Interface equations are not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Interface equations are not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Dependent field is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Dependent variable is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Interface condition is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Interface condition is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE DEFAULT
-                          LOCAL_ERROR="The equations type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING% &
+                          LOCAL_ERROR="The equations type of "//TRIM(NumberToVString(SOLVER_MAPPING% &
                             & SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)% &
                             & EQUATIONS_TYPES(equations_idx),"*",ERR,ERROR))//" of equations index "// &
-                            & TRIM(NUMBER_TO_VSTRING(equations_idx,"*",ERR,ERROR))//" for solver degree-of-freedom "// &
-                            & TRIM(NUMBER_TO_VSTRING(solver_dof_idx,"*",ERR,ERROR))//" is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(equations_idx,"*",ERR,ERROR))//" for solver degree-of-freedom "// &
+                            & TRIM(NumberToVString(solver_dof_idx,"*",ERR,ERROR))//" is invalid."
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ENDDO !equations_idx
                     ENDDO !solver_dof_idx
@@ -21938,7 +22331,7 @@ CONTAINS
                             & ERR,ERROR,*999)
                         ENDDO !variable_idx
                       ELSE
-                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ENDDO !equations_set_idx
                     !Finish the transfer of the field dofs
@@ -21966,26 +22359,26 @@ CONTAINS
                       CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,Err,Error,*999)
                     ENDDO
                   ELSE
-                    CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*998)
+                    CALL FlagError("Solver vector is not associated.",ERR,ERROR,*998)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*998)
+                  CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*998)
                 ENDIF
               ENDDO !solver_matrix_idx
             ELSE
-              CALL FLAG_ERROR("Solver matrices solution mapping is not associated.",ERR,ERROR,*998)
+              CALL FlagError("Solver matrices solution mapping is not associated.",ERR,ERROR,*998)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver equations solver matrices are not associated.",ERR,ERROR,*998)
+            CALL FlagError("Solver equations solver matrices are not associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*998)
+        CALL FlagError("Solver has not been finished.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("SOLVER_VARIABLES_DYNAMIC_NONLINEAR_UPDATE")
@@ -22068,10 +22461,10 @@ CONTAINS
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                                 & variable_dof,VALUE,ERR,ERROR,*999)
                             ELSE
-                              CALL FLAG_ERROR("Dependent field is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Dependent field is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Dependent variable is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Dependent variable is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE(SOLVER_MAPPING_EQUATIONS_INTERFACE_CONDITION)
                           !Interface condition dof.
@@ -22093,18 +22486,18 @@ CONTAINS
                               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(LAGRANGE_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                                 & variable_dof,VALUE,ERR,ERROR,*999)
                             ELSE
-                              CALL FLAG_ERROR("Lagrange field is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Lagrange field is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Lagrange variable is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Lagrange variable is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE DEFAULT
-                          LOCAL_ERROR="The equations type of "//TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING% &
+                          LOCAL_ERROR="The equations type of "//TRIM(NumberToVString(SOLVER_MAPPING% &
                             & SOLVER_COL_TO_EQUATIONS_COLS_MAP(solver_matrix_idx)%SOLVER_DOF_TO_VARIABLE_MAPS(solver_dof_idx)% &
                             & EQUATIONS_TYPES(equations_idx),"*",ERR,ERROR))//" of equations index "// &
-                            & TRIM(NUMBER_TO_VSTRING(equations_idx,"*",ERR,ERROR))//" for solver degree-of-freedom "// &
-                            & TRIM(NUMBER_TO_VSTRING(solver_dof_idx,"*",ERR,ERROR))//" is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            & TRIM(NumberToVString(equations_idx,"*",ERR,ERROR))//" for solver degree-of-freedom "// &
+                            & TRIM(NumberToVString(solver_dof_idx,"*",ERR,ERROR))//" is invalid."
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ENDDO !equations_idx
                     ENDDO !solver_dof_idx
@@ -22145,7 +22538,7 @@ CONTAINS
                           CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                         ENDDO !variable_idx
                       ELSE
-                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ENDDO !equations_set_idx
                     !Finish the transfer of the field dofs
@@ -22160,26 +22553,26 @@ CONTAINS
                       ENDDO !variable_idx
                     ENDDO !equations_set_idx
                   ELSE
-                    CALL FLAG_ERROR("Solver vector is not associated.",ERR,ERROR,*998)
+                    CALL FlagError("Solver vector is not associated.",ERR,ERROR,*998)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*998)
+                  CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*998)
                 ENDIF
               ENDDO !solver_matrix_idx
             ELSE
-              CALL FLAG_ERROR("Solver matrices solution mapping is not associated.",ERR,ERROR,*998)
+              CALL FlagError("Solver matrices solution mapping is not associated.",ERR,ERROR,*998)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver equations solver matrices are not associated.",ERR,ERROR,*998)
+            CALL FlagError("Solver equations solver matrices are not associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver solver equations is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solver solver equations is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver has not been finished.",ERR,ERROR,*998)
+        CALL FlagError("Solver has not been finished.",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*998)
     ENDIF
     
     EXITS("SOLVER_VARIABLES_FIELD_UPDATE")
@@ -22210,7 +22603,7 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVERS)) THEN
       IF(SOLVERS%SOLVERS_FINISHED) THEN
-        CALL FLAG_ERROR("Solvers has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solvers has already been finished.",ERR,ERROR,*999)
       ELSE        
         CONTROL_LOOP=>SOLVERS%CONTROL_LOOP
         IF(ASSOCIATED(CONTROL_LOOP)) THEN          
@@ -22221,19 +22614,19 @@ CONTAINS
               IF(ASSOCIATED(SOLVER)) THEN
                 CALL SOLVER_CREATE_FINISH(SOLVER,ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !solver_idx            
             SOLVERS%SOLVERS_FINISHED=.TRUE.
           ELSE
-            CALL FLAG_ERROR("Solvers solvers is not allocated.",ERR,ERROR,*999)
+            CALL FlagError("Solvers solvers is not allocated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solvers control loop is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Solvers control loop is not associated.",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solvers is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVERS_CREATE_FINISH")
@@ -22264,7 +22657,7 @@ CONTAINS
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
         IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
           IF(ASSOCIATED(SOLVERS)) THEN
-            CALL FLAG_ERROR("Solvers is already associated.",ERR,ERROR,*999)
+            CALL FlagError("Solvers is already associated.",ERR,ERROR,*999)
           ELSE
             NULLIFY(SOLVERS)
             !Initialise the solvers
@@ -22274,15 +22667,15 @@ CONTAINS
           ENDIF
         ELSE
           LOCAL_ERROR="Invalid control loop setup. The specified control loop has "// &
-            & TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS,"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS,"*",ERR,ERROR))// &
             & " sub loops. To create solvers the control loop must have 0 sub loops."          
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Control loop has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("SOLVERS_CREATE_START")
@@ -22309,7 +22702,7 @@ CONTAINS
     IF(ASSOCIATED(SOLVERS)) THEN
       CALL SOLVERS_FINALISE(SOLVERS,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solvers is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("SOLVERS_DESTROY")
@@ -22370,22 +22763,22 @@ CONTAINS
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(CONTROL_LOOP%SOLVERS)) THEN
-        CALL FLAG_ERROR("Solvers is already allocated for this control loop.",ERR,ERROR,*998)
+        CALL FlagError("Solvers is already allocated for this control loop.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(CONTROL_LOOP%SOLVERS,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate control loop solvers.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate control loop solvers.",ERR,ERROR,*999)
         CONTROL_LOOP%SOLVERS%CONTROL_LOOP=>CONTROL_LOOP
         CONTROL_LOOP%SOLVERS%SOLVERS_FINISHED=.FALSE.
         CONTROL_LOOP%SOLVERS%NUMBER_OF_SOLVERS=1
         ALLOCATE(CONTROL_LOOP%SOLVERS%SOLVERS(CONTROL_LOOP%SOLVERS%NUMBER_OF_SOLVERS),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solvers solvers.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate solvers solvers.",ERR,ERROR,*999)
         DO solver_idx=1,CONTROL_LOOP%SOLVERS%NUMBER_OF_SOLVERS
           NULLIFY(CONTROL_LOOP%SOLVERS%SOLVERS(solver_idx)%PTR)
           CALL SOLVER_INITIALISE(CONTROL_LOOP%SOLVERS,solver_idx,ERR,ERROR,*999)
         ENDDO !solver_idx
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*998)
     ENDIF
        
     EXITS("SOLVERS_INITIALISE")
@@ -22418,19 +22811,19 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVERS)) THEN
       IF(SOLVERS%SOLVERS_FINISHED) THEN
-        CALL FLAG_ERROR("Solvers have already been finished.",ERR,ERROR,*998)
+        CALL FlagError("Solvers have already been finished.",ERR,ERROR,*998)
       ELSE
         IF(NUMBER_OF_SOLVERS>0) THEN
           OLD_NUMBER_OF_SOLVERS=SOLVERS%NUMBER_OF_SOLVERS
           IF(NUMBER_OF_SOLVERS/=OLD_NUMBER_OF_SOLVERS) THEN
             ALLOCATE(OLD_SOLVERS(OLD_NUMBER_OF_SOLVERS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old solvers.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate old solvers.",ERR,ERROR,*999)
             DO solver_idx=1,OLD_NUMBER_OF_SOLVERS
               OLD_SOLVERS(solver_idx)%PTR=>SOLVERS%SOLVERS(solver_idx)%PTR
             ENDDO !solver_idx
             IF(ALLOCATED(SOLVERS%SOLVERS)) DEALLOCATE(SOLVERS%SOLVERS)
             ALLOCATE(SOLVERS%SOLVERS(NUMBER_OF_SOLVERS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solvers.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate solvers.",ERR,ERROR,*999)
             IF(NUMBER_OF_SOLVERS>OLD_NUMBER_OF_SOLVERS) THEN
               DO solver_idx=1,OLD_NUMBER_OF_SOLVERS
                 SOLVERS%SOLVERS(solver_idx)%PTR=>OLD_SOLVERS(solver_idx)%PTR
@@ -22451,13 +22844,13 @@ CONTAINS
             ENDIF
           ENDIF
         ELSE
-          LOCAL_ERROR="The specified number of solvers of "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_SOLVERS,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The specified number of solvers of "//TRIM(NumberToVString(NUMBER_OF_SOLVERS,"*",ERR,ERROR))// &
             & " is invalid. The number of solvers must be > 0."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solvers is not associated.",ERR,ERROR,*998)
     ENDIF
        
     EXITS("SOLVERS_NUMBER_SET")
@@ -22488,25 +22881,25 @@ CONTAINS
 
     IF(ASSOCIATED(SOLVERS)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
-        CALL FLAG_ERROR("Solver is already associated.",ERR,ERROR,*998)
+        CALL FlagError("Solver is already associated.",ERR,ERROR,*998)
       ELSE
         NULLIFY(SOLVER)
         IF(SOLVER_INDEX>0.AND.SOLVER_INDEX<=SOLVERS%NUMBER_OF_SOLVERS) THEN
           IF(ALLOCATED(SOLVERS%SOLVERS)) THEN
             SOLVER=>SOLVERS%SOLVERS(SOLVER_INDEX)%PTR
-            IF(.NOT.ASSOCIATED(SOLVER)) CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+            IF(.NOT.ASSOCIATED(SOLVER)) CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Solvers solvers is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solvers solvers is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The specified solver index of "//TRIM(NUMBER_TO_VSTRING(SOLVER_INDEX,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The specified solver index of "//TRIM(NumberToVString(SOLVER_INDEX,"*",ERR,ERROR))// &
             & " is invalid. The solver index must be >= 1 and <= "// &
-            & TRIM(NUMBER_TO_VSTRING(SOLVERS%NUMBER_OF_SOLVERS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            & TRIM(NumberToVString(SOLVERS%NUMBER_OF_SOLVERS,"*",ERR,ERROR))//"."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solvers is not associated.",ERR,ERROR,*998)
     ENDIF
        
     EXITS("SOLVERS_SOLVER_GET")
@@ -22544,7 +22937,7 @@ CONTAINS
           IF(SOLVER%NUMBER_OF_LINKED_SOLVERS==0) THEN
             !no - then start the creation of linked solvers
             ALLOCATE(SOLVER%LINKED_SOLVERS(1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate linked solvers.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate linked solvers.",ERR,ERROR,*999)
             DO solver_idx=1,SOLVER_NUMBER_OF_SOLVER_TYPES
               NULLIFY(SOLVER%LINKED_SOLVER_TYPE_MAP(solver_idx)%PTR)
             ENDDO !solver_idx
@@ -22556,19 +22949,19 @@ CONTAINS
             !check if a solver of the same type has already been linked
             DO solver_idx=1,SOLVER%NUMBER_OF_LINKED_SOLVERS
               IF(SOLVER%LINKED_SOLVERS(solver_idx)%PTR%SOLVE_TYPE==SOLV_TYPE) THEN
-                LOCAL_ERROR="The solver has already a linked solver of type "//TRIM(NUMBER_TO_VSTRING(SOLV_TYPE, &
+                LOCAL_ERROR="The solver has already a linked solver of type "//TRIM(NumberToVString(SOLV_TYPE, &
                   & "*",ERR,ERROR))//" attached to it."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDDO !solver_idx
             ALLOCATE(OLD_LINKED_SOLVERS(SOLVER%NUMBER_OF_LINKED_SOLVERS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not old linked solvers.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not old linked solvers.",ERR,ERROR,*999)
             DO solver_idx=1,SOLVER%NUMBER_OF_LINKED_SOLVERS
               OLD_LINKED_SOLVERS(solver_idx)%PTR=>SOLVER%LINKED_SOLVERS(solver_idx)%PTR
             ENDDO
             DEALLOCATE(SOLVER%LINKED_SOLVERS)
             ALLOCATE(SOLVER%LINKED_SOLVERS(SOLVER%NUMBER_OF_LINKED_SOLVERS+1),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not new linked solvers.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not new linked solvers.",ERR,ERROR,*999)
             DO solver_idx=1,SOLVER%NUMBER_OF_LINKED_SOLVERS
               SOLVER%LINKED_SOLVERS(solver_idx)%PTR=>OLD_LINKED_SOLVERS(solver_idx)%PTR
             ENDDO
@@ -22577,24 +22970,24 @@ CONTAINS
             SOLVER%NUMBER_OF_LINKED_SOLVERS=SOLVER%NUMBER_OF_LINKED_SOLVERS+1
             DEALLOCATE(OLD_LINKED_SOLVERS)
           ELSE
-            LOCAL_ERROR="The number of linked solvers is "//TRIM(NUMBER_TO_VSTRING(SOLVER%NUMBER_OF_LINKED_SOLVERS,"*",ERR, &
-              & ERROR))//" but should be between 0 and "//TRIM(NUMBER_TO_VSTRING(SOLVER_NUMBER_OF_SOLVER_TYPES,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            LOCAL_ERROR="The number of linked solvers is "//TRIM(NumberToVString(SOLVER%NUMBER_OF_LINKED_SOLVERS,"*",ERR, &
+              & ERROR))//" but should be between 0 and "//TRIM(NumberToVString(SOLVER_NUMBER_OF_SOLVER_TYPES,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
           !set the solver type for the linked solver
           SOLVER%LINKED_SOLVER_TYPE_MAP(SOLV_TYPE)%PTR%SOLVE_TYPE=SOLV_TYPE
           !set the linking solver for the linked solver
           SOLVER%LINKED_SOLVER_TYPE_MAP(SOLV_TYPE)%PTR%LINKING_SOLVER=>SOLVER
         ELSE
-          LOCAL_ERROR="The specified solver type is "//TRIM(NUMBER_TO_VSTRING(SOLV_TYPE,"*",ERR,ERROR))//&
-            & " but should be between 1 and "//TRIM(NUMBER_TO_VSTRING(SOLVER_NUMBER_OF_SOLVER_TYPES,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          LOCAL_ERROR="The specified solver type is "//TRIM(NumberToVString(SOLV_TYPE,"*",ERR,ERROR))//&
+            & " but should be between 1 and "//TRIM(NumberToVString(SOLVER_NUMBER_OF_SOLVER_TYPES,"*",ERR,ERROR))//"."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The solver to link is not associated.",ERR,ERROR,*999)
+        CALL FlagError("The solver to link is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("SOLVER_LINKED_SOLVER_ADD")
@@ -22634,18 +23027,19 @@ CONTAINS
           ENDDO !solver_idx
         ENDIF
       ELSE
-        LOCAL_ERROR="The specified solver type is "//TRIM(NUMBER_TO_VSTRING(SOLV_TYPE,"*",ERR,ERROR))//&
-          & " but should be between 1 and "//TRIM(NUMBER_TO_VSTRING(SOLVER_NUMBER_OF_SOLVER_TYPES,"*",ERR,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        LOCAL_ERROR="The specified solver type is "//TRIM(NumberToVString(SOLV_TYPE,"*",ERR,ERROR))//&
+          & " but should be between 1 and "//TRIM(NumberToVString(SOLVER_NUMBER_OF_SOLVER_TYPES,"*",ERR,ERROR))//"."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("SOLVER_LINKED_SOLVER_REMOVE")
     RETURN
 999 ERRORSEXITS("SOLVER_LINKED_SOLVER_REMOVE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE SOLVER_LINKED_SOLVER_REMOVE
 
 
@@ -22691,12 +23085,12 @@ SUBROUTINE SOLVER_TIME_STEPPING_MONITOR_PETSC(ts,STEPS,TIME,X,CTX,ERR)
       CALL SOLVER_TIME_STEPPING_MONITOR(DAE_SOLVER,STEPS,TIME,ERR,ERROR,*999)
 
     ELSE
-      LOCAL_ERROR="Invalid solve type. The solve type of "//TRIM(NUMBER_TO_VSTRING(CTX%SOLVE_TYPE,"*",ERR,ERROR))// &
+      LOCAL_ERROR="Invalid solve type. The solve type of "//TRIM(NumberToVString(CTX%SOLVE_TYPE,"*",ERR,ERROR))// &
         & " does not correspond to a differntial-algebraic equations solver."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
   ELSE
-    CALL FLAG_ERROR("Solver context is not associated.",ERR,ERROR,*999)
+    CALL FlagError("Solver context is not associated.",ERR,ERROR,*999)
   ENDIF
 
   RETURN
@@ -22739,12 +23133,12 @@ SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(snes,ITS,NORM,CTX,ERR)
       CALL SOLVER_NONLINEAR_MONITOR(NONLINEAR_SOLVER,ITS,NORM,ERR,ERROR,*999)
 
     ELSE
-      LOCAL_ERROR="Invalid solve type. The solve type of "//TRIM(NUMBER_TO_VSTRING(CTX%SOLVE_TYPE,"*",ERR,ERROR))// &
+      LOCAL_ERROR="Invalid solve type. The solve type of "//TRIM(NumberToVString(CTX%SOLVE_TYPE,"*",ERR,ERROR))// &
         & " does not correspond to a nonlinear solver."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
   ELSE
-    CALL FLAG_ERROR("Solver context is not associated.",ERR,ERROR,*999)
+    CALL FlagError("Solver context is not associated.",ERR,ERROR,*999)
   ENDIF
 
   RETURN
@@ -22752,180 +23146,3 @@ SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC(snes,ITS,NORM,CTX,ERR)
 998 CALL FLAG_WARNING("Error monitoring nonlinear solve.",ERR,ERROR,*997)
 997 RETURN
 END SUBROUTINE SOLVER_NONLINEAR_MONITOR_PETSC
-!
-!================================================================================================================================
-!
-!>Called from the PETSc TS solvers to solve cellml DAE
-SUBROUTINE CELLML_DAE_RHS(ts, TIME, PETSC_STATES, PETSC_RATES, CTX,ERR)
-
-  USE BASE_ROUTINES
-  USE CmissPetscTypes
-  USE TYPES
-  USE SOLVER_ROUTINES
-#ifdef USECELLML
-  USE CELLML_MODEL_DEFINITION
-#endif
-  USE CMISS_CELLML
-  USE FIELD_ROUTINES
-  USE COMP_ENVIRONMENT
-
-  IMPLICIT NONE
-!!TODO: Change so that this routine uses PETSc buffer calls.
-#include "petsc/finclude/petsc.h"
-
-  !Argument variables
-  TS, INTENT(INOUT) :: ts !<The PETSc TS type
-  PetscScalar, INTENT(INOUT) :: TIME !<The current time
-  Vec, INTENT(INOUT) :: PETSC_STATES !<current states
-  Vec, INTENT(INOUT) :: PETSC_RATES !<returned rates
-  TYPE(CELLML_PETSC_CONTEXT_TYPE), POINTER :: CTX !<The passed through context
-  INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
-
-  !Local Variables
-  TYPE(CELLML_EQUATIONS_TYPE), POINTER :: CELLML_EQUATIONS
-  TYPE(CELLML_TYPE), POINTER :: CELLML_ENVIRONMENT
-  TYPE(CELLML_MODELS_FIELD_TYPE), POINTER :: CELLMLMODELSFIELD
-  TYPE(FIELD_TYPE), POINTER :: MODELS_FIELD
-  TYPE(FIELD_VARIABLE_TYPE), POINTER :: MODELS_VARIABLE
-  TYPE(FIELD_TYPE), POINTER :: PARAMETERS_FIELD,INTERMEDIATE_FIELD
-  INTEGER(INTG), POINTER :: MODELS_DATA(:)
-  REAL(DP), POINTER :: INTERMEDIATES_DATA(:),PARAMETERS_DATA(:)
-  REAL(DP), ALLOCATABLE :: RATES(:),STATES(:),PETSC_STATES_ARRAY(:),PETSC_RATES_ARRAY(:)
-  INTEGER(Intg) :: cellml_idx,state_idx,model_idx,array_idx
-  INTEGER(INTG) :: DOF_NUMBER,PARAMETER_START_DOF,STATE_START_DOF, &
-    & INTERMEDIATE_START_DOF,PARAMETER_END_DOF,STATE_END_DOF,INTERMEDIATE_END_DOF, &
-    & DOF_ORDER_TYPE,MAX_NUMBER_STATES,MAX_NUMBER_PARAMETERS,MAX_NUMBER_INTERMEDIATES, &
-    & NUMBER_INTERMEDIATES,NUMBER_STATES,NUMBER_PARAMETERS
-  TYPE(CELLML_MODEL_TYPE), POINTER :: MODEL
-  TYPE(VARYING_STRING) :: ERROR
-  INTEGER(INTG), ALLOCATABLE :: ARRAY_INDICES(:)
-
-  NULLIFY(MODELS_DATA)
-  NULLIFY(INTERMEDIATES_DATA)
-  NULLIFY(PARAMETERS_DATA)
-  NULLIFY(MODELS_VARIABLE)
-
-  IF(ASSOCIATED(CTX)) THEN
-    DOF_NUMBER = CTX%DOF_NUMBER
-    IF(ASSOCIATED(CTX%SOLVER)) THEN
-      CELLML_EQUATIONS=>CTX%SOLVER%CELLML_EQUATIONS
-      IF(ASSOCIATED(CELLML_EQUATIONS)) THEN
-        DO cellml_idx=1,CELLML_EQUATIONS%NUMBER_OF_CELLML_ENVIRONMENTS
-          CELLML_ENVIRONMENT=>CELLML_EQUATIONS%CELLML_ENVIRONMENTS(cellml_idx)%PTR
-           MAX_NUMBER_STATES=CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_STATE
-           MAX_NUMBER_INTERMEDIATES=CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_INTERMEDIATE
-           MAX_NUMBER_PARAMETERS=CELLML_ENVIRONMENT%MAXIMUM_NUMBER_OF_PARAMETERS
-          !Make sure CellML fields have been updated to the current value of any mapped fields
-
-          IF(ASSOCIATED(CELLML_ENVIRONMENT)) THEN                  
-            CELLMLMODELSFIELD=>CELLML_ENVIRONMENT%MODELS_FIELD
-            !Get the parameters information if this environment has any.
-            IF(ASSOCIATED(CELLML_ENVIRONMENT%PARAMETERS_FIELD)) THEN
-              PARAMETERS_FIELD=>CELLML_ENVIRONMENT%PARAMETERS_FIELD%PARAMETERS_FIELD
-              IF(ASSOCIATED(PARAMETERS_FIELD)) THEN
-                CALL FIELD_PARAMETER_SET_DATA_GET(PARAMETERS_FIELD, &
-                  & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & PARAMETERS_DATA,ERR,ERROR,*999)
-              ENDIF
-            ENDIF
-
-            !Get the intermediate information if this environment has any.
-            IF(ASSOCIATED(CELLML_ENVIRONMENT%INTERMEDIATE_FIELD)) THEN
-              INTERMEDIATE_FIELD=>CELLML_ENVIRONMENT%INTERMEDIATE_FIELD%INTERMEDIATE_FIELD
-              IF(ASSOCIATED(INTERMEDIATE_FIELD)) THEN
-                 CALL FIELD_PARAMETER_SET_DATA_GET(INTERMEDIATE_FIELD, &
-                   & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                   & INTERMEDIATES_DATA,ERR,ERROR,*999)                            
-              ENDIF
-            ENDIF!associated intermediate
-            IF(ASSOCIATED(CELLMLMODELSFIELD)) THEN
-              MODELS_FIELD=>CELLMLMODELSFIELD%MODELS_FIELD
-
-              IF(ASSOCIATED(MODELS_FIELD)) THEN
-                CALL FIELD_VARIABLE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,MODELS_VARIABLE,ERR,ERROR,*999)
-                CALL FIELD_DOF_ORDER_TYPE_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,DOF_ORDER_TYPE,ERR,ERROR,*999)
-                CALL FIELD_PARAMETER_SET_DATA_GET(MODELS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                  & MODELS_DATA,ERR,ERROR,*999)
-                model_idx = MODELS_DATA(DOF_NUMBER)
-                IF(ASSOCIATED(CELLML_ENVIRONMENT%MODELS(model_idx)%PTR)) THEN
-                  MODEL=>CELLML_ENVIRONMENT%MODELS(model_idx)%PTR
-                  NUMBER_STATES = MODEL%NUMBER_OF_STATE
-                  NUMBER_INTERMEDIATES=MODEL%NUMBER_OF_INTERMEDIATE
-                  NUMBER_PARAMETERS=MODEL%NUMBER_OF_PARAMETERS
-                  !Get the states from PETSc
-                  ALLOCATE(STATES(NUMBER_STATES),STAT=ERR)
-                  ALLOCATE(PETSC_STATES_ARRAY(0:NUMBER_STATES-1),STAT=ERR)
-                  ALLOCATE(RATES(NUMBER_STATES),STAT=ERR)
-                  ALLOCATE(PETSC_RATES_ARRAY(0:NUMBER_STATES-1),STAT=ERR)
-                  ALLOCATE(ARRAY_INDICES(0:NUMBER_STATES-1),STAT=ERR)
-                  ARRAY_INDICES = (/(array_idx,array_idx=0,(NUMBER_STATES-1))/)
-                  CALL VecAssemblyBegin(PETSC_STATES,ERR)
-                  CALL VecAssemblyEnd(PETSC_STATES,ERR)              
-                  CALL VecGetValues(PETSC_STATES,NUMBER_STATES, & 
-                    & ARRAY_INDICES,PETSC_STATES_ARRAY,ERR)
-
-                  IF(DOF_ORDER_TYPE==FIELD_SEPARATED_COMPONENT_DOF_ORDER) THEN
-
-                  ELSE !continguous dof ordering    
-                    STATE_START_DOF = (DOF_NUMBER-1)*MAX_NUMBER_STATES+1
-                    STATE_END_DOF = STATE_START_DOF+NUMBER_STATES-1
-                    PARAMETER_START_DOF = (DOF_NUMBER-1)*MAX_NUMBER_PARAMETERS+1
-                    PARAMETER_END_DOF = PARAMETER_START_DOF+NUMBER_PARAMETERS-1
-                    INTERMEDIATE_START_DOF = (DOF_NUMBER-1)*MAX_NUMBER_INTERMEDIATES+1
-                    INTERMEDIATE_END_DOF = INTERMEDIATE_START_DOF+NUMBER_INTERMEDIATES-1
-                    DO state_idx=1,NUMBER_STATES
-                      STATES(state_idx) = PETSC_STATES_ARRAY(state_idx-1)
-                    ENDDO
-#ifdef USECELLML                    
-                    CALL CELLML_MODEL_DEFINITION_CALL_RHS_ROUTINE(MODEL%PTR,TIME, &
-                      & STATES, &
-                      & RATES,INTERMEDIATES_DATA(INTERMEDIATE_START_DOF:INTERMEDIATE_END_DOF), &
-                      & PARAMETERS_DATA(PARAMETER_START_DOF:PARAMETER_END_DOF))
-#else
-                     CALL FLAG_ERROR("Must compile with USECELLML=true to use CellML functionality.", &
-                       & ERR,ERROR,*999)
-#endif
-                    DO state_idx=1,NUMBER_STATES
-                      PETSC_RATES_ARRAY(state_idx-1) = RATES(state_idx)
-                    ENDDO
-
-                    !set the PETSC_RATES solution to the current RATES
-                    CALL VecAssemblyBegin(PETSC_RATES,ERR)
-                    CALL VecAssemblyEnd(PETSC_RATES,ERR)
- 
-                    CALL VecSetValues(PETSC_RATES,(NUMBER_STATES), &
-                      & ARRAY_INDICES,PETSC_RATES_ARRAY, &
-                      & INSERT_VALUES,ERR)
-                    CALL VecAssemblyBegin(PETSC_RATES,ERR)
-                    CALL VecAssemblyEnd(PETSC_RATES,ERR)
-                  ENDIF !dof_order
-                ELSE
-                  CALL FLAG_ERROR("Cellml Model not associated.",ERR,ERROR,*999)
-                ENDIF !associated model
-              ELSE
-                CALL FLAG_ERROR("Cellml Models Field not associated.",ERR,ERROR,*999)
-              ENDIF!associated models field
-            ELSE
-              CALL FLAG_ERROR("Cellml models field not associated.",ERR,ERROR,*999)
-            ENDIF!associated cellml models field
-          ELSE
-            CALL FLAG_ERROR("Cellml environment not associated.",ERR,ERROR,*999)
-          ENDIF!associated cellml environment
-        ENDDO !cellml_idx
-      ELSE
-        CALL FLAG_ERROR("Cellml equations not associated.",ERR,ERROR,*999)
-      ENDIF!associated cellml equations
-    ELSE
-      CALL FLAG_ERROR("Cellml PETSC CTX solver not associated.",ERR,ERROR,*999)
-   ENDIF !associated CTX solver
- ELSE
-   CALL FLAG_ERROR("Cellml PETSC Context not associated.",ERR,ERROR,*999)
- ENDIF! associated ctx
- RETURN
-
-999 CALL WRITE_ERROR(ERR,ERROR,*998)
-998 CALL FLAG_WARNING("Error calling CELLML_DAE_RHS routine from PETSc.",ERR,ERROR,*997)
-997 RETURN    
-
-END SUBROUTINE CELLML_DAE_RHS    
-

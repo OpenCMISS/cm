@@ -75,7 +75,7 @@ MODULE FIELDML_INPUT_ROUTINES
   END INTERFACE
 
   PUBLIC :: FIELDML_INPUT_INITIALISE_FROM_FILE, FIELDML_INPUT_MESH_CREATE_START, &
-    & FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START, FIELDML_INPUT_BASIS_CREATE_START, FIELDML_INPUT_CREATE_MESH_COMPONENT, &
+    & FieldmlInput_CoordinateSystemCreateStart, FIELDML_INPUT_BASIS_CREATE_START, FIELDML_INPUT_CREATE_MESH_COMPONENT, &
     & FIELDML_INPUT_FIELD_CREATE_START, FIELDML_INPUT_FIELD_PARAMETERS_UPDATE, FIELDML_INPUT_NODES_CREATE_START
 
 CONTAINS
@@ -93,7 +93,7 @@ CONTAINS
     ENTERS( "FIELDML_ASSERT_IS_IN", ERR, ERROR, *999 )
 
     IF( FIELDML_INFO%IS_OUT ) THEN
-      CALL FLAG_ERROR( "Outbound FieldML handle used four an input-only operation.", ERR, ERROR, *999 )
+      CALL FlagError( "Outbound FieldML handle used four an input-only operation.", ERR, ERROR, *999 )
     ENDIF
     
     EXITS( "FIELDML_ASSERT_IS_IN" )
@@ -126,7 +126,7 @@ CONTAINS
 
     COUNT = Fieldml_GetBindCount( FIELDML_INFO%FML_HANDLE, BASIS_HANDLE )
     IF( COUNT /= 2 ) THEN
-      CALL FLAG_ERROR( "Library basis evaluators must have exactly two binds.", ERR, ERROR, *999 )
+      CALL FlagError( "Library basis evaluators must have exactly two binds.", ERR, ERROR, *999 )
     END IF
     
     PARAMS_HANDLE = FML_INVALID_HANDLE
@@ -139,20 +139,20 @@ CONTAINS
     ENDDO
 
     IF( PARAMS_HANDLE == FML_INVALID_HANDLE ) THEN
-      CALL FLAG_ERROR( "Library interpolators must have a correct parameter bind.", ERR, ERROR, *999 )
+      CALL FlagError( "Library interpolators must have a correct parameter bind.", ERR, ERROR, *999 )
     ENDIF
 
     IF( Fieldml_GetObjectType( FIELDML_INFO%FML_HANDLE, PARAMS_HANDLE ) /= FHT_AGGREGATE_EVALUATOR ) THEN
-      CALL FLAG_ERROR( "Parameter evaluator for interpolator must be an aggregate.", ERR, ERROR, *999 )
+      CALL FlagError( "Parameter evaluator for interpolator must be an aggregate.", ERR, ERROR, *999 )
     ENDIF
     
     COUNT = Fieldml_GetBindCount( FIELDML_INFO%FML_HANDLE, PARAMS_HANDLE )
     IF( COUNT /= 1 ) THEN
-      CALL FLAG_ERROR( "Nodal parameter evaluator must only have one bind.", ERR, ERROR, *999 )
+      CALL FlagError( "Nodal parameter evaluator must only have one bind.", ERR, ERROR, *999 )
     ENDIF
 
     IF( Fieldml_GetBindArgument( FIELDML_INFO%FML_HANDLE, PARAMS_HANDLE, 1 ) /= FIELDML_INFO%NODES_ARGUMENT_HANDLE ) THEN
-      CALL FLAG_ERROR( "Nodal parameter evaluator must bind the nodes argument.", ERR, ERROR, *999 )
+      CALL FlagError( "Nodal parameter evaluator must bind the nodes argument.", ERR, ERROR, *999 )
     ENDIF
     
     CONNECTIVITY_HANDLE = Fieldml_GetBindEvaluator( FIELDML_INFO%FML_HANDLE, PARAMS_HANDLE, 1 )
@@ -250,12 +250,12 @@ CONTAINS
     ENTERS( "FIELDML_INPUT_GET_BASIS_INFO", ERR, ERROR, *999 )
 
     IF( .NOT. FIELDML_INPUT_IS_KNOWN_BASIS( FIELDML_INFO, BASIS_HANDLE, ERR, ERROR ) ) THEN
-      CALL FLAG_ERROR( "Basis specified in FieldML file is not yet supported.", ERR, ERROR, *999 )
+      CALL FlagError( "Basis specified in FieldML file is not yet supported.", ERR, ERROR, *999 )
     ENDIF
     IF(ERR/=0) GOTO 999
 
     IF( Fieldml_GetObjectType( FIELDML_INFO%FML_HANDLE, BASIS_HANDLE ) /= FHT_REFERENCE_EVALUATOR ) THEN
-      CALL FLAG_ERROR( "Basis evaluator must be a continuous reference.", ERR, ERROR, *999 )
+      CALL FlagError( "Basis evaluator must be a continuous reference.", ERR, ERROR, *999 )
     ENDIF
     
     LIBRARY_BASIS_HANDLE = Fieldml_GetReferenceSourceEvaluator( FIELDML_INFO%FML_HANDLE, BASIS_HANDLE )
@@ -268,77 +268,77 @@ CONTAINS
       PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
         & "parameters.3d.unit.triquadraticLagrange.argument"//C_NULL_CHAR )
       ALLOCATE( BASIS_INTERPOLATIONS(3), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate interpolation array.", ERR, ERROR, *999 )
       ALLOCATE( COLLAPSE(3), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate collapse array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_QUADRATIC_LAGRANGE_INTERPOLATION
       BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
     ELSE IF( INDEX( NAME, 'interpolator.3d.unit.trilinearLagrange') == 1 ) THEN
       PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
         & "parameters.3d.unit.trilinearLagrange.argument"//C_NULL_CHAR )
       ALLOCATE( BASIS_INTERPOLATIONS(3), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate interpolation array.", ERR, ERROR, *999 )
       ALLOCATE( COLLAPSE(3), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate collapse array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_LINEAR_LAGRANGE_INTERPOLATION
       BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
     ELSE IF( INDEX( NAME, 'interpolator.2d.unit.biquadraticLagrange') == 1 ) THEN
       PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
         & "parameters.2d.unit.biquadraticLagrange.argument"//C_NULL_CHAR )
       ALLOCATE( BASIS_INTERPOLATIONS(2), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate interpolation array.", ERR, ERROR, *999 )
       ALLOCATE( COLLAPSE(2), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate collapse array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_QUADRATIC_LAGRANGE_INTERPOLATION
       BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
     ELSE IF( INDEX( NAME, 'interpolator.2d.unit.bilinearLagrange') == 1 ) THEN
       PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
         & "parameters.2d.unit.bilinearLagrange.argument"//C_NULL_CHAR )
       ALLOCATE( BASIS_INTERPOLATIONS(2), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate interpolation array.", ERR, ERROR, *999 )
       ALLOCATE( COLLAPSE(2), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate collapse array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_LINEAR_LAGRANGE_INTERPOLATION
       BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
     ELSE IF( INDEX( NAME, 'interpolator.1d.unit.linearLagrange') == 1 ) THEN
       PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
         & "parameters.1d.unit.linearLagrange.argument"//C_NULL_CHAR )
       ALLOCATE( BASIS_INTERPOLATIONS(1), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate interpolation array.", ERR, ERROR, *999 )
       ALLOCATE( COLLAPSE(1), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate collapse array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate collapse array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_LINEAR_LAGRANGE_INTERPOLATION
       BASISTYPE = BASIS_LAGRANGE_HERMITE_TP_TYPE
     ELSE IF( INDEX( NAME, 'interpolator.2d.unit.bilinearSimplex') == 1 ) THEN
       PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
         & "parameters.2d.unit.bilinearSimplex.argument"//C_NULL_CHAR )
       ALLOCATE( BASIS_INTERPOLATIONS(2), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate interpolation array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_LINEAR_SIMPLEX_INTERPOLATION
       BASISTYPE = BASIS_SIMPLEX_TYPE
     ELSE IF( INDEX( NAME, 'interpolator.2d.unit.biquadraticSimplex') == 1 ) THEN
       PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
         & "parameters.2d.unit.biquadraticSimplex.argument"//C_NULL_CHAR )
       ALLOCATE( BASIS_INTERPOLATIONS(2), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate interpolation array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_QUADRATIC_SIMPLEX_INTERPOLATION
       BASISTYPE = BASIS_SIMPLEX_TYPE
     ELSE IF( INDEX( NAME, 'interpolator.3d.unit.trilinearSimplex') == 1 ) THEN
       PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
         & "parameters.3d.unit.trilinearSimplex.argument"//C_NULL_CHAR )
       ALLOCATE( BASIS_INTERPOLATIONS(3), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate interpolation array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_LINEAR_SIMPLEX_INTERPOLATION
       BASISTYPE = BASIS_SIMPLEX_TYPE
     ELSE IF( INDEX( NAME, 'interpolator.3d.unit.triquadraticSimplex') == 1 ) THEN
       PARAM_ARG_HANDLE = Fieldml_GetObjectByDeclaredName( FIELDML_INFO%FML_HANDLE, &
         & "parameters.3d.unit.triquadraticSimplex.argument"//C_NULL_CHAR )
       ALLOCATE( BASIS_INTERPOLATIONS(3), STAT = ERR )
-      IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate interpolation array.", ERR, ERROR, *999 )
+      IF( ERR /= 0 ) CALL FlagError( "Could not allocate interpolation array.", ERR, ERROR, *999 )
       BASIS_INTERPOLATIONS = BASIS_QUADRATIC_SIMPLEX_INTERPOLATION
       BASISTYPE = BASIS_SIMPLEX_TYPE
     ELSE
-      CALL FLAG_ERROR( "Basis "//NAME(1:LENGTH)//" cannot yet be interpreted.", ERR, ERROR, *999 )
+      CALL FlagError( "Basis "//NAME(1:LENGTH)//" cannot yet be interpreted.", ERR, ERROR, *999 )
     ENDIF
     
     IF( BASISTYPE == BASIS_LAGRANGE_HERMITE_TP_TYPE ) THEN
@@ -509,7 +509,7 @@ CONTAINS
     TYPE = Fieldml_GetObjectType( FIELDML_INFO%FML_HANDLE, FIELD_HANDLE )
 
     IF( TYPE /= FHT_AGGREGATE_EVALUATOR ) THEN
-      CALL FLAG_ERROR( "Field evaluator must be an aggregate evaluator.", ERR, ERROR, *999 )
+      CALL FlagError( "Field evaluator must be an aggregate evaluator.", ERR, ERROR, *999 )
     ENDIF
 
     COUNT = Fieldml_GetEvaluatorCount( FIELDML_INFO%FML_HANDLE, FIELD_HANDLE )
@@ -517,7 +517,7 @@ CONTAINS
 
     IF( ( DEFAULT_EVALUATOR /= FML_INVALID_HANDLE ) .AND. .NOT. &
       & FIELDML_INPUT_IS_TEMPLATE_COMPATIBLE( FIELDML_INFO, DEFAULT_EVALUATOR, ELEMENT_TYPE, ERR, ERROR ) ) THEN
-      CALL FLAG_ERROR( "Field evaluator must be use a compatible default.", ERR, ERROR, *999 )
+      CALL FlagError( "Field evaluator must be use a compatible default.", ERR, ERROR, *999 )
       EXITS( "FIELDML_INPUT_CHECK_FIELD_COMPATIBLE" )
       RETURN
     ENDIF
@@ -525,7 +525,7 @@ CONTAINS
 
     IF( COUNT == 0 ) THEN
       IF( DEFAULT_EVALUATOR == FML_INVALID_HANDLE ) THEN
-        CALL FLAG_ERROR( "Field evaluator must be able to evaluator all field components.", ERR, ERROR, *999 )
+        CALL FlagError( "Field evaluator must be able to evaluator all field components.", ERR, ERROR, *999 )
       ENDIF
       EXITS( "FIELDML_INPUT_CHECK_FIELD_COMPATIBLE" )
       RETURN
@@ -534,7 +534,7 @@ CONTAINS
     DO I = 1, COUNT
       EVALUATOR = Fieldml_GetEvaluator( FIELDML_INFO%FML_HANDLE, FIELD_HANDLE, I )
       IF( .NOT. FIELDML_INPUT_IS_TEMPLATE_COMPATIBLE( FIELDML_INFO, EVALUATOR, ELEMENT_TYPE, ERR, ERROR ) ) THEN
-        CALL FLAG_ERROR( "Field evaluator must use a compatible component evaluator.", ERR, ERROR, *999 )
+        CALL FlagError( "Field evaluator must use a compatible component evaluator.", ERR, ERROR, *999 )
         EXITS( "FIELDML_INPUT_CHECK_FIELD_COMPATIBLE" )
         RETURN
       ENDIF
@@ -553,7 +553,7 @@ CONTAINS
   !
 
   !>Creates an OpenCMISS coordinate system using relevant parameters from FieldML. Does not call CreateFinish.
-  SUBROUTINE FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START( FIELDML_INFO, EVALUATOR_NAME, COORDINATE_SYSTEM, USER_NUMBER, &
+  SUBROUTINE FieldmlInput_CoordinateSystemCreateStart( FIELDML_INFO, EVALUATOR_NAME, COORDINATE_SYSTEM, USER_NUMBER, &
     & ERR, ERROR, * )
     !Arguments
     TYPE(FIELDML_IO_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
@@ -570,7 +570,7 @@ CONTAINS
     INTEGER(INTG) :: COORDINATE_TYPE
     INTEGER(INTG) :: COORDINATE_COUNT
 
-    ENTERS( "FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START", ERR, ERROR, *999 )
+    ENTERS( "FieldmlInput_CoordinateSystemCreateStart", ERR, ERROR, *999 )
     
     CALL FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, *999 )
 
@@ -593,7 +593,7 @@ CONTAINS
       COORDINATE_TYPE = COORDINATE_RECTANGULAR_CARTESIAN_TYPE
       COORDINATE_COUNT = 2
     ELSE
-      CALL FLAG_ERROR( "Coordinate system "//NAME(1:LENGTH)//" not yet supported.", ERR, ERROR, *999 )
+      CALL FlagError( "Coordinate system "//NAME(1:LENGTH)//" not yet supported.", ERR, ERROR, *999 )
     ENDIF
 
     CALL COORDINATE_SYSTEM_CREATE_START( USER_NUMBER, COORDINATE_SYSTEM, ERR, ERROR, *999 )
@@ -601,12 +601,12 @@ CONTAINS
     CALL COORDINATE_SYSTEM_DIMENSION_SET( COORDINATE_SYSTEM, COORDINATE_COUNT, ERR, ERROR, *999 )
     CALL COORDINATE_SYSTEM_TYPE_SET( COORDINATE_SYSTEM, COORDINATE_TYPE, ERR, ERROR, *999 )
 
-    EXITS( "FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START" )
+    EXITS( "FieldmlInput_CoordinateSystemCreateStart" )
     RETURN
-999 ERRORSEXITS( "FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START", ERR, ERROR )
+999 ERRORSEXITS( "FieldmlInput_CoordinateSystemCreateStart", ERR, ERROR )
     RETURN 1
 
-  END SUBROUTINE FIELDML_INPUT_COORDINATE_SYSTEM_CREATE_START
+  END SUBROUTINE FieldmlInput_CoordinateSystemCreateStart
 
 
   !
@@ -632,16 +632,16 @@ CONTAINS
 
     NODES_ARGUMENT_HANDLE = Fieldml_GetObjectByName( FIELDML_INFO%FML_HANDLE, cchar(NODES_ARGUMENT_NAME) )
     IF( NODES_ARGUMENT_HANDLE == FML_INVALID_HANDLE ) THEN
-      CALL FLAG_ERROR( "Nodes argument name "//NODES_ARGUMENT_NAME//" is invalid.", ERR, ERROR, *999 )
+      CALL FlagError( "Nodes argument name "//NODES_ARGUMENT_NAME//" is invalid.", ERR, ERROR, *999 )
     END IF
 
     IF( Fieldml_GetObjectType( FIELDML_INFO%FML_HANDLE, NODES_ARGUMENT_HANDLE ) /= FHT_ARGUMENT_EVALUATOR ) THEN
-      CALL FLAG_ERROR( "Nodes argument "//NODES_ARGUMENT_NAME//" type is not an argument evaluator.", ERR, ERROR, *999 )
+      CALL FlagError( "Nodes argument "//NODES_ARGUMENT_NAME//" type is not an argument evaluator.", ERR, ERROR, *999 )
     ENDIF
 
     NODES_HANDLE = Fieldml_GetValueType( FIELDML_INFO%FML_HANDLE, NODES_ARGUMENT_HANDLE )
     IF( NODES_HANDLE == FML_INVALID_HANDLE ) THEN
-      CALL FLAG_ERROR( "Nodes argument "//NODES_ARGUMENT_NAME//" type is invalid.", ERR, ERROR, *999 )
+      CALL FlagError( "Nodes argument "//NODES_ARGUMENT_NAME//" type is invalid.", ERR, ERROR, *999 )
     END IF
 
     FIELDML_INFO%NODES_ARGUMENT_HANDLE = NODES_ARGUMENT_HANDLE
@@ -703,7 +703,7 @@ CONTAINS
 
     COUNT = Fieldml_GetTypeComponentCount( FIELDML_INFO%FML_HANDLE, FIELDML_INFO%XI_HANDLE )
     IF( ( COUNT < 1 ) .OR. ( COUNT > 3 ) ) THEN
-      CALL FLAG_ERROR( "Mesh "//MESH_ARGUMENT_NAME//" dimension cannot be greater than 3, or less than 1.", &
+      CALL FlagError( "Mesh "//MESH_ARGUMENT_NAME//" dimension cannot be greater than 3, or less than 1.", &
         & ERR, ERROR, *999 )
     ENDIF
 
@@ -750,7 +750,7 @@ CONTAINS
       & ERR, ERROR, *999 )
     CALL LIST_ITEM_IN_LIST( FIELDML_INFO%BASIS_HANDLES, HANDLE, LIST_INDEX, ERR, ERROR, *999 )
     IF( LIST_INDEX /= 0 ) THEN
-      CALL FLAG_ERROR( "Named basis "//EVALUATOR_NAME//" already created", ERR, ERROR, *999 )
+      CALL FlagError( "Named basis "//EVALUATOR_NAME//" already created", ERR, ERROR, *999 )
     ENDIF
     
     CALL FIELDML_INPUT_GET_BASIS_INFO( FIELDML_INFO, HANDLE, CONNECTIVITY_HANDLE, LAYOUT_HANDLE, BASISTYPE, &
@@ -816,7 +816,7 @@ CONTAINS
         LENGTH = Fieldml_CopyError( FIELDML_INFO%FML_HANDLE, I, NAME, MAXSTRLEN )
          CALL WRITE_STRING_VALUE(ERROR_OUTPUT_TYPE,"FieldML parse error: ",NAME(1:LENGTH),ERR,ERROR,*999)
       ENDDO
-      CALL FLAG_ERROR( "Cannot create FieldML handle from file "//FILENAME//".", ERR, ERROR, *999 )
+      CALL FlagError( "Cannot create FieldML handle from file "//FILENAME//".", ERR, ERROR, *999 )
     ENDIF
 
     EXITS( "FIELDML_INPUT_INITIALISE_FROM_FILE" )
@@ -854,20 +854,20 @@ CONTAINS
     
     RANK = Fieldml_GetArrayDataSourceRank( FIELDML_INFO%FML_HANDLE, ORDER_HANDLE )
     IF( RANK /= 1 ) THEN
-      CALL FLAG_ERROR( "Invalid rank for ensemble order.", err, ERROR, *999 )
+      CALL FlagError( "Invalid rank for ensemble order.", err, ERROR, *999 )
     ENDIF
     
     READER_HANDLE = Fieldml_OpenReader( FIELDML_INFO%FML_HANDLE, ORDER_HANDLE )
     CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot open order reader.", FIELDML_INFO%FML_HANDLE, ERR, ERROR, *999 )
     
     ALLOCATE( ORDER(COUNT), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate order array.", ERR, ERROR, *999 )
+    IF( ERR /= 0 ) CALL FlagError( "Could not allocate order array.", ERR, ERROR, *999 )
     OFFSETS(:) = 0
     SIZES(1) = COUNT
 
     FML_ERR = Fieldml_ReadIntSlab( READER_HANDLE, C_LOC(OFFSETS), C_LOC(SIZES), C_LOC(ORDER) )
     IF( FML_ERR /= FML_ERR_NO_ERROR ) THEN
-      CALL FLAG_ERROR( "Error reading order data"//"("// TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) //").", &
+      CALL FlagError( "Error reading order data"//"("// TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) //").", &
         & ERR, ERROR, *999 )
     ENDIF
 
@@ -949,7 +949,7 @@ CONTAINS
 
     HANDLE = Fieldml_GetObjectByName( FIELDML_INFO%FML_HANDLE, cchar(EVALUATOR_NAME) )
     IF( .NOT. FIELDML_INPUT_IS_TEMPLATE_COMPATIBLE( FIELDML_INFO, HANDLE, FIELDML_INFO%ELEMENTS_HANDLE, ERR, ERROR ) ) THEN
-      CALL FLAG_ERROR( "Mesh component cannot be created from evaluator "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
+      CALL FlagError( "Mesh component cannot be created from evaluator "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
     ENDIF
     IF(ERR/=0) GOTO 999
     
@@ -964,11 +964,11 @@ CONTAINS
     
     CALL LIST_NUMBER_OF_ITEMS_GET( FIELDML_INFO%BASIS_HANDLES, KNOWN_BASIS_COUNT, ERR, ERROR, *999 )
     ALLOCATE( CONNECTIVITY_READERS( KNOWN_BASIS_COUNT ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate connectivity readers for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
+    IF( ERR /= 0 ) CALL FlagError( "Could not allocate connectivity readers for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
     ALLOCATE( CONNECTIVITY_COUNTS( KNOWN_BASIS_COUNT ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate connectivity counts for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
+    IF( ERR /= 0 ) CALL FlagError( "Could not allocate connectivity counts for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
     ALLOCATE( CONNECTIVITY_ORDERS( KNOWN_BASIS_COUNT ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate connectivity orders for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
+    IF( ERR /= 0 ) CALL FlagError( "Could not allocate connectivity orders for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
     
     MAX_BASIS_NODES_COUNT = 0
     DO KNOWN_BASIS_NUMBER = 1, KNOWN_BASIS_COUNT
@@ -997,9 +997,9 @@ CONTAINS
     END DO
 
     ALLOCATE( NODES_BUFFER( MAX_BASIS_NODES_COUNT ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate nodes buffer for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
+    IF( ERR /= 0 ) CALL FlagError( "Could not allocate nodes buffer for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
     ALLOCATE( RAW_BUFFER( MAX_BASIS_NODES_COUNT ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate raw nodes buffer for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
+    IF( ERR /= 0 ) CALL FlagError( "Could not allocate raw nodes buffer for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
 
     ELEMENT_COUNT = Fieldml_GetMemberCount( FIELDML_INFO%FML_HANDLE, FIELDML_INFO%ELEMENTS_HANDLE )
     CALL FIELDML_UTIL_CHECK_FIELDML_ERROR( "Cannot get element count for mesh with component "//EVALUATOR_NAME//".", &
@@ -1022,7 +1022,7 @@ CONTAINS
           & EVALUATOR_NAME//".", FIELDML_INFO%FML_HANDLE, ERR, ERROR, *999 )
         CALL BASIS_USER_NUMBER_FIND( BASIS_NUMBER, BASIS, ERR, ERROR, *999 )
         IF( .NOT. ASSOCIATED( BASIS ) ) THEN
-          CALL FLAG_ERROR( "Basis not found for component "//EVALUATOR_NAME//".", ERR, ERROR, *999 ) 
+          CALL FlagError( "Basis not found for component "//EVALUATOR_NAME//".", ERR, ERROR, *999 ) 
         ENDIF
         LAST_BASIS_HANDLE = BASIS_REFERENCE_HANDLE
       ENDIF
@@ -1041,7 +1041,7 @@ CONTAINS
         FML_ERR = Fieldml_ReadIntSlab( TEMP_POINTER, &
           & C_LOC(OFFSETS), C_LOC(SIZES), C_LOC(RAW_BUFFER) )
         IF( FML_ERR /= FML_ERR_NO_ERROR ) THEN
-          CALL FLAG_ERROR( "Error reading connectivity for "//EVALUATOR_NAME//"("// &
+          CALL FlagError( "Error reading connectivity for "//EVALUATOR_NAME//"("// &
             & TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) //").", ERR, ERROR, *999 )
         ENDIF
         CALL LIST_ITEM_GET( FIELDML_INFO%BASIS_HANDLES, KNOWN_BASIS_NUMBER, TEMP_BASIS_HANDLE, ERR, ERROR, *999 )
@@ -1062,7 +1062,7 @@ CONTAINS
       TEMP_POINTER = CONNECTIVITY_READERS(KNOWN_BASIS_NUMBER)
       FML_ERR = Fieldml_CloseReader( TEMP_POINTER )
       IF( FML_ERR /= FML_ERR_NO_ERROR ) THEN
-        CALL FLAG_ERROR( "Error closing connectivity reader for "//EVALUATOR_NAME//"("// &
+        CALL FlagError( "Error closing connectivity reader for "//EVALUATOR_NAME//"("// &
           & TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) //").", ERR, ERROR, *999 )
       ENDIF
       IF( ALLOCATED( CONNECTIVITY_ORDERS( KNOWN_BASIS_NUMBER )%ARRAY ) ) THEN
@@ -1206,22 +1206,22 @@ CONTAINS
         ENDDO !component_idx
         IF(IS_ALL_NODAL_INTERPOLATION) THEN
           IF(IS_SAME_MESH_COMPONENTS) THEN
-            CALL FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE(FIELDML_INFO,EVALUATOR_NAME,FIELD,VARIABLE_TYPE,SET_TYPE, &
+            CALL FieldmlInput_FieldNodalParametersUpdate(FIELDML_INFO,EVALUATOR_NAME,FIELD,VARIABLE_TYPE,SET_TYPE, &
               & ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR( &
+            CALL FlagError( &
               & "FieldML input parameters only implemented for fields where all components have the same mesh component.", &
               & ERR,ERROR,*999)            
           ENDIF
         ELSE
-          CALL FLAG_ERROR("FieldML input parameters only implemented for fields where all components are nodally interpolated.", &
+          CALL FlagError("FieldML input parameters only implemented for fields where all components are nodally interpolated.", &
             & ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Field does not have any components.",ERR,ERROR,*999)
+        CALL FlagError("Field does not have any components.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Field is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Field is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("FIELDML_INPUT_FIELD_PARAMETERS_UPDATE")
@@ -1235,7 +1235,7 @@ CONTAINS
   !
 
   !>Update the given field's nodal parameters using the given parameter evaluator.
-  SUBROUTINE FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE( FIELDML_INFO, EVALUATOR_NAME, FIELD, VARIABLE_TYPE, SET_TYPE, &
+  SUBROUTINE FieldmlInput_FieldNodalParametersUpdate( FIELDML_INFO, EVALUATOR_NAME, FIELD, VARIABLE_TYPE, SET_TYPE, &
     & ERR, ERROR, * )
     !Arguments
     TYPE(FIELDML_IO_TYPE), INTENT(INOUT) :: FIELDML_INFO !<The FieldML parsing state.
@@ -1256,7 +1256,7 @@ CONTAINS
     INTEGER(INTG) :: READER
     INTEGER(INTG) :: myComputationalNodeNumber,nodeDomain,meshComponentNumber
     
-    ENTERS( "FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE", ERR, ERROR, *999 )
+    ENTERS( "FieldmlInput_FieldNodalParametersUpdate", ERR, ERROR, *999 )
     
     CALL FIELDML_ASSERT_IS_IN( FIELDML_INFO, ERR, ERROR, *999 )
     
@@ -1272,7 +1272,7 @@ CONTAINS
       
     RANK = Fieldml_GetArrayDataSourceRank( FIELDML_INFO%FML_HANDLE, DATA_SOURCE )
     IF( RANK /= 2 ) THEN
-      CALL FLAG_ERROR( "Invalid rank for nodal dofs.", err, ERROR, *999 )
+      CALL FlagError( "Invalid rank for nodal dofs.", err, ERROR, *999 )
     ENDIF
 
     READER = Fieldml_OpenReader( FIELDML_INFO%FML_HANDLE, DATA_SOURCE )
@@ -1282,7 +1282,7 @@ CONTAINS
     CALL FIELD_NUMBER_OF_COMPONENTS_GET( FIELD, VARIABLE_TYPE, FIELD_DIMENSIONS, ERR, ERROR, *999 )
     
     ALLOCATE( BUFFER( FIELD_DIMENSIONS ), STAT = ERR )
-    IF( ERR /= 0 ) CALL FLAG_ERROR( "Could not allocate raw nodes buffer for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
+    IF( ERR /= 0 ) CALL FlagError( "Could not allocate raw nodes buffer for "//EVALUATOR_NAME//".", ERR, ERROR, *999 )
       
     !TODO Code assumes that the data is dense in both node and component indexes.
     NULLIFY( NODES )
@@ -1299,7 +1299,7 @@ CONTAINS
       FML_ERR = Fieldml_ReadDoubleSlab( READER, C_LOC(OFFSETS), C_LOC(SIZES), C_LOC(BUFFER) )
       OFFSETS(1) = OFFSETS(1) + 1
       IF( FML_ERR /= FML_ERR_NO_ERROR ) THEN
-        CALL FLAG_ERROR( "Cannot read nodal dofs from "//EVALUATOR_NAME//"("&
+        CALL FlagError( "Cannot read nodal dofs from "//EVALUATOR_NAME//"("&
           & // TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) //").", ERR, ERROR, *999 )
       ENDIF
 
@@ -1322,18 +1322,18 @@ CONTAINS
   
     FML_ERR = Fieldml_CloseReader( READER )
     IF( FML_ERR /= FML_ERR_NO_ERROR ) THEN
-      CALL FLAG_ERROR( "Error closing nodal dofs reader for "//EVALUATOR_NAME//"("&
+      CALL FlagError( "Error closing nodal dofs reader for "//EVALUATOR_NAME//"("&
         & // TRIM(NUMBER_TO_VSTRING(FML_ERR,"*",ERR,ERROR)) //").", ERR, ERROR, *999 )
     ENDIF
 
     !TODO Set element and constant parameters
     
-    EXITS( "FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE" )
+    EXITS( "FieldmlInput_FieldNodalParametersUpdate" )
     RETURN
-999 ERRORSEXITS( "FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE", ERR, ERROR )
+999 ERRORSEXITS( "FieldmlInput_FieldNodalParametersUpdate", ERR, ERROR )
     RETURN 1
   
-  END SUBROUTINE FIELDML_INPUT_FIELD_NODAL_PARAMETERS_UPDATE
+  END SUBROUTINE FieldmlInput_FieldNodalParametersUpdate
 
   !
   !================================================================================================================================

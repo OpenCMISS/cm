@@ -2315,11 +2315,15 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELD_TYPE), POINTER :: PARAMETERS_FIELD !<A pointer to the parameters field
   END TYPE CELLML_PARAMETERS_FIELD_TYPE
  
-  !> Contains information on the solver and the dof for which cellml equations are to be evaluated by petsc
-  TYPE CELLML_PETSC_CONTEXT_TYPE
-    TYPE(SOLVER_TYPE), POINTER :: SOLVER
-    INTEGER(INTG) :: DOF_NUMBER
-  END TYPE CELLML_PETSC_CONTEXT_TYPE 
+  !> Contains information on the solver, cellml, dof etc. for which cellml equations are to be evaluated by petsc
+  TYPE CellMLPETScContextType
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer to the solver
+    TYPE(CELLML_TYPE), POINTER :: cellml !<A pointer to the CellML environment
+    INTEGER(INTG) :: dofIdx !<The current DOF to be evaluated
+    REAL(DP), POINTER :: rates(:) !<A pointer to the temporary rates array
+    INTEGER(INTG), ALLOCATABLE :: ratesIndices(:) !<The PETSc array indices for the rates
+  END TYPE CellMLPETScContextType
+  
   !>Contains information on the mapping between CellML fields and OpenCMISS fields and vise versa.
   TYPE CELLML_MODEL_MAP_TYPE
     INTEGER(INTG) :: CELLML_MAP_TYPE !<The direction of the mapping. \see CELLML_FieldMappingTypes,CMISS_CELLML

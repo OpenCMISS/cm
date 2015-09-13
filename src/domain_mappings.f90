@@ -167,10 +167,10 @@ CONTAINS
         LOCAL_ERROR="The specified global number of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_NUMBER,"*",ERR,ERROR))// &
           & " is invalid. The number must be between 1 and "// &
           & TRIM(NUMBER_TO_VSTRING(DOMAIN_MAPPING%NUMBER_OF_GLOBAL,"*",ERR,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Domain mapping is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DOMAIN_MAPPINGS_GLOBAL_TO_LOCAL_GET")
@@ -207,16 +207,16 @@ CONTAINS
       IF(ERR/=0) GOTO 999        
       !Calculate local to global maps from global to local map
       ALLOCATE(DOMAIN_MAPPING%NUMBER_OF_DOMAIN_LOCAL(0:DOMAIN_MAPPING%NUMBER_OF_DOMAINS-1),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of domain local.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate number of domain local.",ERR,ERROR,*999)
       DOMAIN_MAPPING%NUMBER_OF_DOMAIN_LOCAL=0
       ALLOCATE(DOMAIN_MAPPING%NUMBER_OF_DOMAIN_GHOST(0:DOMAIN_MAPPING%NUMBER_OF_DOMAINS-1),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate number of domain ghost.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate number of domain ghost.",ERR,ERROR,*999)
       DOMAIN_MAPPING%NUMBER_OF_DOMAIN_GHOST=0
       NUMBER_INTERNAL=0
       NUMBER_BOUNDARY=0
       NUMBER_GHOST=0
       ALLOCATE(ADJACENT_DOMAINS(0:DOMAIN_MAPPING%NUMBER_OF_DOMAINS-1,0:DOMAIN_MAPPING%NUMBER_OF_DOMAINS-1),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate adjacent domains.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate adjacent domains.",ERR,ERROR,*999)
       ADJACENT_DOMAINS=0
       DO global_number=1,DOMAIN_MAPPING%NUMBER_OF_GLOBAL
         !If necessary, reset global domain index so that my computational node is in the first index position
@@ -268,7 +268,7 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="The domain local type of "//TRIM(NUMBER_TO_VSTRING(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP( &
                 & global_number)%LOCAL_TYPE(domain_idx),"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ENDIF
         ENDDO !domain_idx
@@ -288,9 +288,9 @@ CONTAINS
         ENDDO !domain_no2
       ENDDO !domain_no
       ALLOCATE(DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(0:DOMAIN_MAPPING%NUMBER_OF_DOMAINS),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate adjacent domains ptr.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate adjacent domains ptr.",ERR,ERROR,*999)
       ALLOCATE(DOMAIN_MAPPING%ADJACENT_DOMAINS_LIST(TOTAL_NUMBER_OF_ADJACENT_DOMAINS),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate adjacent domains list.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate adjacent domains list.",ERR,ERROR,*999)
       COUNT=1
       DO domain_no=0,DOMAIN_MAPPING%NUMBER_OF_DOMAINS-1
         DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(domain_no)=COUNT
@@ -306,9 +306,9 @@ CONTAINS
       DOMAIN_MAPPING%ADJACENT_DOMAINS_PTR(DOMAIN_MAPPING%NUMBER_OF_DOMAINS)=COUNT
       DEALLOCATE(ADJACENT_DOMAINS)
       ALLOCATE(DOMAIN_MAPPING%DOMAIN_LIST(NUMBER_INTERNAL+NUMBER_BOUNDARY+NUMBER_GHOST),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain map domain list.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate domain map domain list.",ERR,ERROR,*999)
       ALLOCATE(DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(NUMBER_INTERNAL+NUMBER_BOUNDARY+NUMBER_GHOST),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate domain map local to global list.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate domain map local to global list.",ERR,ERROR,*999)
       DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL=NUMBER_INTERNAL+NUMBER_BOUNDARY+NUMBER_GHOST
       DOMAIN_MAPPING%NUMBER_OF_LOCAL=NUMBER_INTERNAL+NUMBER_BOUNDARY
       DOMAIN_MAPPING%NUMBER_OF_INTERNAL=NUMBER_INTERNAL
@@ -324,14 +324,14 @@ CONTAINS
       NUMBER_BOUNDARY=0
       NUMBER_GHOST=0
       ALLOCATE(DOMAIN_MAPPING%ADJACENT_DOMAINS(NUMBER_OF_ADJACENT_DOMAINS),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate adjacent domains.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate adjacent domains.",ERR,ERROR,*999)
       DOMAIN_MAPPING%NUMBER_OF_ADJACENT_DOMAINS=NUMBER_OF_ADJACENT_DOMAINS
       ALLOCATE(ADJACENT_DOMAIN_MAP(0:DOMAIN_MAPPING%NUMBER_OF_DOMAINS-1),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate adjacent domain map.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate adjacent domain map.",ERR,ERROR,*999)
       ALLOCATE(GHOST_SEND_LISTS(DOMAIN_MAPPING%NUMBER_OF_ADJACENT_DOMAINS),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ghost send list.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate ghost send list.",ERR,ERROR,*999)
       ALLOCATE(GHOST_RECEIVE_LISTS(DOMAIN_MAPPING%NUMBER_OF_ADJACENT_DOMAINS),STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate ghost recieve list.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate ghost recieve list.",ERR,ERROR,*999)
       DO domain_idx=1,DOMAIN_MAPPING%NUMBER_OF_ADJACENT_DOMAINS
         CALL DOMAIN_MAPPINGS_ADJACENT_DOMAIN_INITIALISE(DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx),ERR,ERROR,*999)
         domain_no= &
@@ -375,14 +375,14 @@ CONTAINS
                   LOCAL_ERROR="Invalid domain mapping. Global number "//TRIM(NUMBER_TO_VSTRING(global_number,"*",ERR,ERROR))// &
                     & " is owned by domain number "//TRIM(NUMBER_TO_VSTRING(RECEIVE_FROM_DOMAIN,"*",ERR,ERROR))// &
                     & " as well as domain number "//TRIM(NUMBER_TO_VSTRING(domain_no,"*",ERR,ERROR))//"."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDIF
             ENDDO !domain_idx
             IF(RECEIVE_FROM_DOMAIN==-1) THEN
               LOCAL_ERROR="Invalid domain mapping. Global number "//TRIM(NUMBER_TO_VSTRING(global_number,"*",ERR,ERROR))// &
                 & " is not owned by any domain."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)          
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)          
             ENDIF
           ENDIF
         ENDIF
@@ -406,7 +406,7 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="The domain local type of "//TRIM(NUMBER_TO_VSTRING(DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP( &
                 & global_number)%LOCAL_TYPE(domain_idx),"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE IF(SEND_GLOBAL.AND.local_type==DOMAIN_LOCAL_GHOST) THEN
             local_number2=DOMAIN_MAPPING%GLOBAL_TO_LOCAL_MAP(global_number)%LOCAL_NUMBER(1) !The local number for this node
@@ -419,7 +419,7 @@ CONTAINS
         CALL LIST_REMOVE_DUPLICATES(GHOST_SEND_LISTS(domain_idx)%PTR,ERR,ERROR,*999)
         CALL LIST_DETACH_AND_DESTROY(GHOST_SEND_LISTS(domain_idx)%PTR,NUMBER_OF_GHOST_SEND,SEND_LIST,ERR,ERROR,*999)
         ALLOCATE(DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%LOCAL_GHOST_SEND_INDICES(NUMBER_OF_GHOST_SEND),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local ghost send inidices.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate local ghost send inidices.",ERR,ERROR,*999)
         DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%LOCAL_GHOST_SEND_INDICES(1:NUMBER_OF_GHOST_SEND)= &
           & SEND_LIST(1:NUMBER_OF_GHOST_SEND)
         DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%NUMBER_OF_SEND_GHOSTS=NUMBER_OF_GHOST_SEND
@@ -427,7 +427,7 @@ CONTAINS
         CALL LIST_REMOVE_DUPLICATES(GHOST_RECEIVE_LISTS(domain_idx)%PTR,ERR,ERROR,*999)
         CALL LIST_DETACH_AND_DESTROY(GHOST_RECEIVE_LISTS(domain_idx)%PTR,NUMBER_OF_GHOST_RECEIVE,RECEIVE_LIST,ERR,ERROR,*999)
         ALLOCATE(DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%LOCAL_GHOST_RECEIVE_INDICES(NUMBER_OF_GHOST_RECEIVE),STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate local ghost receive inidices.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate local ghost receive inidices.",ERR,ERROR,*999)
         DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%LOCAL_GHOST_RECEIVE_INDICES(1:NUMBER_OF_GHOST_RECEIVE)= &
           & RECEIVE_LIST(1:NUMBER_OF_GHOST_RECEIVE)
         DOMAIN_MAPPING%ADJACENT_DOMAINS(domain_idx)%NUMBER_OF_RECEIVE_GHOSTS=NUMBER_OF_GHOST_RECEIVE
@@ -515,7 +515,7 @@ CONTAINS
       ENDIF
       
     ELSE
-      CALL FLAG_ERROR("Domain mapping is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Domain mapping is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("DOMAIN_MAPPINGS_LOCAL_FROM_GLOBAL_CALCULATE")
@@ -673,7 +673,7 @@ CONTAINS
       ELSE
         LOCAL_ERROR="The specified number of domains of "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_DOMAINS,"*",ERR,ERROR))// &
           & " is invalid. The number of domains must be > 0."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ENDIF
     

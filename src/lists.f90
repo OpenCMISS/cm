@@ -89,9 +89,45 @@ MODULE LISTS
 
   !Module types
 
- !Module variables
+  !Module variables
   
   !Interfaces
+
+  INTERFACE List_CreateFinish
+    MODULE PROCEDURE LIST_CREATE_FINISH
+  END INTERFACE List_CreateFinish
+  
+  INTERFACE List_CreateStart
+    MODULE PROCEDURE LIST_CREATE_START
+  END INTERFACE List_CreateStart
+  
+  INTERFACE List_DataDimensionSet
+    MODULE PROCEDURE LIST_DATA_DIMENSION_SET
+  END INTERFACE List_DataDimensionSet
+  
+  INTERFACE List_DataTypeSet
+    MODULE PROCEDURE LIST_DATA_TYPE_SET
+  END INTERFACE List_DataTypeSet
+  
+  !>Detaches the list values from a list and returns them as a pointer to a array of base type before destroying the list \see LISTS.
+  INTERFACE LIST_DETACH_AND_DESTROY
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_INTG1
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_INTG2
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_SP1
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_SP2
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_DP1
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_DP2
+  END INTERFACE LIST_DETACH_AND_DESTROY
+
+  !>Detaches the list values from a list and returns them as a pointer to a array of base type before destroying the list \see LISTS.
+  INTERFACE List_DetachAndDestroy
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_INTG1
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_INTG2
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_SP1
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_SP2
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_DP1
+    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_DP2
+  END INTERFACE List_DetachAndDestroy
 
   !>Adds an item to the end of a list \see LISTS.
   INTERFACE LIST_ITEM_ADD
@@ -101,7 +137,21 @@ MODULE LISTS
     MODULE PROCEDURE LIST_ITEM_ADD_SP2
     MODULE PROCEDURE LIST_ITEM_ADD_DP1
     MODULE PROCEDURE LIST_ITEM_ADD_DP2
-  END INTERFACE !LIST_ITEM_ADD
+  END INTERFACE LIST_ITEM_ADD
+  
+  !>Adds an item to the end of a list \see LISTS.
+  INTERFACE List_ItemAdd
+    MODULE PROCEDURE LIST_ITEM_ADD_INTG1
+    MODULE PROCEDURE LIST_ITEM_ADD_INTG2
+    MODULE PROCEDURE LIST_ITEM_ADD_SP1
+    MODULE PROCEDURE LIST_ITEM_ADD_SP2
+    MODULE PROCEDURE LIST_ITEM_ADD_DP1
+    MODULE PROCEDURE LIST_ITEM_ADD_DP2
+  END INTERFACE List_ItemAdd
+  
+  INTERFACE List_ItemDelete
+    MODULE PROCEDURE LIST_ITEM_DELETE
+  END INTERFACE List_ItemDelete
   
   !>Sets an item in the list \see LISTS.
   INTERFACE LIST_ITEM_SET
@@ -111,7 +161,17 @@ MODULE LISTS
     MODULE PROCEDURE LIST_ITEM_SET_SP2
     MODULE PROCEDURE LIST_ITEM_SET_DP1
     MODULE PROCEDURE LIST_ITEM_SET_DP2
-  END INTERFACE !LIST_ITEM_SET
+  END INTERFACE LIST_ITEM_SET
+  
+  !>Sets an item in the list \see LISTS.
+  INTERFACE List_ItemSet
+    MODULE PROCEDURE LIST_ITEM_SET_INTG1
+    MODULE PROCEDURE LIST_ITEM_SET_INTG2
+    MODULE PROCEDURE LIST_ITEM_SET_SP1
+    MODULE PROCEDURE LIST_ITEM_SET_SP2
+    MODULE PROCEDURE LIST_ITEM_SET_DP1
+    MODULE PROCEDURE LIST_ITEM_SET_DP2
+  END INTERFACE List_ItemSet
   
   !>Returns an item in a list at a specififed position. \see LISTS.
   INTERFACE LIST_ITEM_GET
@@ -121,41 +181,75 @@ MODULE LISTS
     MODULE PROCEDURE LIST_ITEM_GET_SP2
     MODULE PROCEDURE LIST_ITEM_GET_DP1
     MODULE PROCEDURE LIST_ITEM_GET_DP2
-  END INTERFACE !LIST_ITEM_GET
+  END INTERFACE LIST_ITEM_GET
+
+  !>Returns an item in a list at a specififed position. \see LISTS.
+  INTERFACE List_ItemGet
+    MODULE PROCEDURE LIST_ITEM_GET_INTG1
+    MODULE PROCEDURE LIST_ITEM_GET_INTG2
+    MODULE PROCEDURE LIST_ITEM_GET_SP1
+    MODULE PROCEDURE LIST_ITEM_GET_SP2
+    MODULE PROCEDURE LIST_ITEM_GET_DP1
+    MODULE PROCEDURE LIST_ITEM_GET_DP2
+  END INTERFACE List_ItemGet
 
   !>Determines if an item is in a list and returns the position of the item \see LISTS.
   INTERFACE LIST_ITEM_IN_LIST
     MODULE PROCEDURE LIST_ITEM_IN_LIST_INTG1
     MODULE PROCEDURE LIST_ITEM_IN_LIST_SP1
     MODULE PROCEDURE LIST_ITEM_IN_LIST_DP1
-  END INTERFACE !LIST_ITEM_IN_LIST
+  END INTERFACE LIST_ITEM_IN_LIST
 
-  !>Detaches the list values from a list and returns them as a pointer to a array of base type before destroying the list \see LISTS.
-  INTERFACE LIST_DETACH_AND_DESTROY
-    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_INTG1
-    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_INTG2
-    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_SP1
-    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_SP2
-    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_DP1
-    MODULE PROCEDURE LIST_DETACH_AND_DESTROY_DP2
-  END INTERFACE !LIST_DETACH_AND_DESTROY
+  !>Determines if an item is in a list and returns the position of the item \see LISTS.
+  INTERFACE List_ItemInList
+    MODULE PROCEDURE LIST_ITEM_IN_LIST_INTG1
+    MODULE PROCEDURE LIST_ITEM_IN_LIST_SP1
+    MODULE PROCEDURE LIST_ITEM_IN_LIST_DP1
+  END INTERFACE List_ItemInList
 
+  INTERFACE List_InitialSizeSet
+    MODULE PROCEDURE LIST_INITIAL_SIZE_SET
+  END INTERFACE List_InitialSizeSet
+  
+  INTERFACE List_KeyDimensionSet
+    MODULE PROCEDURE LIST_KEY_DIMENSION_SET
+  END INTERFACE List_KeyDimensionSet
+  
+  INTERFACE List_MutableSet
+    MODULE PROCEDURE LIST_MUTABLE_SET
+  END INTERFACE List_MutableSet
+  
+  INTERFACE List_NumberOfItemsGet
+    MODULE PROCEDURE LIST_NUMBER_OF_ITEMS_GET
+  END INTERFACE List_NumberOfItemsGet
+  
+  INTERFACE List_RemoveDuplicates
+    MODULE PROCEDURE LIST_REMOVE_DUPLICATES
+  END INTERFACE List_RemoveDuplicates
+  
   !>Searches a list for a given value and returns the position in the list if the value exists \see LISTS.
-  INTERFACE LIST_SEARCH
+  INTERFACE List_Search
     MODULE PROCEDURE LIST_SEARCH_INTG_ARRAY
     MODULE PROCEDURE LIST_SEARCH_SP_ARRAY
     MODULE PROCEDURE LIST_SEARCH_DP_ARRAY
-  END INTERFACE !LIST_SEARCH
+  END INTERFACE List_Search
 
   !>Searches a list using the linear search method.
   INTERFACE LIST_SEARCH_LINEAR
     MODULE PROCEDURE LIST_SEARCH_LINEAR_INTG_ARRAY
     MODULE PROCEDURE LIST_SEARCH_LINEAR_SP_ARRAY
     MODULE PROCEDURE LIST_SEARCH_LINEAR_DP_ARRAY
-  END INTERFACE !LIST_SEARCH_LINEAR
+  END INTERFACE LIST_SEARCH_LINEAR
+
+  !>Searches a list using the linear search method.
+  INTERFACE List_SearchLinear
+    MODULE PROCEDURE LIST_SEARCH_LINEAR_INTG_ARRAY
+    MODULE PROCEDURE LIST_SEARCH_LINEAR_SP_ARRAY
+    MODULE PROCEDURE LIST_SEARCH_LINEAR_DP_ARRAY
+  END INTERFACE List_SearchLinear
 
   !>Sorts a list into ascending order.
-  INTERFACE LIST_SORT
+  INTERFACE List_Sort
     MODULE PROCEDURE LIST_SORT_LIST
     MODULE PROCEDURE LIST_SORT_INTG1_ARRAY
     MODULE PROCEDURE LIST_SORT_INTG2_ARRAY
@@ -163,7 +257,7 @@ MODULE LISTS
     MODULE PROCEDURE LIST_SORT_SP2_ARRAY
     MODULE PROCEDURE LIST_SORT_DP1_ARRAY
     MODULE PROCEDURE LIST_SORT_DP2_ARRAY
-  END INTERFACE !LIST_SORT
+  END INTERFACE List_Sort
 
   !>Sorts a list into assending order using the bubble sort method.
   INTERFACE LIST_SORT_BUBBLE
@@ -173,7 +267,17 @@ MODULE LISTS
     MODULE PROCEDURE LIST_SORT_BUBBLE_SP2_ARRAY
     MODULE PROCEDURE LIST_SORT_BUBBLE_DP1_ARRAY
     MODULE PROCEDURE LIST_SORT_BUBBLE_DP2_ARRAY
-  END INTERFACE !LIST_SORT_BUBBLE
+  END INTERFACE LIST_SORT_BUBBLE
+
+  !>Sorts a list into assending order using the bubble sort method.
+  INTERFACE List_SortBubble
+    MODULE PROCEDURE LIST_SORT_BUBBLE_INTG1_ARRAY
+    MODULE PROCEDURE LIST_SORT_BUBBLE_INTG2_ARRAY
+    MODULE PROCEDURE LIST_SORT_BUBBLE_SP1_ARRAY
+    MODULE PROCEDURE LIST_SORT_BUBBLE_SP2_ARRAY
+    MODULE PROCEDURE LIST_SORT_BUBBLE_DP1_ARRAY
+    MODULE PROCEDURE LIST_SORT_BUBBLE_DP2_ARRAY
+  END INTERFACE List_SortBubble
 
   !>Sorts a list into assending order using the heap sort method.
   INTERFACE LIST_SORT_HEAP
@@ -183,7 +287,17 @@ MODULE LISTS
     MODULE PROCEDURE LIST_SORT_HEAP_SP2_ARRAY
     MODULE PROCEDURE LIST_SORT_HEAP_DP1_ARRAY
     MODULE PROCEDURE LIST_SORT_HEAP_DP2_ARRAY
-  END INTERFACE !LIST_SORT_HEAP
+  END INTERFACE LIST_SORT_HEAP
+
+  !>Sorts a list into assending order using the heap sort method.
+  INTERFACE List_SortHeap
+    MODULE PROCEDURE LIST_SORT_HEAP_INTG1_ARRAY
+    MODULE PROCEDURE LIST_SORT_HEAP_INTG2_ARRAY
+    MODULE PROCEDURE LIST_SORT_HEAP_SP1_ARRAY
+    MODULE PROCEDURE LIST_SORT_HEAP_SP2_ARRAY
+    MODULE PROCEDURE LIST_SORT_HEAP_DP1_ARRAY
+    MODULE PROCEDURE LIST_SORT_HEAP_DP2_ARRAY
+  END INTERFACE List_SortHeap
 
   !>Sorts a list into either assending or descending order using the shell sort method.
   INTERFACE LIST_SORT_SHELL
@@ -193,57 +307,106 @@ MODULE LISTS
     MODULE PROCEDURE LIST_SORT_SHELL_SP2_ARRAY
     MODULE PROCEDURE LIST_SORT_SHELL_DP1_ARRAY
     MODULE PROCEDURE LIST_SORT_SHELL_DP2_ARRAY
-  END INTERFACE !LIST_SORT_SHELL
+  END INTERFACE LIST_SORT_SHELL
+
+  !>Sorts a list into either assending or descending order using the shell sort method.
+  INTERFACE List_SortShell
+    MODULE PROCEDURE LIST_SORT_SHELL_INTG1_ARRAY
+    MODULE PROCEDURE LIST_SORT_SHELL_INTG2_ARRAY
+    MODULE PROCEDURE LIST_SORT_SHELL_SP1_ARRAY
+    MODULE PROCEDURE LIST_SORT_SHELL_SP2_ARRAY
+    MODULE PROCEDURE LIST_SORT_SHELL_DP1_ARRAY
+    MODULE PROCEDURE LIST_SORT_SHELL_DP2_ARRAY
+  END INTERFACE List_SortShell
 
   !>Calculates the intersection of two arrays
-  INTERFACE LIST_INTERSECTION
+  INTERFACE List_Itersection
     MODULE PROCEDURE LIST_INTERSECTION_INTG_ARRAY
-  END INTERFACE
+  END INTERFACE List_Itersection
 
   !>Checks whether an array is a subset of another array
   INTERFACE LIST_SUBSET_OF
     MODULE PROCEDURE LISTS_SUBSET_OF_INTG_ARRAY
-  END INTERFACE
+  END INTERFACE LIST_SUBSET_OF
+
+  !>Checks whether an array is a subset of another array
+  INTERFACE List_SubsetOf
+    MODULE PROCEDURE LISTS_SUBSET_OF_INTG_ARRAY
+  END INTERFACE List_SubsetOf
 
   PUBLIC LIST_INTG_TYPE,LIST_SP_TYPE,LIST_DP_TYPE
-
-  PUBLIC LIST_CREATE_FINISH,LIST_CREATE_START
-  
-  PUBLIC LIST_MUTABLE_SET
-
-  PUBLIC LIST_DATA_DIMENSION_SET
-  
-  PUBLIC LIST_DATA_TYPE_SET
-
-  PUBLIC LIST_DESTROY,LIST_DETACH_AND_DESTROY
-
-  PUBLIC LIST_INITIAL_SIZE_SET
-
-  PUBLIC LIST_ITEM_ADD
-  
-  PUBLIC LIST_ITEM_SET
-  
-  PUBLIC LIST_ITEM_DELETE
-
-  PUBLIC LIST_ITEM_GET
 
   PUBLIC List_AppendList
 
   PUBLIC List_ClearItems
 
+  PUBLIC LIST_CREATE_FINISH,LIST_CREATE_START
+
+  PUBLIC List_CreateFinish,List_CreateStart
+  
+  PUBLIC LIST_DATA_DIMENSION_SET
+
+  PUBLIC List_DataDimensionSet
+  
+  PUBLIC LIST_DATA_TYPE_SET
+
+  PUBLIC List_DataTypeSet
+
+  PUBLIC LIST_DETACH_AND_DESTROY
+
+  PUBLIC List_Destroy,List_DetachAndDestroy
+
+  PUBLIC LIST_ITEM_ADD
+
+  PUBLIC List_ItemAdd
+  
+  PUBLIC LIST_ITEM_DELETE
+
+  PUBLIC List_ItemDelete
+
+  PUBLIC LIST_ITEM_GET
+
+  PUBLIC List_ItemGet
+
+  PUBLIC LIST_ITEM_IN_LIST
+
+  PUBLIC List_ItemInList
+
+  PUBLIC LIST_ITEM_SET
+
+  PUBLIC List_ItemSet
+  
+  PUBLIC LIST_INITIAL_SIZE_SET
+
+  PUBLIC List_InitialSizeSet
+
   PUBLIC LIST_KEY_DIMENSION_SET
+
+  PUBLIC List_KeyDimensionSet
+
+  PUBLIC LIST_MUTABLE_SET
+
+  PUBLIC List_MutableSet
 
   PUBLIC LIST_NUMBER_OF_ITEMS_GET
 
+  PUBLIC List_NumberOfItemsGet
+
   PUBLIC LIST_REMOVE_DUPLICATES
 
-  PUBLIC LIST_SEARCH,LIST_SEARCH_LINEAR
+  PUBLIC LIST_SEARCH_LINEAR
   
-  PUBLIC LIST_SORT,LIST_SORT_BUBBLE,LIST_SORT_HEAP,LIST_SORT_SHELL
+  PUBLIC List_Search,List_SearchLinear
+  
+  PUBLIC LIST_SORT_BUBBLE,LIST_SORT_HEAP,LIST_SORT_SHELL
+  
+  PUBLIC List_Sort,List_SortBubble,List_SortHeap,List_SortShell
 
-  PUBLIC LIST_INTERSECTION,LIST_SUBSET_OF
+  PUBLIC List_Itersection
+
+  PUBLIC LIST_SUBSET_OF
   
-  PUBLIC LIST_ITEM_IN_LIST
+  PUBLIC List_SubsetOf
 
 CONTAINS
 
@@ -266,45 +429,45 @@ CONTAINS
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
-        CALL FLAG_ERROR("List is already finished.",ERR,ERROR,*998)
+        CALL FlagError("List is already finished.",ERR,ERROR,*998)
       ELSE
         !Allocate the list
         IF(LIST%DATA_DIMENSION==1) THEN
           SELECT CASE(LIST%DATA_TYPE)
           CASE(LIST_INTG_TYPE)
             ALLOCATE(LIST%LIST_INTG(LIST%INITIAL_SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list integer data.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate list integer data.",ERR,ERROR,*999)
           CASE(LIST_SP_TYPE)
             ALLOCATE(LIST%LIST_SP(LIST%INITIAL_SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list single precision data.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate list single precision data.",ERR,ERROR,*999)
           CASE(LIST_DP_TYPE)
             ALLOCATE(LIST%LIST_DP(LIST%INITIAL_SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list double precision data.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate list double precision data.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
           SELECT CASE(LIST%DATA_TYPE)
           CASE(LIST_INTG_TYPE)
             ALLOCATE(LIST%LIST_INTG2(LIST%DATA_DIMENSION,LIST%INITIAL_SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list integer data.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate list integer data.",ERR,ERROR,*999)
           CASE(LIST_SP_TYPE)
             ALLOCATE(LIST%LIST_SP2(LIST%DATA_DIMENSION,LIST%INITIAL_SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list single precision data.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate list single precision data.",ERR,ERROR,*999)
           CASE(LIST_DP_TYPE)
             ALLOCATE(LIST%LIST_DP2(LIST%DATA_DIMENSION,LIST%INITIAL_SIZE),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list double precision data.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate list double precision data.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ENDIF
         LIST%SIZE=LIST%INITIAL_SIZE
         LIST%LIST_FINISHED=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*998)
+      CALL FlagError("List is not associated.",ERR,ERROR,*998)
     ENDIF
 
     EXITS("LIST_CREATE_FINISH")
@@ -356,18 +519,18 @@ CONTAINS
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
-        CALL FLAG_ERROR("List has been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has been finished.",ERR,ERROR,*999)
       ELSE
         IF(DATA_DIMENSION>0) THEN
           LIST%DATA_DIMENSION=DATA_DIMENSION
         ELSE
-          LOCAL_ERROR="The specified data dimension of "//TRIM(NUMBER_TO_VSTRING(DATA_DIMENSION,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The specified data dimension of "//TRIM(NumberToVString(DATA_DIMENSION,"*",ERR,ERROR))// &
             & " is invalid. The dimension must be > 0."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_DATA_DIMENSION_SET")
@@ -393,12 +556,12 @@ CONTAINS
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
-        CALL FLAG_ERROR("List has been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has been finished.",ERR,ERROR,*999)
       ELSE
         LIST%MUTABLE = MUTABLE
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_MUTABLE_SET")
@@ -426,7 +589,7 @@ CONTAINS
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
-        CALL FLAG_ERROR("List has been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(DATA_TYPE)
         CASE(LIST_INTG_TYPE)
@@ -436,12 +599,12 @@ CONTAINS
         CASE(LIST_DP_TYPE)
           LIST%DATA_TYPE=LIST_DP_TYPE
         CASE DEFAULT
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_DATA_TYPE_SET")
@@ -468,7 +631,7 @@ CONTAINS
     IF(ASSOCIATED(LIST)) THEN
       CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_DESTROY")
@@ -543,7 +706,7 @@ CONTAINS
                       !Reallocate
                       newSize=MAX(2*list%NUMBER_IN_LIST,list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST*2)
                       ALLOCATE(newListIntg(newSize),stat=err)
-                      IF(err/=0) CALL FLAG_ERROR("Could not allocate new list.",err,ERROR,*999)
+                      IF(err/=0) CALL FlagError("Could not allocate new list.",err,ERROR,*999)
                       newListIntg(1:list%NUMBER_IN_LIST)=list%LIST_INTG(1:list%NUMBER_IN_LIST)
                       CALL MOVE_ALLOC(newListIntg,list%LIST_INTG)
                       list%SIZE=newSize
@@ -556,7 +719,7 @@ CONTAINS
                       !Reallocate
                       newSize=MAX(2*list%NUMBER_IN_LIST,list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST*2)
                       ALLOCATE(newListSP(newSize),stat=err)
-                      IF(err/=0) CALL FLAG_ERROR("Could not allocate new list.",err,ERROR,*999)
+                      IF(err/=0) CALL FlagError("Could not allocate new list.",err,ERROR,*999)
                       newListSP(1:list%NUMBER_IN_LIST)=list%LIST_SP(1:list%NUMBER_IN_LIST)
                       CALL MOVE_ALLOC(newListSP,list%LIST_SP)
                       list%SIZE=newSize
@@ -569,7 +732,7 @@ CONTAINS
                       !Reallocate
                       newSize=MAX(2*list%NUMBER_IN_LIST,list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST*2)
                       ALLOCATE(newListDP(newSize),stat=err)
-                      IF(err/=0) CALL FLAG_ERROR("Could not allocate new list.",err,ERROR,*999)
+                      IF(err/=0) CALL FlagError("Could not allocate new list.",err,ERROR,*999)
                       newListDP(1:list%NUMBER_IN_LIST)=list%LIST_DP(1:list%NUMBER_IN_LIST)
                       CALL MOVE_ALLOC(newListDP,list%LIST_DP)
                       list%SIZE=newSize
@@ -578,34 +741,34 @@ CONTAINS
                       & appendedList%LIST_DP(1:appendedList%NUMBER_IN_LIST)
                     list%NUMBER_IN_LIST=list%NUMBER_IN_LIST+appendedList%NUMBER_IN_LIST
                   CASE DEFAULT
-                    CALL FLAG_ERROR("The list data type of "//TRIM(NUMBER_TO_VSTRING(list%DATA_TYPE,"*",err,error))// &
+                    CALL FlagError("The list data type of "//TRIM(NumberToVString(list%DATA_TYPE,"*",err,error))// &
                       & " is invalid.",err,error,*999)
                   END SELECT
                 CASE DEFAULT
-                  CALL FLAG_ERROR("Dimensions > 1 not implemented for appended to a list",err,error,*999)
+                  CALL FlagError("Dimensions > 1 not implemented for appended to a list",err,error,*999)
                 END SELECT
               ELSE
                 localError="Invalid data dimension. The list to append has data dimension of "// &
-                  & TRIM(NUMBER_TO_VSTRING(appendedList%DATA_DIMENSION,"*",err,error))//" and the list data dimension is "// &
-                  & TRIM(NUMBER_TO_VSTRING(list%DATA_DIMENSION,"*",err,error))//"."
-                CALL FLAG_ERROR(localError,err,error,*999)
+                  & TRIM(NumberToVString(appendedList%DATA_DIMENSION,"*",err,error))//" and the list data dimension is "// &
+                  & TRIM(NumberToVString(list%DATA_DIMENSION,"*",err,error))//"."
+                CALL FlagError(localError,err,error,*999)
               ENDIF
             ELSE
-              localError="The list data type of "//TRIM(NUMBER_TO_VSTRING(list%DATA_TYPE,"*",err,error))// &
+              localError="The list data type of "//TRIM(NumberToVString(list%DATA_TYPE,"*",err,error))// &
                 & " does not match the data type of the list to append"
-              CALL FLAG_ERROR(localError,err,error,*999)
+              CALL FlagError(localError,err,error,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("The list to append has not been finished",err,error,*999)
+            CALL FlagError("The list to append has not been finished",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The list to append is not associated",err,error,*999)
+          CALL FlagError("The list to append is not associated",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished",err,error,*999)
+        CALL FlagError("The list has not been finished",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated",err,error,*999)
+      CALL FlagError("List is not associated",err,error,*999)
     ENDIF
 
     EXITS("List_AppendList")
@@ -636,13 +799,13 @@ CONTAINS
         IF(list%mutable) THEN
           list%NUMBER_IN_LIST=0
         ELSE
-          CALL FLAG_ERROR("The list is not mutable",err,error,*999)
+          CALL FlagError("The list is not mutable",err,error,*999)
         END IF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished",err,error,*999)
+        CALL FlagError("The list has not been finished",err,error,*999)
       END IF
     ELSE
-      CALL FLAG_ERROR("List is not associated",err,error,*999)
+      CALL FlagError("List is not associated",err,error,*999)
     END IF
 
     EXITS("List_ClearItems")
@@ -668,10 +831,10 @@ CONTAINS
     ENTERS("LIST_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(LIST)) THEN
-      CALL FLAG_ERROR("List is already associated.",ERR,ERROR,*998)
+      CALL FlagError("List is already associated.",ERR,ERROR,*998)
     ELSE
       ALLOCATE(LIST,STAT=ERR)
-      IF(ERR/=0) CALL FLAG_ERROR("Could not allocate list.",ERR,ERROR,*999)
+      IF(ERR/=0) CALL FlagError("Could not allocate list.",ERR,ERROR,*999)
       LIST%LIST_FINISHED=.FALSE.
       LIST%MUTABLE=.FALSE.
       LIST%NUMBER_IN_LIST=0
@@ -710,18 +873,18 @@ CONTAINS
 
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
-        CALL FLAG_ERROR("List has been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has been finished.",ERR,ERROR,*999)
       ELSE
         IF(INITIAL_SIZE>0) THEN
           LIST%INITIAL_SIZE=INITIAL_SIZE
         ELSE
-          LOCAL_ERROR="The initial size of "//TRIM(NUMBER_TO_VSTRING(INITIAL_SIZE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The initial size of "//TRIM(NumberToVString(INITIAL_SIZE,"*",ERR,ERROR))// &
             & " is invalid. The size must be > 0."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated",ERR,ERROR,*999)
+      CALL FlagError("List is not associated",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_INTIIAL_SIZE_SET")
@@ -756,7 +919,7 @@ CONTAINS
               !Reallocate
               NEW_SIZE=MAX(2*LIST%NUMBER_IN_LIST,1)
               ALLOCATE(NEW_LIST(NEW_SIZE),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(1:LIST%NUMBER_IN_LIST)=LIST%LIST_INTG(1:LIST%NUMBER_IN_LIST)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_INTG)
               LIST%SIZE=NEW_SIZE
@@ -765,19 +928,19 @@ CONTAINS
             LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST+1
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the integer type of the supplied list item"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated",ERR,ERROR,*999)
+      CALL FlagError("List is not associated",ERR,ERROR,*999)
     ENDIF
     
     EXITS("LIST_ITEM_ADD_INTG1")
@@ -813,7 +976,7 @@ CONTAINS
               !Reallocate
               NEW_SIZE=MAX(2*LIST%NUMBER_IN_LIST,1)
               ALLOCATE(NEW_LIST(LIST%DATA_DIMENSION,NEW_SIZE),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(:,1:LIST%NUMBER_IN_LIST)=LIST%LIST_INTG2(:,1:LIST%NUMBER_IN_LIST)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_INTG2)
               LIST%SIZE=NEW_SIZE
@@ -822,20 +985,20 @@ CONTAINS
             LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST+1
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("LIST_ITEM_ADD_INTG2")
@@ -873,7 +1036,7 @@ CONTAINS
               !Reallocate
               NEW_SIZE=MAX(2*LIST%NUMBER_IN_LIST,1)
               ALLOCATE(NEW_LIST(NEW_SIZE),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(1:LIST%NUMBER_IN_LIST)=LIST%LIST_SP(1:LIST%NUMBER_IN_LIST)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_SP)
               LIST%SIZE=NEW_SIZE
@@ -882,18 +1045,18 @@ CONTAINS
             LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST+1
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the single precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     EXITS("LIST_ITEM_ADD_SP1")
     RETURN
@@ -929,7 +1092,7 @@ CONTAINS
               !Reallocate
               NEW_SIZE=MAX(2*LIST%NUMBER_IN_LIST,1)
               ALLOCATE(NEW_LIST(LIST%DATA_DIMENSION,NEW_SIZE),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(:,1:LIST%NUMBER_IN_LIST)=LIST%LIST_SP2(:,1:LIST%NUMBER_IN_LIST)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_SP2)
               LIST%SIZE=NEW_SIZE
@@ -938,20 +1101,20 @@ CONTAINS
             LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST+1
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the single precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     EXITS("LIST_ITEM_ADD_SP2")
     RETURN
@@ -987,7 +1150,7 @@ CONTAINS
               !Reallocate
               NEW_SIZE=MAX(2*LIST%NUMBER_IN_LIST,1)
               ALLOCATE(NEW_LIST(NEW_SIZE),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(1:LIST%NUMBER_IN_LIST)=LIST%LIST_DP(1:LIST%NUMBER_IN_LIST)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_DP)
               LIST%SIZE=NEW_SIZE
@@ -996,19 +1159,19 @@ CONTAINS
             LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST+1
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the double precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     EXITS("LIST_ITEM_ADD_DP1")
     RETURN
@@ -1044,7 +1207,7 @@ CONTAINS
               !Reallocate
               NEW_SIZE=MAX(2*LIST%NUMBER_IN_LIST,1)
               ALLOCATE(NEW_LIST(LIST%DATA_DIMENSION,NEW_SIZE),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate new list.",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate new list.",ERR,ERROR,*999)
               NEW_LIST(:,1:LIST%NUMBER_IN_LIST)=LIST%LIST_DP2(:,1:LIST%NUMBER_IN_LIST)
               CALL MOVE_ALLOC(NEW_LIST,LIST%LIST_DP2)
               LIST%SIZE=NEW_SIZE
@@ -1053,20 +1216,20 @@ CONTAINS
             LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST+1
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the double precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     EXITS("LIST_ITEM_ADD_DP2")
     RETURN
@@ -1100,29 +1263,29 @@ CONTAINS
               IF(LIST%MUTABLE) THEN
                 LIST%LIST_INTG(LIST_ITEM)=ITEM
               ELSE
-                CALL FLAG_ERROR("Cannot modify an immutable list.",ERR,ERROR,*999)
+                CALL FlagError("Cannot modify an immutable list.",ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="Invalid list index. The supplied index is "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"// &
+                & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the integer type of the supplied list item"
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated",ERR,ERROR,*999)
+      CALL FlagError("List is not associated",ERR,ERROR,*999)
     ENDIF
     
     EXITS("LIST_ITEM_SET_INTG1")
@@ -1156,30 +1319,30 @@ CONTAINS
               IF(LIST%MUTABLE) THEN
                 LIST%LIST_INTG2(:,LIST_ITEM)=ITEM
               ELSE
-                CALL FLAG_ERROR("Cannot modify an immutable list.",ERR,ERROR,*999)
+                CALL FlagError("Cannot modify an immutable list.",ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="Invalid list index. The supplied index is "//&
-                & TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
-                & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
+                & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("LIST_ITEM_SET_INTG2")
@@ -1215,28 +1378,28 @@ CONTAINS
               IF(LIST%MUTABLE) THEN
                 LIST%LIST_SP(LIST_ITEM)=ITEM
               ELSE
-                CALL FLAG_ERROR("Cannot modify an immutable list.",ERR,ERROR,*999)
+                CALL FlagError("Cannot modify an immutable list.",ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="Invalid list index. The supplied index is "//&
-                & TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
-                & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
+                & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the single precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     EXITS("LIST_ITEM_SET_SP1")
     RETURN
@@ -1270,30 +1433,30 @@ CONTAINS
               IF(LIST%MUTABLE) THEN
                 LIST%LIST_SP2(:,LIST_ITEM)=ITEM
               ELSE
-                CALL FLAG_ERROR("Cannot modify an immutable list.",ERR,ERROR,*999)
+                CALL FlagError("Cannot modify an immutable list.",ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="Invalid list index. The supplied index is "//&
-                & TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
-                & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
+                & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the single precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     EXITS("LIST_ITEM_SET_SP2")
     RETURN
@@ -1327,29 +1490,29 @@ CONTAINS
               IF(LIST%MUTABLE) THEN
                 LIST%LIST_DP(LIST_ITEM)=ITEM
               ELSE
-                CALL FLAG_ERROR("Cannot modify an immutable list.",ERR,ERROR,*999)
+                CALL FlagError("Cannot modify an immutable list.",ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="Invalid list index. The supplied index is "//&
-                & TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
-                & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
+                & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the double precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     EXITS("LIST_ITEM_SET_DP1")
     RETURN
@@ -1383,30 +1546,30 @@ CONTAINS
               IF(LIST%MUTABLE) THEN
                 LIST%LIST_DP2(:,LIST_ITEM)=ITEM
               ELSE
-                CALL FLAG_ERROR("Cannot modify an immutable list.",ERR,ERROR,*999)
+                CALL FlagError("Cannot modify an immutable list.",ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="Invalid list index. The supplied index is "//&
-                & TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
-                & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))//" and that list entry count is"//&
+                & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="Invalid data dimension. The supplied data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list data dimension is "// &
+              & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the double precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The list has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("The list has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     EXITS("LIST_ITEM_SET_DP2")
     RETURN
@@ -1440,25 +1603,25 @@ CONTAINS
               ITEM=LIST%LIST_INTG(LIST_ITEM)
             ELSE
               LOCAL_ERROR="Invalid item dimension. The specified item has dimension 1 and the list is of dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The specified list item position of "//TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))// &
               & " is invalid. The list item position must be > 0 and <= "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_GET_INTG1")
@@ -1493,26 +1656,26 @@ CONTAINS
               ITEM=LIST%LIST_INTG2(:,LIST_ITEM)
             ELSE
               LOCAL_ERROR="Invalid item dimension. The specified item has dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list is of dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list is of dimension "// &
+                & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The specified list item position of "//TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))// &
               & " is invalid. The list item position must be > 0 and <= "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_GET_INTG2")
@@ -1547,25 +1710,25 @@ CONTAINS
               ITEM=LIST%LIST_SP(LIST_ITEM)
             ELSE
               LOCAL_ERROR="Invalid item dimension. The specified item has dimension 1 and the list is of dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The specified list item position of "//TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))// &
               & " is invalid. The list item position must be > 0 and <= "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the single precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_GET_SP1")
@@ -1600,26 +1763,26 @@ CONTAINS
               ITEM=LIST%LIST_SP2(:,LIST_ITEM)
             ELSE
               LOCAL_ERROR="Invalid item dimension. The specified item has dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list is of dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list is of dimension "// &
+                & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The specified list item position of "//TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))// &
               & " is invalid. The list item position must be > 0 and <= "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the single precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_GET_SP2")
@@ -1654,25 +1817,25 @@ CONTAINS
               ITEM=LIST%LIST_DP(LIST_ITEM)
             ELSE
               LOCAL_ERROR="Invalid item dimension. The specified item has dimension 1 and the list is of dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The specified list item position of "//TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))// &
               & " is invalid. The list item position must be > 0 and <= "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the double precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_GET_DP1")
@@ -1707,26 +1870,26 @@ CONTAINS
               ITEM=LIST%LIST_DP2(:,LIST_ITEM)
             ELSE
               LOCAL_ERROR="Invalid item dimension. The specified item has dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list is of dimension "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(SIZE(ITEM,1),"*",ERR,ERROR))//" and the list is of dimension "// &
+                & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The specified list item position of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The specified list item position of "//TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))// &
               & " is invalid. The list item position must be > 0 and <= "// &
-              & TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              & TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the double precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_GET_DP2")
@@ -1763,15 +1926,15 @@ CONTAINS
             CALL LIST_SEARCH_LINEAR(LIST%LIST_INTG2(LIST%KEY_DIMENSION,1:LIST%NUMBER_IN_LIST),ITEM,LIST_ITEM,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_IN_LIST_INTG1")
@@ -1809,15 +1972,15 @@ CONTAINS
               & LIST_ITEM,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the integer type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_IN_LIST_INTG2")
@@ -1855,15 +2018,15 @@ CONTAINS
             CALL LIST_SEARCH_LINEAR(LIST%LIST_SP2(lIST%KEY_DIMENSION,1:LIST%NUMBER_IN_LIST),ITEM,LIST_ITEM,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the single precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_IN_LIST_SP1")
@@ -1902,15 +2065,15 @@ CONTAINS
               & LIST_ITEM,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the single precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_IN_LIST_SP2")
@@ -1948,15 +2111,15 @@ CONTAINS
             CALL LIST_SEARCH_LINEAR(LIST%LIST_DP2(LIST%KEY_DIMENSION,1:LIST%NUMBER_IN_LIST),ITEM,LIST_ITEM,ERR,ERROR,*999)
          ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the single precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_IN_LIST_DP1")
@@ -1995,15 +2158,15 @@ CONTAINS
               & LIST_ITEM,ERR,ERROR,*999)
          ENDIF
         ELSE
-          LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not match the single precision type of the supplied list item."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_IN_LIST_DP2")
@@ -2044,8 +2207,8 @@ CONTAINS
               LIST%LIST_DP(1:LIST_ITEM-1)=LIST%LIST_DP(1:LIST_ITEM-1)
               LIST%LIST_DP(LIST_ITEM:LIST%NUMBER_IN_LIST-1)=LIST%LIST_DP(LIST_ITEM+1:LIST%NUMBER_IN_LIST)
             CASE DEFAULT
-              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
             SELECT CASE(LIST%DATA_TYPE)
@@ -2059,21 +2222,21 @@ CONTAINS
               LIST%LIST_DP2(:,1:LIST_ITEM-1)=LIST%LIST_DP2(:,1:LIST_ITEM-1)
               LIST%LIST_DP2(:,LIST_ITEM:LIST%NUMBER_IN_LIST-1)=LIST%LIST_DP2(:,LIST_ITEM+1:LIST%NUMBER_IN_LIST)
             CASE DEFAULT
-              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ENDIF
           LIST%NUMBER_IN_LIST=LIST%NUMBER_IN_LIST-1
         ELSE
-          LOCAL_ERROR="The specified list item of "//TRIM(NUMBER_TO_VSTRING(LIST_ITEM,"*",ERR,ERROR))// &
-            & " is invalid. The item must be >= 1 and <= "//TRIM(NUMBER_TO_VSTRING(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          LOCAL_ERROR="The specified list item of "//TRIM(NumberToVString(LIST_ITEM,"*",ERR,ERROR))// &
+            & " is invalid. The item must be >= 1 and <= "//TRIM(NumberToVString(LIST%NUMBER_IN_LIST,"*",ERR,ERROR))//"."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_ITEM_DELETE")
@@ -2103,13 +2266,13 @@ CONTAINS
       IF(KEY_DIMENSION>0.AND.KEY_DIMENSION<=LIST%DATA_DIMENSION) THEN
         LIST%KEY_DIMENSION=KEY_DIMENSION
       ELSE
-        LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
           & " is invalid. The key dimension must be > 0 and <= "// &
-          & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_KEY_DIMENSION_SET")
@@ -2138,10 +2301,10 @@ CONTAINS
       IF(LIST%LIST_FINISHED) THEN
         NUMBER_OF_ITEMS=LIST%NUMBER_IN_LIST
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("LIST_NUMBER_OF_ITEMS_GET")
@@ -2173,7 +2336,7 @@ CONTAINS
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
         IF(ALLOCATED(LIST_VALUES)) THEN
-          CALL FLAG_ERROR("List values is allocated.",ERR,ERROR,*999)
+          CALL FlagError("List values is allocated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_INTG_TYPE) THEN
             IF(LIST%DATA_DIMENSION==1) THEN
@@ -2183,20 +2346,20 @@ CONTAINS
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
               LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not match the integer type of the supplied list values item."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("LIST_DETACH_AND_DESTROY_INTG1")
@@ -2228,7 +2391,7 @@ CONTAINS
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
         IF(ALLOCATED(LIST_VALUES)) THEN
-          CALL FLAG_ERROR("List values is allocated.",ERR,ERROR,*999)
+          CALL FlagError("List values is allocated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_INTG_TYPE) THEN
             IF(LIST%DATA_DIMENSION>1) THEN
@@ -2237,20 +2400,20 @@ CONTAINS
               CALL MOVE_ALLOC(LIST%LIST_INTG2,LIST_VALUES)
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Invalid data dimension. The supplied data dimension is > 1 and the list data dimension is 1.", &
+              CALL FlagError("Invalid data dimension. The supplied data dimension is > 1 and the list data dimension is 1.", &
                 & ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not match the integer type of the supplied list values item."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("LIST_DETACH_AND_DESTROY_INTG2")
@@ -2282,7 +2445,7 @@ CONTAINS
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
         IF(ALLOCATED(LIST_VALUES)) THEN
-          CALL FLAG_ERROR("List values is associated.",ERR,ERROR,*999)
+          CALL FlagError("List values is associated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_SP_TYPE) THEN
             IF(LIST%DATA_DIMENSION==1) THEN
@@ -2292,20 +2455,20 @@ CONTAINS
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
               LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not match the single precision type of the supplied list values item."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("LIST_DETACH_AND_DESTROY_SP1")
@@ -2336,7 +2499,7 @@ CONTAINS
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
         IF(ALLOCATED(LIST_VALUES)) THEN
-          CALL FLAG_ERROR("List values is associated.",ERR,ERROR,*999)
+          CALL FlagError("List values is associated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_SP_TYPE) THEN
             IF(LIST%DATA_DIMENSION>1) THEN
@@ -2345,20 +2508,20 @@ CONTAINS
               CALL MOVE_ALLOC(LIST%LIST_SP2,LIST_VALUES)
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Invalid data dimension. The supplied data dimension is > 1 and the list data dimension is 1.", &
+              CALL FlagError("Invalid data dimension. The supplied data dimension is > 1 and the list data dimension is 1.", &
                 & ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not match the single precision type of the supplied list values item."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("LIST_DETACH_AND_DESTROY_SP2")
@@ -2390,7 +2553,7 @@ CONTAINS
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
         IF(ALLOCATED(LIST_VALUES)) THEN
-          CALL FLAG_ERROR("List values is associated.",ERR,ERROR,*999)
+          CALL FlagError("List values is associated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_DP_TYPE) THEN
             IF(LIST%DATA_DIMENSION==1) THEN
@@ -2400,20 +2563,20 @@ CONTAINS
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
               LOCAL_ERROR="Invalid data dimension. The supplied data dimension is 1 and the list data dimension is "// &
-                & TRIM(NUMBER_TO_VSTRING(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                & TRIM(NumberToVString(LIST%DATA_DIMENSION,"*",ERR,ERROR))//"."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not match the double precision type of the supplied list values item."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("LIST_DETACH_AND_DESTROY_DP1")
@@ -2445,7 +2608,7 @@ CONTAINS
     IF(ASSOCIATED(LIST)) THEN
       IF(LIST%LIST_FINISHED) THEN
         IF(ALLOCATED(LIST_VALUES)) THEN
-          CALL FLAG_ERROR("List values is associated.",ERR,ERROR,*999)
+          CALL FlagError("List values is associated.",ERR,ERROR,*999)
         ELSE
           IF(LIST%DATA_TYPE==LIST_DP_TYPE) THEN
             IF(LIST%DATA_DIMENSION>1) THEN
@@ -2454,20 +2617,20 @@ CONTAINS
               CALL MOVE_ALLOC(LIST%LIST_DP2,LIST_VALUES)
               CALL LIST_FINALISE(LIST,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Invalid data dimension. The supplied data dimension is > 1 and the list data dimension is 1.", &
+              CALL FlagError("Invalid data dimension. The supplied data dimension is > 1 and the list data dimension is 1.", &
                 & ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not match the double precision type of the supplied list values item."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
     
     EXITS("LIST_DETACH_AND_DESTROY_DP2")
@@ -2581,8 +2744,8 @@ CONTAINS
                 i=i+1
               ENDDO !i
             CASE DEFAULT
-              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
             SELECT CASE(LIST%DATA_TYPE)
@@ -2668,16 +2831,16 @@ CONTAINS
                 i=i+1
               ENDDO !i
             CASE DEFAULT
-              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
   
     EXITS("LIST_REMOVE_DUPLICATES")
@@ -2979,8 +3142,8 @@ CONTAINS
             CASE(LIST_DP_TYPE)
               CALL LIST_SORT_BUBBLE_DP1_ARRAY(LIST%LIST_DP(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999) 
             CASE DEFAULT
-              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT            
           ELSE
             SELECT CASE(LIST%DATA_TYPE)
@@ -2994,8 +3157,8 @@ CONTAINS
               CALL LIST_SORT_BUBBLE_DP2_ARRAY(LIST%LIST_DP2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
                 & ERR,ERROR,*999)                            
             CASE DEFAULT
-              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT            
           ENDIF
         CASE(LIST_SHELL_SORT_METHOD)
@@ -3008,8 +3171,8 @@ CONTAINS
             CASE(LIST_DP_TYPE)
               CALL LIST_SORT_SHELL_DP1_ARRAY(LIST%LIST_DP(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT            
           ELSE
             SELECT CASE(LIST%DATA_TYPE)
@@ -3023,8 +3186,8 @@ CONTAINS
               CALL LIST_SORT_SHELL_DP2_ARRAY(LIST%LIST_DP2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
                 & ERR,ERROR,*999)                            
             CASE DEFAULT
-              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT            
           ENDIF
         CASE(LIST_HEAP_SORT_METHOD)
@@ -3037,8 +3200,8 @@ CONTAINS
             CASE(LIST_DP_TYPE)
               CALL LIST_SORT_HEAP_DP1_ARRAY(LIST%LIST_DP(1:LIST%NUMBER_IN_LIST),ERR,ERROR,*999)                            
             CASE DEFAULT
-              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT            
           ELSE
             SELECT CASE(LIST%DATA_TYPE)
@@ -3052,19 +3215,19 @@ CONTAINS
               CALL LIST_SORT_HEAP_DP2_ARRAY(LIST%LIST_DP2(:,1:LIST%NUMBER_IN_LIST),LIST%KEY_DIMENSION, &
                 & ERR,ERROR,*999)                            
             CASE DEFAULT
-              LOCAL_ERROR="The list data type of "//TRIM(NUMBER_TO_VSTRING(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              LOCAL_ERROR="The list data type of "//TRIM(NumberToVString(LIST%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT            
           ENDIF
         CASE DEFAULT
-          LOCAL_ERROR="The list sort method of "//TRIM(NUMBER_TO_VSTRING(LIST%SORT_METHOD,"*",ERR,ERROR))//" is invlaid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          LOCAL_ERROR="The list sort method of "//TRIM(NumberToVString(LIST%SORT_METHOD,"*",ERR,ERROR))//" is invlaid."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("List has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("List has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("List is not associated.",ERR,ERROR,*999)
+      CALL FlagError("List is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_LIST")
@@ -3344,9 +3507,9 @@ CONTAINS
         ENDDO
       ENDIF
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_BUBBLE_INTG2_ARRAY")
@@ -3432,9 +3595,9 @@ CONTAINS
         ENDDO
       ENDIF
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_BUBBLE_C_INT2_ARRAY")
@@ -3520,9 +3683,9 @@ CONTAINS
         ENDDO
       ENDIF
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_BUBBLE_SP2_ARRAY")
@@ -3608,9 +3771,9 @@ CONTAINS
         ENDDO
       ENDIF
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_BUBBLE_DP2_ARRAY")
@@ -3728,9 +3891,9 @@ CONTAINS
         ENDDO
       ENDIF
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_HEAP_INTG2_ARRAY")
@@ -3850,9 +4013,9 @@ CONTAINS
         ENDDO
       ENDIF
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_HEAP_C_INT2_ARRAY")
@@ -3972,9 +4135,9 @@ CONTAINS
         ENDDO
       ENDIF
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_HEAP_SP2_ARRAY")
@@ -4094,9 +4257,9 @@ CONTAINS
         ENDDO
       ENDIF
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_HEAP_DP2_ARRAY")
@@ -4182,9 +4345,9 @@ CONTAINS
         ENDDO !i
       ENDDO
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_SHELL_INTG2_ARRAY")
@@ -4272,9 +4435,9 @@ CONTAINS
         ENDDO !i
       ENDDO
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_SHELL_C_INT2_ARRAY")
@@ -4364,9 +4527,9 @@ CONTAINS
         ENDDO !i
       ENDDO
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_SHELL_SP2_ARRAY")
@@ -4456,9 +4619,9 @@ CONTAINS
         ENDDO !i
       ENDDO
     ELSE
-      LOCAL_ERROR="The specified key dimension of "//TRIM(NUMBER_TO_VSTRING(KEY_DIMENSION,"*",ERR,ERROR))// &
-        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NUMBER_TO_VSTRING(SIZE(A,1),"*",ERR,ERROR))//"."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      LOCAL_ERROR="The specified key dimension of "//TRIM(NumberToVString(KEY_DIMENSION,"*",ERR,ERROR))// &
+        & " is invalid. The key dimension must be > 0 and <= "//TRIM(NumberToVString(SIZE(A,1),"*",ERR,ERROR))//"."
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     ENDIF
 
     EXITS("LIST_SORT_SHELL_DP1_ARRAY")
@@ -4494,7 +4657,7 @@ CONTAINS
 
     IF(ALLOCATED(C)) THEN
       ! theoretically this cannot happen?
-      CALL FLAG_ERROR("Output array is already allocated.",ERR,ERROR,*999)
+      CALL FlagError("Output array is already allocated.",ERR,ERROR,*999)
     ELSE
       ! start finding the intersection
       NULLIFY(LONGER)
@@ -4589,7 +4752,7 @@ CONTAINS
 
     IF(ALLOCATED(C)) THEN
       ! theoretically this cannot happen?
-      CALL FLAG_ERROR("Output array is already allocated.",ERR,ERROR,*999)
+      CALL FlagError("Output array is already allocated.",ERR,ERROR,*999)
     ELSE
       ! start finding the intersection
       NULLIFY(LONGER)

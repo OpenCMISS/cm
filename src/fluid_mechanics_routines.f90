@@ -83,15 +83,15 @@ MODULE FLUID_MECHANICS_ROUTINES
 
   !Interfaces
 
-  PUBLIC FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET,FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET
+  PUBLIC FluidMechanics_EquationsSetClassTypeGet,FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET
 
-  PUBLIC FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE,FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE
+  PUBLIC FluidMechanics_FiniteElementJacobianEvaluate,FluidMechanics_FiniteElementResidualEvaluate
   PUBLIC FluidMechanics_NodalJacobianEvaluate,FluidMechanics_NodalResidualEvaluate
   PUBLIC FluidMechanics_FiniteElementPreResidualEvaluate
 
-  PUBLIC FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET,FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE, &
-    & FLUID_MECHANICS_EQUATIONS_SET_SETUP,FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET, &
-    & FLUID_MECHANICS_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC, &
+  PUBLIC FluidMechanics_EquationsSetClassTypeSet,FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE, &
+    & FLUID_MECHANICS_EQUATIONS_SET_SETUP,FluidMechanics_EquationsSetSolutionMethodSet, &
+    & FluidMechanics_BoundaryConditionsAnalyticCalculate, &
     & FLUID_MECHANICS_PROBLEM_CLASS_TYPE_SET,FLUID_MECHANICS_PROBLEM_SETUP, &
     & FLUID_MECHANICS_POST_SOLVE,FLUID_MECHANICS_PRE_SOLVE,FLUID_MECHANICS_CONTROL_LOOP_PRE_LOOP, &
     & FLUID_MECHANICS_CONTROL_LOOP_POST_LOOP,FLUID_MECHANICS_ANALYTIC_FUNCTIONS_EVALUATE
@@ -130,28 +130,28 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_TYPE)
       CASE(EQUATIONS_SET_STOKES_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
-        CALL BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE,ANALYTIC_FUNCTION_TYPE,POSITION, &
+        CALL Burgers_AnalyticFunctionsEvaluate(EQUATIONS_SET%SUBTYPE,ANALYTIC_FUNCTION_TYPE,POSITION, &
           & TANGENTS,NORMAL,TIME,VARIABLE_TYPE,GLOBAL_DERIVATIVE,COMPONENT_NUMBER,ANALYTIC_PARAMETERS, &
           & MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FLUID_MECHANICS_ANALYTIC_FUNCTIONS_EVALUATE")
@@ -165,7 +165,7 @@ CONTAINS
   !
 
   !>Gets the problem type and subtype for a fluid mechanics equation set class.
-  SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
+  SUBROUTINE FluidMechanics_EquationsSetClassTypeGet(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
     & ERR,ERROR,*)
 
     !Argument variables
@@ -176,31 +176,31 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    ENTERS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR,*999)
+    ENTERS("FluidMechanics_EquationsSetClassTypeGet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) THEN
         EQUATIONS_TYPE=EQUATIONS_SET%TYPE
         EQUATIONS_SUBTYPE=EQUATIONS_SET%SUBTYPE
       ELSE
-        CALL FLAG_ERROR("Equations set is not the fluid mechanics type",ERR,ERROR,*999)
+        CALL FlagError("Equations set is not the fluid mechanics type",ERR,ERROR,*999)
       END IF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
-    EXITS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET")
+    EXITS("FluidMechanics_EquationsSetClassTypeGet")
     RETURN
-999 ERRORSEXITS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR)
+999 ERRORSEXITS("FluidMechanics_EquationsSetClassTypeGet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_GET
+  END SUBROUTINE FluidMechanics_EquationsSetClassTypeGet
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the problem type and subtype for a fluid mechanics equation set class.
-  SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
+  SUBROUTINE FluidMechanics_EquationsSetClassTypeSet(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
     & ERR,ERROR,*)
 
     !Argument variables
@@ -223,9 +223,9 @@ CONTAINS
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
         CALL DARCY_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
-        CALL DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+        CALL DarcyPressure_EquationsSetSubtypeSet(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
-        CALL POISEUILLE_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+        CALL Poiseuille_EquationsSetSubtypeSet(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
         CALL BURGERS_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
@@ -235,17 +235,18 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
-    EXITS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET")
+    EXITS("FluidMechanics_EquationsSetClassTypeSet")
     RETURN
-999 ERRORSEXITS("FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET",ERR,ERROR)
+999 ERRORSEXITS("FluidMechanics_EquationsSetClassTypeSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_CLASS_TYPE_SET
+    
+  END SUBROUTINE FluidMechanics_EquationsSetClassTypeSet
 
   !
   !================================================================================================================================
@@ -269,26 +270,26 @@ CONTAINS
       CASE(EQUATIONS_SET_STOKES_EQUATION_TYPE)
         CALL STOKES_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
-        CALL FLAG_ERROR("There are no finite element matrices to be calculated for Navier-Stokes equation.",ERR,ERROR,*999)
+        CALL FlagError("There are no finite element matrices to be calculated for Navier-Stokes equation.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
         CALL DARCY_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
-        CALL FLAG_ERROR("There is no element stiffness matrix to be calculated for Darcy pressure.",ERR,ERROR,*999)
+        CALL FlagError("There is no element stiffness matrix to be calculated for Darcy pressure.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
-        CALL POISEUILLE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL Poiseuille_FiniteElementCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
-        CALL FLAG_ERROR("There are no finite element matrices to be calculated for Burgers equation.",ERR,ERROR,*999)
+        CALL FlagError("There are no finite element matrices to be calculated for Burgers equation.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
-        CALL FLAG_ERROR("There are no finite element matrices to be calculated for Characteristic equations.",ERR,ERROR,*999)
+        CALL FlagError("There are no finite element matrices to be calculated for Characteristic equations.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_STREE_EQUATION_TYPE)
         CALL STREE_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FLUID_MECHANICS_FINITE_ELEMENT_CALCULATE")
@@ -302,7 +303,7 @@ CONTAINS
   !
 
   !>Evaluates the element Jacobian matrix for the given element number for a fluid mechanics class finite element equation set.
-  SUBROUTINE FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE FluidMechanics_FiniteElementJacobianEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
@@ -312,45 +313,47 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
+    ENTERS("FluidMechanics_FiniteElementJacobianEvaluate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_STOKES_EQUATION_TYPE)
-        CALL FLAG_ERROR("There is no Jacobian to be evaluated for Stokes.",ERR,ERROR,*999)
+        CALL FlagError("There is no Jacobian to be evaluated for Stokes.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
-        CALL NAVIER_STOKES_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL NavierStokes_FiniteElementJacobianEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
-        CALL FLAG_ERROR("There is no Jacobian to be evaluated for Poiseuille.",ERR,ERROR,*999)
+        CALL FlagError("There is no Jacobian to be evaluated for Poiseuille.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
-        CALL BURGERS_EQUATION_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL Burgers_FiniteElementJacobianEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
-    EXITS("FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    EXITS("FluidMechanics_FiniteElementJacobianEvaluate")
     RETURN
-999 ERRORSEXITS("FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
+999 ERRORS("FluidMechanics_FiniteElementJacobianEvaluate",ERR,ERROR)
+    EXITS("FluidMechanics_FiniteElementJacobianEvaluate")
     RETURN 1
-  END SUBROUTINE FLUID_MECHANICS_FINITE_ELEMENT_JACOBIAN_EVALUATE
+    
+  END SUBROUTINE FluidMechanics_FiniteElementJacobianEvaluate
 
   !
   !================================================================================================================================
   !
 
   !>Evaluates the element residual and rhs vectors for the given element number for a fluid mechanics class finite element equation set.
-  SUBROUTINE FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE FluidMechanics_FiniteElementResidualEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
@@ -360,38 +363,40 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+    ENTERS("FluidMechanics_FiniteElementResidualEvaluate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_STOKES_EQUATION_TYPE)
-        CALL FLAG_ERROR("There is no residual to be evaluated for Stokes.",ERR,ERROR,*999)
+        CALL FlagError("There is no residual to be evaluated for Stokes.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
-        CALL NAVIER_STOKES_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL NavierStokes_FiniteElementResidualEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
-        CALL DARCY_PRESSURE_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL DarcyPressure_FiniteElementResidualEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
-        CALL FLAG_ERROR("There is no residual to be evaluated for Poiseuille.",ERR,ERROR,*999)
+        CALL FlagError("There is no residual to be evaluated for Poiseuille.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
-        CALL BURGERS_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL Burgers_FiniteElementResidualEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
-    EXITS("FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+    EXITS("FluidMechanics_FiniteElementResidualEvaluate")
     RETURN
-999 ERRORSEXITS("FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR)
+999 ERRORS("FluidMechanics_FiniteElementResidualEvaluate",ERR,ERROR)
+    EXITS("FluidMechanics_FiniteElementResidualEvaluate")
     RETURN 1
-  END SUBROUTINE FLUID_MECHANICS_FINITE_ELEMENT_RESIDUAL_EVALUATE
+    
+  END SUBROUTINE FluidMechanics_FiniteElementResidualEvaluate
 
   !
   !================================================================================================================================
@@ -413,26 +418,26 @@ CONTAINS
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%TYPE)
       CASE(EQUATIONS_SET_STOKES_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
         CALL Characteristic_NodalJacobianEvaluate(equationsSet,nodeNumber,err,error,*999)
       CASE DEFAULT
         localError="Equations set type "//TRIM(NUMBER_TO_VSTRING(equationsSet%TYPE,"*",err,error))// &
           & " is not valid for a fluid mechanics equation set class."
-        CALL FLAG_ERROR(localError,err,error,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",err,error,*999)
+      CALL FlagError("Equations set is not associated",err,error,*999)
     ENDIF
        
     EXITS("FluidMechanics_NodalJacobianEvaluate")
@@ -461,26 +466,26 @@ CONTAINS
     IF(ASSOCIATED(equationsSet)) THEN
       SELECT CASE(equationsSet%TYPE)
       CASE(EQUATIONS_SET_STOKES_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",err,error,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
         CALL Characteristic_NodalResidualEvaluate(equationsSet,nodeNumber,err,error,*999)
       CASE DEFAULT
         localError="Equations set type "//TRIM(NUMBER_TO_VSTRING(equationsSet%TYPE,"*",err,error))// &
           & " is not valid for a fluid mechanics equation set class."
-        CALL FLAG_ERROR(localError,err,error,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",err,error,*999)
+      CALL FlagError("Equations set is not associated",err,error,*999)
     ENDIF
        
     EXITS("FluidMechanics_NodalResidualEvaluate")
@@ -527,10 +532,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FLUID_MECHANICS_EQUATIONS_SET_SETUP")
@@ -545,7 +550,7 @@ CONTAINS
   !
 
   !>Sets/changes the solution method for a fluid mechanics equation set class.
-  SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE FluidMechanics_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -560,40 +565,42 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_STOKES_EQUATION_TYPE)
-        CALL STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL Stokes_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
-        CALL NAVIER_STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL NavierStokes_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        CALL DARCY_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL DarcyPressure_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
-        CALL DARCY_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL DarcyPressure_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
-        CALL POISEUILLE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL Poiseuille_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
-        CALL BURGERS_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL Burgers_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
-        CALL Characteristic_EquationsSet_SolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL Characteristic_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechancis equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    EXITS("FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("FluidMechanics_EquationsSetSolutionMethodSet")
     RETURN
-999 ERRORSEXITS("FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
+999 ERRORS("FluidMechanics_EquationsSetSolutionMethodSet",ERR,ERROR)
+    EXITS("FluidMechanics_EquationsSetSolutionMethodSet")
     RETURN 1
-  END SUBROUTINE FLUID_MECHANICS_EQUATIONS_SET_SOLUTION_METHOD_SET
+    
+  END SUBROUTINE FluidMechanics_EquationsSetSolutionMethodSet
 
   !
   !================================================================================================================================
   !
 
   !>Sets the analytic boundary conditions for a fluid mechanics equation set class.
-  SUBROUTINE FLUID_MECHANICS_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+  SUBROUTINE FluidMechanics_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -603,38 +610,40 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    ENTERS("FLUID_MECHANICS_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC",ERR,ERROR,*999)
+    ENTERS("FluidMechanics_BoundaryConditionsAnalyticCalculate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%TYPE)
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
-        CALL BURGERS_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+        CALL Burgers_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_STOKES_EQUATION_TYPE)
-        CALL STOKES_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+        CALL Stokes_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
-        CALL NavierStokes_AnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+        CALL NavierStokes_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        CALL DARCY_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+        CALL Darcy_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
-        CALL POISEUILLE_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+        CALL Poiseuille_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
 
-    EXITS("FLUID_MECHANICS_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC")
+    EXITS("FluidMechanics_BoundaryConditionsAnalyticCalculate")
     RETURN
-999 ERRORSEXITS("FLUID_MECHANICS_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC",ERR,ERROR)
+999 ERRORS("FluidMechanics_BoundaryConditionsAnalyticCalculate",ERR,ERROR)
+    EXITS("FluidMechanics_BoundaryConditionsAnalyticCalculate")
     RETURN 1
-  END SUBROUTINE FLUID_MECHANICS_EQUATIONS_BOUNDARY_CONDITIONS_ANALYTIC
+    
+  END SUBROUTINE FluidMechanics_BoundaryConditionsAnalyticCalculate
 
   !
   !================================================================================================================================
@@ -658,10 +667,10 @@ CONTAINS
         PROBLEM_EQUATION_TYPE=PROBLEM%TYPE
         PROBLEM_SUBTYPE=PROBLEM%SUBTYPE
       ELSE
-        CALL FLAG_ERROR("Problem is not fluid mechanics class",ERR,ERROR,*999)
+        CALL FlagError("Problem is not fluid mechanics class",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FLUID_MECHANICS_PROBLEM_CLASS_TYPE_GET")
@@ -703,10 +712,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FLUID_MECHANICS_PROBLEM_CLASS_TYPE_SET")
@@ -747,10 +756,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FLUID_MECHANICS_PROBLEM_SETUP")
@@ -791,10 +800,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FLUID_MECHANICS_POST_SOLVE")
@@ -835,10 +844,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("FLUID_MECHANICS_PRE_SOLVE")
@@ -880,13 +889,13 @@ CONTAINS
         CASE DEFAULT
           LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
             & " is not valid for a fluid mechanics problem class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
         !do nothing
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("FLUID_MECHANICS_CONTROL_LOOP_PRE_LOOP")
@@ -928,13 +937,13 @@ CONTAINS
         CASE DEFAULT
           LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
             & " is not valid for a fluid mechanics problem class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
         !do nothing
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("FLUID_MECHANICS_CONTROL_LOOP_POST_LOOP")
@@ -978,15 +987,16 @@ CONTAINS
       CASE DEFAULT
         localError="Equations set type "//TRIM(NUMBER_TO_VSTRING(equationsSet%TYPE,"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."
-        CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+        CALL FlagError(localError,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",err,error,*999)
+      CALL FlagError("Equations set is not associated",err,error,*999)
     ENDIF
        
     EXITS("FluidMechanics_FiniteElementPreResidualEvaluate")
     RETURN
-999 ERRORSEXITS("FluidMechanics_FiniteElementPreResidualEvaluate",err,error)
+999 ERRORS("FluidMechanics_FiniteElementPreResidualEvaluate",err,error)
+    EXITS("FluidMechanics_FiniteElementPreResidualEvaluate")
     RETURN 1
     
   END SUBROUTINE FluidMechanics_FiniteElementPreResidualEvaluate

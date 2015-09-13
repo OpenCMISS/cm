@@ -82,13 +82,13 @@ MODULE DIFFUSION_DIFFUSION_ROUTINES
   IMPLICIT NONE
 
   PUBLIC DIFFUSION_DIFFUSION_EQUATIONS_SET_SETUP
-  PUBLIC DIFFUSION_DIFFUSION_EQUATIONS_SET_SUBTYPE_SET
-  PUBLIC DIFFUSION_DIFFUSION_EQUATIONS_SET_SOLUTION_METHOD_SET
+  PUBLIC DiffusionDiffusionEquationsSetSubtypeSet
+  PUBLIC DiffusionDiffusion_EquationsSetSolutionMethodSet
 
   PUBLIC DIFFUSION_DIFFUSION_PROBLEM_SETUP
   PUBLIC DIFFUSION_DIFFUSION_PROBLEM_SUBTYPE_SET
   
-  PUBLIC DIFFUSION_DIFFUSION_FINITE_ELEMENT_CALCULATE
+  PUBLIC DiffusionDiffusion_FiniteElementCalculate
 
   PUBLIC DIFFUSION_DIFFUSION_PRE_SOLVE
   PUBLIC DIFFUSION_DIFFUSION_POST_SOLVE
@@ -101,7 +101,7 @@ CONTAINS
   !
 
   !>Sets/changes the solution method for a diffusion-diffusion equation type of a multi physics equations set class.
-  SUBROUTINE DIFFUSION_DIFFUSION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE DiffusionDiffusion_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -111,7 +111,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    ENTERS("DIFFUSION_DIFFUSION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("DiffusionDiffusion_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
@@ -120,33 +120,35 @@ CONTAINS
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a diffusion-diffusion equation type of a multi physics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    EXITS("DIFFUSION_DIFFUSION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("DiffusionDiffusion_EquationsSetSolutionMethodSet")
     RETURN
-999 ERRORSEXITS("DIFFUSION_DIFFUSION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
+999 ERRORS("DiffusionDiffusion_EquationsSetSolutionMethodSet",ERR,ERROR)
+    EXITS("DiffusionDiffusion_EquationsSetSolutionMethodSet")
     RETURN 1
-  END SUBROUTINE DIFFUSION_DIFFUSION_EQUATIONS_SET_SOLUTION_METHOD_SET
+    
+  END SUBROUTINE DiffusionDiffusion_EquationsSetSolutionMethodSet
 
   !
   !================================================================================================================================
@@ -162,10 +164,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-
     ENTERS("DIFFUSION_DIFFUSION_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    CALL FlagError("Not implemented.",ERR,ERROR,*999)
              
     EXITS("DIFFUSION_DIFFUSION_EQUATIONS_SET_SETUP")
     RETURN
@@ -179,34 +180,32 @@ CONTAINS
   !
 
   !>Calculates the element stiffness matrices and RHS for a coupled diffusion-diffusion equation finite element equations set.
-  SUBROUTINE DIFFUSION_DIFFUSION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE DiffusionDiffusion_FiniteElementCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
     INTEGER(INTG), INTENT(IN) :: ELEMENT_NUMBER !<The element number to calculate
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-
     !Local Variables
 
+    ENTERS("DiffusionDiffusion_FiniteElementCalculate",ERR,ERROR,*999)
 
-
-    ENTERS("DIFFUSION_DIFFUSION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
-
-    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    CALL FlagError("Not implemented.",ERR,ERROR,*999)
       
-  EXITS("DIFFUSION_DIFFUSION_FINITE_ELEMENT_CALCULATE")
+    EXITS("DiffusionDiffusion_FiniteElementCalculate")
     RETURN
-999 ERRORSEXITS("DIFFUSION_DIFFUSION_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
+999 ERRORSEXITS("DiffusionDiffusion_FiniteElementCalculate",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE DIFFUSION_DIFFUSION_FINITE_ELEMENT_CALCULATE
+    
+  END SUBROUTINE DiffusionDiffusion_FiniteElementCalculate
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the equation subtype for a coupled diffusion-diffusion equation type of a multi physics equations set class.
-  SUBROUTINE DIFFUSION_DIFFUSION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  SUBROUTINE DiffusionDiffusionEquationsSetSubtypeSet(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
@@ -215,16 +214,16 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
+    ENTERS("DiffusionDiffusionEquationsSetSubtypeSet",ERR,ERROR,*999)
     
-    ENTERS("DIFFUSION_DIFFUSION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+    CALL FlagError("Not implemented.",ERR,ERROR,*999)
        
-    EXITS("DIFFUSION_DIFFUSION_EQUATIONS_SET_SUBTYPE_SET")
+    EXITS("DiffusionDiffusionEquationsSetSubtypeSet")
     RETURN
-999 ERRORSEXITS("DIFFUSION_DIFFUSION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
+999 ERRORSEXITS("DiffusionDiffusionEquationsSetSubtypeSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE DIFFUSION_DIFFUSION_EQUATIONS_SET_SUBTYPE_SET
+    
+  END SUBROUTINE DiffusionDiffusionEquationsSetSubtypeSet
 
   !
   !================================================================================================================================
@@ -252,10 +251,10 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a coupled diffusion-diffusion equation type of a multi physics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("DIFFUSION_DIFFUSION_PROBLEM_SUBTYPE_SET")
@@ -309,7 +308,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a diffusion-diffusion  equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -326,7 +325,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a coupled diffusion-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -365,7 +364,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a couple diffusion-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -413,12 +412,12 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a coupled diffusion-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a coupled diffusion-diffusion equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       !-----------------------------------------------------------------
@@ -427,11 +426,11 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
           & " does not equal a coupled source diffusion-diffusion equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
     EXITS("DIFFUSION_DIFFUSION_PROBLEM_SETUP")
@@ -467,26 +466,26 @@ CONTAINS
 
               IF(SOLVER%GLOBAL_NUMBER==1) THEN
                 !copy current value of concentration_one to another variable
-                CALL DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                CALL Diffusion_PreSolveStoreCurrentSolution(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                 !Set source term to be updated value of concentration_two
-                CALL DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                CALL Diffusion_PreSolveGetSourceValue(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               ELSE IF(SOLVER%GLOBAL_NUMBER==2) THEN
                 !compute value of constant source term - evaluated from lamdba*(0.5*(c_1^{t+1}+c_1^{t}) - c_2^{t})
-                !CALL DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                !CALL Diffusion_PreSolveGetSourceValue(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a diffusion type of a multi physics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DIFFUSION_DIFFUSION_PRE_SOLVE")
@@ -527,16 +526,16 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a diffusion-diffusion type of a multi physics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
     EXITS("DIFFUSION_DIFFUSION_POST_SOLVE")
@@ -572,16 +571,16 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a diffusion type of a multi physics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
       
     EXITS("DIFFUSION_DIFFUSION_POST_SOLVE_OUTPUT_DATA")
