@@ -933,6 +933,12 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSBoundaryConditions_ConstrainNodeDofsEqualObj
   END INTERFACE CMISSBoundaryConditions_ConstrainNodeDofsEqual
 
+  !>Constrain a nodal equations dependent field DOF to be another single solver DOF with a mapping coeff in the solver equations
+  INTERFACE CMISSBoundaryConditions_ConstrainNodeDofLinear
+    MODULE PROCEDURE CMISSBoundaryConditions_ConstrainNodeDofLinearNumber
+    MODULE PROCEDURE CMISSBoundaryConditions_ConstrainNodeDofLinearObj
+  END INTERFACE CMISSBoundaryConditions_ConstrainNodeDofLinear
+
   PUBLIC CMISS_BOUNDARY_CONDITION_FREE,CMISS_BOUNDARY_CONDITION_FIXED, &
     & CMISS_BOUNDARY_CONDITION_FIXED_WALL,CMISS_BOUNDARY_CONDITION_FIXED_INLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL, &
     & CMISS_BOUNDARY_CONDITION_FREE_WALL,CMISS_BOUNDARY_CONDITION_FIXED_OUTLET,CMISS_BOUNDARY_CONDITION_MOVED_WALL_INCREMENTED, &
@@ -957,6 +963,8 @@ MODULE OPENCMISS
   PUBLIC CMISSBoundaryConditions_NeumannSparsityTypeSet
 
   PUBLIC CMISSBoundaryConditions_ConstrainNodeDofsEqual
+
+  PUBLIC CMISSBoundaryConditions_ConstrainNodeDofLinear
 
 !!==================================================================================================================================
 !!
@@ -3843,6 +3851,11 @@ MODULE OPENCMISS
     MODULE PROCEDURE CMISSField_VariableTypesSetObj
   END INTERFACE !CMISSField_VariableTypesSet
 
+  !>Calculate enclosed volume between user-defined faces and elements.
+  INTERFACE CMISSField_CalculateEnclosedVolume
+    MODULE PROCEDURE CMISSField_CalculateEnclosedVolumeNumber
+    MODULE PROCEDURE CMISSField_CalculateEnclosedVolumeObj
+  END INTERFACE !CMISSField_CalculateEnclosedVolume
 
   PUBLIC CMISS_FIELD_DEPENDENT_TYPE,CMISS_FIELD_INDEPENDENT_TYPE
 
@@ -3977,6 +3990,8 @@ MODULE OPENCMISS
   PUBLIC CMISSField_VariableLabelGet,CMISSField_VariableLabelSet
 
   PUBLIC CMISSField_VariableTypesGet,CMISSField_VariableTypesSet
+
+  PUBLIC CMISSField_CalculateEnclosedVolume
 
 !!==================================================================================================================================
 !!
@@ -13011,6 +13026,117 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofsEqualObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Constrain a nodal equations dependent field DOF to be another single solver DOF with a mapping coeff in the solver equations
+  SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofLinearNumber(regionUserNumber,problemUserNumber,controlLoopIdentifier, &
+    & solverIndex,fieldUserNumber,fieldVariableType,versionNumbers,derivativeNumbers,components,nodes,coefficient,err)
+
+    !Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field DOFs to constrain.
+    INTEGER(INTG), INTENT(IN) :: problemUserNumber !<The user number of the problem containing the solver equations.
+    INTEGER(INTG), INTENT(IN) :: controlLoopIdentifier !<The control loop identifier to get the solver equations.
+    INTEGER(INTG), INTENT(IN) :: solverIndex !<The solver index of the solver equations.
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The user number of the dependent field containing the DOFs to contrain.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The variable type of the dependent field containing the DOFs to constrain. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: versionNumbers(:) !<The derivative version number.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumbers(:) !<The derivative number.
+    INTEGER(INTG), INTENT(IN) :: components(:) !<The field component number of the DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: nodes(:) !<The user numbers of the nodes to be constrained to be equal.
+    REAL(DP), INTENT(IN) :: coefficient !<The mapping coefficient
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    !Local variables
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(PROBLEM_TYPE), POINTER :: problem
+    TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(VARYING_STRING) :: localError
+
+    CALL Enters("CMISSBoundaryConditions_ConstrainNodeDofLinearNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(problem)
+    NULLIFY(solverEquations)
+    NULLIFY(field)
+
+    CALL Region_user_number_find(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL Problem_user_number_find(problemUserNumber,problem,err,error,*999)
+      IF(ASSOCIATED(problem)) THEN
+        CALL Problem_solver_equations_get(problem,controlLoopIdentifier,solverIndex,solverEquations,err,error,*999)
+        IF(ASSOCIATED(solverEquations)) THEN
+          CALL Solver_equations_boundary_conditions_get(solverEquations,boundaryConditions,err,error,*999)
+          IF(ASSOCIATED(boundaryConditions)) THEN
+            CALL Field_user_number_find(fieldUserNumber,region,field,err,error,*999)
+            IF(ASSOCIATED(field)) THEN
+              CALL BoundaryConditions_ConstrainNodeDofLinear(boundaryConditions,field, &
+                & fieldVariableType,versionNumbers,derivativeNumbers,components,nodes,coefficient,err,error,*999)
+            ELSE
+              localError="A field with a user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+                & " does not exist."
+              CALL FlagError(localError,err,error,*999)
+            END IF
+          ELSE
+            localError="The boundary conditions for the solver equations are not associated."
+            CALL FLAG_ERROR(localError,err,error,*999)
+          END IF
+        ELSE
+          CALL FlagError("The solver equations are not associated.",err,error,*999)
+        END IF
+      ELSE
+        localError="A problem with a user number of "//TRIM(NUMBER_TO_VSTRING(problemUserNumber,"*",err,error))//" does not exist."
+        CALL FlagError(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with a user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FlagError(localError,err,error,*999)
+    END IF
+
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofLinearNumber")
+    RETURN
+999 CALL Errors("CMISSBoundaryConditions_ConstrainNodeDofLinearNumber",err,error)
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofLinearNumber")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofLinearNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Constrain a nodal equations dependent field DOF to be another single solver DOF with a mapping coeff in the solver equations
+  SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofLinearObj( &
+      & boundaryConditions,field,fieldVariableType,versionNumbers,derivativeNumbers,components,nodes,coefficient,err)
+
+    !Argument variables
+    TYPE(CMISSBoundaryConditionsType), INTENT(IN) :: boundaryConditions !<The boundary conditions to constrain the DOFs in.
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<The equations dependent field containing the field DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type of the DOFs to be constrained. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: versionNumbers(:) !<The derivative version number.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumbers(:) !<The derivative number.
+    INTEGER(INTG), INTENT(IN) :: components(:) !<The field component number of the DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: nodes(:) !<The user numbers of the nodes to be constrained to be equal.
+    REAL(DP), INTENT(IN) :: coefficient !<The mapping coefficient
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL Enters("CMISSBoundaryConditions_ConstrainNodeDofLinearObj",err,error,*999)
+
+    CALL BoundaryConditions_ConstrainNodeDofLinear(boundaryConditions%boundary_conditions,field%field, &
+      & fieldVariableType,versionNumbers,derivativeNumbers,components,nodes,coefficient,err,error,*999)
+
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofLinearObj")
+    RETURN
+999 CALL Errors("CMISSBoundaryConditions_ConstrainNodeDofLinearObj",err,error)
+    CALL Exits("CMISSBoundaryConditions_ConstrainNodeDofLinearObj")
+    CALL CMISSHandleError(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSBoundaryConditions_ConstrainNodeDofLinearObj
 
 !!==================================================================================================================================
 !!
@@ -35934,6 +36060,83 @@ CONTAINS
     RETURN
 
   END SUBROUTINE CMISSField_VariableTypesSetObj
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the calculated enclosed volume of a field identified by a user number.
+  SUBROUTINE CMISSField_CalculateEnclosedVolumeNumber(regionUserNumber,fieldUserNumber,point,elems,faces,volume,err)
+
+    ! Argument variables
+    INTEGER(INTG), INTENT(IN) :: regionUserNumber !<The user number of the region containing the field to set the scalefactor for
+    INTEGER(INTG), INTENT(IN) :: fieldUserNumber !<The field to set scale factor for
+    REAL(DP), INTENT(IN) :: point(:) !<Global coordinates of arbitrary point within the enclosed volume.
+    INTEGER(INTG), INTENT(IN) :: elems(:) !<Array of elements which face the enclosed volume to be evaluated.
+    INTEGER(INTG), INTENT(IN) :: faces(:) !<Face number of each element specified in elems array which faces the enclosed volume.
+    REAL(DP), INTENT(OUT) :: volume !<Total volume of enclosed space.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    ! Local variables
+    TYPE(FIELD_TYPE), POINTER :: field
+    TYPE(REGION_TYPE), POINTER :: region
+    TYPE(VARYING_STRING) :: localError
+
+    CALL ENTERS("CMISSField_CalculateEnclosedVolumeNumber",err,error,*999)
+
+    NULLIFY(region)
+    NULLIFY(field)
+    CALL REGION_USER_NUMBER_FIND(regionUserNumber,region,err,error,*999)
+    IF(ASSOCIATED(region)) THEN
+      CALL FIELD_USER_NUMBER_FIND(fieldUserNumber,region,field,err,error,*999)
+      IF(ASSOCIATED(field)) THEN
+        CALL Field_CalculateEnclosedVolume(field,point,elems,faces,volume,err,error,*999)
+      ELSE
+        localError="A field with an user number of "//TRIM(NUMBER_TO_VSTRING(fieldUserNumber,"*",err,error))// &
+          & " does not exist on region number "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//"."
+        CALL FLAG_ERROR(localError,err,error,*999)
+      END IF
+    ELSE
+      localError="A region with an user number of "//TRIM(NUMBER_TO_VSTRING(regionUserNumber,"*",err,error))//" does not exist."
+      CALL FLAG_ERROR(localError,err,error,*999)
+    END IF
+
+    CALL EXITS("CMISSField_CalculateEnclosedVolumeNumber")
+    RETURN
+999 CALL ERRORS("CMISSField_CalculateEnclosedVolumeNumber",err,error)
+    CALL EXITS("CMISSField_CalculateEnclosedVolumeNumber")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_CalculateEnclosedVolumeNumber
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Returns the calculated enclosed volume of a field identified by an object.
+  SUBROUTINE CMISSField_CalculateEnclosedVolumeObj(field,point,elems,faces,volume,err)
+
+    ! Argument variables
+    TYPE(CMISSFieldType), INTENT(IN) :: field !<Evaluate enclosed volume for this field.
+    REAL(DP), INTENT(IN) :: point(:) !<Global coordinates of arbitrary point within the enclosed volume.
+    INTEGER(INTG), INTENT(IN) :: elems(:) !<Array of elements which face the enclosed volume to be evaluated.
+    INTEGER(INTG), INTENT(IN) :: faces(:) !<Face number of each element specified in elems array which faces the enclosed volume.
+    REAL(DP), INTENT(OUT) :: volume !<Total volume of enclosed space.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+
+    CALL ENTERS("CMISSField_CalculateEnclosedVolumeObj",err,error,*999)
+
+    CALL Field_CalculateEnclosedVolume(field%FIELD,point,elems,faces,volume,err,error,*999)
+
+    CALL EXITS("CMISSField_CalculateEnclosedVolumeObj")
+    RETURN
+999 CALL ERRORS("CMISSField_CalculateEnclosedVolumeObj",err,error)
+    CALL EXITS("CMISSField_CalculateEnclosedVolumeObj")
+    CALL CMISS_HANDLE_ERROR(err,error)
+    RETURN
+
+  END SUBROUTINE CMISSField_CalculateEnclosedVolumeObj
 
 !!==================================================================================================================================
 !!

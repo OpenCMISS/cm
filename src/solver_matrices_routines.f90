@@ -1346,9 +1346,13 @@ CONTAINS
                                         & jacobian_column_number)%NUMBER_OF_SOLVER_COLS
                                         solver_column_number=JACOBIAN_TO_SOLVER_MAP%JACOBIAN_COL_TO_SOLVER_COLS_MAP( &
                                           & jacobian_column_number)%SOLVER_COLS(solver_column_idx)
-                                        column_coupling_coefficient=JACOBIAN_TO_SOLVER_MAP% &
-                                          & JACOBIAN_COL_TO_SOLVER_COLS_MAP(jacobian_column_number)% &
-                                          & COUPLING_COEFFICIENTS(solver_column_idx)
+                                        !column_coupling_coefficient=JACOBIAN_TO_SOLVER_MAP% &
+                                        !  & JACOBIAN_COL_TO_SOLVER_COLS_MAP(jacobian_column_number)% &
+                                        !  & COUPLING_COEFFICIENTS(solver_column_idx)
+                                        ! XY - quick fix of the column mapping
+                                        column_coupling_coefficient=SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP( &
+                                          & equations_set_idx)%EQUATIONS_ROW_TO_SOLVER_ROWS_MAPS(jacobian_column_number) &
+                                          & %COUPLING_COEFFICIENTS(solver_column_idx)
                                         !Add in the solver matrix value
                                         VALUE=ALPHA*JACOBIAN_MATRIX_DATA(jacobian_row_number+(jacobian_column_number-1)* &
                                           & EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS)*row_coupling_coefficient* &

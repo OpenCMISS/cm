@@ -3207,7 +3207,7 @@ CONTAINS
                   DO nx=1,NodesX
                     nn=nn+1
                     IF (nx==1) THEN
-                      NODE_NUMBER_COLLAPSED=NodesX*(ny-1)+ny
+                      NODE_NUMBER_COLLAPSED=NodesX*(ny-1)+nx
                       NODE_NUMBER=NODE_NUMBER_COLLAPSED
                     ELSE
                       IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN
@@ -3241,12 +3241,13 @@ CONTAINS
                 ENDDO
               ENDDO
             ELSE IF(BASIS%COLLAPSED_XI(1)==BASIS_COLLAPSED_AT_XI1) THEN
+              NODE_NUMBER_COLLAPSED = 0
               DO nz=1,NodesZ
                 DO ny=1,NodesY
                   DO nx=1,NodesX
                     nn=nn+1
                     IF (nx==NodesX) THEN
-                      NODE_NUMBER_COLLAPSED=NodesX*(ny-1)+ny+NodesX-1
+                      NODE_NUMBER_COLLAPSED=NodesX*(ny-1)+nx
                       NODE_NUMBER=NODE_NUMBER_COLLAPSED
                     ELSE
                       IF (NODE_NUMBER_COUNTER<NODE_NUMBER_COLLAPSED) THEN

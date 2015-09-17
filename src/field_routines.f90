@@ -749,6 +749,8 @@ MODULE FIELD_ROUTINES
   PUBLIC FIELD_VARIABLE_TYPES_SET,FIELD_VARIABLE_TYPES_SET_AND_LOCK
 
   PUBLIC MESH_EMBEDDING_PUSH_DATA, MESH_EMBEDDING_PULL_GAUSS_POINT_DATA, FIELD_PARAMETER_SET_GET_GAUSS_POINT_COORD
+
+  PUBLIC Field_CalculateEnclosedVolume
    
 CONTAINS
 
@@ -11553,6 +11555,88 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !> Evaluate volume enclosed by specified external faces of a geometric field by integrating the product of surface
+  ! area and distance from a fixed point within cavity space - approximating cone shapes.
+  SUBROUTINE Field_CalculateEnclosedVolume(field, point, elems, faces, volume, err, error,*)
+
+    ! Argument variables
+    TYPE(FIELD_TYPE), POINTER :: field !<Evaluate enclosed volume for this field.
+    REAL(DP), INTENT(IN) :: point(:) !<Global coordinates of arbitrary point within the enclosed volume.
+    INTEGER(INTG), INTENT(IN) :: elems(:) !<Array of elements which face the enclosed volume to be evaluated.
+    INTEGER(INTG), INTENT(IN) :: faces(:) !<Face number of each element specified in elems array which faces the enclosed volume.
+    REAL(DP), INTENT(OUT) :: volume !<Total volume of enclosed space.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string.
+
+    ! Local Variables
+    REAL(DP) :: xi_gauss(10), w_gauss(10), xi(1), w, r
+    INTEGER(INTG) :: numberOfGaussPoints=4, ng, elemIndex
+    INTEGER(INTG) :: gaussStart(4)=[0,1,3,6]
+    TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: coordinateSystem
+    TYPE(FIELD_INTERPOLATED_POINT_PTR_TYPE), POINTER :: interpolatedPoint(:)
+    TYPE(FIELD_INTERPOLATED_POINT_METRICS_PTR_TYPE), POINTER :: interpolatedPointMetrics(:)
+    TYPE(FIELD_INTERPOLATION_PARAMETERS_PTR_TYPE), POINTER :: interpolationParameters(:)
+
+    xi_gauss = [ 0.500000000000000_DP, &
+      &     0.211324865405187_DP,0.788675134594813_DP, &
+      &     0.112701665379258_DP,0.500000000000000_DP,0.887298334620742_DP, &
+      &     0.06943184420297349_DP,0.330009478207572_DP,0.669990521792428_DP,0.930568155797026_DP ]
+    w_gauss = [ 1.000000000000000_DP, &
+      &     0.500000000000000_DP,0.500000000000000_DP, &
+      &     0.277777777777778_DP,0.444444444444444_DP,0.277777777777778_DP, &
+      &     0.173927422568727_DP,0.326072577431273_DP,0.326072577431273_DP,0.173927422568727_DP ]
+    NULLIFY(interpolatedPoint)
+    NULLIFY(interpolatedPointMetrics)
+    NULLIFY(interpolationParameters)
+
+    CALL Enters("FIeld_CalculateEnclosedVolume",err,error,*999)
+
+    IF(.NOT.ASSOCIATED(field)) THEN
+      CALL FLAG_ERROR("Field is not associated.",err,error,*999)
+    END IF
+    IF(.NOT.field%FIELD_FINISHED) THEN
+      CALL FLAG_ERROR("Field has not been finished.",err,error,*999)
+    END IF
+    IF(.NOT.field%type==FIELD_GEOMETRIC_TYPE) THEN
+      CALL FLAG_ERROR("Field does not have a geometric type, cannot evaluate enclosed volume.",err,error,*999)
+    END IF
+    IF(.NOT.ASSOCIATED(field%GEOMETRIC_FIELD_PARAMETERS)) THEN
+      CALL FLAG_ERROR("Field geometric field parameters are not associated.",err,error,*999)
+    END IF
+
+    NULLIFY(coordinateSystem)
+    CALL FIELD_COORDINATE_SYSTEM_GET(field,coordinateSystem,err,error,*999)
+    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(field,interpolationParameters,err,error,*999)
+    CALL FIELD_INTERPOLATED_POINTS_INITIALISE(interpolationParameters,interpolatedPoint,err,error,*999)
+    CALL FIELD_INTERPOLATED_POINTS_METRICS_INITIALISE(interpolatedPoint,interpolatedPointMetrics,err,error,*999)
+
+    !Loop over elements
+    volume=0.0_DP
+    DO elemIndex=1,SIZE(elems(:))
+      CALL FIELD_INTERPOLATION_PARAMETERS_FACE_GET(FIELD_VALUES_SET_TYPE,faces(elemIndex), &
+        & interpolationParameters(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+      DO ng=1,numberOfGaussPoints
+        xi=xi_gauss(gaussStart(numberOfGaussPoints)+ng)
+        w=w_gauss(gaussStart(numberOfGaussPoints)+ng)
+        CALL FIELD_INTERPOLATE_XI(FIRST_PART_DERIV,xi,interpolatedPoint(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999)
+        CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(COORDINATE_JACOBIAN_AREA_TYPE, &
+          & interpolatedPointMetrics(FIELD_U_VARIABLE_TYPE)%ptr,err,error,*999) !Evaluate area at current gauss point.
+        !Evaluate distance from fixed point to global gauss point position.
+        r=2.0_DP
+      ENDDO
+    ENDDO
+
+    CALL Exits("Field_CalculateEnclosedVolume")
+    RETURN
+
+999 CALL Errors("Field_CalculateEnclosedVolume",err,error)
+    CALL Exits("Field_CalculateEnclosedVolume")
+    RETURN 1
+  END SUBROUTINE Field_CalculateEnclosedVolume
+
+  !
+  !================================================================================================================================
+  !
   !>Gets the field label for a field for character labels. \see OPENCMISS::CMISSFieldLabelGet
   SUBROUTINE FIELD_LABEL_GET_C(FIELD,LABEL,ERR,ERROR,*)
 

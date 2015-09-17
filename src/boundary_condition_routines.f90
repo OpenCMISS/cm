@@ -157,7 +157,9 @@ MODULE BOUNDARY_CONDITIONS_ROUTINES
 
   PUBLIC BoundaryConditions_ConstrainNodeDofsEqual
 
-CONTAINS  
+  PUBLIC BoundaryConditions_ConstrainNodeDofLinear
+
+CONTAINS
 
   !
   !================================================================================================================================
@@ -3048,6 +3050,68 @@ CONTAINS
     CALL Exits("BoundaryConditions_ConstrainNodeDofsEqual")
     RETURN 1
   END SUBROUTINE BoundaryConditions_ConstrainNodeDofsEqual
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Constrain a nodal equations dependent field DOF to be another single solver DOF with a mapping coeff in the solver equations
+  SUBROUTINE BoundaryConditions_ConstrainNodeDofLinear(boundaryConditions,field,fieldVariableType, &
+      & versionNumbers,derivativeNumbers,componentNumbers,nodeNumbers,coefficient,err,error,*)
+
+    !Argument variables
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER, INTENT(IN) :: boundaryConditions !<The solver equations boundary conditions to constrain the DOFs for.
+    TYPE(FIELD_TYPE), POINTER, INTENT(IN) :: field !<The equations dependent field containing the field DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: fieldVariableType !<The field variable type of the DOFs to be constrained. \see OPENCMISS_FieldVariableTypes
+    INTEGER(INTG), INTENT(IN) :: versionNumbers(:) !<The derivative version number.
+    INTEGER(INTG), INTENT(IN) :: derivativeNumbers(:) !<The derivative number.
+    INTEGER(INTG), INTENT(IN) :: componentNumbers(:) !<The field component number of the DOFs to be constrained.
+    INTEGER(INTG), INTENT(IN) :: nodeNumbers(:) !<The user numbers of the nodes to be constrained to be equal.
+    REAL(DP), INTENT(IN) :: coefficient !<The mapping coefficient
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code.
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error message.
+    !Local variables
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: fieldVariable
+    INTEGER(INTG) :: numberOfDofs,localDofNumber,dofIdx
+    INTEGER(INTG), ALLOCATABLE :: globalDofs(:)
+
+    CALL Enters("BoundaryConditions_ConstrainNodeDofLinear",err,error,*998)
+
+    NULLIFY(fieldVariable)
+
+    IF(.NOT.ASSOCIATED(boundaryConditions)) THEN
+      CALL FlagError("Boundary conditions are not associated.",err,error,*998)
+    END IF
+
+    ! check if all input arguments have the same length
+    numberOfDofs=2
+    IF(SIZE(versionNumbers,1)==numberOfDofs .AND. SIZE(derivativeNumbers,1)==numberOfDofs .AND. &
+        & SIZE(componentNumbers,1)==numberOfDofs .AND. SIZE(nodeNumbers,1)==numberOfDofs) THEN
+      ALLOCATE(globalDofs(numberOfDofs),stat=err)
+      IF(err/=0) CALL FlagError("Could not allocate equal global DOFs array.",err,error,*998)
+      !Get field DOFs for nodes
+      DO dofIdx=1,numberOfDofs
+        CALL FIELD_COMPONENT_DOF_GET_USER_NODE(field,fieldVariableType,versionNumbers(dofIdx),derivativeNumbers(dofIdx), &
+          & nodeNumbers(dofIdx),componentNumbers(dofIdx),localDofNumber,globalDofs(dofIdx),err,error,*999)
+      ENDDO !dofIdx
+      !Get the field variable and boundary conditions variable for the field
+      CALL FIELD_VARIABLE_GET(field,fieldVariableType,fieldVariable,err,error,*999)
+      !Now set DOF constraint
+      CALL BoundaryConditions_DofConstraintSet( &
+        & boundaryConditions,fieldVariable,globalDofs(2),[globalDofs(1)],[coefficient],err,error,*999)
+      DEALLOCATE(globalDofs)
+    ELSE
+      CALL FlagError("Input version, derivative node and component numbers must be arrays of length 2.",err,error,*998)
+    ENDIF
+
+    CALL Exits("BoundaryConditions_ConstrainNodeDofLinear")
+    RETURN
+999 IF(ALLOCATED(globalDofs)) DEALLOCATE(globalDofs)
+998 CALL Errors("BoundaryConditions_ConstrainNodeDofLinear",err,error)
+    CALL Exits("BoundaryConditions_ConstrainNodeDofLinear")
+    RETURN 1
+  END SUBROUTINE BoundaryConditions_ConstrainNodeDofLinear
+
 
   !
   !================================================================================================================================
