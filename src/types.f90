@@ -69,8 +69,8 @@
 !> This module contains all type definitions in order to avoid cyclic module references.
 MODULE TYPES
 
-  USE CMISS_PETSC_TYPES, ONLY : PETSC_ISCOLORING_TYPE,PETSC_KSP_TYPE,PETSC_MAT_TYPE,PETSC_MATFDCOLORING_TYPE,PETSC_PC_TYPE, &
-    & PETSC_SNES_TYPE,PetscSnesLineSearchType,PETSC_VEC_TYPE
+  USE CmissPetscTypes, ONLY : PetscISColoringType,PetscKspType,PetscMatType,PetscMatColoringType,PetscMatFDColoringType, &
+    & PetscPCType,PetscSnesType,PetscSnesLineSearchType,PetscVecType
   USE CONSTANTS
   USE KINDS
   USE ISO_C_BINDING
@@ -221,12 +221,14 @@ MODULE TYPES
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_LINE(:) !<NUMBER_OF_NODES_IN_LOCAL_LINE(nae). The the number of nodes in the nae'th local line for the basis. Old CMISS name NNL(0,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_LINE(:,:) !<NODE_NUMBERS_IN_LOCAL_LINE(nnl,nae). The local node numbers (nn) for the nnl'th line node in the nae'th local line for the basis. Old CMISS name NNL(1..,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_LINE(:,:) !<DERIVATIVE_NUMBERS_IN_LOCAL_LINE(nnl,nae). The derivative numbers (nk) for the nnl'th line node in the nae'th local line for the basis.
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_PARAMETERS_IN_LOCAL_LINE(:,:) !<ELEMENT_PARAMETERS_IN_LOCAL_LINE(lineParameterIdx,elementLineIdx). The local element parameter for the lineParameterIdx'th line parameter in the elementLineIdx'th local line for the basis.
     !Face information
     INTEGER(INTG) :: NUMBER_OF_LOCAL_FACES !<The number of local faces in the basis.
     INTEGER(INTG), ALLOCATABLE :: LOCAL_FACE_XI_DIRECTION(:) !<LOCAL_FACE_XI_DIRECTION(nae). The Xi direction of the nae'th local face for the basis.
     INTEGER(INTG), ALLOCATABLE :: NUMBER_OF_NODES_IN_LOCAL_FACE(:) !<NUMBER_OF_NODES_IN_LOCAL_FACE(nae). The the number of nodes in the nae'th local face for the basis. Old CMISS name NNL(0,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: NODE_NUMBERS_IN_LOCAL_FACE(:,:) !<NODE_NUMBERS_IN_LOCAL_FACE(nnl,nae). The local element node numbers (nn) for the nnl'th face node in the nae'th local face for the basis. Old CMISS name NNL(1..,nae,nb).
     INTEGER(INTG), ALLOCATABLE :: DERIVATIVE_NUMBERS_IN_LOCAL_FACE(:,:,:) !<DERIVATIVES_NUMBERS_IN_LOCAL_FACE(0:derivativeIdx,faceNodeIdx,elementFaceIdx). The element derivative numbers for the derivativeIdx'th face derivative's of the faceNodeIdx'th face node in the elementFaceIdx'th local face for the basis. The number of derivatives at the faceNodeIdx'th face node in the elementFaceIdx'th local face is given by DERIVATIVES_NUMBERS_IN_LOCAL_FACE(0,faceNodeIdx,elementFaceIdx).
+    INTEGER(INTG), ALLOCATABLE :: ELEMENT_PARAMETERS_IN_LOCAL_FACE(:,:) !<ELEMENT_PARAMETERS_IN_LOCAL_FACE(faceParameterIdx,elementFaceIdx). The local element parameter for the faceParameterIdx'th face parameter in the elementFaceIdx'th local face for the basis.
     !\todo What is the difference between LOCAL_XI_NORMAL and LOCAL_FACE_XI_DIRECTION ? They're the same
     INTEGER(INTG), ALLOCATABLE :: LOCAL_XI_NORMAL(:) !<LOCAL_XI_NORMAL(nae). The Xi direction that is normal to either the nae'th local line for bases with 2 xi directions or the nae'th local face for bases with 3 xi directions. For bases with 1 xi direction the array is not allocated. Note: Normals are always outward.
     !Sub-basis information
@@ -775,8 +777,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: DATA_SIZE  !<The size of the distributed vector that is held locally by the domain.
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_NUMBERS(:) !<GLOBAL_NUMBERS(i). The PETSc global number corresponding to the i'th local number.
     LOGICAL :: USE_OVERRIDE_VECTOR !<Is .TRUE. if the override vector is used instead of the standard vector
-    TYPE(PETSC_VEC_TYPE) :: VECTOR !<The PETSc vector
-    TYPE(PETSC_VEC_TYPE) :: OVERRIDE_VECTOR !<The PETSc override vector
+    TYPE(PetscVecType) :: VECTOR !<The PETSc vector
+    TYPE(PetscVecType) :: OVERRIDE_VECTOR !<The PETSc override vector
   END TYPE DISTRIBUTED_VECTOR_PETSC_TYPE
   
   !>Contains the information for a vector that is distributed across a number of domains.
@@ -817,8 +819,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG), ALLOCATABLE :: GLOBAL_ROW_NUMBERS(:) !<GLOBAL_ROW_NUMBERS(i). The PETSc global row number corresponding to the i'th local row number.
     REAL(DP), POINTER :: DATA_DP(:) !<DATA_DP(i). The real data for the matrix. \todo Is this used???
     LOGICAL :: USE_OVERRIDE_MATRIX !<Is .TRUE. if the override matrix is to be used instead of the standard matrix
-    TYPE(PETSC_MAT_TYPE) :: MATRIX !<The PETSc matrix
-    TYPE(PETSC_MAT_TYPE) :: OVERRIDE_MATRIX !<The PETSc override matrix
+    TYPE(PetscMatType) :: MATRIX !<The PETSc matrix
+    TYPE(PetscMatType) :: OVERRIDE_MATRIX !<The PETSc override matrix
   END TYPE DISTRIBUTED_MATRIX_PETSC_TYPE
   
   !>Contains the information for a matrix that is distributed across a number of domains.
@@ -1049,10 +1051,10 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
 
    !>Contains the topology information for a decomposition
   TYPE DECOMPOSITION_TOPOLOGY_TYPE
-    TYPE(DECOMPOSITION_TYPE), POINTER :: DECOMPOSITION !<The pointer to the decomposition for this topology information.
-    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: ELEMENTS !<The pointer to the topology information for the elements of this decomposition.
-    TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: LINES !<The pointer to the topology information for the lines of this decomposition.
-    TYPE(DECOMPOSITION_FACES_TYPE), POINTER :: FACES !<The pointer to the topology information for the faces of this decomposition.
+    TYPE(DECOMPOSITION_TYPE), POINTER :: decomposition !<The pointer to the decomposition for this topology information.
+    TYPE(DECOMPOSITION_ELEMENTS_TYPE), POINTER :: elements !<The pointer to the topology information for the elements of this decomposition.
+    TYPE(DECOMPOSITION_LINES_TYPE), POINTER :: lines !<The pointer to the topology information for the lines of this decomposition.
+    TYPE(DECOMPOSITION_FACES_TYPE), POINTER :: faces !<The pointer to the topology information for the faces of this decomposition.
     TYPE(DecompositionDataPointsType), POINTER :: dataPoints !<The pointer to the topology information for the data of this decomposition.
   END TYPE DECOMPOSITION_TOPOLOGY_TYPE
 
@@ -1733,7 +1735,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations_set
     LOGICAL :: EQUATIONS_FINISHED !<Is .TRUE. if the equations have finished being created, .FALSE. if not.
     INTEGER(INTG) :: LINEARITY !<The equations linearity type \see EQUATIONS_SET_CONSTANTS_LinearityTypes,EQUATIONS_SET_CONSTANTS
-    INTEGER(INTG) :: TIME_DEPENDENCE !<The equations time dependence type \see EQUATIONS_SET_CONSTANTS_TimeDepedenceTypes,EQUATIONS_SET_CONSTANTS
+    INTEGER(INTG) :: TIME_DEPENDENCE !<The equations time dependence type \see EQUATIONS_SET_CONSTANTS_TimeDependenceTypes,EQUATIONS_SET_CONSTANTS
     INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the equations \see EQUATIONS_ROUTINES_EquationsOutputTypes,EQUATIONS_ROUTINES
     INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsSparsityTypes,EQUATIONS_ROUTINES
     INTEGER(INTG) :: LUMPING_TYPE !<The lumping type for the equation matrices of the equations \see EQUATIONS_ROUTINES_EquationsLumpingTypes,EQUATIONS_ROUTINES
@@ -1890,6 +1892,16 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD !<A pointer to the dependent field for the equations set.
   END TYPE EQUATIONS_SET_DEPENDENT_TYPE
 
+  !>Contains information on the derived variables for the equations set, eg. stress or strain
+  TYPE EquationsSetDerivedType
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer back to the equations set.
+    LOGICAL :: derivedFinished !<Is .TRUE. if the derived variables for the equations set have finished being created, .FALSE. if not.
+    LOGICAL :: derivedFieldAutoCreated !<Is .TRUE. if the derived field has been or will be auto created by the equations set setup, .FALSE. if it was already created.
+    TYPE(FIELD_TYPE), POINTER :: derivedField !<A pointer to the derived field for the equations set.
+    INTEGER(INTG) :: numberOfVariables !<The number of derived variables used.
+    INTEGER(INTG), ALLOCATABLE :: variableTypes(:) !<variableTypes(DERIVED_TYPE) is zero if the derived type is not used, otherwise it is the field variable type in the derived field for the derived variable type
+  END TYPE EquationsSetDerivedType
+
   !>Contains information on the independent variables for the equations set.
   TYPE EQUATIONS_SET_INDEPENDENT_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set.
@@ -1941,6 +1953,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(EQUATIONS_SET_DEPENDENT_TYPE) :: DEPENDENT !<The depedent variable information for the equations set.
     TYPE(EQUATIONS_SET_INDEPENDENT_TYPE), POINTER :: INDEPENDENT !<A pointer to the indepedent field information for the equations set.
     TYPE(EQUATIONS_SET_ANALYTIC_TYPE), POINTER :: ANALYTIC !<A pointer to the analytic setup information for the equations set.
+    TYPE(EquationsSetDerivedType), POINTER :: derived !<A pointer to the derived field information.
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS !<A pointer to the equations information for the equations set
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<A pointer to the boundary condition information for the equations set.
     TYPE(EQUATIONS_SET_EQUATIONS_SET_FIELD_TYPE) :: EQUATIONS_SET_FIELD !<A pointer to the equations set field for the equations set.
@@ -2101,7 +2114,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: OUTPUT_TYPE !<The output type for the interface equations \see INTERFACE_EQUATIONS_ROUTINES_OutputTypes,INTERFACE_EQUATIONS_ROUTINES
     INTEGER(INTG) :: SPARSITY_TYPE !<The sparsity type for the interface equation matrices of the interface equations \see INTERFACE_EQUATIONS_ROUTINES_SparsityTypes,INTERFACE_EQUATIONS_ROUTINES
     INTEGER(INTG) :: LINEARITY !<The interface equations linearity type \see INTERFACE_CONDITIONS_CONSTANTS_LinearityTypes,INTERFACE_CONDITIONS_CONSTANTS
-    INTEGER(INTG) :: TIME_DEPENDENCE !<The interface equations time dependence type \see INTERFACE_CONDITIONS_CONSTANTS_TimeDepedenceTypes,INTERFACE_CONDITIONS_CONSTANTS
+    INTEGER(INTG) :: TIME_DEPENDENCE !<The interface equations time dependence type \see INTERFACE_CONDITIONS_CONSTANTS_TimeDependenceTypes,INTERFACE_CONDITIONS_CONSTANTS
     TYPE(INTERFACE_EQUATIONS_INTERPOLATION_TYPE), POINTER :: INTERPOLATION !<A pointer to the interpolation information used in the interface equations.
     TYPE(INTERFACE_MAPPING_TYPE), POINTER :: INTERFACE_MAPPING !<A pointer to the interface equations mapping for the interface.
     TYPE(INTERFACE_MATRICES_TYPE), POINTER :: INTERFACE_MATRICES !<A pointer to the interface equations matrices and vectors used for the interface equations.
@@ -2301,6 +2314,15 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     LOGICAL :: PARAMETERS_FIELD_AUTO_CREATED !<Is .TRUE. if the parameters field has been auto created, .FALSE. if not.
     TYPE(FIELD_TYPE), POINTER :: PARAMETERS_FIELD !<A pointer to the parameters field
   END TYPE CELLML_PARAMETERS_FIELD_TYPE
+ 
+  !> Contains information on the solver, cellml, dof etc. for which cellml equations are to be evaluated by petsc
+  TYPE CellMLPETScContextType
+    TYPE(SOLVER_TYPE), POINTER :: solver !<A pointer to the solver
+    TYPE(CELLML_TYPE), POINTER :: cellml !<A pointer to the CellML environment
+    INTEGER(INTG) :: dofIdx !<The current DOF to be evaluated
+    REAL(DP), POINTER :: rates(:) !<A pointer to the temporary rates array
+    INTEGER(INTG), ALLOCATABLE :: ratesIndices(:) !<The PETSc array indices for the rates
+  END TYPE CellMLPETScContextType
   
   !>Contains information on the mapping between CellML fields and OpenCMISS fields and vise versa.
   TYPE CELLML_MODEL_MAP_TYPE
@@ -2571,8 +2593,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the linear direct solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
     INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the linear direct solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
     INTEGER(INTG) :: DIRECT_SOLVER_TYPE !<The type of direct linear solver
-    TYPE(PETSC_PC_TYPE) :: PC !<The PETSc preconditioner object
-    TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
+    TYPE(PetscPCType) :: PC !<The PETSc preconditioner object
+    TYPE(PetscKspType) :: KSP !<The PETSc solver object
   END TYPE LINEAR_DIRECT_SOLVER_TYPE
 
   !>Contains information for an iterative linear solver
@@ -2588,8 +2610,8 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     REAL(DP) :: ABSOLUTE_TOLERANCE !<The absolute tolerance of the residual norm
     REAL(DP) :: DIVERGENCE_TOLERANCE !<The absolute tolerance of the residual norm
     INTEGER(INTG) :: GMRES_RESTART !<The GMRES restart iterations size
-    TYPE(PETSC_PC_TYPE) :: PC !<The PETSc preconditioner object
-    TYPE(PETSC_KSP_TYPE) :: KSP !<The PETSc solver object
+    TYPE(PetscPCType) :: PC !<The PETSc preconditioner object
+    TYPE(PetscKspType) :: KSP !<The PETSc solver object
   END TYPE LINEAR_ITERATIVE_SOLVER_TYPE
   
   !>Contains information for a linear solver
@@ -2610,9 +2632,10 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     REAL(DP) :: LINESEARCH_ALPHA !<The line search alpha
     REAL(DP) :: LINESEARCH_MAXSTEP !<The line search maximum step
     REAL(DP) :: LINESEARCH_STEPTOLERANCE !<The line search step tolerance
-    TYPE(PETSC_ISCOLORING_TYPE) :: JACOBIAN_ISCOLORING !<The Jacobian matrix index set colouring
-    TYPE(PETSC_MATFDCOLORING_TYPE) :: JACOBIAN_FDCOLORING !<The Jacobian matrix finite difference colouring
-    TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
+    TYPE(PetscMatColoringType) :: jacobianMatColoring !<The Jacobian matrix colouring
+    TYPE(PetscISColoringType) :: jacobianISColoring !<The Jacobian matrix index set colouring
+    TYPE(PetscMatFDColoringType) :: jacobianMatFDColoring !<The Jacobian matrix finite difference colouring
+    TYPE(PetscSnesType) :: snes !<The PETSc nonlinear solver object
     TYPE(PetscSnesLineSearchType) :: snesLineSearch !<The PETSc SNES line search object
     LOGICAL :: linesearchMonitorOutput !<Flag to determine whether to enable/disable linesearch monitor output.
   END TYPE NEWTON_LINESEARCH_SOLVER_TYPE
@@ -2624,7 +2647,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the Newton trustregion solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
     REAL(DP) :: TRUSTREGION_TOLERANCE !<The trust region tolerance
     REAL(DP) :: TRUSTREGION_DELTA0 !<The trust region delta0
-    TYPE(PETSC_SNES_TYPE) :: SNES !<The PETSc nonlinear solver object
+    TYPE(PetscSnesType) :: snes !<The PETSc nonlinear solver object
   END TYPE NEWTON_TRUSTREGION_SOLVER_TYPE
 
   !>Contains information about the convergence test for a newton solver
@@ -2653,12 +2676,64 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linked linear solver
     TYPE(SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer to the linked CellML solver
   END TYPE NEWTON_SOLVER_TYPE
-    
+
+  !>Contains information for a Quasi-Newton line search nonlinear solver
+  TYPE QUASI_NEWTON_LINESEARCH_SOLVER_TYPE
+    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer to the Quasi-Newton solver
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the Quasi-Newton linesearch solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the Quasi-Newton linesearch solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
+    INTEGER(INTG) :: LINESEARCH_TYPE !<The line search type \see SOLVER_ROUTINES_NonlinearLineSearchTypes,SOLVER_ROUTINES
+    REAL(DP) :: LINESEARCH_MAXSTEP !<The line search maximum step
+    REAL(DP) :: LINESEARCH_STEPTOLERANCE !<The line search step tolerance
+    TYPE(PetscMatColoringType) :: jacobianMatColoring !<The Jacobian matrix colouring
+    TYPE(PetscISColoringType) :: jacobianISColoring !<The Jacobian matrix index set colouring
+    TYPE(PetscMatFDColoringType) :: jacobianMatFDColoring !<The Jacobian matrix finite difference colouring
+    TYPE(PetscSnesType) :: snes !<The PETSc nonlinear solver object
+    TYPE(PetscSnesLineSearchType) :: snesLineSearch !<The PETSc SNES line search object
+    LOGICAL :: linesearchMonitorOutput !<Flag to determine whether to enable/disable linesearch monitor output.
+  END TYPE QUASI_NEWTON_LINESEARCH_SOLVER_TYPE
+  
+  !>Contains information for a Quasi-Newton trust region nonlinear solver
+  TYPE QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE
+    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer to the Quasi-Newton solver 
+    INTEGER(INTG) :: SOLVER_LIBRARY !<The library type for the nonlinear solver \see SOLVER_ROUTINES_SolverLibraries,SOLVER_ROUTINES
+    INTEGER(INTG) :: SOLVER_MATRICES_LIBRARY !<The library type for the Quasi-Newton trustregion solver matrices \see DISTRIBUTED_MATRIX_VECTOR_LibraryTypes,DISTRIBUTED_MATRIX_VECTOR
+    REAL(DP) :: TRUSTREGION_TOLERANCE !<The trust region tolerance
+    REAL(DP) :: TRUSTREGION_DELTA0 !<The trust region delta0
+    TYPE(PetscSnesType) :: snes !<The PETSc nonlinear solver object
+  END TYPE QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE
+  
+  !>Contains information for a Quasi-Newton nonlinear solver
+  TYPE QUASI_NEWTON_SOLVER_TYPE
+    TYPE(NONLINEAR_SOLVER_TYPE), POINTER :: NONLINEAR_SOLVER !<A pointer to the nonlinear solver
+    INTEGER(INTG) :: QUASI_NEWTON_SOLVE_TYPE !<The type of Quasi-Newton solver
+    INTEGER(INTG) :: QUASI_NEWTON_TYPE !<The type of Quasi-Newton variant
+    INTEGER(INTG) :: RESTART_TYPE !<The restart type of the Quasi-Newton solver
+    INTEGER(INTG) :: RESTART !<Number of saved states Quasi-Newton solver.
+    INTEGER(INTG) :: SCALE_TYPE !<The scaling type of the Quasi-Newton solver
+    INTEGER(INTG) :: SOLUTION_INITIALISE_TYPE !<The type of solution vector initialisation \see SOLVER_ROUTINES_SolutionInitialiseTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_FUNCTION_EVALUATIONS !<The number of function evaluations performed by the nonlinear solver
+    INTEGER(INTG) :: TOTAL_NUMBER_OF_JACOBIAN_EVALUATIONS !<The number of Jacobian evaluations performed by the nonlinear solver
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS !<The maximum number of iterations
+    INTEGER(INTG) :: MAXIMUM_NUMBER_OF_FUNCTION_EVALUATIONS !<The maximum number of function evaluations
+    INTEGER(INTG) :: JACOBIAN_CALCULATION_TYPE !<The type of calculation used for the Jacobian \see SOLVER_ROUTINES_JacobianCalculationTypes,SOLVER_ROUTINES
+    INTEGER(INTG) :: convergenceTestType !<The type of convergence test \see SOLVER_ROUTINES_NewtonConvergenceTestTypes,SOLVER_ROUTINES
+    REAL(DP) :: ABSOLUTE_TOLERANCE !<The tolerance between the absolute decrease between the solution norm and the initial guess
+    REAL(DP) :: RELATIVE_TOLERANCE !<The tolerance between the relative decrease between the solution norm and the initial guess
+    REAL(DP) :: SOLUTION_TOLERANCE !<The tolerance of the change in the norm of the solution
+    TYPE(NewtonSolverConvergenceTest), POINTER :: convergenceTest !<A pointer to the (Quasi-)Newton solver convergence test 
+    TYPE(QUASI_NEWTON_LINESEARCH_SOLVER_TYPE), POINTER :: LINESEARCH_SOLVER !<A pointer to the Quasi-Newton line search solver information
+    TYPE(QUASI_NEWTON_TRUSTREGION_SOLVER_TYPE), POINTER :: TRUSTREGION_SOLVER !<A pointer to the Quasi-Newton trust region solver information
+    TYPE(SOLVER_TYPE), POINTER :: LINEAR_SOLVER !<A pointer to the linked linear solver
+    TYPE(SOLVER_TYPE), POINTER :: CELLML_EVALUATOR_SOLVER !<A pointer to the linked CellML solver
+  END TYPE QUASI_NEWTON_SOLVER_TYPE
+
   !>Contains information for a nonlinear solver
   TYPE NONLINEAR_SOLVER_TYPE
     TYPE(SOLVER_TYPE), POINTER :: SOLVER !<A pointer to the problem_solver
     INTEGER(INTG) :: NONLINEAR_SOLVE_TYPE !<The type of nonlinear solver \see SOLVER_ROUTINES_NonlinearSolverTypes,SOLVER_ROUTINES
     TYPE(NEWTON_SOLVER_TYPE), POINTER :: NEWTON_SOLVER !<A pointer to the Newton solver information
+    TYPE(QUASI_NEWTON_SOLVER_TYPE), POINTER :: QUASI_NEWTON_SOLVER !<A pointer to the Quasi-Newton solver information
   END TYPE NONLINEAR_SOLVER_TYPE
   
   !>Contains information for an eigenproblem solver
@@ -3089,6 +3164,7 @@ END TYPE GENERATED_MESH_ELLIPSOID_TYPE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
     INTEGER(INTG) :: ITERATION_NUMBER
     INTEGER(INTG) :: MAXIMUM_NUMBER_OF_ITERATIONS
+    REAL(DP) :: ABSOLUTE_TOLERANCE
     LOGICAL :: CONTINUE_LOOP
   END TYPE CONTROL_LOOP_WHILE_TYPE
 

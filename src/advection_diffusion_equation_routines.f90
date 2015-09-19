@@ -69,6 +69,7 @@ MODULE ADVECTION_DIFFUSION_EQUATION_ROUTINES
 ! temporary input for setting velocity field
   USE FLUID_MECHANICS_IO_ROUTINES
 
+#include "macros.h"
 
   IMPLICIT NONE
 
@@ -82,12 +83,12 @@ MODULE ADVECTION_DIFFUSION_EQUATION_ROUTINES
 
   !Interfaces
 
-  PUBLIC ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SETUP,ADVEC_DIFF_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET, &
-    & ADVECTION_DIFFUSION_EQUATION_ANALYTIC_CALCULATE, &
-    & ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SUBTYPE_SET,ADVECTION_DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE, &
-    & ADVECTION_DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET,ADVECTION_DIFFUSION_EQUATION_PROBLEM_SETUP, &
-    & ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_INPUT_DATA, ADVECTION_DIFFUSION_PRE_SOLVE,ADVECTION_DIFFUSION_POST_SOLVE, &
-    & ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE,ADVEC_DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLN
+  PUBLIC AdvectionDiffusion_EquationsSetSetup,AdvectionDiffusion_EquationsSetSolnMethodSet, &
+    & AdvectionDiffusion_BoundaryConditionsAnalyticCalculate, &
+    & AdvectionDiffusion_EquationsSetSubtypeSet,AdvectionDiffusion_FiniteElementCalculate, &
+    & AdvectionDiffusion_ProblemSubtypeSet,ADVECTION_DIFFUSION_EQUATION_PROBLEM_SETUP, &
+    & AdvectionDiffusion_PreSolveUpdateInputData, ADVECTION_DIFFUSION_PRE_SOLVE,ADVECTION_DIFFUSION_POST_SOLVE, &
+    & AdvectionDiffusion_PreSolveGetSourceValue,AdvectionDiffusion_PreSolveStoreCurrentSoln
   
 CONTAINS
 
@@ -99,7 +100,7 @@ CONTAINS
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
   !>For the advection-diffusion analytic example it is required that the advective velocity
   !>and the source field are set to a particular analytic value, which is performed within this subroutine.
-  SUBROUTINE ADVECTION_DIFFUSION_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -117,7 +118,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     REAL(DP) :: alpha, phi, Peclet,tanphi
 
-    CALL ENTERS("ADVECTION_DIFFUSION_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
+    ENTERS("AdvectionDiffusion_BoundaryConditionsAnalyticCalculate",ERR,ERROR,*999)
 
     NULLIFY(GEOMETRIC_VARIABLE)
     NULLIFY(GEOMETRIC_PARAMETERS)
@@ -173,43 +174,43 @@ CONTAINS
                                     CASE(NO_GLOBAL_DERIV)
                                       VALUE=TANH(1.0-alpha*(X(1)*tanphi-X(2)))
                                     CASE(GLOBAL_DERIV_S1)
-                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                     CASE(GLOBAL_DERIV_S2)
-                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                     CASE(GLOBAL_DERIV_S1_S2)
-                                      CALL FLAG_ERROR("Not implmented.",ERR,ERROR,*999)
+                                      CALL FlagError("Not implmented.",ERR,ERROR,*999)
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                         DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                         & ERR,ERROR))//" is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                    SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
                                     CASE(NO_GLOBAL_DERIV)
                                       VALUE=0.0_DP
                                     CASE(GLOBAL_DERIV_S1)
-                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                     CASE(GLOBAL_DERIV_S2)
-                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                     CASE(GLOBAL_DERIV_S1_S2)
-                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                         & DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                         & ERR,ERROR))//" is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE DEFAULT
                                     LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
                                       & " is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                 CASE DEFAULT
                                   LOCAL_ERROR="The analytic function type of "// &
                                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                                     & " is invalid."
-                                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                 END SELECT
                                 !Default to version 1 of each node derivative
                                 local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
@@ -226,16 +227,16 @@ CONTAINS
                               ENDDO !deriv_idx
                             ENDDO !node_idx
                           ELSE
-                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                      CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !component_idx
                   CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
@@ -243,26 +244,26 @@ CONTAINS
                   CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
                     & ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
                 ENDIF
 
               ENDDO !variable_idx
               CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Boundary conditions is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
           ENDIF            
         ELSE
-          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
     
     !>Set the independent field (i.e. the advective velocity) to a specified analytical function 
@@ -311,7 +312,7 @@ CONTAINS
                                 LOCAL_ERROR="The analytic function type of "// &
                                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                                   & " is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                               !Default to version 1 of each node derivative
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
@@ -321,16 +322,16 @@ CONTAINS
                             ENDDO !deriv_idx
                           ENDDO !node_idx
                         ELSE
-                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                   ENDIF
                 ENDDO !component_idx
                 CALL FIELD_PARAMETER_SET_UPDATE_START(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -338,23 +339,23 @@ CONTAINS
                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
               ENDIF
 
             ENDDO !variable_idx
             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
           ENDIF            
         ELSE
-          CALL FLAG_ERROR("Equations set independent field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations set independent field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
     !>Set the source field to a specified analytical function
@@ -402,7 +403,7 @@ CONTAINS
                                 LOCAL_ERROR="The analytic function type of "// &
                                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                                   & " is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                               !Default to version 1 of each node derivative
                               local_ny=FIELD_VARIABLE%COMPONENTS(component_idx)%PARAM_TO_DOF_MAP% &
@@ -412,16 +413,16 @@ CONTAINS
                             ENDDO !deriv_idx
                           ENDDO !node_idx
                         ELSE
-                          CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                   ENDIF
                 ENDDO !component_idx
                 CALL FIELD_PARAMETER_SET_UPDATE_START(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -429,22 +430,22 @@ CONTAINS
                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(SOURCE_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !variable_idx
             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
           ENDIF            
         ELSE
-          CALL FLAG_ERROR("Equations set source field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations set source field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
     !>Set the material field to a specified analytical value
@@ -471,7 +472,7 @@ CONTAINS
                      LOCAL_ERROR="The analytic function type of "// &
                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                       & " is invalid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                    END SELECT
                       CALL FIELD_PARAMETER_SET_UPDATE_CONSTANT(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                        & FIELD_VALUES_SET_TYPE,component_idx,VALUE_MATERIAL,ERR,ERROR,*999)
@@ -481,31 +482,32 @@ CONTAINS
                 CALL FIELD_PARAMETER_SET_UPDATE_FINISH(MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                   & ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
               ENDIF
             ENDDO !variable_idx
             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
               & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
           ENDIF            
         ELSE
-          CALL FLAG_ERROR("Equations set material field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations set material field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
 
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_ANALYTIC_CALCULATE")
+    EXITS("AdvectionDiffusion_BoundaryConditionsAnalyticCalculate")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_ANALYTIC_CALCULATE")
+999 ERRORS("AdvectionDiffusion_BoundaryConditionsAnalyticCalculate",ERR,ERROR)
+    EXITS("AdvectionDiffusion_BoundaryConditionsAnalyticCalculate")
     RETURN 1
-  END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_ANALYTIC_CALCULATE
+    
+  END SUBROUTINE AdvectionDiffusion_BoundaryConditionsAnalyticCalculate
 
 
   !
@@ -513,7 +515,7 @@ CONTAINS
   !
 
   !>Sets up the diffusion equation type of a classical field equations set class.
-  SUBROUTINE ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_EquationsSetSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup a diffusion equation on.
@@ -523,104 +525,105 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
+    ENTERS("AdvectionDiffusion_EquationsSetSetup",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
       CASE(EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFFUSION_SUBTYPE)
         !Need to define the functions diffusion_equation_equations_set_linear_source_setup etc
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_QUADRATIC_SOURCE_ADVECTION_DIFFUSION_SUBTYPE)
-         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_EXPONENTIAL_SOURCE_ADVECTION_DIFFUSION_SUBTYPE)
-         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CONSTANT_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE)
         !Need to define the functions diffusion_equation_equations_set_linear_source_setup etc
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_QUADRATIC_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE)
-         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_EXP_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE)
-         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CONSTANT_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE)
         !Need to define the functions diffusion_equation_equations_set_linear_source_setup etc
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_LINEAR_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_QUAD_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE)
-         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_EXP_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE)
-         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE)
         !Need to define the functions diffusion_equation_equations_set_linear_source_setup etc
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_NO_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CONSTANT_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE)
         !Need to define the functions diffusion_equation_equations_set_linear_source_setup etc
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_LINEAR_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_QUAD_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE)
-         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_EXP_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE)
-         CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+         CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_NO_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE)
         !Need to define the functions diffusion_equation_equations_set_linear_source_setup etc
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_ADVEC_DIFFUSION_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for an advection-diffusion equation type of a classical field equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SETUP")
+    EXITS("AdvectionDiffusion_EquationsSetSetup")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SETUP")
+999 ERRORS("AdvectionDiffusion_EquationsSetSetup",ERR,ERROR)
+    EXITS("AdvectionDiffusion_EquationsSetSetup")
     RETURN 1
-  END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SETUP
+    
+  END SUBROUTINE AdvectionDiffusion_EquationsSetSetup
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the solution method for a diffusion equation type of an classical field equations set class.
-  SUBROUTINE ADVEC_DIFF_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_EquationsSetSolnMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -630,7 +633,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ADVEC_DIFF_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("AdvectionDiffusion_EquationsSetSolnMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
@@ -660,41 +663,41 @@ CONTAINS
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
      CASE DEFAULT
         LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for an advection-diffusion equation type of an classical field equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ADVEC_DIFF_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("AdvectionDiffusion_EquationsSetSolnMethodSet")
     RETURN
-999 CALL ERRORS("ADVEC_DIFF_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
-    CALL EXITS("ADVEC_DIFF_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+999 ERRORS("AdvectionDiffusion_EquationsSetSolnMethodSet",ERR,ERROR)
+    EXITS("AdvectionDiffusion_EquationsSetSolnMethodSet")
     RETURN 1
-  END SUBROUTINE ADVEC_DIFF_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
+  END SUBROUTINE AdvectionDiffusion_EquationsSetSolnMethodSet
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the equation subtype for a diffusion equation type of a classical field equations set class.
-  SUBROUTINE ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_EquationsSetSubtypeSet(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
@@ -704,7 +707,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("AdvectionDiffusion_EquationsSetSubtypeSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET_SUBTYPE)
@@ -827,25 +830,26 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for an advection-diffusion equation type of a classical field equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+    EXITS("AdvectionDiffusion_EquationsSetSubtypeSet")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+999 ERRORS("AdvectionDiffusion_EquationsSetSubtypeSet",ERR,ERROR)
+    EXITS("AdvectionDiffusion_EquationsSetSubtypeSet")
     RETURN 1
-  END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_SUBTYPE_SET
+    
+  END SUBROUTINE AdvectionDiffusion_EquationsSetSubtypeSet
 
   !
   !================================================================================================================================
   !
 
   !>Sets up the linear advection-diffusion equation.
-  SUBROUTINE ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup
@@ -872,7 +876,7 @@ CONTAINS
     INTEGER(INTG), ALLOCATABLE :: VARIABLE_TYPES(:),VARIABLE_U_TYPES(:),COUPLING_MATRIX_STORAGE_TYPE(:), &
       & COUPLING_MATRIX_STRUCTURE_TYPE(:)
     
-    CALL ENTERS("ADVECTION_DIFFUSION_EQUATION_EQUATION_SET_LINEAR_SETUP",ERR,ERROR,*999)
+    ENTERS("ADVECTION_DIFFUSION_EQUATION_EQUATION_SET_LINEAR_SETUP",ERR,ERROR,*999)
 
     NULLIFY(EQUATIONS)
     NULLIFY(EQUATIONS_MAPPING)
@@ -905,7 +909,7 @@ CONTAINS
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
-            CALL ADVEC_DIFF_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET, &
+            CALL AdvectionDiffusion_EquationsSetSolnMethodSet(EQUATIONS_SET, &
               & EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE .OR. &
               & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE) THEN
@@ -961,7 +965,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
           !Do nothing???
@@ -1001,7 +1005,7 @@ CONTAINS
                 LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                   & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                   & " is invalid for a linear advection-diffusion equation."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
                !Do nothing???
             CASE(EQUATIONS_SET_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE, &
@@ -1055,8 +1059,8 @@ CONTAINS
                  CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY% &
                    & GEOMETRIC_FIELD,ERR,ERROR,*999)
                  CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,2,ERR,ERROR,*999)
-                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,(/FIELD_U_VARIABLE_TYPE, &
-                   & FIELD_DELUDELN_VARIABLE_TYPE/),ERR,ERROR,*999)
+                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE, &
+                   & FIELD_DELUDELN_VARIABLE_TYPE],ERR,ERROR,*999)
                  CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                    & FIELD_SCALAR_DIMENSION_TYPE,ERR,ERROR,*999)
                  CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
@@ -1086,19 +1090,19 @@ CONTAINS
                    CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                    CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                  END SELECT
                ELSE
                 SELECT CASE(EQUATIONS_SET%SUBTYPE)
@@ -1137,26 +1141,26 @@ CONTAINS
                         & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                     ENDDO
                   CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
                  !Check the user specified field
                  CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                  CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
                  CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
-                 CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE/), &
+                 CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE], &
                    & ERR,ERROR,*999)
                  CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_SCALAR_DIMENSION_TYPE, & 
                    & ERR,ERROR,*999)
@@ -1180,19 +1184,19 @@ CONTAINS
                        & component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
 !                   ENDDO !component_idx
                  CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                  END SELECT
                 END SELECT 
                ENDIF
@@ -1211,8 +1215,8 @@ CONTAINS
                  CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY% &
                    & GEOMETRIC_FIELD,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,4,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_DELVDELN_VARIABLE_TYPE/),ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE,FIELD_DELVDELN_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_SCALAR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
@@ -1265,27 +1269,27 @@ CONTAINS
                    CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                    CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                  END SELECT
                ELSE
                  !Check the user specified field
                  CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                  CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
                  CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,4,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE,&
-                  & FIELD_V_VARIABLE_TYPE,FIELD_DELVDELN_VARIABLE_TYPE/),ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE,&
+                  & FIELD_V_VARIABLE_TYPE,FIELD_DELVDELN_VARIABLE_TYPE],ERR,ERROR,*999)
 
                  CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_SCALAR_DIMENSION_TYPE, & 
                    & ERR,ERROR,*999)
@@ -1323,19 +1327,19 @@ CONTAINS
                        & component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
 !                   ENDDO !component_idx
                  CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                  END SELECT
                ENDIF
               END SELECT
@@ -1349,7 +1353,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear advection-diffusion equation"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! M a t e r i a l s   f i e l d
@@ -1373,8 +1377,8 @@ CONTAINS
                   CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,EQUATIONS_SET%GEOMETRY% &
                     & GEOMETRIC_FIELD,ERR,ERROR,*999)
                   CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,2,ERR,ERROR,*999)
-                  CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,(/FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_V_VARIABLE_TYPE/), &
+                  CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,[FIELD_U_VARIABLE_TYPE, &
+                    & FIELD_V_VARIABLE_TYPE], &
                     & ERR,ERROR,*999)
                   CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
@@ -1430,7 +1434,7 @@ CONTAINS
                 CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,EQUATIONS_SET%GEOMETRY% &
                   & GEOMETRIC_FIELD,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,(/FIELD_U_VARIABLE_TYPE/), &
+                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,[FIELD_U_VARIABLE_TYPE], &
                   & ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
@@ -1497,8 +1501,8 @@ CONTAINS
                   CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
                   CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
                   CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
-                  CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE, &
-                     & FIELD_V_VARIABLE_TYPE/),ERR,ERROR,*999)
+                  CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE, &
+                     & FIELD_V_VARIABLE_TYPE],ERR,ERROR,*999)
                   CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                     & ERR,ERROR,*999)
                   CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
@@ -1521,7 +1525,7 @@ CONTAINS
                 CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                   & ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
@@ -1553,7 +1557,7 @@ CONTAINS
                ENDIF
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
@@ -1622,13 +1626,13 @@ CONTAINS
                 ENDIF
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! S o u r c e   f i e l d
@@ -1651,7 +1655,7 @@ CONTAINS
                 CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SOURCE%SOURCE_FIELD,EQUATIONS_SET%GEOMETRY% &
                   & GEOMETRIC_FIELD,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SOURCE%SOURCE_FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SOURCE%SOURCE_FIELD,(/FIELD_U_VARIABLE_TYPE/), &
+                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SOURCE%SOURCE_FIELD,[FIELD_U_VARIABLE_TYPE], &
                   & ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SOURCE%SOURCE_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_SCALAR_DIMENSION_TYPE,ERR,ERROR,*999)
@@ -1693,7 +1697,7 @@ CONTAINS
                 CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_SCALAR_DIMENSION_TYPE, &
                   & ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
@@ -1701,7 +1705,7 @@ CONTAINS
                   & ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set source is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set source is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             EQUATIONS_SOURCE=>EQUATIONS_SET%SOURCE
@@ -1737,13 +1741,13 @@ CONTAINS
                 ENDDO !component_idx
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set source is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set source is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! I n d e p e n d e n t   f i e l d
@@ -1770,8 +1774,8 @@ CONTAINS
                 CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY% &
                   & GEOMETRIC_FIELD,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,2,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,(/FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_V_VARIABLE_TYPE/),ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE, &
+                  & FIELD_V_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -1818,7 +1822,7 @@ CONTAINS
                 CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE/),&
+                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE],&
                    & ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                    & ERR,ERROR,*999)
@@ -1861,7 +1865,7 @@ CONTAINS
                 CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY% &
                   & GEOMETRIC_FIELD,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,(/FIELD_U_VARIABLE_TYPE/), &
+                CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE], &
                   & ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
@@ -1890,7 +1894,7 @@ CONTAINS
                 CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
-                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                   & ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
@@ -1903,7 +1907,7 @@ CONTAINS
               ENDIF
              ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set independent is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set independent is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             EQUATIONS_INDEPENDENT=>EQUATIONS_SET%INDEPENDENT
@@ -1930,13 +1934,13 @@ CONTAINS
 !                ENDDO !component_idx
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set independent is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set independent is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! A n a l y t i c   f i e l d
@@ -1958,7 +1962,7 @@ CONTAINS
                           & " is invalid. The analytic function type of "// &
                           & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                           & " requires that there be 2 geometric dimensions."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                       EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE= & 
                        & EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TWO_DIM_1
@@ -1966,16 +1970,16 @@ CONTAINS
                     LOCAL_ERROR="The specified analytic function type of "// &
                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                       & " is invalid for a linear advection-diffusion equation."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ELSE
-                  CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -1986,13 +1990,13 @@ CONTAINS
                 ENDIF
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! E q u a t i o n s    t y p e
@@ -2027,10 +2031,10 @@ CONTAINS
                  & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE) THEN
                   CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Equations set subtype not valid.",ERR,ERROR,*999)
+                CALL FlagError("Equations set subtype not valid.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -2090,7 +2094,7 @@ CONTAINS
                  Ncompartments = EQUATIONS_SET_FIELD_DATA(2)    
                  CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
                  CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.TRUE.,ERR,ERROR,*999)
-                 CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,Ncompartments-1,ERR,ERROR,*999)
+                 CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,Ncompartments-1,ERR,ERROR,*999)
 
                  ALLOCATE(VARIABLE_TYPES(2*Ncompartments))
                  ALLOCATE(VARIABLE_U_TYPES(Ncompartments-1))
@@ -2106,7 +2110,7 @@ CONTAINS
                    ENDIF
                  ENDDO
                  CALL EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,VARIABLE_TYPES(2*imy_matrix-1),ERR,ERROR,*999)
-                 CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,VARIABLE_U_TYPES,ERR,ERROR,*999)
+                 CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,VARIABLE_U_TYPES,ERR,ERROR,*999)
                  CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,VARIABLE_TYPES(2*imy_matrix),ERR,ERROR,*999)
                  CALL EQUATIONS_MAPPING_SOURCE_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
               END SELECT
@@ -2117,22 +2121,22 @@ CONTAINS
               IF(EQUATIONS%LUMPING_TYPE==EQUATIONS_LUMPED_MATRICES) THEN
                 !Set up lumping
                 CALL EQUATIONS_MATRICES_DYNAMIC_LUMPING_TYPE_SET(EQUATIONS_MATRICES, &
-                  & (/EQUATIONS_MATRIX_UNLUMPED,EQUATIONS_MATRIX_LUMPED/),ERR,ERROR,*999)
+                  & [EQUATIONS_MATRIX_UNLUMPED,EQUATIONS_MATRIX_LUMPED],ERR,ERROR,*999)
                 CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
-                  & (/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE/),ERR,ERROR,*999)
-                CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
-                  (/EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_DIAGONAL_STRUCTURE/),ERR,ERROR,*999)
+                  & [DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE],ERR,ERROR,*999)
+                CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
+                  [EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_DIAGONAL_STRUCTURE],ERR,ERROR,*999)
               ELSE
                 SELECT CASE(EQUATIONS%SPARSITY_TYPE)
                 CASE(EQUATIONS_MATRICES_FULL_MATRICES) 
                   CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
-                    & (/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE,DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/),ERR,ERROR,*999)
+                    & [DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE,DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE],ERR,ERROR,*999)
                 CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
                   CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
-                    & (/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                    & [DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                     & ERR,ERROR,*999)
-                  CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
-                    (/EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)    
+                  CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
+                    [EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE],ERR,ERROR,*999)    
                   IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUBTYPE .OR. &
                    & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE)THEN
                     ALLOCATE(COUPLING_MATRIX_STORAGE_TYPE(Ncompartments-1))
@@ -2144,13 +2148,13 @@ CONTAINS
                     CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                       & COUPLING_MATRIX_STORAGE_TYPE, &
                       & ERR,ERROR,*999)      
-                    CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                    CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES, &
                       COUPLING_MATRIX_STRUCTURE_TYPE,ERR,ERROR,*999)
                   ENDIF                          
                 CASE DEFAULT
                   LOCAL_ERROR="The equations matrices sparsity type of "// &
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               ENDIF
               CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
@@ -2165,8 +2169,8 @@ CONTAINS
               CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
               !Create the equations mapping.
               CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
+              CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+              CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,[FIELD_U_VARIABLE_TYPE], &
                 & ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
               IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE .OR. &
@@ -2180,61 +2184,62 @@ CONTAINS
               CALL EQUATIONS_MATRICES_CREATE_START(EQUATIONS,EQUATIONS_MATRICES,ERR,ERROR,*999)
               SELECT CASE(EQUATIONS%SPARSITY_TYPE)
               CASE(EQUATIONS_MATRICES_FULL_MATRICES)
-                CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_BLOCK_STORAGE_TYPE/), &
+                CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,[MATRIX_BLOCK_STORAGE_TYPE], &
                   & ERR,ERROR,*999)
               CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
-                CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/), &
+                CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,[MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                   & ERR,ERROR,*999)
-                CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,(/EQUATIONS_MATRIX_FEM_STRUCTURE/), &
+                CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES,[EQUATIONS_MATRIX_FEM_STRUCTURE], &
                   & ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The equations matrices sparsity type of "// &
                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
             ENDIF
             CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                 & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a linear advection-diffusion equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
         LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " is not a linear advection-diffusion equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP")
+    EXITS("AdvectionDiffusion_EquationsSetLinearSetup")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP")
+999 ERRORS("AdvectionDiffusion_EquationsSetLinearSetup",ERR,ERROR)
+    EXITS("AdvectionDiffusion_EquationsSetLinearSetup")
     RETURN 1
-  END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_LINEAR_SETUP
+    
+  END SUBROUTINE AdvectionDiffusion_EquationsSetLinearSetup
 
   !
   !===============================================================================================================================
@@ -2246,11 +2251,10 @@ CONTAINS
 !     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
 !     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 ! 
-!     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-!     CALL EXITS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP")
+!     CALL FlagError("Not implemented.",ERR,ERROR,*999)
+!     EXITS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP")
 !     RETURN
-! 999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP",ERR,ERROR)
-!     CALL EXITS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP")
+! 999 ERRORSEXITS("ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP",ERR,ERROR)
 !     RETURN 1
 ! 
 !   END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_EQUATIONS_SET_NONLINEAR_SETUP
@@ -2270,44 +2274,43 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_SETUP",ERR,ERROR,*999)
+    ENTERS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM%SUBTYPE)
       CASE(PROBLEM_NO_SOURCE_ADVECTION_DIFFUSION_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_ProblemLinearSetup(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_ProblemLinearSetup(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !        CALL ADVECTION_DIFFUSION_EQUATION_PROBLEM_NONLINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_ProblemLinearSetup(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_ProblemLinearSetup(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_NONLINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !        CALL ADVECTION_DIFFUSION_EQUATION_PROBLEM_NONLINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_ProblemLinearSetup(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE)
-        CALL ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
+        CALL AdvectionDiffusion_ProblemLinearSetup(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_NONLINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
 !        CALL ADVECTION_DIFFUSION_EQUATION_PROBLEM_NONLINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for an advection-diffusion equation type of a classical field problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_SETUP")
+    EXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_SETUP")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_SETUP",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_SETUP")
+999 ERRORSEXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_PROBLEM_SETUP
   
@@ -2316,7 +2319,7 @@ CONTAINS
   !
 
   !>Calculates the element stiffness matrices and RHS for a diffusion equation finite element equations set.
-  SUBROUTINE ADVECTION_DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_FiniteElementCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
@@ -2357,7 +2360,7 @@ CONTAINS
     UPDATE_RHS_VECTOR = .FALSE.
     UPDATE_SOURCE_VECTOR = .FALSE.
 
-    CALL ENTERS("ADVECTION_DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+    ENTERS("AdvectionDiffusion_FiniteElementCalculate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
@@ -2822,7 +2825,7 @@ CONTAINS
           
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            CALL Field_InterpolationParametersScaleFactorsElementGet(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             mhs=0          
             DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -2883,7 +2886,7 @@ CONTAINS
                & EQUATIONS_SET_CONSTANT_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE, &
                & EQUATIONS_SET_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUPG_SUBTYPE, &
                & EQUATIONS_SET_MULTI_COMP_TRANSPORT_ADVEC_DIFF_SUPG_SUBTYPE)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999) 
+            CALL FlagError("Not implemented.",ERR,ERROR,*999) 
           !Loop over gauss points
           DO ng=1,QUADRATURE_SCHEME%NUMBER_OF_GAUSS
             CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
@@ -2992,7 +2995,7 @@ CONTAINS
           
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            CALL Field_InterpolationParametersScaleFactorsElementGet(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             mhs=0          
             DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -3042,7 +3045,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
               & " is not valid for an advection-diffusion equation type of a classical field equations set class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_QUADRATIC_SOURCE_ADVECTION_DIFFUSION_SUBTYPE, &
              & EQUATIONS_SET_EXPONENTIAL_SOURCE_ADVECTION_DIFFUSION_SUBTYPE, &
@@ -3052,24 +3055,26 @@ CONTAINS
              & EQUATIONS_SET_EXP_SOURCE_ADVECTION_DIFF_SUPG_SUBTYPE, &
              & EQUATIONS_SET_QUAD_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE, &
              & EQUATIONS_SET_EXP_SOURCE_ALE_ADVECTION_DIFF_SUPG_SUBTYPE)
-          CALL FLAG_ERROR("Can not calculate finite element stiffness matrices for a nonlinear source.",ERR,ERROR,*999)
+          CALL FlagError("Can not calculate finite element stiffness matrices for a nonlinear source.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
             & " is not valid for an advection-diffusion equation type of a classical field equations set class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE")
+    
+    EXITS("AdvectionDiffusion_FiniteElementCalculate")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE")
+999 ERRORS("AdvectionDiffusion_FiniteElementCalculate",ERR,ERROR)
+    EXITS("AdvectionDiffusion_FiniteElementCalculate")
     RETURN 1
-  END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_FINITE_ELEMENT_CALCULATE
+    
+  END SUBROUTINE AdvectionDiffusion_FiniteElementCalculate
 
   !
   !================================================================================================================================
@@ -3082,7 +3087,7 @@ CONTAINS
   !
 
   !>Sets/changes the problem subtype for a diffusion equation type.
-  SUBROUTINE ADVECTION_DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_ProblemSubtypeSet(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
@@ -3092,7 +3097,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("AdvectionDiffusion_ProblemSubtypeSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM_SUBTYPE)
@@ -3135,25 +3140,26 @@ CONTAINS
       CASE DEFAULT
         LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for an advection-diffusion equation type of a classical field problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET")
+    EXITS("AdvectionDiffusion_ProblemSubtypeSet")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET")
+999 ERRORS("AdvectionDiffusion_ProblemSubtypeSet",ERR,ERROR)
+    EXITS("AdvectionDiffusion_ProblemSubtypeSet")
     RETURN 1
-  END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_PROBLEM_SUBTYPE_SET
+    
+  END SUBROUTINE AdvectionDiffusion_ProblemSubtypeSet
 
   !
   !================================================================================================================================
   !
 
   !>Sets up the diffusion equations.
-  SUBROUTINE ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_ProblemLinearSetup(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to setup
@@ -3167,7 +3173,7 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP",ERR,ERROR,*999)
+    ENTERS("AdvectionDiffusion_ProblemLinearSetup",ERR,ERROR,*999)
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(SOLVER)
@@ -3189,7 +3195,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3206,7 +3212,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -3234,7 +3240,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3264,12 +3270,12 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a linear advection-diffusion equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSEIF(PROBLEM%SUBTYPE==PROBLEM_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE .OR. &
          & PROBLEM%SUBTYPE==PROBLEM_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE) THEN
@@ -3284,7 +3290,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear static advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3300,7 +3306,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear static advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -3326,7 +3332,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear static advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -3356,28 +3362,29 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a linear static advection-diffusion equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a linear static advection-diffusion equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
         LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
           & " does not equal a linear advection-diffusion equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP")
+    EXITS("AdvectionDiffusion_ProblemLinearSetup")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP")
+999 ERRORS("AdvectionDiffusion_ProblemLinearSetup",ERR,ERROR)
+    EXITS("AdvectionDiffusion_ProblemLinearSetup")
     RETURN 1
-  END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_PROBLEM_LINEAR_SETUP
+    
+  END SUBROUTINE AdvectionDiffusion_ProblemLinearSetup
   
   !
   !================================================================================================================================
@@ -3391,12 +3398,11 @@ CONTAINS
 !     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
 !     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 ! 
-!     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999) 
+!     CALL FlagError("Not implemented.",ERR,ERROR,*999) 
 ! 
-!     CALL EXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_NONLINEAR_SETUP")
+!     EXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_NONLINEAR_SETUP")
 !     RETURN
-! 999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_NONLINEAR_SETUP",ERR,ERROR)
-!     CALL EXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_NONLINEAR_SETUP")
+! 999 ERRORSEXITS("ADVECTION_DIFFUSION_EQUATION_PROBLEM_NONLINEAR_SETUP",ERR,ERROR)
 !     RETURN 1
 ! 
 !   END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_PROBLEM_NONLINEAR_SETUP
@@ -3417,7 +3423,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solvers
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ADVECTION_DIFFUSION_PRE_SOLVE",ERR,ERROR,*999)
+    ENTERS("ADVECTION_DIFFUSION_PRE_SOLVE",ERR,ERROR,*999)
     NULLIFY(SOLVER2)
  
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
@@ -3427,47 +3433,46 @@ CONTAINS
           & CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_LINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE) THEN
               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Read in vector data... ",ERR,ERROR,*999)
               !Update independent data fields
-              CALL ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_INPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              CALL AdvectionDiffusion_PreSolveUpdateInputData(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               !CALL ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_BC(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
          ELSEIF(CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_NO_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE .OR. &
           & CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_LINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE) THEN
               CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Read in vector data... ",ERR,ERROR,*999)
               !Update independent data fields
-              CALL ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_INPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              CALL AdvectionDiffusion_PreSolveUpdateInputData(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               !CALL ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_BC(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
-              CALL ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+              CALL AdvectionDiffusion_PreSolveALEUpdateMesh(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
          ELSEIF(CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE .OR. &
               & CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_NONLINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE) THEN         
-             CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+             CALL FlagError("Not implemented.",ERR,ERROR,*999)
          ELSEIF(CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE .OR. &
           & CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE) THEN
              !do nothing
          ELSE
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a advection-diffusion type of a classical field problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
          ENDIF
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ADVECTION_DIFFUSION_PRE_SOLVE")
+    EXITS("ADVECTION_DIFFUSION_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_PRE_SOLVE")
+999 ERRORSEXITS("ADVECTION_DIFFUSION_PRE_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ADVECTION_DIFFUSION_PRE_SOLVE
   !   
   !================================================================================================================================
   !
   !>Update mesh position and velocity for ALE advection-diffusion problem
-  SUBROUTINE ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_PreSolveALEUpdateMesh(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -3491,7 +3496,7 @@ CONTAINS
     INTEGER(INTG) :: INPUT_TYPE,INPUT_OPTION
     REAL(DP), POINTER :: INPUT_DATA1(:)
 
-    CALL ENTERS("ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR,*999)
+    ENTERS("AdvectionDiffusion_PreSolveALEUpdateMesh",ERR,ERROR,*999)
 
     NULLIFY(SOLVER_ALE_DIFFUSION)
     NULLIFY(SOLVER_EQUATIONS)
@@ -3586,50 +3591,51 @@ CONTAINS
                             CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                               & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
                           ELSE
-                            CALL FLAG_ERROR("Geometric field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Geometric field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         CASE DEFAULT
                           LOCAL_ERROR="Equations set subtype " &
                             & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                             & " is not valid for an advection-diffusion equation type of a classical field problem class."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations is not associated.",ERR,ERROR,*999)
                 ENDIF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for an advection-diffusion equation type of a classical field problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH")
+    EXITS("AdvectionDiffusion_PreSolveALEUpdateMesh")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR)
-    CALL EXITS("ADVECTION_ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH")
+999 ERRORS("AdvectionDiffusion_PreSolveALEUpdateMesh",ERR,ERROR)
+    EXITS("AdvectionDiffusion_PreSolveALEUpdateMesh")
     RETURN 1
-  END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_ALE_UPDATE_MESH
+    
+  END SUBROUTINE AdvectionDiffusion_PreSolveALEUpdateMesh
   !   
   !================================================================================================================================
   !
 
 
-  SUBROUTINE ADVEC_DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLN(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_PreSolveStoreCurrentSoln(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -3648,7 +3654,7 @@ CONTAINS
     INTEGER(INTG) :: NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_ADVECTION_DIFFUSION
     INTEGER(INTG) :: I
 
-    CALL ENTERS("ADVEC_DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLN",ERR,ERROR,*999)
+    ENTERS("AdvectionDiffusion_PreSolveStoreCurrentSoln",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
 
@@ -3683,21 +3689,21 @@ CONTAINS
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(DEPENDENT_FIELD_ADVECTION_DIFFUSION, &
                           & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_ADVECTION_DIFFUSION,ERR,ERROR,*999)
                       ELSE
-                        CALL FLAG_ERROR("DEPENDENT_FIELD_ADVECTION_DIFFUSIONE is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("DEPENDENT_FIELD_ADVECTION_DIFFUSIONE is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Advection-diffusion equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Advection-diffusion equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Advection-diffusion solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Advection-diffusion solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Advection-diffusion solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Advection-diffusion solver equations are not associated.",ERR,ERROR,*999)
                 END IF
 
                 !--- Copy the current time value parameters set from diffusion-one's dependent field 
                   DO I=1,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_ADVECTION_DIFFUSION
-                    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD_ADVECTION_DIFFUSION, & 
+                    CALL Field_ParametersToFieldParametersCopy(DEPENDENT_FIELD_ADVECTION_DIFFUSION, & 
                       & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,DEPENDENT_FIELD_ADVECTION_DIFFUSION, & 
                       & FIELD_U_VARIABLE_TYPE,FIELD_PREVIOUS_VALUES_SET_TYPE,I,ERR,ERROR,*999)
                   END DO
@@ -3718,30 +3724,29 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for an advection-diffusion equation type of a classical field problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-
-
-    CALL EXITS("ADVEC_DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLN")
+    EXITS("AdvectionDiffusion_PreSolveStoreCurrentSoln")
     RETURN
-999 CALL ERRORS("ADVEC_DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLN",ERR,ERROR)
-    CALL EXITS("ADVEC_DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLN")
+999 ERRORS("AdvectionDiffusion_PreSolveStoreCurrentSoln",ERR,ERROR)
+    EXITS("AdvectionDiffusion_PreSolveStoreCurrentSoln")
     RETURN 1
-  END SUBROUTINE ADVEC_DIFFUSION_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLN    
+    
+  END SUBROUTINE AdvectionDiffusion_PreSolveStoreCurrentSoln    
   !
   !================================================================================================================================
   !
-  SUBROUTINE ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_PreSolveGetSourceValue(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -3761,7 +3766,7 @@ CONTAINS
     INTEGER(INTG) :: I
 
 
-    CALL ENTERS("ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE",ERR,ERROR,*999)
+    ENTERS("AdvectionDiffusion_PreSolveGetSourceValue",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
 
@@ -3796,16 +3801,16 @@ CONTAINS
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(DEPENDENT_FIELD_DIFFUSION, &
                           & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DIFFUSION,ERR,ERROR,*999)
                       ELSE
-                        CALL FLAG_ERROR("DEPENDENT_FIELD_DIFFUSION is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("DEPENDENT_FIELD_DIFFUSION is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Diffusion equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Diffusion equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Diffusion solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Diffusion solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Diffusion solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Diffusion solver equations are not associated.",ERR,ERROR,*999)
                 END IF
 
 
@@ -3822,29 +3827,29 @@ CONTAINS
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(SOURCE_FIELD_ADVECTION_DIFFUSION, & 
                           & FIELD_U_VARIABLE_TYPE,NUMBER_OF_COMPONENTS_SOURCE_FIELD_ADVECTION_DIFFUSION,ERR,ERROR,*999)
                       ELSE
-                        CALL FLAG_ERROR("SOURCE_FIELD_ADVECTION_DIFFUSION is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("SOURCE_FIELD_ADVECTION_DIFFUSION is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Advection-diffusion equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Advection-diffusion equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Advection-diffusion solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Advection-diffusion solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Advection-diffusion solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Advection-diffusion solver equations are not associated.",ERR,ERROR,*999)
                 END IF
 
                 !--- Copy the result from diffusion's dependent field to advection-diffusion's source field
                 IF(NUMBER_OF_COMPONENTS_SOURCE_FIELD_ADVECTION_DIFFUSION==NUMBER_OF_COMPONENTS_DEPENDENT_FIELD_DIFFUSION) THEN
                   DO I=1,NUMBER_OF_COMPONENTS_SOURCE_FIELD_ADVECTION_DIFFUSION
-                    CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD_DIFFUSION, & 
+                    CALL Field_ParametersToFieldParametersCopy(DEPENDENT_FIELD_DIFFUSION, & 
                       & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,SOURCE_FIELD_ADVECTION_DIFFUSION, & 
                       & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,ERR,ERROR,*999)
                   END DO
                 ELSE
                   LOCAL_ERROR="Number of components of diffusion dependent field "// &
                     & "is not consistent with advection-diffusion equation source field."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END IF
 
 !                 IF(DIAGNOSTICS3) THEN
@@ -3863,29 +3868,30 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for an advection-diffusion equation type of a classical field problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE")
+    EXITS("AdvectionDiffusion_PreSolveGetSourceValue")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE")
+999 ERRORS("AdvectionDiffusion_PreSolveGetSourceValue",ERR,ERROR)
+    EXITS("AdvectionDiffusion_PreSolveGetSourceValue")
     RETURN 1
-  END SUBROUTINE ADVECTION_DIFFUSION_EQUATION_PRE_SOLVE_GET_SOURCE_VALUE
+    
+  END SUBROUTINE AdvectionDiffusion_PreSolveGetSourceValue
   !   
   !================================================================================================================================
   !
   !>Update independent field (velocity) for advection-diffusion pre solve
-  SUBROUTINE ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_INPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE AdvectionDiffusion_PreSolveUpdateInputData(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -3902,7 +3908,7 @@ CONTAINS
     INTEGER(INTG) :: INPUT_TYPE,INPUT_OPTION
     REAL(DP), POINTER :: INPUT_DATA1(:)
 
-    CALL ENTERS("ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_INPUT_DATA",ERR,ERROR,*999)
+    ENTERS("AdvectionDiffusion_PreSolveUpdateInputData",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
 !       CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
@@ -3937,18 +3943,18 @@ CONTAINS
                         & NUMBER_OF_DIMENSIONS,INPUT_TYPE,INPUT_OPTION,CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER,1.0_DP)
 
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     END IF
 
                   ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                   END IF                
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF 
           ELSEIF(CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE .OR. &
                & CONTROL_LOOP%PROBLEM%SUBTYPE==PROBLEM_NONLINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE) THEN
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
          ENDIF
 
            CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
@@ -3957,20 +3963,22 @@ CONTAINS
               & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
 
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
-    CALL EXITS("ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_INPUT_DATA")
+    
+    EXITS("AdvectionDiffusion_PreSolveUpdateInputData")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_INPUT_DATA",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_INPUT_DATA")
+999 ERRORS("AdvectionDiffusion_PreSolveUpdateInputData",ERR,ERROR)
+    EXITS("AdvectionDiffusion_PreSolveUpdateInputData")
     RETURN 1
-  END SUBROUTINE ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_INPUT_DATA
+    
+  END SUBROUTINE AdvectionDiffusion_PreSolveUpdateInputData
 
   !
   !================================================================================================================================
@@ -4001,7 +4009,7 @@ CONTAINS
     REAL(DP), POINTER :: BOUNDARY_VALUES(:)
     INTEGER(INTG), POINTER :: BOUNDARY_NODES(:)
 
-    CALL ENTERS("ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_BC",ERR,ERROR,*999)
+    ENTERS("ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_BC",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
@@ -4050,25 +4058,25 @@ CONTAINS
                           END IF
                         ENDDO
                       ELSE
-                        CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Boundary condition variable is not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Dependent field variable is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Dependent field variable is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Equations set dependent variable is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations set dependent variable is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Boundary conditions are not associated.",ERR,ERROR,*999)
                 END IF
               ELSE
-                CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
               END IF
             ELSE
-              CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
             END IF
           ELSE
-            CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
           END IF
           CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
             & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -4077,22 +4085,21 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
               & " is not valid for an advection-diffusion equation of a classical field problem class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_BC")
+    EXITS("ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_BC")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_BC",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_BC")
+999 ERRORSEXITS("ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_BC",ERR,ERROR)
     RETURN 1
 
   END SUBROUTINE ADVECTION_DIFFUSION_PRE_SOLVE_UPDATE_BC
@@ -4110,7 +4117,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solver
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ADVECTION_DIFFUSION_POST_SOLVE",ERR,ERROR,*999)
+    ENTERS("ADVECTION_DIFFUSION_POST_SOLVE",ERR,ERROR,*999)
     NULLIFY(SOLVER2)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
@@ -4123,26 +4130,25 @@ CONTAINS
             CASE(PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE,PROBLEM_NONLINEAR_SOURCE_ALE_ADVECTION_DIFFUSION_SUBTYPE, &
                  & PROBLEM_NO_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE,PROBLEM_LINEAR_SOURCE_STATIC_ADVEC_DIFF_SUBTYPE)
               ! do nothing ???
-              !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              !CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for an advection-diffusion type of a classical field problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ADVECTION_DIFFUSION_POST_SOLVE")
+    EXITS("ADVECTION_DIFFUSION_POST_SOLVE")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_POST_SOLVE")
+999 ERRORSEXITS("ADVECTION_DIFFUSION_POST_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ADVECTION_DIFFUSION_POST_SOLVE
   !
@@ -4167,7 +4173,7 @@ CONTAINS
     CHARACTER(14) :: FILE
     CHARACTER(14) :: OUTPUT_FILE
 
-    CALL ENTERS("ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
+    ENTERS("ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
@@ -4218,26 +4224,25 @@ CONTAINS
               ENDIF
             CASE(PROBLEM_NONLINEAR_SOURCE_ADVECTION_DIFFUSION_SUBTYPE)
               ! do nothing ???
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for an advection-diffusion equation type of a classical field problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA")
+    EXITS("ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA")
     RETURN
-999 CALL ERRORS("ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
-    CALL EXITS("ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA")
+999 ERRORSEXITS("ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ADVECTION_DIFFUSION_POST_SOLVE_OUTPUT_DATA
   !

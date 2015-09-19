@@ -42,7 +42,7 @@
 !>
 
 !>This module contains types related to the PETSc library.
-MODULE CMISS_PETSC_TYPES
+MODULE CmissPetscTypes
   
   USE KINDS
   
@@ -50,83 +50,63 @@ MODULE CMISS_PETSC_TYPES
  
   PRIVATE
 
-#include "include/finclude/petsc.h"
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 1 )
-#include "include/finclude/petscis.h"
-#include "include/finclude/petscksp.h"
-#include "include/finclude/petscmat.h"
-#include "include/finclude/petscpc.h"
-#include "include/finclude/petscsnes.h"
-#include "include/finclude/petscvec.h"
-#include "include/finclude/petscviewer.h"
-#endif
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-#include "include/finclude/petscts.h"
-#endif
-  
+#include "petsc/finclude/petsc.h"
+
   !Module parameters
   
   !Module types
 
-  TYPE PETSC_IS_TYPE
-    IS :: IS_
-  END TYPE PETSC_IS_TYPE
+  TYPE PetscISType
+    IS :: is
+  END TYPE PetscISType
 
-  TYPE PETSC_ISLOCALTOGLOBALMAPPING_TYPE
-    ISLocalToGlobalMapping :: ISLOCALTOGLOBALMAPPING
-  END TYPE PETSC_ISLOCALTOGLOBALMAPPING_TYPE
+  TYPE PetscISLocalToGloabalMappingType
+    ISLocalToGlobalMapping :: isLocalToGlobalMapping
+  END TYPE PetscISLocalToGloabalMappingType
 
-  TYPE PETSC_ISCOLORING_TYPE
-    ISColoring :: ISCOLORING
-  END TYPE PETSC_ISCOLORING_TYPE
+  TYPE PetscISColoringType
+    ISColoring :: isColoring
+  END TYPE PetscISColoringType
 
-  TYPE PETSC_KSP_TYPE
-    KSP :: KSP_
-  END TYPE PETSC_KSP_TYPE
+  TYPE PetscKspType
+    KSP :: ksp
+  END TYPE PetscKspType
 
-  TYPE PETSC_MAT_TYPE
-    !PetscScalar :: MAT_DATA(1)
-    !PetscOffset :: MAT_OFFSET
-    Mat :: MAT
-  END TYPE PETSC_MAT_TYPE
+  TYPE PetscMatType
+    Mat :: mat
+  END TYPE PetscMatType
   
-  TYPE PETSC_MATFDCOLORING_TYPE
-    MatFDColoring :: MATFDCOLORING
-  END TYPE PETSC_MATFDCOLORING_TYPE
-
-  TYPE PETSC_PC_TYPE
-    PC :: PC_
-  END TYPE PETSC_PC_TYPE
+  TYPE PetscMatColoringType
+    MatColoring :: matColoring
+  END TYPE PetscMatColoringType
   
-  TYPE PETSC_SNES_TYPE
-    SNES :: SNES_
-  END TYPE PETSC_SNES_TYPE
+  TYPE PETScMatFDColoringType
+    MatFDColoring :: matFDColoring
+  END TYPE PETScMatFDColoringType
 
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  TYPE PetscPCType
+    PC :: pc
+  END TYPE PetscPCType
+  
+  TYPE PetscSnesType
+    SNES :: snes
+  END TYPE PetscSnesType
+
   TYPE PetscSnesLineSearchType
     SNESLineSearch :: snesLineSearch
   END TYPE PetscSnesLineSearchType
-#else
-  TYPE PetscSnesLineSearchType
-    !Empty type here to avoid adding mess in types.f90
-  END TYPE PetscSnesLineSearchType
-#endif
   
-  TYPE PETSC_TS_TYPE
-    TS :: TS_
-  END TYPE PETSC_TS_TYPE
+  TYPE PetscTSType
+    TS :: ts
+  END TYPE PetscTSType
   
-  TYPE PETSC_VEC_TYPE
-    !PetscScalar :: VEC_DATA(1)
-    !PetscOffset :: VEC_OFFSET
-    Vec :: VEC
-  END TYPE PETSC_VEC_TYPE
+  TYPE PetscVecType
+    Vec :: vec
+  END TYPE PetscVecType
   
-  !Module variables
-
   !Interfaces
  
-  PUBLIC PETSC_IS_TYPE,PETSC_ISLOCALTOGLOBALMAPPING_TYPE,PETSC_ISCOLORING_TYPE,PETSC_KSP_TYPE,PETSC_MAT_TYPE, &
-    & PETSC_MATFDCOLORING_TYPE,PETSC_PC_TYPE,PETSC_SNES_TYPE,PetscSnesLineSearchType,PETSC_TS_TYPE,PETSC_VEC_TYPE
+  PUBLIC PetscISType,PetscISLocalToGloabalMappingType,PetscISColoringType,PetscKspType,PetscMatType,PetscMatColoringType, &
+    & PetscMatFDColoringType,PetscPCType,PetscSnesType,PetscSnesLineSearchType,PetscTSType,PetscVecType
 
-END MODULE CMISS_PETSC_TYPES
+END MODULE CmissPetscTypes

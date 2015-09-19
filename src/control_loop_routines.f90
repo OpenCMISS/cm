@@ -52,6 +52,8 @@ MODULE CONTROL_LOOP_ROUTINES
   USE STRINGS
   USE TYPES
 
+#include "macros.h"
+
   IMPLICIT NONE
 
   PRIVATE
@@ -116,6 +118,8 @@ MODULE CONTROL_LOOP_ROUTINES
 
   PUBLIC CONTROL_LOOP_LOAD_OUTPUT_SET
 
+  PUBLIC ControlLoop_AbsoluteToleranceSet
+
   PUBLIC CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET,CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET
 
   PUBLIC CONTROL_LOOP_OUTPUT_TYPE_GET,CONTROL_LOOP_OUTPUT_TYPE_SET
@@ -153,11 +157,11 @@ CONTAINS
     INTEGER(INTG) :: loop_idx
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2
     
-    CALL ENTERS("CONTROL_LOOP_CREATE_FINISH",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_CREATE_FINISH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has already been finished.",ERR,ERROR,*999)
       ELSE
         !Finish the sub-loops first
         IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS>0) THEN
@@ -170,13 +174,12 @@ CONTAINS
         CONTROL_LOOP%CONTROL_LOOP_FINISHED=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_CREATE_FINISH")
+    EXITS("CONTROL_LOOP_CREATE_FINISH")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_CREATE_FINISH",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_CREATE_FINISH")
+999 ERRORSEXITS("CONTROL_LOOP_CREATE_FINISH",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_CREATE_FINISH
 
@@ -196,25 +199,24 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
-    CALL ENTERS("CONTROL_LOOP_CREATE_START",ERR,ERROR,*998)
+    ENTERS("CONTROL_LOOP_CREATE_START",ERR,ERROR,*998)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       IF(ASSOCIATED(CONTROL_LOOP)) THEN
-        CALL FLAG_ERROR("Control loop is already associated.",ERR,ERROR,*998)
+        CALL FlagError("Control loop is already associated.",ERR,ERROR,*998)
       ELSE
         NULLIFY(CONTROL_LOOP)
         CALL CONTROL_LOOP_INITIALISE(PROBLEM,ERR,ERROR,*999)
         CONTROL_LOOP=>PROBLEM%CONTROL_LOOP
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*998)
     ENDIF
               
-    CALL EXITS("CONTROL_LOOP_CREATE_START")
+    EXITS("CONTROL_LOOP_CREATE_START")
     RETURN
 999 CALL CONTROL_LOOP_FINALISE(PROBLEM%CONTROL_LOOP,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("CONTROL_LOOP_CREATE_START",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_CREATE_START")
+998 ERRORSEXITS("CONTROL_LOOP_CREATE_START",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_CREATE_START
 
@@ -226,41 +228,53 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to get the times for
-    REAL(DP), INTENT(OUT) :: CURRENT_TIME !<On exit, the current time for the time control loop.
-    REAL(DP), INTENT(OUT) :: TIME_INCREMENT !<On exit, the time increment for the time control loop.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP
+    REAL(DP), INTENT(OUT) :: CURRENT_TIME
+    REAL(DP), INTENT(OUT) :: TIME_INCREMENT
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
     !Local Variables    
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
-   
-    CALL ENTERS("CONTROL_LOOP_CURRENT_TIMES_GET",ERR,ERROR,*999)
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: PARENT_LOOP
+    INTEGER(INTG), POINTER :: CONTROL_LOOP_LEVEL
+    INTEGER(INTG) :: I
+
+    ENTERS("CONTROL_LOOP_CURRENT_TIMES_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
-          TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
-          IF(ASSOCIATED(TIME_LOOP)) THEN
-            CURRENT_TIME=TIME_LOOP%CURRENT_TIME
-            TIME_INCREMENT=TIME_LOOP%TIME_INCREMENT
+        CONTROL_LOOP_LEVEL=>CONTROL_LOOP%CONTROL_LOOP_LEVEL
+        PARENT_LOOP=>CONTROL_LOOP
+        DO I=CONTROL_LOOP_LEVEL,1,-1
+          IF(CONTROL_LOOP_LEVEL==0) THEN
+            CALL FlagError("The specified control loop is not a time control loop.",ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+            IF(PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+              TIME_LOOP=>PARENT_LOOP%TIME_LOOP
+              IF(ASSOCIATED(TIME_LOOP)) THEN
+                CURRENT_TIME=TIME_LOOP%CURRENT_TIME
+                TIME_INCREMENT=TIME_LOOP%TIME_INCREMENT
+              ELSE
+                CALL FlagError("Control loop time loop is not associated.",ERR,ERROR,*999)
+              ENDIF
+              EXIT
+            ELSE
+              PARENT_LOOP=>PARENT_LOOP%PARENT_LOOP
+            ENDIF
           ENDIF
-        ELSE
-          CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
-        ENDIF
+        ENDDO
       ELSE
-        CALL FLAG_ERROR("Control loop has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_CURRENT_TIMES_GET")
+    EXITS("CONTROL_LOOP_CURRENT_TIMES_GET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_CURRENT_TIMES_GET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_CURRENT_TIMES_GET")
+999 ERRORSEXITS("CONTROL_LOOP_CURRENT_TIMES_GET",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE CONTROL_LOOP_CURRENT_TIMES_GET
   
   !
@@ -276,18 +290,17 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
    
-    CALL ENTERS("CONTROL_LOOP_DESTROY",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       CALL CONTROL_LOOP_FINALISE(CONTROL_LOOP,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_DESTROY")
+    EXITS("CONTROL_LOOP_DESTROY")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_DESTROY",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_DESTROY")
+999 ERRORSEXITS("CONTROL_LOOP_DESTROY",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_DESTROY
 
@@ -306,7 +319,7 @@ CONTAINS
     INTEGER(INTG) :: loop_idx
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2
  
-    CALL ENTERS("CONTROL_LOOP_FINALISE",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       !Finalise any sub control loops first
@@ -329,10 +342,9 @@ CONTAINS
       DEALLOCATE(CONTROL_LOOP)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_FINALISE")
+    EXITS("CONTROL_LOOP_FINALISE")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_FINALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_FINALISE")
+999 ERRORSEXITS("CONTROL_LOOP_FINALISE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_FINALISE
 
@@ -351,14 +363,14 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
-    CALL ENTERS("CONTROL_LOOP_INITIALISE",ERR,ERROR,*998)
+    ENTERS("CONTROL_LOOP_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       IF(ASSOCIATED(PROBLEM%CONTROL_LOOP)) THEN
-        CALL FLAG_ERROR("Control loop is already associated for this problem.",ERR,ERROR,*998)
+        CALL FlagError("Control loop is already associated for this problem.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(PROBLEM%CONTROL_LOOP,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate problem control loop.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate problem control loop.",ERR,ERROR,*999)
         PROBLEM%CONTROL_LOOP%PROBLEM=>PROBLEM
         NULLIFY(PROBLEM%CONTROL_LOOP%PARENT_LOOP)
         PROBLEM%CONTROL_LOOP%CONTROL_LOOP_FINISHED=.FALSE.
@@ -377,14 +389,13 @@ CONTAINS
         CALL CONTROL_LOOP_SIMPLE_INITIALISE(PROBLEM%CONTROL_LOOP,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*998)
     ENDIF
               
-    CALL EXITS("CONTROL_LOOP_INITIALISE")
+    EXITS("CONTROL_LOOP_INITIALISE")
     RETURN
 999 CALL CONTROL_LOOP_FINALISE(PROBLEM%CONTROL_LOOP,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("CONTROL_LOOP_INITIALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_INITIALISE")
+998 ERRORSEXITS("CONTROL_LOOP_INITIALISE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_INITIALISE
 
@@ -401,16 +412,15 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    CALL ENTERS("CONTROL_LOOP_FIXED_FINALISE",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_FIXED_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(FIXED_LOOP)) THEN
       DEALLOCATE(FIXED_LOOP)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_FIXED_FINALISE")
+    EXITS("CONTROL_LOOP_FIXED_FINALISE")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_FIXED_FINALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_FIXED_FINALISE")
+999 ERRORSEXITS("CONTROL_LOOP_FIXED_FINALISE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_FIXED_FINALISE
 
@@ -430,14 +440,13 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    CALL ENTERS("CONTROL_LOOP_GET_0",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_GET_0",ERR,ERROR,*999)
 
     CALL CONTROL_LOOP_GET_1(CONTROL_LOOP_ROOT,[CONTROL_LOOP_IDENTIFIER],CONTROL_LOOP,ERR,ERROR,*999)
        
-    CALL EXITS("CONTROL_LOOP_GET_0")
+    EXITS("CONTROL_LOOP_GET_0")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_GET_0",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_GET_0")
+999 ERRORSEXITS("CONTROL_LOOP_GET_0",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_GET_0
 
@@ -459,12 +468,12 @@ CONTAINS
     INTEGER(INTG) :: control_loop_idx
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_GET_1",ERR,ERROR,*998)
+    ENTERS("CONTROL_LOOP_GET_1",ERR,ERROR,*998)
 
     IF(ASSOCIATED(CONTROL_LOOP_ROOT)) THEN
       !IF(CONTROL_LOOP_ROOT%CONTROL_LOOP_FINISHED) THEN
         IF(ASSOCIATED(CONTROL_LOOP)) THEN
-          CALL FLAG_ERROR("Control loop is already associated.",ERR,ERROR,*998)
+          CALL FlagError("Control loop is already associated.",ERR,ERROR,*998)
         ELSE
           NULLIFY(CONTROL_LOOP)
           IF(COUNT(CONTROL_LOOP_IDENTIFIER==CONTROL_LOOP_NODE)==1) THEN
@@ -482,7 +491,7 @@ CONTAINS
                         & TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP_IDENTIFIER(control_loop_idx),"*",ERR,ERROR))// &
                         & " at identifier index "//TRIM(NUMBER_TO_VSTRING(control_loop_idx,"*",ERR,ERROR))// &
                         & " is not associated."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
                     LOCAL_ERROR="Invalid control loop identifier. The identifier at index "// &
@@ -490,7 +499,7 @@ CONTAINS
                       & TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP_IDENTIFIER(control_loop_idx),"*",ERR,ERROR))// &
                       & ". The identifier must be between 1 and "// &
                       & TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS,"*",ERR,ERROR))//"."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ENDIF
                 ENDIF
               ENDDO !control_loop_idx
@@ -498,27 +507,26 @@ CONTAINS
               LOCAL_ERROR="Invalid control loop identifier. The last value in the identifier vector is "// &
                 & TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP_IDENTIFIER(SIZE(CONTROL_LOOP_IDENTIFIER,1)),"*",ERR,ERROR))// &
                 & " and it should be "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP_NODE,"*",ERR,ERROR))//"."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="Invalid control loop identifier. The control loop identifier has "// &
               & TRIM(NUMBER_TO_VSTRING(COUNT(CONTROL_LOOP_IDENTIFIER==CONTROL_LOOP_NODE),"*",ERR,ERROR))// &
               & " control loop node identifiers and it should only have 1."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ENDIF
       !ELSE
-      !  CALL FLAG_ERROR("Control loop root has not been finished.",ERR,ERROR,*998)
+      !  CALL FlagError("Control loop root has not been finished.",ERR,ERROR,*998)
       !ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop root is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Control loop root is not associated.",ERR,ERROR,*998)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_GET_1")
+    EXITS("CONTROL_LOOP_GET_1")
     RETURN
 999 NULLIFY(CONTROL_LOOP)
-998 CALL ERRORS("CONTROL_LOOP_GET_1",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_GET_1")
+998 ERRORSEXITS("CONTROL_LOOP_GET_1",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_GET_1
 
@@ -537,14 +545,14 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_FIXED_INITIALISE",ERR,ERROR,*998)
+    ENTERS("CONTROL_LOOP_FIXED_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(CONTROL_LOOP%FIXED_LOOP)) THEN
-        CALL FLAG_ERROR("The fixed loop is already associated for this control loop.",ERR,ERROR,*998)
+        CALL FlagError("The fixed loop is already associated for this control loop.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(CONTROL_LOOP%FIXED_LOOP,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate fixed loop for the control loop.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate fixed loop for the control loop.",ERR,ERROR,*999)
         CONTROL_LOOP%FIXED_LOOP%CONTROL_LOOP=>CONTROL_LOOP
         CONTROL_LOOP%FIXED_LOOP%ITERATION_NUMBER=0
         CONTROL_LOOP%FIXED_LOOP%START_ITERATION=1
@@ -552,14 +560,13 @@ CONTAINS
         CONTROL_LOOP%FIXED_LOOP%ITERATION_INCREMENT=1
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*998)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_FIXED_INITIALISE")
+    EXITS("CONTROL_LOOP_FIXED_INITIALISE")
     RETURN
 999 CALL CONTROL_LOOP_FIXED_FINALISE(CONTROL_LOOP%FIXED_LOOP,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("CONTROL_LOOP_FIXED_INITIALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_FIXED_INITIALISE")
+998 ERRORSEXITS("CONTROL_LOOP_FIXED_INITIALISE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_FIXED_INITIALISE
 
@@ -581,11 +588,11 @@ CONTAINS
     TYPE(CONTROL_LOOP_FIXED_TYPE), POINTER :: FIXED_LOOP
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_ITERATIONS_SET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_ITERATIONS_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has been finished.",ERR,ERROR,*999)
       ELSE
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_FIXED_LOOP_TYPE) THEN
           FIXED_LOOP=>CONTROL_LOOP%FIXED_LOOP
@@ -593,7 +600,7 @@ CONTAINS
             IF(ITERATION_INCREMENT==0) THEN
               LOCAL_ERROR="The specified time increment of "//TRIM(NUMBER_TO_VSTRING(ITERATION_INCREMENT,"*",ERR,ERROR))// &
                 & " is invalid. The iteration increment must not be zero."          
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ELSE
               IF(ITERATION_INCREMENT>0) THEN
                 IF(STOP_ITERATION<=START_ITERATION) THEN
@@ -601,7 +608,7 @@ CONTAINS
                     & " is incompatiable with a specified start increment of "// &
                     & TRIM(NUMBER_TO_VSTRING(START_ITERATION,"*",ERR,ERROR))// &
                     & ". For a positive iteration increment the stop iteration must be > than the start iteration."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 IF(START_ITERATION<=STOP_ITERATION) THEN
@@ -609,7 +616,7 @@ CONTAINS
                     & " is incompatiable with a specified stop iteration of "// &
                     & TRIM(NUMBER_TO_VSTRING(STOP_ITERATION,"*",ERR,ERROR))// &
                     & ". For a negative iteration increment the stop iteration must be < than the start iteration."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDIF
             ENDIF
@@ -617,20 +624,19 @@ CONTAINS
             FIXED_LOOP%STOP_ITERATION=STOP_ITERATION
             FIXED_LOOP%ITERATION_INCREMENT=ITERATION_INCREMENT
           ELSE
-            CALL FLAG_ERROR("Control loop fixed loop is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Control loop fixed loop is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified control loop is not a fixed control loop.",ERR,ERROR,*999)
+          CALL FlagError("The specified control loop is not a fixed control loop.",ERR,ERROR,*999)
         ENDIF
       ENDIF          
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_ITERATIONS_SET")
+    EXITS("CONTROL_LOOP_ITERATIONS_SET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_ITERATIONS_SET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_ITERATIONS_SET")
+999 ERRORSEXITS("CONTROL_LOOP_ITERATIONS_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_ITERATIONS_SET
   
@@ -649,7 +655,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: C_LENGTH,VS_LENGTH
 
-    CALL ENTERS("CONTROL_LOOP_LABEL_GET_C",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_LABEL_GET_C",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       C_LENGTH=LEN(LABEL)
@@ -660,13 +666,12 @@ CONTAINS
         LABEL=CHAR(CONTROL_LOOP%LABEL,C_LENGTH)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("CONTROL_LOOP_LABEL_GET_C")
+    EXITS("CONTROL_LOOP_LABEL_GET_C")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_LABEL_GET_C",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_LABEL_GET_C")
+999 ERRORSEXITS("CONTROL_LOOP_LABEL_GET_C",ERR,ERROR)
     RETURN 1
     
   END SUBROUTINE CONTROL_LOOP_LABEL_GET_C
@@ -685,18 +690,17 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("CONTROL_LOOP_LABEL_GET_VS",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_LABEL_GET_VS",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       LABEL=VAR_STR(CHAR(CONTROL_LOOP%LABEL))
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("CONTROL_LOOP_LABEL_GET_VS")
+    EXITS("CONTROL_LOOP_LABEL_GET_VS")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_LABEL_GET_VS",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_LABEL_GET_VS")
+999 ERRORSEXITS("CONTROL_LOOP_LABEL_GET_VS",ERR,ERROR)
     RETURN 1
     
   END SUBROUTINE CONTROL_LOOP_LABEL_GET_VS
@@ -715,22 +719,21 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("CONTROL_LOOP_LABEL_SET_C",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_LABEL_SET_C",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has been finished.",ERR,ERROR,*999)
       ELSE
         CONTROL_LOOP%LABEL=LABEL
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("CONTROL_LOOP_LABEL_SET_C")
+    EXITS("CONTROL_LOOP_LABEL_SET_C")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_LABEL_SET_C",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_LABEL_SET_C")
+999 ERRORSEXITS("CONTROL_LOOP_LABEL_SET_C",ERR,ERROR)
     RETURN 1
     
   END SUBROUTINE CONTROL_LOOP_LABEL_SET_C
@@ -749,22 +752,21 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("CONTROL_LOOP_LABEL_SET_VS",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_LABEL_SET_VS",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has been finished.",ERR,ERROR,*999)
       ELSE
         CONTROL_LOOP%LABEL=LABEL
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("CONTROL_LOOP_LABEL_SET_VS")
+    EXITS("CONTROL_LOOP_LABEL_SET_VS")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_LABEL_SET_VS",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_LABEL_SET_VS")
+999 ERRORSEXITS("CONTROL_LOOP_LABEL_SET_VS",ERR,ERROR)
     RETURN 1
     
   END SUBROUTINE CONTROL_LOOP_LABEL_SET_VS
@@ -777,8 +779,8 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_MAXIMUM_ITERATIONS_SET(CONTROL_LOOP,MAXIMUM_ITERATIONS,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to while control loop to set the maximum iterations for
-    INTEGER(INTG), INTENT(IN) :: MAXIMUM_ITERATIONS !<The maximum number of iterations for a while control loop.
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to the while or load incremented control loop to set the maximum iterations for
+    INTEGER(INTG), INTENT(IN) :: MAXIMUM_ITERATIONS !<The maximum number of iterations for the while or load incremented control loop.
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -786,11 +788,27 @@ CONTAINS
     TYPE(CONTROL_LOOP_LOAD_INCREMENT_TYPE), POINTER :: LOAD_INCREMENT_LOOP
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_MAXIMUM_ITERATIONS_SET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_MAXIMUM_ITERATIONS_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+        !allow to update the maximum number of iterations at a later time for the load increment loop type
+        IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
+          LOAD_INCREMENT_LOOP=>CONTROL_LOOP%LOAD_INCREMENT_LOOP
+          IF(ASSOCIATED(LOAD_INCREMENT_LOOP)) THEN
+            IF(MAXIMUM_ITERATIONS<=0) THEN
+              LOCAL_ERROR="The specified maximum number of iterations of "// &
+                & TRIM(NUMBER_TO_VSTRING(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
+                & " is invalid. The maximum number of iterations must be greater than zero."          
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)            
+            ENDIF
+            LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS=MAXIMUM_ITERATIONS
+          ELSE
+            CALL FlagError("Control loop load incremented loop is not associated.",ERR,ERROR,*999)
+          ENDIF
+        ELSE
+          CALL FlagError("Control loop has been finished.",ERR,ERROR,*999)
+        ENDIF
       ELSE
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
           WHILE_LOOP=>CONTROL_LOOP%WHILE_LOOP
@@ -799,11 +817,11 @@ CONTAINS
               LOCAL_ERROR="The specified maximum number of iterations of "// &
                 & TRIM(NUMBER_TO_VSTRING(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
                 & " is invalid. The maximum number of iterations must be greater than zero."          
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)            
             ENDIF
             WHILE_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS=MAXIMUM_ITERATIONS
           ELSE
-            CALL FLAG_ERROR("Control loop while loop is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Control loop while loop is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSEIF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
           LOAD_INCREMENT_LOOP=>CONTROL_LOOP%LOAD_INCREMENT_LOOP
@@ -812,24 +830,23 @@ CONTAINS
               LOCAL_ERROR="The specified maximum number of iterations of "// &
                 & TRIM(NUMBER_TO_VSTRING(MAXIMUM_ITERATIONS,"*",ERR,ERROR))// &
                 & " is invalid. The maximum number of iterations must be greater than zero."          
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)            
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)            
             ENDIF
             LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS=MAXIMUM_ITERATIONS
           ELSE
-            CALL FLAG_ERROR("Control loop load increment loop is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Control loop load increment loop is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified control loop is not a while or load increment control loop.",ERR,ERROR,*999)
+          CALL FlagError("The specified control loop is not a while or load increment control loop.",ERR,ERROR,*999)
         ENDIF
       ENDIF          
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_MAXIMUM_ITERATIONS_SET")
+    EXITS("CONTROL_LOOP_MAXIMUM_ITERATIONS_SET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_MAXIMUM_ITERATIONS_SET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_MAXIMUM_ITERATIONS_SET")
+999 ERRORSEXITS("CONTROL_LOOP_MAXIMUM_ITERATIONS_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_MAXIMUM_ITERATIONS_SET
 
@@ -841,41 +858,87 @@ CONTAINS
   SUBROUTINE CONTROL_LOOP_LOAD_OUTPUT_SET(CONTROL_LOOP,OUTPUT_FREQUENCY,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to while control loop to set the maximum iterations for
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to the load incremented control loop to set the maximum iterations for
     INTEGER(INTG), INTENT(IN) :: OUTPUT_FREQUENCY !<The output frequency modulo to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(CONTROL_LOOP_LOAD_INCREMENT_TYPE), POINTER :: LOAD_INCREMENT_LOOP
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_LOAD_OUTPUT_SET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_LOAD_OUTPUT_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has been finished.",ERR,ERROR,*999)
       ELSE
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
           LOAD_INCREMENT_LOOP=>CONTROL_LOOP%LOAD_INCREMENT_LOOP
           IF(ASSOCIATED(LOAD_INCREMENT_LOOP)) THEN
             LOAD_INCREMENT_LOOP%OUTPUT_NUMBER=OUTPUT_FREQUENCY
           ELSE
-            CALL FLAG_ERROR("Control loop load increment loop is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Control loop load increment loop is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified control loop is not a load increment control loop.",ERR,ERROR,*999)
+          CALL FlagError("The specified control loop is not a load increment control loop.",ERR,ERROR,*999)
         ENDIF
       ENDIF          
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_LOAD_OUTPUT_SET")
+    EXITS("CONTROL_LOOP_LOAD_OUTPUT_SET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_LOAD_OUTPUT_SET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_LOAD_OUTPUT_SET")
+999 ERRORSEXITS("CONTROL_LOOP_LOAD_OUTPUT_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_LOAD_OUTPUT_SET
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the absolute tolerance (convergence condition tolerance) for a while control loop. \see OPENCMISS_CMISSControlLoopAbsoluteToleranceSet
+  SUBROUTINE ControlLoop_AbsoluteToleranceSet(controlLoop,absoluteTolerance,err,error,*)
+
+    !Argument variables
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: controlLoop !<A pointer to while control loop to set the maximum iterations for
+    REAL(DP), INTENT(IN) :: absoluteTolerance !<The absolute tolerance value for a while control loop.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(CONTROL_LOOP_WHILE_TYPE), POINTER :: whileLoop
+    TYPE(VARYING_STRING) :: localError
+ 
+    ENTERS("ControlLoop_AbsoluteToleranceSet",err,error,*999)
+
+    IF(ASSOCIATED(controlLoop)) THEN
+      IF(controlLoop%CONTROL_LOOP_FINISHED) THEN
+        CALL FlagError("Control loop has been finished.",err,error,*999)
+      ELSE
+        IF(controlLoop%LOOP_TYPE==PROBLEM_CONTROL_WHILE_LOOP_TYPE) THEN
+          whileLoop=>controlLoop%WHILE_LOOP
+          IF(ASSOCIATED(whileLoop)) THEN
+            IF(absoluteTolerance<=0) THEN
+              localError="The specified absolute tolerance of "// &
+                & TRIM(NUMBER_TO_VSTRING(absoluteTolerance,"*",err,error))// &
+                & " is invalid for a while loop. The tolerance must be greater than zero."          
+              CALL FlagError(localError,err,error,*999)            
+            ENDIF
+            whileLoop%ABSOLUTE_TOLERANCE=absoluteTolerance
+          ELSE
+            CALL FlagError("Control loop while loop is not associated.",err,error,*999)
+          ENDIF
+        ENDIF
+      ENDIF          
+    ELSE
+      CALL FlagError("Control loop is not associated.",err,error,*999)
+    ENDIF
+       
+    EXITS("ControlLoop_AbsoluteToleranceSet")
+    RETURN
+999 ERRORSEXITS("ControlLoop_AbsoluteToleranceSet",err,error)
+    RETURN 1
+    
+  END SUBROUTINE ControlLoop_AbsoluteToleranceSet
 
   !
   !================================================================================================================================
@@ -891,22 +954,21 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    CALL ENTERS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has already been finished.",ERR,ERROR,*999)
       ELSE
         NUMBER_OF_SUB_LOOPS=CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET")
+    EXITS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET")
+999 ERRORSEXITS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_GET
 
@@ -927,31 +989,31 @@ CONTAINS
     TYPE(CONTROL_LOOP_PTR_TYPE), ALLOCATABLE :: OLD_SUB_LOOPS(:)
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(NUMBER_OF_SUB_LOOPS>=0) THEN
           IF(NUMBER_OF_SUB_LOOPS/=CONTROL_LOOP%NUMBER_OF_SUB_LOOPS) THEN
             IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS>0) THEN
               ALLOCATE(OLD_SUB_LOOPS(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS),STAT=ERR)
-              IF(ERR/=0) CALL FLAG_ERROR("Could not allocate old sub loops.",ERR,ERROR,*999)
+              IF(ERR/=0) CALL FlagError("Could not allocate old sub loops.",ERR,ERROR,*999)
               DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                 OLD_SUB_LOOPS(loop_idx)%PTR=>CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR
               ENDDO !loop_idx
               DEALLOCATE(CONTROL_LOOP%SUB_LOOPS)
             ENDIF
             ALLOCATE(CONTROL_LOOP%SUB_LOOPS(NUMBER_OF_SUB_LOOPS),STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate control loop sub loops.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate control loop sub loops.",ERR,ERROR,*999)
             IF(NUMBER_OF_SUB_LOOPS>CONTROL_LOOP%NUMBER_OF_SUB_LOOPS) THEN
               DO loop_idx=1,CONTROL_LOOP%NUMBER_OF_SUB_LOOPS
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR=>OLD_SUB_LOOPS(loop_idx)%PTR
               ENDDO !loop_idx
               DO loop_idx=CONTROL_LOOP%NUMBER_OF_SUB_LOOPS+1,NUMBER_OF_SUB_LOOPS
                 ALLOCATE(CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR,STAT=ERR)
-                IF(ERR/=0) CALL FLAG_ERROR("Could not allocate sub loops control loop.",ERR,ERROR,*999)
+                IF(ERR/=0) CALL FlagError("Could not allocate sub loops control loop.",ERR,ERROR,*999)
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%PROBLEM=>CONTROL_LOOP%PROBLEM
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%PARENT_LOOP=>CONTROL_LOOP
                 CONTROL_LOOP%SUB_LOOPS(loop_idx)%PTR%CONTROL_LOOP_FINISHED=.FALSE.
@@ -981,18 +1043,17 @@ CONTAINS
         ELSE
           LOCAL_ERROR="The given number of sub loops of "//TRIM(NUMBER_TO_VSTRING(NUMBER_OF_SUB_LOOPS,"*",ERR,ERROR))// &
             & " is invalid. The number of sub loops must be >= 0."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET")
+    EXITS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET")
     RETURN
 999 IF(ALLOCATED(OLD_SUB_LOOPS)) DEALLOCATE(OLD_SUB_LOOPS)
-    CALL ERRORS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET")
+    ERRORSEXITS("CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_NUMBER_OF_SUB_LOOPS_SET
 
@@ -1010,22 +1071,21 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    CALL ENTERS("CONTROL_LOOP_OUTPUT_TYPE_GET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_OUTPUT_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
         OUTPUT_TYPE=CONTROL_LOOP%OUTPUT_TYPE
       ELSE
-        CALL FLAG_ERROR("Control loop has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_OUTPUT_TYPE_GET")
+    EXITS("CONTROL_LOOP_OUTPUT_TYPE_GET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_OUTPUT_TYPE_GET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_OUTPUT_TYPE_GET")
+999 ERRORSEXITS("CONTROL_LOOP_OUTPUT_TYPE_GET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_OUTPUT_TYPE_GET
   
@@ -1044,11 +1104,11 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CONTROL_LOOP_OUTPUT_TYPE_SET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_OUTPUT_TYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has already been finished.",ERR,ERROR,*999)
       ELSE        
         SELECT CASE(OUTPUT_TYPE)
         CASE(CONTROL_LOOP_NO_OUTPUT)
@@ -1060,17 +1120,16 @@ CONTAINS
         CASE DEFAULT
           LOCAL_ERROR="The specified control loop output type of "// &
             & TRIM(NUMBER_TO_VSTRING(OUTPUT_TYPE,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("CONTROL_LOOP_OUTPUT_TYPE_SET")
+    EXITS("CONTROL_LOOP_OUTPUT_TYPE_SET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_OUTPUT_TYPE_SET",ERR,ERROR)    
-    CALL EXITS("CONTROL_LOOP_OUTPUT_TYPE_SET")
+999 ERRORSEXITS("CONTROL_LOOP_OUTPUT_TYPE_SET",ERR,ERROR)    
     RETURN 1
    
   END SUBROUTINE CONTROL_LOOP_OUTPUT_TYPE_SET
@@ -1088,16 +1147,15 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    CALL ENTERS("CONTROL_LOOP_SIMPLE_FINALISE",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_SIMPLE_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SIMPLE_LOOP)) THEN
       DEALLOCATE(SIMPLE_LOOP)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_SIMPLE_FINALISE")
+    EXITS("CONTROL_LOOP_SIMPLE_FINALISE")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_SIMPLE_FINALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_SIMPLE_FINALISE")
+999 ERRORSEXITS("CONTROL_LOOP_SIMPLE_FINALISE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_SIMPLE_FINALISE
 
@@ -1116,25 +1174,24 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_SIMPLE_INITIALISE",ERR,ERROR,*998)
+    ENTERS("CONTROL_LOOP_SIMPLE_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(CONTROL_LOOP%SIMPLE_LOOP)) THEN
-        CALL FLAG_ERROR("The simple loop is already associated for this control loop.",ERR,ERROR,*998)
+        CALL FlagError("The simple loop is already associated for this control loop.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(CONTROL_LOOP%SIMPLE_LOOP,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate simple loop for the control loop.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate simple loop for the control loop.",ERR,ERROR,*999)
         CONTROL_LOOP%SIMPLE_LOOP%CONTROL_LOOP=>CONTROL_LOOP
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*998)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_SIMPLE_INITIALISE")
+    EXITS("CONTROL_LOOP_SIMPLE_INITIALISE")
     RETURN
 999 CALL CONTROL_LOOP_SIMPLE_FINALISE(CONTROL_LOOP%SIMPLE_LOOP,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("CONTROL_LOOP_SIMPLE_INITIALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_SIMPLE_INITIALISE")
+998 ERRORSEXITS("CONTROL_LOOP_SIMPLE_INITIALISE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_SIMPLE_INITIALISE
 
@@ -1153,7 +1210,7 @@ CONTAINS
     INTEGER(INTG) :: loop_idx
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP2
 
-    CALL ENTERS("CONTROL_LOOP_SOLVERS_DESTROY",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_SOLVERS_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       !Destroy the solvers in any sub control loops first
@@ -1166,13 +1223,12 @@ CONTAINS
       !Destroy the solvers in this control loop
       IF(ASSOCIATED(CONTROL_LOOP%SOLVERS)) CALL SOLVERS_DESTROY(CONTROL_LOOP%SOLVERS,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_SOLVERS_DESTROY")
+    EXITS("CONTROL_LOOP_SOLVERS_DESTROY")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_SOLVERS_DESTROY",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_SOLVERS_DESTROY")
+999 ERRORSEXITS("CONTROL_LOOP_SOLVERS_DESTROY",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_SOLVERS_DESTROY
 
@@ -1191,23 +1247,22 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    CALL ENTERS("CONTROL_LOOP_SOLVERS_GET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_SOLVERS_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVERS)) THEN
-        CALL FLAG_ERROR("Solvers is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Solvers is already associated.",ERR,ERROR,*999)
       ELSE
         SOLVERS=>CONTROL_LOOP%SOLVERS
-        IF(.NOT.ASSOCIATED(SOLVERS)) CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*999)
+        IF(.NOT.ASSOCIATED(SOLVERS)) CALL FlagError("Solvers is not associated.",ERR,ERROR,*999)
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_SOLVERS_GET")
+    EXITS("CONTROL_LOOP_SOLVERS_GET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_SOLVERS_GET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_SOLVERS_GET")
+999 ERRORSEXITS("CONTROL_LOOP_SOLVERS_GET",ERR,ERROR)
     RETURN 1
     
   END SUBROUTINE CONTROL_LOOP_SOLVERS_GET
@@ -1229,7 +1284,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
  
-    CALL ENTERS("CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       !Destroy the solver equations in any sub control loops first
@@ -1247,18 +1302,17 @@ CONTAINS
             SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
             IF(ASSOCIATED(SOLVER_EQUATIONS)) CALL SOLVER_EQUATIONS_DESTROY(SOLVER_EQUATIONS,ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
           ENDIF
         ENDDO !solver_idx
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY")
+    EXITS("CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY")
+999 ERRORSEXITS("CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_SOLVER_EQUATIONS_DESTROY
 
@@ -1279,11 +1333,11 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_SUB_LOOP_GET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_SUB_LOOP_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SUB_LOOP)) THEN
-        CALL FLAG_ERROR("Sub loop is already associated.",ERR,ERROR,*999)
+        CALL FlagError("Sub loop is already associated.",ERR,ERROR,*999)
       ELSE
         NULLIFY(SUB_LOOP)
         IF(SUB_LOOP_INDEX>0.AND.SUB_LOOP_INDEX<=CONTROL_LOOP%NUMBER_OF_SUB_LOOPS) THEN
@@ -1292,17 +1346,16 @@ CONTAINS
           LOCAL_ERROR="The specified sub loop index of "//TRIM(NUMBER_TO_VSTRING(SUB_LOOP_INDEX,"*",ERR,ERROR))// &
             & " is invalid. The sub loop index must be > 0 and <= "// &
             & TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_SUB_LOOP_GET")
+    EXITS("CONTROL_LOOP_SUB_LOOP_GET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_SUB_LOOP_GET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_SUB_LOOP_GET")
+999 ERRORSEXITS("CONTROL_LOOP_SUB_LOOP_GET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_SUB_LOOP_GET
 
@@ -1319,16 +1372,15 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    CALL ENTERS("CONTROL_LOOP_TIME_FINALISE",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_TIME_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(TIME_LOOP)) THEN
       DEALLOCATE(TIME_LOOP)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_TIME_FINALISE")
+    EXITS("CONTROL_LOOP_TIME_FINALISE")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_TIME_FINALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_TIME_FINALISE")
+999 ERRORSEXITS("CONTROL_LOOP_TIME_FINALISE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_TIME_FINALISE
 
@@ -1347,85 +1399,101 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_TIME_INITIALISE",ERR,ERROR,*998)
+    ENTERS("CONTROL_LOOP_TIME_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(CONTROL_LOOP%TIME_LOOP)) THEN
-        CALL FLAG_ERROR("The time loop is already associated for this control loop.",ERR,ERROR,*998)
+        CALL FlagError("The time loop is already associated for this control loop.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(CONTROL_LOOP%TIME_LOOP,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate time loop for the control loop.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate time loop for the control loop.",ERR,ERROR,*999)
         CONTROL_LOOP%TIME_LOOP%CONTROL_LOOP=>CONTROL_LOOP
         CONTROL_LOOP%TIME_LOOP%ITERATION_NUMBER=0
         CONTROL_LOOP%TIME_LOOP%GLOBAL_ITERATION_NUMBER=0
         CONTROL_LOOP%TIME_LOOP%CURRENT_TIME=0.0_DP
         CONTROL_LOOP%TIME_LOOP%START_TIME=0.0_DP
         CONTROL_LOOP%TIME_LOOP%STOP_TIME=1.0_DP
-        CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT=0.01_DP        
+        CONTROL_LOOP%TIME_LOOP%TIME_INCREMENT=0.01_DP
         CONTROL_LOOP%TIME_LOOP%OUTPUT_NUMBER=0
         CONTROL_LOOP%TIME_LOOP%INPUT_NUMBER=0
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*998)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_TIME_INITIALISE")
+    EXITS("CONTROL_LOOP_TIME_INITIALISE")
     RETURN
 999 CALL CONTROL_LOOP_TIME_FINALISE(CONTROL_LOOP%TIME_LOOP,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("CONTROL_LOOP_TIME_INITIALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_TIME_INITIALISE")
+998 ERRORSEXITS("CONTROL_LOOP_TIME_INITIALISE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE CONTROL_LOOP_TIME_INITIALISE
 
   !
   !================================================================================================================================
   !
-
-  !>Gets the time parameters for a time control loop. \see OPENCMISS_CMISSControlLoopTimesGet
-  SUBROUTINE CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,START_TIME,STOP_TIME,TIME_INCREMENT,CURRENT_TIME,ERR,ERROR,*)
+  
+  !>Gets the current time parameters for a time control loop. \see OPENCMISS_CMISSControlLoopCurrentTimesGet
+  SUBROUTINE CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,START_TIME,STOP_TIME,CURRENT_TIME,TIME_INCREMENT, &
+    & CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER,ERR,ERROR,*)
 
     !Argument variables
-    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP !<A pointer to control loop to get the times for
-    REAL(DP), INTENT(OUT) :: START_TIME !<On exit, the start time for the time control loop.
-    REAL(DP), INTENT(OUT) :: STOP_TIME !<On exit, the stop time for the time control loop.
-    REAL(DP), INTENT(OUT) :: TIME_INCREMENT !<On exit, the time increment for the time control loop.
-    REAL(DP), INTENT(OUT) :: CURRENT_TIME !<On exit, the current time for the time control loop.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(CONTROL_LOOP_TYPE), POINTER, INTENT(IN) :: CONTROL_LOOP
+    REAL(DP), INTENT(OUT) :: START_TIME
+    REAL(DP), INTENT(OUT) :: STOP_TIME
+    REAL(DP), INTENT(OUT) :: CURRENT_TIME
+    REAL(DP), INTENT(OUT) :: TIME_INCREMENT
+    INTEGER(INTG), INTENT(OUT) :: CURRENT_LOOP_ITERATION
+    INTEGER(INTG), INTENT(OUT) :: OUTPUT_ITERATION_NUMBER
+    INTEGER(INTG), INTENT(OUT) :: ERR
+    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
     !Local Variables    
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
-   
-    CALL ENTERS("CONTROL_LOOP_TIMES_GET",ERR,ERROR,*999)
+    TYPE(CONTROL_LOOP_TYPE), POINTER :: PARENT_LOOP
+    INTEGER(INTG), POINTER :: CONTROL_LOOP_LEVEL
+    INTEGER(INTG) :: I
+
+    ENTERS("CONTROL_LOOP_TIMES_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
-          TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
-          IF(ASSOCIATED(TIME_LOOP)) THEN
-            START_TIME=TIME_LOOP%START_TIME
-            STOP_TIME=TIME_LOOP%STOP_TIME
-            TIME_INCREMENT=TIME_LOOP%TIME_INCREMENT
-            CURRENT_TIME=TIME_LOOP%CURRENT_TIME
+        CONTROL_LOOP_LEVEL=>CONTROL_LOOP%CONTROL_LOOP_LEVEL
+        PARENT_LOOP=>CONTROL_LOOP
+        DO I=CONTROL_LOOP_LEVEL,1,-1
+          IF(CONTROL_LOOP_LEVEL==0) THEN
+            CALL FlagError("The specified control loop is not a time control loop.",ERR,ERROR,*999)
           ELSE
-            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+            IF(PARENT_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
+              TIME_LOOP=>PARENT_LOOP%TIME_LOOP
+              IF(ASSOCIATED(TIME_LOOP)) THEN
+                START_TIME=TIME_LOOP%START_TIME
+                STOP_TIME=TIME_LOOP%STOP_TIME
+                CURRENT_TIME=TIME_LOOP%CURRENT_TIME
+                TIME_INCREMENT=TIME_LOOP%TIME_INCREMENT
+                CURRENT_LOOP_ITERATION=TIME_LOOP%ITERATION_NUMBER
+                OUTPUT_ITERATION_NUMBER=TIME_LOOP%OUTPUT_NUMBER
+              ELSE
+                CALL FlagError("Control loop time loop is not associated.",ERR,ERROR,*999)
+              ENDIF
+              EXIT
+            ELSE
+              PARENT_LOOP=>PARENT_LOOP%PARENT_LOOP
+            ENDIF
           ENDIF
-        ELSE
-          CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
-        ENDIF
+        ENDDO
       ELSE
-        CALL FLAG_ERROR("Control loop has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_TIMES_GET")
+    EXITS("CONTROL_LOOP_TIMES_GET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_TIMES_GET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_TIMES_GET")
+999 ERRORSEXITS("CONTROL_LOOP_TIMES_GET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_TIMES_GET
-  
+
   !
   !================================================================================================================================
   !
@@ -1444,7 +1512,7 @@ CONTAINS
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CONTROL_LOOP_TIMES_SET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_TIMES_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
@@ -1453,21 +1521,21 @@ CONTAINS
           IF(ABS(TIME_INCREMENT)<=ZERO_TOLERANCE) THEN
             LOCAL_ERROR="The specified time increment of "//TRIM(NUMBER_TO_VSTRING(TIME_INCREMENT,"*",ERR,ERROR))// &
               & " is invalid. The time increment must not be zero."          
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             IF(TIME_INCREMENT>0.0_DP) THEN
               IF(STOP_TIME<=START_TIME) THEN
                 LOCAL_ERROR="The specified stop time of "//TRIM(NUMBER_TO_VSTRING(STOP_TIME,"*",ERR,ERROR))// &
                   & " is incompatiable with a specified start time of "//TRIM(NUMBER_TO_VSTRING(START_TIME,"*",ERR,ERROR))// &
                   & ". For a positive time increment the stop time must be > than the start time."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
               IF(START_TIME<=STOP_TIME) THEN
                 LOCAL_ERROR="The specified start time of "//TRIM(NUMBER_TO_VSTRING(START_TIME,"*",ERR,ERROR))// &
                   & " is incompatiable with a specified stop time of "//TRIM(NUMBER_TO_VSTRING(STOP_TIME,"*",ERR,ERROR))// &
                   & ". For a negative time increment the stop time must be < than the start time."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ENDIF
           ENDIF
@@ -1475,19 +1543,18 @@ CONTAINS
           TIME_LOOP%STOP_TIME=STOP_TIME
           TIME_LOOP%TIME_INCREMENT=TIME_INCREMENT
         ELSE
-          CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Control loop time loop is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
+        CALL FlagError("The specified control loop is not a time control loop.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_TIMES_SET")
+    EXITS("CONTROL_LOOP_TIMES_SET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_TIMES_SET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_TIMES_SET")
+999 ERRORSEXITS("CONTROL_LOOP_TIMES_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_TIMES_SET
 
@@ -1506,11 +1573,11 @@ CONTAINS
     !Local Variables    
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
     
-    CALL ENTERS("CONTROL_LOOP_TIME_OUTPUT_SET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_TIME_OUTPUT_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has been finished.",ERR,ERROR,*999)
       ELSE
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
           TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
@@ -1518,24 +1585,23 @@ CONTAINS
             IF(OUTPUT_FREQUENCY>=0) THEN
               TIME_LOOP%OUTPUT_NUMBER=OUTPUT_FREQUENCY
             ELSE
-              CALL FLAG_ERROR("Invalid output frequency. The frequency should be greater than or equal to zero, but is "// &
+              CALL FlagError("Invalid output frequency. The frequency should be greater than or equal to zero, but is "// &
                 & TRIM(NUMBER_TO_VSTRING(OUTPUT_FREQUENCY,"*",ERR,ERROR))//".",ERR,ERROR,*999)
             END IF
           ELSE
-            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Control loop time loop is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
+          CALL FlagError("The specified control loop is not a time control loop.",ERR,ERROR,*999)
         ENDIF
       ENDIF          
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_TIME_OUTPUT_SET")
+    EXITS("CONTROL_LOOP_TIME_OUTPUT_SET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_TIME_OUTPUT_SET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_TIME_OUTPUT_SET")
+999 ERRORSEXITS("CONTROL_LOOP_TIME_OUTPUT_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_TIME_OUTPUT_SET
 
@@ -1554,31 +1620,30 @@ CONTAINS
     !Local Variables    
     TYPE(CONTROL_LOOP_TIME_TYPE), POINTER :: TIME_LOOP
     
-    CALL ENTERS("CONTROL_LOOP_TIME_INPUT_SET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_TIME_INPUT_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has been finished.",ERR,ERROR,*999)
       ELSE
         IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_TIME_LOOP_TYPE) THEN
           TIME_LOOP=>CONTROL_LOOP%TIME_LOOP
           IF(ASSOCIATED(TIME_LOOP)) THEN
             TIME_LOOP%INPUT_NUMBER=INPUT_OPTION
           ELSE
-            CALL FLAG_ERROR("Control loop time loop is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Control loop time loop is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("The specified control loop is not a time control loop.",ERR,ERROR,*999)
+          CALL FlagError("The specified control loop is not a time control loop.",ERR,ERROR,*999)
         ENDIF
       ENDIF          
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_TIME_INPUT_SET")
+    EXITS("CONTROL_LOOP_TIME_INPUT_SET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_TIME_INPUT_SET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_TIME_INPUT_SET")
+999 ERRORSEXITS("CONTROL_LOOP_TIME_INPUT_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_TIME_INPUT_SET
   
@@ -1597,11 +1662,11 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("CONTROL_LOOP_TYPE_SET",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_TYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(CONTROL_LOOP%CONTROL_LOOP_FINISHED) THEN
-        CALL FLAG_ERROR("Control loop has already been finished.",ERR,ERROR,*999)
+        CALL FlagError("Control loop has already been finished.",ERR,ERROR,*999)
       ELSE
         IF(LOOP_TYPE/=CONTROL_LOOP%LOOP_TYPE) THEN
           !Initialise the new loop type
@@ -1618,7 +1683,7 @@ CONTAINS
             CALL CONTROL_LOOP_LOAD_INCREMENT_INITIALISE(CONTROL_LOOP,ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The loop type of "//TRIM(NUMBER_TO_VSTRING(LOOP_TYPE,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
           !Finialise the old loop type
           SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
@@ -1634,19 +1699,18 @@ CONTAINS
             CALL CONTROL_LOOP_LOAD_INCREMENT_FINALISE(CONTROL_LOOP%LOAD_INCREMENT_LOOP,ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The control loop type of "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%LOOP_TYPE,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
           CONTROL_LOOP%LOOP_TYPE=LOOP_TYPE
         ENDIF
       ENDIF      
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_TYPE_SET")
+    EXITS("CONTROL_LOOP_TYPE_SET")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_TYPE_SET",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_TYPE_SET")
+999 ERRORSEXITS("CONTROL_LOOP_TYPE_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_TYPE_SET
 
@@ -1663,16 +1727,15 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    CALL ENTERS("CONTROL_LOOP_WHILE_FINALISE",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_WHILE_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(WHILE_LOOP)) THEN
       DEALLOCATE(WHILE_LOOP)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_WHILE_FINALISE")
+    EXITS("CONTROL_LOOP_WHILE_FINALISE")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_WHILE_FINALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_WHILE_FINALISE")
+999 ERRORSEXITS("CONTROL_LOOP_WHILE_FINALISE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_WHILE_FINALISE
 
@@ -1691,28 +1754,28 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_WHILE_INITIALISE",ERR,ERROR,*998)
+    ENTERS("CONTROL_LOOP_WHILE_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(CONTROL_LOOP%WHILE_LOOP)) THEN
-        CALL FLAG_ERROR("The while loop is already associated for this control loop.",ERR,ERROR,*998)
+        CALL FlagError("The while loop is already associated for this control loop.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(CONTROL_LOOP%WHILE_LOOP,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate while loop for the control loop.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate while loop for the control loop.",ERR,ERROR,*999)
         CONTROL_LOOP%WHILE_LOOP%CONTROL_LOOP=>CONTROL_LOOP
         CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER=0
         CONTROL_LOOP%WHILE_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS=100
+        CONTROL_LOOP%WHILE_LOOP%ABSOLUTE_TOLERANCE=1.0E-5_DP
         CONTROL_LOOP%WHILE_LOOP%CONTINUE_LOOP=.TRUE.
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*998)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_WHILE_INITIALISE")
+    EXITS("CONTROL_LOOP_WHILE_INITIALISE")
     RETURN
 999 CALL CONTROL_LOOP_WHILE_FINALISE(CONTROL_LOOP%WHILE_LOOP,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("CONTROL_LOOP_WHILE_INITIALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_WHILE_INITIALISE")
+998 ERRORSEXITS("CONTROL_LOOP_WHILE_INITIALISE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_WHILE_INITIALISE
 
@@ -1729,16 +1792,15 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
  
-    CALL ENTERS("CONTROL_LOOP_LOAD_INCREMENT_FINALISE",ERR,ERROR,*999)
+    ENTERS("CONTROL_LOOP_LOAD_INCREMENT_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(LOAD_INCREMENT_LOOP)) THEN
       DEALLOCATE(LOAD_INCREMENT_LOOP)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_LOAD_INCREMENT_FINALISE")
+    EXITS("CONTROL_LOOP_LOAD_INCREMENT_FINALISE")
     RETURN
-999 CALL ERRORS("CONTROL_LOOP_LOAD_INCREMENT_FINALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_LOAD_INCREMENT_FINALISE")
+999 ERRORSEXITS("CONTROL_LOOP_LOAD_INCREMENT_FINALISE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_LOAD_INCREMENT_FINALISE
 
@@ -1757,28 +1819,27 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
  
-    CALL ENTERS("CONTROL_LOOP_LOAD_INCREMENT_INITIALISE",ERR,ERROR,*998)
+    ENTERS("CONTROL_LOOP_LOAD_INCREMENT_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(CONTROL_LOOP%LOAD_INCREMENT_LOOP)) THEN
-        CALL FLAG_ERROR("The load increment loop is already associated for this control loop.",ERR,ERROR,*998)
+        CALL FlagError("The load increment loop is already associated for this control loop.",ERR,ERROR,*998)
       ELSE
         ALLOCATE(CONTROL_LOOP%LOAD_INCREMENT_LOOP,STAT=ERR)
-        IF(ERR/=0) CALL FLAG_ERROR("Could not allocate load increment loop for the control loop.",ERR,ERROR,*999)
+        IF(ERR/=0) CALL FlagError("Could not allocate load increment loop for the control loop.",ERR,ERROR,*999)
         CONTROL_LOOP%LOAD_INCREMENT_LOOP%CONTROL_LOOP=>CONTROL_LOOP
         CONTROL_LOOP%LOAD_INCREMENT_LOOP%ITERATION_NUMBER=0
         CONTROL_LOOP%LOAD_INCREMENT_LOOP%MAXIMUM_NUMBER_OF_ITERATIONS=1 ! default is full load in one step
         CONTROL_LOOP%LOAD_INCREMENT_LOOP%OUTPUT_NUMBER=0
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*998)
     ENDIF
        
-    CALL EXITS("CONTROL_LOOP_LOAD_INCREMENT_INITIALISE")
+    EXITS("CONTROL_LOOP_LOAD_INCREMENT_INITIALISE")
     RETURN
 999 CALL CONTROL_LOOP_LOAD_INCREMENT_FINALISE(CONTROL_LOOP%LOAD_INCREMENT_LOOP,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("CONTROL_LOOP_LOAD_INCREMENT_INITIALISE",ERR,ERROR)
-    CALL EXITS("CONTROL_LOOP_LOAD_INCREMENT_INITIALISE")
+998 ERRORSEXITS("CONTROL_LOOP_LOAD_INCREMENT_INITIALISE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE CONTROL_LOOP_LOAD_INCREMENT_INITIALISE
 

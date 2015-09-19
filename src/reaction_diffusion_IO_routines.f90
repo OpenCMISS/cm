@@ -55,6 +55,9 @@ MODULE REACTION_DIFFUSION_IO_ROUTINES
  USE KINDS   
  USE MESH_ROUTINES
  USE MPI
+
+#include "macros.h"  
+
   IMPLICIT NONE
 
   PUBLIC REACTION_DIFFUSION_IO_WRITE_CMGUI
@@ -70,7 +73,7 @@ CONTAINS
 
     !Argument variables
     TYPE(REGION_TYPE), INTENT(IN), POINTER :: REGION !<A pointer to the region to get the coordinate system for
-    CHARACTER(27), INTENT(IN) :: NAME !<the prefix name of file.
+    CHARACTER(28), INTENT(IN) :: NAME !<the prefix name of file.
     INTEGER(INTG) :: ERR !<The error code
     INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_GLOBAL_NUMBER
     TYPE(VARYING_STRING):: ERROR !<The error string
@@ -79,11 +82,11 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(DOMAIN_TYPE), POINTER :: COMPUTATIONAL_DOMAIN
     TYPE(FIELD_TYPE), POINTER :: SOURCE_FIELD
-    REAL(DP) :: NodeXValue,NodeYValue,NodeZValue,NodeSourceValue,NodeUValue
+    REAL(DP) :: NodeXValue,NodeYValue,NodeZValue,NodeUValue
     INTEGER(INTG):: myComputationalNodeNumber,NumberOfOutputFields,NumberOfDimensions,NumberOfElements,NumberOfNodes
-    INTEGER(INTG):: NumberOfVariableComponents,NumberOfSourceComponents,I,J,K,MPI_IERROR,ValueIndex,NODE_GLOBAL_NUMBER
+    INTEGER(INTG):: NumberOfVariableComponents,NumberOfSourceComponents,I,J,K,ValueIndex,NODE_GLOBAL_NUMBER
     INTEGER(INTG) :: NodesInMeshComponent,BasisType,MaxNodesPerElement,NumberOfFieldComponents(3),ELEMENT_GLOBAL_NUMBER
-    INTEGER(INTG) :: NODE_LOCAL_NUMBER,NUMBER_DOMAIN_NODES
+    INTEGER(INTG) :: NODE_LOCAL_NUMBER
     INTEGER(INTG),ALLOCATABLE :: ElementNodes(:,:),SimplexOutputHelp(:)
     REAL(DP), ALLOCATABLE :: ElementNodesScales(:,:)
     LOGICAL :: OUTPUT_SOURCE
@@ -91,7 +94,7 @@ CONTAINS
     CHARACTER(50) :: INTG_STRING,INTG_STRING2
 
 
-    CALL ENTERS("REACTION_DIFFUSION_IO_WRITE_CMGUI",ERR,ERROR,*999)
+    ENTERS("REACTION_DIFFUSION_IO_WRITE_CMGUI",ERR,ERROR,*999)
 
     myComputationalNodeNumber = COMPUTATIONAL_NODE_NUMBER_GET(err,error)
 
@@ -581,10 +584,9 @@ CONTAINS
     ENDDO
     CLOSE(myComputationalNodeNumber)
 
-    CALL EXITS("REACTION_DIFFUSION_IO_WRITE_CMGUI")
+    EXITS("REACTION_DIFFUSION_IO_WRITE_CMGUI")
     RETURN     
-999 CALL ERRORS("REACTION_DIFFUSION_IO_WRITE_CMGUI",ERR,ERROR)    
-    CALL EXITS("REACTION_DIFFUSION_IO_WRITE_CMGUI")
+999 ERRORSEXITS("REACTION_DIFFUSION_IO_WRITE_CMGUI",ERR,ERROR)    
     RETURN 1
 
   END SUBROUTINE REACTION_DIFFUSION_IO_WRITE_CMGUI

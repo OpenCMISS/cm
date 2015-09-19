@@ -70,14 +70,16 @@ MODULE STOKES_EQUATIONS_ROUTINES
   USE TIMER
   USE TYPES
 
+#include "macros.h"  
+
   IMPLICIT NONE
 
   PRIVATE
 
   PUBLIC  STOKES_EQUATIONS_SET_SUBTYPE_SET
-  PUBLIC  STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET
+  PUBLIC  Stokes_EquationsSetSolutionMethodSet
   PUBLIC  STOKES_EQUATIONS_SET_SETUP
-  PUBLIC  STOKES_EQUATION_ANALYTIC_CALCULATE
+  PUBLIC  Stokes_BoundaryConditionsAnalyticCalculate
   PUBLIC  STOKES_PROBLEM_SUBTYPE_SET
   PUBLIC  STOKES_PROBLEM_SETUP
   PUBLIC  STOKES_FINITE_ELEMENT_CALCULATE
@@ -92,7 +94,7 @@ CONTAINS
 !
 
   !>Sets/changes the solution method for a Stokes flow equation type of an fluid mechanics equations set class.
-  SUBROUTINE STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE Stokes_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -102,7 +104,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("Stokes_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET%SUBTYPE)
@@ -115,34 +117,33 @@ CONTAINS
           CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
             EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
           CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
         LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
           & " is not valid for a Stokes flow equation type of a fluid mechanics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("Stokes_EquationsSetSolutionMethodSet")
     RETURN
-999 CALL ERRORS("STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
-    CALL EXITS("STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET")
+999 ERRORSEXITS("Stokes_EquationsSetSolutionMethodSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET
+  END SUBROUTINE Stokes_EquationsSetSolutionMethodSet
 
 ! 
 !================================================================================================================================
@@ -159,7 +160,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       SELECT CASE(EQUATIONS_SET_SUBTYPE)
@@ -184,20 +185,19 @@ CONTAINS
             EQUATIONS_SET%TYPE=EQUATIONS_SET_STOKES_EQUATION_TYPE
             EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_PGM_STOKES_SUBTYPE
       CASE(EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE)
-            CALL FLAG_ERROR("Not implemented yet.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented yet.",ERR,ERROR,*999)
       CASE DEFAULT
             LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
               & " is not valid for a Stokes fluid type of a fluid mechanics equations set class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-         CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+         CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("STOKES_EQUATIONS_SET_SUBTYPE_SET")
+    EXITS("STOKES_EQUATIONS_SET_SUBTYPE_SET")
     RETURN
-999 CALL ERRORS("STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("STOKES_EQUATIONS_SET_SUBTYPE_SET")
+999 ERRORSEXITS("STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_EQUATIONS_SET_SUBTYPE_SET
 
@@ -226,7 +226,7 @@ CONTAINS
     INTEGER(INTG):: NUMBER_OF_DIMENSIONS,GEOMETRIC_COMPONENT_NUMBER
     INTEGER(INTG):: MATERIAL_FIELD_NUMBER_OF_VARIABLES,MATERIAL_FIELD_NUMBER_OF_COMPONENTS,I
 
-    CALL ENTERS("STOKES_EQUATION_SET_SETUP",ERR,ERROR,*999)
+    ENTERS("STOKES_EQUATION_SET_SETUP",ERR,ERROR,*999)
 
     NULLIFY(EQUATIONS)
     NULLIFY(EQUATIONS_MAPPING)
@@ -250,7 +250,7 @@ CONTAINS
                   & EQUATIONS_SET_PGM_STOKES_SUBTYPE)
                   SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                     CASE(EQUATIONS_SET_SETUP_START_ACTION)
-                      CALL STOKES_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET ,&
+                      CALL Stokes_EquationsSetSolutionMethodSet(EQUATIONS_SET ,&
                         & EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
                       EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
                       CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -259,13 +259,13 @@ CONTAINS
                       LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE, &
                         & "*",ERR,ERROR))// " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP% &
                         & SETUP_TYPE,"*",ERR,ERROR))// " is invalid for a standard Stokes fluid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
                   LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " is invalid for a Stokes equation."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             !Set geometric field
             CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
@@ -277,7 +277,7 @@ CONTAINS
                 CASE DEFAULT
                   LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " is invalid for a Stokes equation."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             !Set dependent field  
             CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
@@ -313,8 +313,8 @@ CONTAINS
                         DEPENDENT_FIELD_NUMBER_OF_VARIABLES=2
                         CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD, &
                           & DEPENDENT_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
-                        CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,(/FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_DELUDELN_VARIABLE_TYPE/),ERR,ERROR,*999)
+                        CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_DELUDELN_VARIABLE_TYPE],ERR,ERROR,*999)
                         CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                         CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
@@ -357,15 +357,15 @@ CONTAINS
                           CASE DEFAULT
                             LOCAL_ERROR="The solution method of " &
                               & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT     
                       ELSE
                         !Check the user specified field
                         CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                         CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
                         CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
-                        CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE, &
-                          & FIELD_DELUDELN_VARIABLE_TYPE/),ERR,ERROR,*999)
+                        CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE, &
+                          & FIELD_DELUDELN_VARIABLE_TYPE],ERR,ERROR,*999)
                         CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                           & ERR,ERROR,*999)
                         CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
@@ -390,7 +390,7 @@ CONTAINS
                           CASE DEFAULT
                             LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
                               &"*",ERR,ERROR))//" is invalid."
-                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ENDIF
                      !Specify finish action
@@ -402,13 +402,13 @@ CONTAINS
                       LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                       & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                       & " is invalid for a standard Stokes fluid"
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
                   LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " is invalid for a Stokes equation."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             !define an independent field for ALE information
             CASE(EQUATIONS_SET_SETUP_INDEPENDENT_TYPE)
@@ -443,7 +443,7 @@ CONTAINS
                       CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
                       & INDEPENDENT_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
                       CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, & 
-                        & (/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                        & [FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
                       CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                         & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                       CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -476,14 +476,14 @@ CONTAINS
                           CASE DEFAULT
                             LOCAL_ERROR="The solution method of " &
                               & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT 
                       ELSE
                         !Check the user specified field
                         CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
                         CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
                         CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
-                        CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                        CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
                         CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                           & ERR,ERROR,*999)
                         CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
@@ -502,7 +502,7 @@ CONTAINS
                           CASE DEFAULT
                             LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
                               &"*",ERR,ERROR))//" is invalid."
-                             CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                       ENDIF    
                   !Specify finish action
@@ -520,13 +520,13 @@ CONTAINS
                       LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                       & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                       & " is invalid for a standard Stokes fluid"
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
                   LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " is invalid for a Stokes equation."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             !Define analytic part for Stokes problem
             CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
@@ -576,16 +576,16 @@ CONTAINS
                                 LOCAL_ERROR="The specified analytic function type of "// &
                                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                                   & " is invalid for an analytic Stokes problem."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             END SELECT
                           ELSE
-                            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
                       ENDIF
                     CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
                       IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -595,19 +595,19 @@ CONTAINS
                           ENDIF
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE DEFAULT
                       LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                         & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                         & " is invalid for an analytic Stokes problem."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
                   CASE DEFAULT
                     LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                       & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                       & " is invalid for a Stokes equation."
-                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
             !Define materials field              
             CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
@@ -643,7 +643,7 @@ CONTAINS
                             & GEOMETRIC_FIELD,ERR,ERROR,*999)
                           CALL FIELD_NUMBER_OF_VARIABLES_SET(EQUATIONS_MATERIALS%MATERIALS_FIELD, & 
                             & MATERIAL_FIELD_NUMBER_OF_VARIABLES,ERR,ERROR,*999)
-                          CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,(/FIELD_U_VARIABLE_TYPE/), &
+                          CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,[FIELD_U_VARIABLE_TYPE], &
                             & ERR,ERROR,*999)
                           CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                             & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
@@ -665,7 +665,7 @@ CONTAINS
                           CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_MATERIAL_TYPE,ERR,ERROR,*999)
                           CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_INDEPENDENT_TYPE,ERR,ERROR,*999)
                           CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
-                          CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,(/FIELD_U_VARIABLE_TYPE/),ERR,ERROR,*999)
+                          CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
                           CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VECTOR_DIMENSION_TYPE, &
                             & ERR,ERROR,*999)
                           CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
@@ -674,7 +674,7 @@ CONTAINS
                           CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
                         ENDIF              
                       ELSE
-                        CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
                       END IF
                     !Specify start action
                     CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -695,19 +695,19 @@ CONTAINS
   !                         & FIELD_VALUES_SET_TYPE,2,100.0_DP,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE DEFAULT
                       LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                       & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                         & " is invalid for Stokes equation."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
                   LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " is invalid for a Stokes equation."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             !Define the source field    
             CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
@@ -726,13 +726,13 @@ CONTAINS
                       LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                         & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                         & " is invalid for a standard Stokes fluid."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
                   LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " is invalid for a Stokes equation."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             !Define equations type
             CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
@@ -747,10 +747,10 @@ CONTAINS
                           CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
                           CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Equations set materials has not been finished.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set materials has not been finished.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations materials is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations materials is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
                       SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -760,8 +760,8 @@ CONTAINS
                           CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
                           !Create the equations mapping.
                           CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-                          CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
-                          CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,(/FIELD_U_VARIABLE_TYPE/), &
+                          CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+                          CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,[FIELD_U_VARIABLE_TYPE], &
                             & ERR,ERROR,*999)
                           CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE, & 
                             & ERR,ERROR,*999)
@@ -770,29 +770,29 @@ CONTAINS
                           CALL EQUATIONS_MATRICES_CREATE_START(EQUATIONS,EQUATIONS_MATRICES,ERR,ERROR,*999)
                           SELECT CASE(EQUATIONS%SPARSITY_TYPE)
                             CASE(EQUATIONS_MATRICES_FULL_MATRICES)
-                              CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,(/MATRIX_BLOCK_STORAGE_TYPE/), &
+                              CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,[MATRIX_BLOCK_STORAGE_TYPE], &
                                 & ERR,ERROR,*999)
                             CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
                               CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
-                                & (/MATRIX_COMPRESSED_ROW_STORAGE_TYPE/),ERR,ERROR,*999)
-                              CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, & 
-                              & (/EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)
+                                & [MATRIX_COMPRESSED_ROW_STORAGE_TYPE],ERR,ERROR,*999)
+                              CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES, & 
+                              & [EQUATIONS_MATRIX_FEM_STRUCTURE],ERR,ERROR,*999)
                             CASE DEFAULT
                               LOCAL_ERROR="The equations matrices sparsity type of "// &
                                 & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT
                           CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
                         CASE DEFAULT
                           LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
                             & "*",ERR,ERROR))//" is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     CASE DEFAULT
                       LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                         & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                         & " is invalid for a steady Laplace equation."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE(EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE,EQUATIONS_SET_PGM_STOKES_SUBTYPE)
                 SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -804,10 +804,10 @@ CONTAINS
                           CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
                           CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_FIRST_ORDER_DYNAMIC,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Equations set materials has not been finished.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set materials has not been finished.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations materials is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations materials is not associated.",ERR,ERROR,*999)
                       ENDIF
                     CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
                       SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -828,65 +828,64 @@ CONTAINS
                           IF(EQUATIONS%LUMPING_TYPE==EQUATIONS_LUMPED_MATRICES) THEN
                             !Set up lumping
                             CALL EQUATIONS_MATRICES_DYNAMIC_LUMPING_TYPE_SET(EQUATIONS_MATRICES, &
-                              & (/EQUATIONS_MATRIX_UNLUMPED,EQUATIONS_MATRIX_LUMPED/),ERR,ERROR,*999)
+                              & [EQUATIONS_MATRIX_UNLUMPED,EQUATIONS_MATRIX_LUMPED],ERR,ERROR,*999)
                             CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
-                              & (/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE/) &
+                              & [DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE] &
                               & ,ERR,ERROR,*999)
-                            CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
-                              & (/EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_DIAGONAL_STRUCTURE/),ERR,ERROR,*999)
+                            CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
+                              & [EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_DIAGONAL_STRUCTURE],ERR,ERROR,*999)
                           ELSE
                             SELECT CASE(EQUATIONS%SPARSITY_TYPE)
                               CASE(EQUATIONS_MATRICES_FULL_MATRICES) 
                               CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
-                                  & (/DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE,DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE/),ERR,ERROR,*999)
+                                  & [DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE,DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE],ERR,ERROR,*999)
                               CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
                                 CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
-                                  & (/DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE, & 
-                                  & DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE/),ERR,ERROR,*999)
-                                CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
-                                  & (/EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE/),ERR,ERROR,*999)
+                                  & [DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE, & 
+                                  & DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE],ERR,ERROR,*999)
+                                CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
+                                  & [EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE],ERR,ERROR,*999)
                               CASE DEFAULT
                                 LOCAL_ERROR="The equations matrices sparsity type of "// &
                                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             END SELECT
                           ENDIF
                           CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
                         CASE DEFAULT
                           LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*", & 
                             & ERR,ERROR))//" is invalid."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     CASE DEFAULT
                     LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                         & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                         & " is invalid for a Stokes equation."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
                   LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                     & " is invalid for a Stokes equation."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
               LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard Stokes fluid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
             & " does not equal a standard Stokes fluid subtype."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE  
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF 
           
-    CALL EXITS("STOKES_EQUATIONS_SET_SETUP")
+    EXITS("STOKES_EQUATIONS_SET_SETUP")
     RETURN
-999 CALL ERRORS("STOKES_EQUATIONS_SET_SETUP",ERR,ERROR)
-    CALL EXITS("STOKES_EQUATIONS_SET_SETUP")
+999 ERRORSEXITS("STOKES_EQUATIONS_SET_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_EQUATIONS_SET_SETUP
          
@@ -905,7 +904,7 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
           
-    CALL ENTERS("STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
           
     IF(ASSOCIATED(PROBLEM)) THEN
       SELECT CASE(PROBLEM_SUBTYPE)
@@ -930,20 +929,19 @@ CONTAINS
           PROBLEM%TYPE=PROBLEM_STOKES_EQUATION_TYPE
           PROBLEM%SUBTYPE=PROBLEM_PGM_STOKES_SUBTYPE
         CASE(PROBLEM_OPTIMISED_STOKES_SUBTYPE)
-          CALL FLAG_ERROR("Not implemented yet.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented yet.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
             & " is not valid for a Stokes fluid type of a fluid mechanics problem class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE  
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF 
           
-    CALL EXITS("STOKES_PROBLEM_SUBTYPE_SET")
+    EXITS("STOKES_PROBLEM_SUBTYPE_SET")
     RETURN
-999 CALL ERRORS("STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("STOKES_PROBLEM_SUBTYPE_SET")
+999 ERRORSEXITS("STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_PROBLEM_SUBTYPE_SET
           
@@ -966,7 +964,7 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS,MESH_SOLVER_EQUATIONS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
 
-    CALL ENTERS("STOKES_PROBLEM_SETUP",ERR,ERROR,*999)
+    ENTERS("STOKES_PROBLEM_SETUP",ERR,ERROR,*999)
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(SOLVER)
@@ -989,7 +987,7 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a standard Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_SETUP_CONTROL_TYPE)
               SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -1005,7 +1003,7 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a standard Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_SETUP_SOLVERS_TYPE)
               !Get the control loop
@@ -1030,7 +1028,7 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a standard Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
               SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -1060,12 +1058,12 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a standard Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
               LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard Stokes fluid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !Set problem subtype for transient Stokes problems
         CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE,PROBLEM_PGM_STOKES_SUBTYPE)
@@ -1080,7 +1078,7 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a transient Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_SETUP_CONTROL_TYPE)
               SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -1097,7 +1095,7 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a transient Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_SETUP_SOLVERS_TYPE)
               !Get the control loop
@@ -1125,7 +1123,7 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                    & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                    & " is invalid for a transient Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
               SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -1156,12 +1154,12 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a transient Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
               LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a transient Stokes fluid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !Set problem subtype for ALE Stokes problems
         CASE(PROBLEM_ALE_STOKES_SUBTYPE)
@@ -1176,7 +1174,7 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a ALE Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_SETUP_CONTROL_TYPE)
               SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -1193,7 +1191,7 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a ALE Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_SETUP_SOLVERS_TYPE)
               !Get the control loop
@@ -1226,7 +1224,7 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                    & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                    & " is invalid for a ALE Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
               SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -1267,26 +1265,25 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                     & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a ALE Stokes fluid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
               LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a ALE Stokes fluid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
             & " is not valid for a Stokes fluid type of a fluid mechanics problem class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("STOKES_PROBLEM_SETUP")
+    EXITS("STOKES_PROBLEM_SETUP")
     RETURN
-999 CALL ERRORS("STOKES_PROBLEM_SETUP",ERR,ERROR)
-    CALL EXITS("STOKES_PROBLEM_SETUP")
+999 ERRORSEXITS("STOKES_PROBLEM_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_PROBLEM_SETUP
 
@@ -1333,15 +1330,15 @@ CONTAINS
 
 #ifdef TAUPROF
     CHARACTER(26) :: CVAR
-    INTEGER :: GAUSS_POINT_LOOP_PHASE(2) = (/ 0, 0 /)
+    INTEGER :: GAUSS_POINT_LOOP_PHASE(2) = [ 0, 0 ]
     SAVE GAUSS_POINT_LOOP_PHASE
-    INTEGER :: FIELD_COMPONENT_LOOP_PHASE(2) = (/ 0, 0 /)
+    INTEGER :: FIELD_COMPONENT_LOOP_PHASE(2) = [ 0, 0 ]
     SAVE FIELD_COMPONENT_LOOP_PHASE
 #endif
 
 !\todo: Reduce number of variables and parameters
 
-    CALL ENTERS("STOKES_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+    ENTERS("STOKES_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
     out=0
     AG_MATRIX=0.0_DP
@@ -1421,7 +1418,7 @@ CONTAINS
               CASE DEFAULT
                 LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
                   & " is not valid for a Stokes fluid type of a fluid mechanics equations set class."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
@@ -1832,7 +1829,7 @@ CONTAINS
 !\todo: Check scaling factor for cubic hermite elements
           !Scale factor adjustment
             IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-              CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+              CALL Field_InterpolationParametersScaleFactorsElementGet(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
                 & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
               mhs=0
               DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -1875,19 +1872,18 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
               & " is not valid for a Stokes fluid type of a fluid mechanics equations set class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("STOKES_FINITE_ELEMENT_CALCULATE")
+    EXITS("STOKES_FINITE_ELEMENT_CALCULATE")
     RETURN
-999 CALL ERRORS("STOKES_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
-    CALL EXITS("STOKES_FINITE_ELEMENT_CALCULATE")
+999 ERRORSEXITS("STOKES_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_FINITE_ELEMENT_CALCULATE
 
@@ -1907,7 +1903,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solver
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("STOKES_POST_SOLVE",ERR,ERROR,*999)
+    ENTERS("STOKES_POST_SOLVE",ERR,ERROR,*999)
     NULLIFY(SOLVER2)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
@@ -1928,7 +1924,7 @@ CONTAINS
                 IF(ASSOCIATED(SOLVER2%DYNAMIC_SOLVER)) THEN
                   SOLVER2%DYNAMIC_SOLVER%ALE=.TRUE.
                 ELSE  
-                  CALL FLAG_ERROR("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
+                  CALL FlagError("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
                 END IF
               !Post solve for the linear solver
               ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
@@ -1938,22 +1934,21 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Stokes fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("STOKES_POST_SOLVE")
+    EXITS("STOKES_POST_SOLVE")
     RETURN
-999 CALL ERRORS("STOKES_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("STOKES_POST_SOLVE")
+999 ERRORSEXITS("STOKES_POST_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_POST_SOLVE
 
@@ -1973,7 +1968,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solvers
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("STOKES_PRE_SOLVE",ERR,ERROR,*999)
+    ENTERS("STOKES_PRE_SOLVE",ERR,ERROR,*999)
     NULLIFY(SOLVER2)
  
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
@@ -2002,7 +1997,7 @@ CONTAINS
 !\todo: Avoid ALE flag in future
                   SOLVER2%DYNAMIC_SOLVER%ALE=.FALSE.
                 ELSE  
-                  CALL FLAG_ERROR("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
+                  CALL FlagError("Dynamic solver is not associated for ALE problem.",ERR,ERROR,*999)
                 END IF
                 !Update material properties for Laplace mesh movement
                 CALL STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -2015,30 +2010,29 @@ CONTAINS
                   !Then apply both normal and moving mesh boundary conditions
                   CALL STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
                 ELSE  
-                  CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
+                  CALL FlagError("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
                 END IF
               ELSE  
-                CALL FLAG_ERROR("Solver type is not associated for ALE problem.",ERR,ERROR,*999)
+                CALL FlagError("Solver type is not associated for ALE problem.",ERR,ERROR,*999)
               END IF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Stokes fluid type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("STOKES_PRE_SOLVE")
+    EXITS("STOKES_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("STOKES_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("STOKES_PRE_SOLVE")
+999 ERRORSEXITS("STOKES_PRE_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_PRE_SOLVE
   !
@@ -2077,7 +2071,7 @@ CONTAINS
     REAL(DP), POINTER :: BOUNDARY_VALUES(:)
 
 
-    CALL ENTERS("STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
+    ENTERS("STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
@@ -2181,66 +2175,66 @@ CONTAINS
                                               ELSE
 !\todo: Use boundary flag
                                                 IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
-                                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(1,1:2)=[0.0_DP,1.0_DP]
+                                                  T_COORDINATES(2,1:2)=[1.0_DP,0.0_DP]
+                                                  T_COORDINATES(3,1:2)=[1.0_DP,1.0_DP]
                                                 ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==6) THEN
-                                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
-                                                  T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
-                                                  T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
+                                                  T_COORDINATES(1,1:2)=[0.0_DP,1.0_DP]
+                                                  T_COORDINATES(2,1:2)=[1.0_DP,0.0_DP]
+                                                  T_COORDINATES(3,1:2)=[1.0_DP,1.0_DP]
+                                                  T_COORDINATES(4,1:2)=[0.5_DP,0.5_DP]
+                                                  T_COORDINATES(5,1:2)=[1.0_DP,0.5_DP]
+                                                  T_COORDINATES(6,1:2)=[0.5_DP,1.0_DP]
                                                 ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
                                                   & NUMBER_OF_DIMENSIONS==2) THEN
-                                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                                  T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
-                                                  T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                                  T_COORDINATES(1,1:2)=[0.0_DP,1.0_DP]
+                                                  T_COORDINATES(2,1:2)=[1.0_DP,0.0_DP]
+                                                  T_COORDINATES(3,1:2)=[1.0_DP,1.0_DP]
+                                                  T_COORDINATES(4,1:2)=[1.0_DP/3.0_DP,2.0_DP/3.0_DP]
+                                                  T_COORDINATES(5,1:2)=[2.0_DP/3.0_DP,1.0_DP/3.0_DP]
+                                                  T_COORDINATES(6,1:2)=[1.0_DP,1.0_DP/3.0_DP]
+                                                  T_COORDINATES(7,1:2)=[1.0_DP,2.0_DP/3.0_DP]
+                                                  T_COORDINATES(8,1:2)=[2.0_DP/3.0_DP,1.0_DP]
+                                                  T_COORDINATES(9,1:2)=[1.0_DP/3.0_DP,1.0_DP]
+                                                  T_COORDINATES(10,1:2)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP]
                                                 ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
-                                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                                  T_COORDINATES(1,1:3)=[0.0_DP,1.0_DP,1.0_DP]
+                                                  T_COORDINATES(2,1:3)=[1.0_DP,0.0_DP,1.0_DP]
+                                                  T_COORDINATES(3,1:3)=[1.0_DP,1.0_DP,0.0_DP]
+                                                  T_COORDINATES(4,1:3)=[1.0_DP,1.0_DP,1.0_DP]
                                                 ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. & 
                                                   & NUMBER_OF_DIMENSIONS==3) THEN
-                                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
-                                                  T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
-                                                  T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
-                                                  T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
-                                                  T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
+                                                  T_COORDINATES(1,1:3)=[0.0_DP,1.0_DP,1.0_DP]
+                                                  T_COORDINATES(2,1:3)=[1.0_DP,0.0_DP,1.0_DP]
+                                                  T_COORDINATES(3,1:3)=[1.0_DP,1.0_DP,0.0_DP]
+                                                  T_COORDINATES(4,1:3)=[1.0_DP,1.0_DP,1.0_DP]
+                                                  T_COORDINATES(5,1:3)=[0.5_DP,0.5_DP,1.0_DP]
+                                                  T_COORDINATES(6,1:3)=[0.5_DP,1.0_DP,0.5_DP]
+                                                  T_COORDINATES(7,1:3)=[0.5_DP,1.0_DP,1.0_DP]
+                                                  T_COORDINATES(8,1:3)=[1.0_DP,0.5_DP,0.5_DP]
+                                                  T_COORDINATES(9,1:3)=[1.0_DP,1.0_DP,0.5_DP]
+                                                  T_COORDINATES(10,1:3)=[1.0_DP,0.5_DP,1.0_DP]
                                                 ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
-                                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                                  T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                                  T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                                  T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                                  T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                                  T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                                  T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                                  T_COORDINATES(1,1:3)=[0.0_DP,1.0_DP,1.0_DP]
+                                                  T_COORDINATES(2,1:3)=[1.0_DP,0.0_DP,1.0_DP]
+                                                  T_COORDINATES(3,1:3)=[1.0_DP,1.0_DP,0.0_DP]
+                                                  T_COORDINATES(4,1:3)=[1.0_DP,1.0_DP,1.0_DP]
+                                                  T_COORDINATES(5,1:3)=[1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP]
+                                                  T_COORDINATES(6,1:3)=[2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP]
+                                                  T_COORDINATES(7,1:3)=[1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP]
+                                                  T_COORDINATES(8,1:3)=[2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP]
+                                                  T_COORDINATES(9,1:3)=[1.0_DP/3.0_DP,1.0_DP,1.0_DP]
+                                                  T_COORDINATES(10,1:3)=[2.0_DP/3.0_DP,1.0_DP,1.0_DP]
+                                                  T_COORDINATES(11,1:3)=[1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP]
+                                                  T_COORDINATES(12,1:3)=[1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP]
+                                                  T_COORDINATES(13,1:3)=[1.0_DP,1.0_DP,1.0_DP/3.0_DP]
+                                                  T_COORDINATES(14,1:3)=[1.0_DP,1.0_DP,2.0_DP/3.0_DP]
+                                                  T_COORDINATES(15,1:3)=[1.0_DP,1.0_DP/3.0_DP,1.0_DP]
+                                                  T_COORDINATES(16,1:3)=[1.0_DP,2.0_DP/3.0_DP,1.0_DP]
+                                                  T_COORDINATES(17,1:3)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP]
+                                                  T_COORDINATES(18,1:3)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP]
+                                                  T_COORDINATES(19,1:3)=[2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP]
+                                                  T_COORDINATES(20,1:3)=[1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP]
                                                 ENDIF
                                                 DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
                                                   IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
@@ -2298,20 +2292,20 @@ CONTAINS
                                                   ENDIF
                                                 ENDDO !deriv_idx
                                               ELSE
-                                                CALL FLAG_ERROR("Boundary conditions U variable is not associated",ERR,ERROR,*999)
+                                                CALL FlagError("Boundary conditions U variable is not associated",ERR,ERROR,*999)
                                               ENDIF
                                             ENDDO !node_idx
                                            ELSE
-                                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                                            CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                                           ENDIF
                                         ELSE
-                                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                                          CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                                         ENDIF
                                       ELSE
-                                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                                        CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                                       ENDIF
                                     ELSE
-                                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                                      CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                                     ENDIF
                                   ENDDO !component_idx
                                   CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
@@ -2323,30 +2317,30 @@ CONTAINS
                                   CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
                                    & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                                 ELSE
-                                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
                                 ENDIF
                                ENDDO !variable_idx
                                CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,&
                                 & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                             ELSE
-                              CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ENDIF
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                 END IF                
               ELSE
-                CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
               END IF  
               CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                 & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -2419,19 +2413,19 @@ CONTAINS
                             ENDIF
                           ENDDO !variable_idx
                         ELSE
-                          CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Boundary condition variable is not associated.",ERR,ERROR,*999)
                         END IF
                       ELSE
-                        CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Boundary conditions are not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                   END IF                
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF  
                 CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -2497,19 +2491,19 @@ CONTAINS
                             & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
 !\todo: This part should be read in out of a file eventually
                         ELSE
-                          CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Boundary condition variable is not associated.",ERR,ERROR,*999)
                         END IF
                       ELSE
-                        CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Boundary conditions are not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                   END IF                
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF  
                 CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -2582,19 +2576,19 @@ CONTAINS
                           CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
                             & FIELD_U_VARIABLE_TYPE,FIELD_BOUNDARY_SET_TYPE,BOUNDARY_VALUES,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Boundary condition variable is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Boundary condition variable is not associated.",ERR,ERROR,*999)
                         END IF
                       ELSE
-                        CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Boundary conditions are not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                   END IF                
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF  
                 CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -2605,21 +2599,20 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
-    CALL EXITS("STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
+    EXITS("STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
     RETURN
-999 CALL ERRORS("STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR)
-    CALL EXITS("STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS")
+999 ERRORSEXITS("STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_PRE_SOLVE_UPDATE_BOUNDARY_CONDITIONS
 
@@ -2652,7 +2645,7 @@ CONTAINS
     INTEGER(INTG) :: I,NUMBER_OF_DIMENSIONS_LAPLACE,NUMBER_OF_DIMENSIONS_ALE_STOKES,GEOMETRIC_MESH_COMPONENT
     INTEGER(INTG) :: INPUT_TYPE,INPUT_OPTION,component_idx,deriv_idx,local_ny,node_idx,variable_idx,variable_type
 
-    CALL ENTERS("STOKES_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR,*999)
+    ENTERS("STOKES_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
@@ -2678,7 +2671,7 @@ CONTAINS
                     IF(ASSOCIATED(EQUATIONS_SET_ALE_STOKES)) THEN
                       INDEPENDENT_FIELD_ALE_STOKES=>EQUATIONS_SET_ALE_STOKES%INDEPENDENT%INDEPENDENT_FIELD
                     ELSE
-                      CALL FLAG_ERROR("ALE Stokes equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("ALE Stokes equations set is not associated.",ERR,ERROR,*999)
                     END IF
                     !Get the data
                     CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
@@ -2697,10 +2690,10 @@ CONTAINS
                     CALL FIELD_PARAMETER_SET_UPDATE_FINISH(EQUATIONS_SET_ALE_STOKES%INDEPENDENT%INDEPENDENT_FIELD, & 
                       & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("ALE Stokes solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("ALE Stokes solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("ALE Stokes solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("ALE Stokes solver equations are not associated.",ERR,ERROR,*999)
                 END IF
                  !Use calculated values to update mesh
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
@@ -2739,10 +2732,10 @@ CONTAINS
                       ENDIF
                     ENDDO !variable_idx
                   ELSE
-                    CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                 END IF
                 CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
                   & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -2754,7 +2747,7 @@ CONTAINS
                 CALL FIELD_PARAMETER_SETS_COPY(INDEPENDENT_FIELD_ALE_STOKES,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_MESH_DISPLACEMENT_SET_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,ALPHA,ERR,ERROR,*999)
               ELSE  
-                CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
+                CALL FlagError("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
               END IF
             CASE(PROBLEM_ALE_STOKES_SUBTYPE)
               !Update mesh within the dynamic solver
@@ -2770,15 +2763,15 @@ CONTAINS
                       IF(ASSOCIATED(EQUATIONS_SET_LAPLACE)) THEN
                         DEPENDENT_FIELD_LAPLACE=>EQUATIONS_SET_LAPLACE%DEPENDENT%DEPENDENT_FIELD
                       ELSE
-                        CALL FLAG_ERROR("Laplace equations set is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Laplace equations set is not associated.",ERR,ERROR,*999)
                       END IF
                       CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_LAPLACE%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                         & NUMBER_OF_DIMENSIONS_LAPLACE,ERR,ERROR,*999)
                     ELSE
-                      CALL FLAG_ERROR("Laplace solver mapping is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Laplace solver mapping is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("Laplace solver equations are not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Laplace solver equations are not associated.",ERR,ERROR,*999)
                   END IF
                   !Get the independent field for the ALE Stokes problem
                   CALL SOLVERS_SOLVER_GET(SOLVER%SOLVERS,2,SOLVER_ALE_STOKES,ERR,ERROR,*999)
@@ -2790,25 +2783,25 @@ CONTAINS
                       IF(ASSOCIATED(EQUATIONS_SET_ALE_STOKES)) THEN
                         INDEPENDENT_FIELD_ALE_STOKES=>EQUATIONS_SET_ALE_STOKES%INDEPENDENT%INDEPENDENT_FIELD
                       ELSE
-                        CALL FLAG_ERROR("ALE Stokes equations set is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("ALE Stokes equations set is not associated.",ERR,ERROR,*999)
                       END IF
                       CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
                         & FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS_ALE_STOKES,ERR,ERROR,*999)
                     ELSE
-                      CALL FLAG_ERROR("ALE Stokes solver mapping is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("ALE Stokes solver mapping is not associated.",ERR,ERROR,*999)
                     END IF
                   ELSE
-                    CALL FLAG_ERROR("ALE Stokes solver equations are not associated.",ERR,ERROR,*999)
+                    CALL FlagError("ALE Stokes solver equations are not associated.",ERR,ERROR,*999)
                   END IF
                   !Copy result from Laplace mesh movement to Stokes' independent field
                   IF(NUMBER_OF_DIMENSIONS_ALE_STOKES==NUMBER_OF_DIMENSIONS_LAPLACE) THEN
                     DO I=1,NUMBER_OF_DIMENSIONS_ALE_STOKES
-                      CALL FIELD_PARAMETERS_TO_FIELD_PARAMETERS_COMPONENT_COPY(DEPENDENT_FIELD_LAPLACE, & 
+                      CALL Field_ParametersToFieldParametersCopy(DEPENDENT_FIELD_LAPLACE, & 
                         & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,INDEPENDENT_FIELD_ALE_STOKES, & 
                         & FIELD_U_VARIABLE_TYPE,FIELD_MESH_DISPLACEMENT_SET_TYPE,I,ERR,ERROR,*999)
                     END DO
                   ELSE
-                    CALL FLAG_ERROR("Dimension of Laplace and ALE Stokes equations set is not consistent.",ERR,ERROR,*999)
+                    CALL FlagError("Dimension of Laplace and ALE Stokes equations set is not consistent.",ERR,ERROR,*999)
                   END IF
                   !Use calculated values to update mesh
                   CALL FIELD_COMPONENT_MESH_COMPONENT_GET(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD, & 
@@ -2848,12 +2841,12 @@ CONTAINS
                         ENDIF
                       ENDDO !variable_idx
                     ELSE
-                      CALL FLAG_ERROR("Equations mapping is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations mapping is not associated.",ERR,ERROR,*999)
                     ENDIF
                     CALL FIELD_PARAMETER_SET_DATA_RESTORE(INDEPENDENT_FIELD_ALE_STOKES,FIELD_U_VARIABLE_TYPE, & 
                       & FIELD_MESH_DISPLACEMENT_SET_TYPE,MESH_DISPLACEMENT_VALUES,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                   END IF
                   CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET_ALE_STOKES%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, & 
                     & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -2865,29 +2858,28 @@ CONTAINS
                   CALL FIELD_PARAMETER_SETS_COPY(INDEPENDENT_FIELD_ALE_STOKES,FIELD_U_VARIABLE_TYPE, & 
                     & FIELD_MESH_DISPLACEMENT_SET_TYPE,FIELD_MESH_VELOCITY_SET_TYPE,ALPHA,ERR,ERROR,*999)
                 ELSE  
-                  CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
+                  CALL FlagError("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
                 END IF
               ELSE  
-                CALL FLAG_ERROR("Mesh update is not defined for non-dynamic problems.",ERR,ERROR,*999)
+                CALL FlagError("Mesh update is not defined for non-dynamic problems.",ERR,ERROR,*999)
               END IF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
-    CALL EXITS("STOKES_PRE_SOLVE_ALE_UPDATE_MESH")
+    EXITS("STOKES_PRE_SOLVE_ALE_UPDATE_MESH")
     RETURN
-999 CALL ERRORS("STOKES_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR)
-    CALL EXITS("STOKES_PRE_SOLVE_ALE_UPDATE_MESH")
+999 ERRORSEXITS("STOKES_PRE_SOLVE_ALE_UPDATE_MESH",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_PRE_SOLVE_ALE_UPDATE_MESH
 
@@ -2918,7 +2910,7 @@ CONTAINS
     REAL(DP), POINTER :: MESH_STIFF_VALUES(:)
 
 
-    CALL ENTERS("STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS",ERR,ERROR,*999)
+    ENTERS("STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
@@ -2975,43 +2967,42 @@ CONTAINS
                             ENDIF
                           ENDDO !variable_idx
                         ELSE
-                          CALL FLAG_ERROR("Independent field is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Independent field is not associated.",ERR,ERROR,*999)
                         END IF
                       ELSE
-                        CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                       END IF
                     ELSE
-                      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                     ENDIF
                     CALL FIELD_PARAMETER_SET_DATA_RESTORE(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                       & FIELD_VALUES_SET_TYPE,MESH_STIFF_VALUES,ERR,ERROR,*999)                     
                   ELSE
-                    CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
                 END IF
               ELSE IF(SOLVER%SOLVE_TYPE==SOLVER_DYNAMIC_TYPE) THEN
-                CALL FLAG_ERROR("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
+                CALL FlagError("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
               END IF
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
-    CALL EXITS("STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS")
+    EXITS("STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS")
     RETURN
-999 CALL ERRORS("STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS",ERR,ERROR)
-    CALL EXITS("STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS")
+999 ERRORSEXITS("STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_PRE_SOLVE_ALE_UPDATE_PARAMETERS
 
@@ -3042,7 +3033,7 @@ CONTAINS
     CHARACTER(14) :: OUTPUT_FILE
 
 
-    CALL ENTERS("STOKES_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
+    ENTERS("STOKES_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
 
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVER_MAPPING)
@@ -3138,21 +3129,20 @@ CONTAINS
             CASE DEFAULT
               LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
                 & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
-    CALL EXITS("STOKES_POST_SOLVE_OUTPUT_DATA")
+    EXITS("STOKES_POST_SOLVE_OUTPUT_DATA")
     RETURN
-999 CALL ERRORS("STOKES_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
-    CALL EXITS("STOKES_POST_SOLVE_OUTPUT_DATA")
+999 ERRORSEXITS("STOKES_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_POST_SOLVE_OUTPUT_DATA
 
@@ -3161,7 +3151,7 @@ CONTAINS
   !
 
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
-  SUBROUTINE STOKES_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+  SUBROUTINE Stokes_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -3187,7 +3177,7 @@ CONTAINS
 ! ! !     !Temp variables
 ! ! !     INTEGER(INTG) :: number_of_element_nodes,temp_local_ny,temp_node_number,velocity_DOF_check,temp_local_node_number    
 
-    CALL ENTERS("STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
+    ENTERS("Stokes_BoundaryConditionsAnalyticCalculate",ERR,ERROR,*999)
 !\todo: Introduce user call to set parameters
     BOUND_COUNT=0
 ! ! ! !     L=10.0_DP
@@ -3288,66 +3278,66 @@ CONTAINS
                               ELSE
   !\todo: Use boundary flag
                                 IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==3) THEN
-                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
+                                  T_COORDINATES(1,1:2)=[0.0_DP,1.0_DP]
+                                  T_COORDINATES(2,1:2)=[1.0_DP,0.0_DP]
+                                  T_COORDINATES(3,1:2)=[1.0_DP,1.0_DP]
                                 ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==6) THEN
-                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                  T_COORDINATES(4,1:2)=(/0.5_DP,0.5_DP/)
-                                  T_COORDINATES(5,1:2)=(/1.0_DP,0.5_DP/)
-                                  T_COORDINATES(6,1:2)=(/0.5_DP,1.0_DP/)
+                                  T_COORDINATES(1,1:2)=[0.0_DP,1.0_DP]
+                                  T_COORDINATES(2,1:2)=[1.0_DP,0.0_DP]
+                                  T_COORDINATES(3,1:2)=[1.0_DP,1.0_DP]
+                                  T_COORDINATES(4,1:2)=[0.5_DP,0.5_DP]
+                                  T_COORDINATES(5,1:2)=[1.0_DP,0.5_DP]
+                                  T_COORDINATES(6,1:2)=[0.5_DP,1.0_DP]
                                 ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. &
                                   & NUMBER_OF_DIMENSIONS==2) THEN
-                                  T_COORDINATES(1,1:2)=(/0.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:2)=(/1.0_DP,0.0_DP/)
-                                  T_COORDINATES(3,1:2)=(/1.0_DP,1.0_DP/)
-                                  T_COORDINATES(4,1:2)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(5,1:2)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                  T_COORDINATES(6,1:2)=(/1.0_DP,1.0_DP/3.0_DP/)
-                                  T_COORDINATES(7,1:2)=(/1.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(8,1:2)=(/2.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(9,1:2)=(/1.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(10,1:2)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(1,1:2)=[0.0_DP,1.0_DP]
+                                  T_COORDINATES(2,1:2)=[1.0_DP,0.0_DP]
+                                  T_COORDINATES(3,1:2)=[1.0_DP,1.0_DP]
+                                  T_COORDINATES(4,1:2)=[1.0_DP/3.0_DP,2.0_DP/3.0_DP]
+                                  T_COORDINATES(5,1:2)=[2.0_DP/3.0_DP,1.0_DP/3.0_DP]
+                                  T_COORDINATES(6,1:2)=[1.0_DP,1.0_DP/3.0_DP]
+                                  T_COORDINATES(7,1:2)=[1.0_DP,2.0_DP/3.0_DP]
+                                  T_COORDINATES(8,1:2)=[2.0_DP/3.0_DP,1.0_DP]
+                                  T_COORDINATES(9,1:2)=[1.0_DP/3.0_DP,1.0_DP]
+                                  T_COORDINATES(10,1:2)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP]
                                 ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==4) THEN
-                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
+                                  T_COORDINATES(1,1:3)=[0.0_DP,1.0_DP,1.0_DP]
+                                  T_COORDINATES(2,1:3)=[1.0_DP,0.0_DP,1.0_DP]
+                                  T_COORDINATES(3,1:3)=[1.0_DP,1.0_DP,0.0_DP]
+                                  T_COORDINATES(4,1:3)=[1.0_DP,1.0_DP,1.0_DP]
                                 ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==10.AND. &
                                   & NUMBER_OF_DIMENSIONS==3) THEN
-                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(5,1:3)=(/0.5_DP,0.5_DP,1.0_DP/)
-                                  T_COORDINATES(6,1:3)=(/0.5_DP,1.0_DP,0.5_DP/)
-                                  T_COORDINATES(7,1:3)=(/0.5_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(8,1:3)=(/1.0_DP,0.5_DP,0.5_DP/)
-                                  T_COORDINATES(9,1:3)=(/1.0_DP,1.0_DP,0.5_DP/)
-                                  T_COORDINATES(10,1:3)=(/1.0_DP,0.5_DP,1.0_DP/)
+                                  T_COORDINATES(1,1:3)=[0.0_DP,1.0_DP,1.0_DP]
+                                  T_COORDINATES(2,1:3)=[1.0_DP,0.0_DP,1.0_DP]
+                                  T_COORDINATES(3,1:3)=[1.0_DP,1.0_DP,0.0_DP]
+                                  T_COORDINATES(4,1:3)=[1.0_DP,1.0_DP,1.0_DP]
+                                  T_COORDINATES(5,1:3)=[0.5_DP,0.5_DP,1.0_DP]
+                                  T_COORDINATES(6,1:3)=[0.5_DP,1.0_DP,0.5_DP]
+                                  T_COORDINATES(7,1:3)=[0.5_DP,1.0_DP,1.0_DP]
+                                  T_COORDINATES(8,1:3)=[1.0_DP,0.5_DP,0.5_DP]
+                                  T_COORDINATES(9,1:3)=[1.0_DP,1.0_DP,0.5_DP]
+                                  T_COORDINATES(10,1:3)=[1.0_DP,0.5_DP,1.0_DP]
                                 ELSE IF(DOMAIN%topology%elements%maximum_number_of_element_parameters==20) THEN
-                                  T_COORDINATES(1,1:3)=(/0.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(2,1:3)=(/1.0_DP,0.0_DP,1.0_DP/)
-                                  T_COORDINATES(3,1:3)=(/1.0_DP,1.0_DP,0.0_DP/)
-                                  T_COORDINATES(4,1:3)=(/1.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(5,1:3)=(/1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(6,1:3)=(/2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(7,1:3)=(/1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(8,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                  T_COORDINATES(9,1:3)=(/1.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(10,1:3)=(/2.0_DP/3.0_DP,1.0_DP,1.0_DP/)
-                                  T_COORDINATES(11,1:3)=(/1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(12,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP/)
-                                  T_COORDINATES(13,1:3)=(/1.0_DP,1.0_DP,1.0_DP/3.0_DP/)
-                                  T_COORDINATES(14,1:3)=(/1.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(15,1:3)=(/1.0_DP,1.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(16,1:3)=(/1.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(17,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(18,1:3)=(/2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP/)
-                                  T_COORDINATES(19,1:3)=(/2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP/)
-                                  T_COORDINATES(20,1:3)=(/1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP/)
+                                  T_COORDINATES(1,1:3)=[0.0_DP,1.0_DP,1.0_DP]
+                                  T_COORDINATES(2,1:3)=[1.0_DP,0.0_DP,1.0_DP]
+                                  T_COORDINATES(3,1:3)=[1.0_DP,1.0_DP,0.0_DP]
+                                  T_COORDINATES(4,1:3)=[1.0_DP,1.0_DP,1.0_DP]
+                                  T_COORDINATES(5,1:3)=[1.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP]
+                                  T_COORDINATES(6,1:3)=[2.0_DP/3.0_DP,1.0_DP/3.0_DP,1.0_DP]
+                                  T_COORDINATES(7,1:3)=[1.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP]
+                                  T_COORDINATES(8,1:3)=[2.0_DP/3.0_DP,1.0_DP,1.0_DP/3.0_DP]
+                                  T_COORDINATES(9,1:3)=[1.0_DP/3.0_DP,1.0_DP,1.0_DP]
+                                  T_COORDINATES(10,1:3)=[2.0_DP/3.0_DP,1.0_DP,1.0_DP]
+                                  T_COORDINATES(11,1:3)=[1.0_DP,1.0_DP/3.0_DP,2.0_DP/3.0_DP]
+                                  T_COORDINATES(12,1:3)=[1.0_DP,2.0_DP/3.0_DP,1.0_DP/3.0_DP]
+                                  T_COORDINATES(13,1:3)=[1.0_DP,1.0_DP,1.0_DP/3.0_DP]
+                                  T_COORDINATES(14,1:3)=[1.0_DP,1.0_DP,2.0_DP/3.0_DP]
+                                  T_COORDINATES(15,1:3)=[1.0_DP,1.0_DP/3.0_DP,1.0_DP]
+                                  T_COORDINATES(16,1:3)=[1.0_DP,2.0_DP/3.0_DP,1.0_DP]
+                                  T_COORDINATES(17,1:3)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP]
+                                  T_COORDINATES(18,1:3)=[2.0_DP/3.0_DP,2.0_DP/3.0_DP,1.0_DP]
+                                  T_COORDINATES(19,1:3)=[2.0_DP/3.0_DP,1.0_DP,2.0_DP/3.0_DP]
+                                  T_COORDINATES(20,1:3)=[1.0_DP,2.0_DP/3.0_DP,2.0_DP/3.0_DP]
                                 ENDIF
                                 DO K=1,DOMAIN%topology%elements%maximum_number_of_element_parameters
                                   IF(DOMAIN%topology%elements%elements(element_idx)%element_nodes(K)==node_idx) EXIT
@@ -3567,16 +3557,16 @@ CONTAINS
                               ENDDO !deriv_idx
                             ENDDO !node_idx
                           ELSE
-                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                      CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                     ENDIF
   WRITE(*,*)'NUMBER OF BOUNDARIES SET ',BOUND_COUNT
                   ENDDO !component_idx
@@ -3589,7 +3579,7 @@ CONTAINS
                   CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
                     & ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !variable_idx
               CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
@@ -3597,27 +3587,26 @@ CONTAINS
               CALL FIELD_INTERPOLATED_POINTS_FINALISE(INTERPOLATED_POINT,ERR,ERROR,*999)
               CALL FIELD_INTERPOLATION_PARAMETERS_FINALISE(INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Boundary conditions is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
           ENDIF            
         ELSE
-          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("STOKES_EQUATION_ANALYTIC_CALCULATE")
+    EXITS("Stokes_BoundaryConditionsAnalyticCalculate")
     RETURN
-999 CALL ERRORS("STOKES_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR)
-    CALL EXITS("STOKES_EQUATION_ANALYTIC_CALCULATE")
+999 ERRORSEXITS("Stokes_BoundaryConditionsAnalyticCalculate",ERR,ERROR)
     RETURN 1    
-  END SUBROUTINE STOKES_EQUATION_ANALYTIC_CALCULATE
+  END SUBROUTINE Stokes_BoundaryConditionsAnalyticCalculate
 
   !
   !================================================================================================================================
@@ -3641,7 +3630,7 @@ CONTAINS
     !TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
     REAL(DP) :: INTERNAL_TIME
 
-    CALL ENTERS("STOKES_EQUATION_ANALYTIC_FUNCTIONS",ERR,ERROR,*999)
+    ENTERS("STOKES_EQUATION_ANALYTIC_FUNCTIONS",ERR,ERROR,*999)
 
 !\todo: Introduce user-defined or default values instead for density and viscosity
     INTERNAL_TIME=CURRENT_TIME
@@ -3663,44 +3652,44 @@ CONTAINS
                      !calculate p
                      VALUE=2.0_DP*MU_PARAM/10.0_DP**2*X(1)
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
                    VALUE= 0.0_DP
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE DEFAULT
                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
                  & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT      
          ELSE 
            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
          ENDIF
        CASE(EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_2)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
@@ -3719,19 +3708,19 @@ CONTAINS
                      !calculate p
                      VALUE= 2.0_DP*MU_PARAM/10.0_DP*EXP((X(1)-X(2))/10.0_DP)
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -3746,28 +3735,28 @@ CONTAINS
                      !calculate p
                      VALUE= 0.0_DP
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE DEFAULT
                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
                  & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT      
          ELSE 
            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
          ENDIF
        CASE(EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_3)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
@@ -3786,19 +3775,19 @@ CONTAINS
                      !calculate p
                      VALUE=4.0_DP*MU_PARAM*PI/10.0_DP*SIN(2.0_DP*PI*X(2)/10.0_DP)*COS(2.0_DP*PI*X(1)/10.0_DP)
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -3813,33 +3802,33 @@ CONTAINS
                      !calculate p
                      VALUE=0.0_DP
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE DEFAULT
                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
                  & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT      
          ELSE 
            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
          ENDIF
        CASE(EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_4)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
            !Reduced Taylor-Green solution for Stokes
-           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CALL FlagError("Not implemented.",ERR,ERROR,*999)
          ENDIF
        CASE(EQUATIONS_SET_STOKES_EQUATION_TWO_DIM_5)
          IF(NUMBER_OF_DIMENSIONS==2.AND.NUMBER_OF_COMPONENTS==3) THEN
@@ -3858,19 +3847,19 @@ CONTAINS
                      !calculate p
                      VALUE=2.0_DP*X(2)*MU_PARAM*exp(-(2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME))*X(1)
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -3885,28 +3874,28 @@ CONTAINS
                      !calculate p
                      VALUE=0.0_DP
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE DEFAULT
                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
                  & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT      
          ELSE 
            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
          ENDIF
        CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_1)
          IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
@@ -3928,44 +3917,44 @@ CONTAINS
                      !calculate p
                      VALUE=4.0_DP*MU_PARAM/10.0_DP**2*X(1)
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT   
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
                  CASE(NO_GLOBAL_DERIV)
                    VALUE=0.0_DP
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE DEFAULT
                 LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT      
          ELSE 
            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
          ENDIF
        CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_2)
          IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
@@ -3987,19 +3976,19 @@ CONTAINS
                      !calculate p
                      VALUE=2.0_DP*MU_PARAM/10.0_DP*(EXP((X(1)-X(2))/10.0_DP)-EXP((X(3)-X(1))/10.0_DP))
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT   
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -4017,28 +4006,28 @@ CONTAINS
                      !calculate p
                      VALUE=0.0_DP
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE DEFAULT
                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
                  & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT      
          ELSE 
            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
          ENDIF
        CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_3)
          IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
@@ -4061,19 +4050,19 @@ CONTAINS
                      VALUE=6.0_DP*MU_PARAM*PI/10.0_DP*sin(2.0_DP*PI*X(2)/10.0_DP)*sin(2.0_DP*PI*X(3)/10.0_DP)* & 
                        & cos(2.0_DP*PI*X(1)/10.0_DP)
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT   
               CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                 SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -4092,33 +4081,33 @@ CONTAINS
                       !calculate p
                       VALUE=0.0_DP
                     ELSE
-                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                     ENDIF
                   CASE(GLOBAL_DERIV_S1)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(GLOBAL_DERIV_S2)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
                   CASE(GLOBAL_DERIV_S1_S2)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                       & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                       & " is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE DEFAULT
                 LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT      
           ELSE 
             LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
        CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_4)
          IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
            !Reduced Taylor-Green solution for Stokes
-           CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+           CALL FlagError("Not implemented.",ERR,ERROR,*999)
          ENDIF
        CASE(EQUATIONS_SET_STOKES_EQUATION_THREE_DIM_5)
          IF(NUMBER_OF_DIMENSIONS==3.AND.NUMBER_OF_COMPONENTS==4) THEN
@@ -4140,19 +4129,19 @@ CONTAINS
                      !calculate p
                      VALUE=2.0_DP*X(2)*MU_PARAM*exp(-(2.0_DP*MU_PARAM/RHO_PARAM*CURRENT_TIME))*X(1)
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                SELECT CASE(GLOBAL_DERIV_INDEX)
@@ -4170,39 +4159,38 @@ CONTAINS
                      !calculate p
                      VALUE=0.0_DP
                    ELSE
-                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                    ENDIF
                  CASE(GLOBAL_DERIV_S1)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE(GLOBAL_DERIV_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                                    
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)                                    
                  CASE(GLOBAL_DERIV_S1_S2)
-                   CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                   CALL FlagError("Not implemented.",ERR,ERROR,*999)
                  CASE DEFAULT
                    LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                      & GLOBAL_DERIV_INDEX,"*",ERR,ERROR))// &
                      & " is invalid."
-                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                END SELECT
              CASE DEFAULT
                LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(variable_type,"*",ERR,ERROR))// &
                  & " is invalid."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
            END SELECT      
          ELSE 
            LOCAL_ERROR="The number of components does not correspond to the number of dimensions."
-           CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
          ENDIF
         CASE DEFAULT
           LOCAL_ERROR="The analytic function type of "// &
             & TRIM(NUMBER_TO_VSTRING(ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
             & " is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
-    CALL EXITS("STOKES_EQUATION_ANALYTIC_FUNCTIONS")
+    EXITS("STOKES_EQUATION_ANALYTIC_FUNCTIONS")
     RETURN
-999 CALL ERRORS("STOKES_EQUATION_ANALYTIC_FUNCTIONS",ERR,ERROR)
-    CALL EXITS("STOKES_EQUATION_ANALYTIC_FUNCTIONS")
+999 ERRORSEXITS("STOKES_EQUATION_ANALYTIC_FUNCTIONS",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_EQUATION_ANALYTIC_FUNCTIONS
   !

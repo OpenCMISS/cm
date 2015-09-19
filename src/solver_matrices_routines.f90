@@ -54,6 +54,8 @@ MODULE SOLVER_MATRICES_ROUTINES
   USE STRINGS
   USE TYPES
 
+#include "macros.h"  
+
   IMPLICIT NONE
 
   PRIVATE
@@ -116,11 +118,11 @@ CONTAINS
     NULLIFY(COLUMN_INDICES)
     NULLIFY(ROW_INDICES)
     
-    CALL ENTERS("SOLVER_MATRICES_CREATE_FINISH",ERR,ERROR,*998)
+    ENTERS("SOLVER_MATRICES_CREATE_FINISH",ERR,ERROR,*998)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
       IF(SOLVER_MATRICES%SOLVER_MATRICES_FINISHED) THEN
-        CALL FLAG_ERROR("Solver matrices have already been finished",ERR,ERROR,*998)
+        CALL FlagError("Solver matrices have already been finished",ERR,ERROR,*998)
       ELSE
         SOLVER_EQUATIONS=>SOLVER_MATRICES%SOLVER_EQUATIONS
         IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -161,10 +163,10 @@ CONTAINS
                     CALL DISTRIBUTED_VECTOR_DATA_TYPE_SET(SOLVER_MATRIX%SOLVER_VECTOR,MATRIX_VECTOR_DP_TYPE,ERR,ERROR,*999)
                     CALL DISTRIBUTED_VECTOR_CREATE_FINISH(SOLVER_MATRIX%SOLVER_VECTOR,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Column domain mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Column domain mapping is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !matrix_idx
               IF(SOLVER_EQUATIONS%LINEARITY==PROBLEM_SOLVER_NONLINEAR) THEN
@@ -184,26 +186,25 @@ CONTAINS
               !Finish up
               SOLVER_MATRICES%SOLVER_MATRICES_FINISHED=.TRUE.
             ELSE
-              CALL FLAG_ERROR("Row domain mapping is not associated.",ERR,ERROR,*998)
+              CALL FlagError("Row domain mapping is not associated.",ERR,ERROR,*998)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver equations solver mapping is not associated.",ERR,ERROR,*998)
+            CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*998)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver matrices solver equations is not associated.",ERR,ERROR,*998)
+          CALL FlagError("Solver matrices solver equations is not associated.",ERR,ERROR,*998)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver matrices is not associated.",ERR,ERROR,*998)
     ENDIF
         
-    CALL EXITS("SOLVER_MATRICES_CREATE_FINISH")
+    EXITS("SOLVER_MATRICES_CREATE_FINISH")
     RETURN
 999 IF(ASSOCIATED(ROW_INDICES)) DEALLOCATE(ROW_INDICES)
     IF(ASSOCIATED(COLUMN_INDICES)) DEALLOCATE(COLUMN_INDICES)
     CALL SOLVER_MATRICES_FINALISE(SOLVER_MATRICES,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("SOLVER_MATRICES_CREATE_FINISH",ERR,ERROR)    
-    CALL EXITS("SOLVER_MATRICES_CREATE_FINISH")
+998 ERRORSEXITS("SOLVER_MATRICES_CREATE_FINISH",ERR,ERROR)    
     RETURN 1
     
   END SUBROUTINE SOLVER_MATRICES_CREATE_FINISH
@@ -224,29 +225,28 @@ CONTAINS
     INTEGER(INTG) :: DUMMY_ERR
     TYPE(VARYING_STRING) :: DUMMY_ERROR
     
-    CALL ENTERS("SOLVER_MATRICES_CREATE_START",ERR,ERROR,*998)
+    ENTERS("SOLVER_MATRICES_CREATE_START",ERR,ERROR,*998)
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(SOLVER_EQUATIONS%SOLVER_EQUATIONS_FINISHED) THEN
         IF(ASSOCIATED(SOLVER_MATRICES)) THEN
-          CALL FLAG_ERROR("Solver matrices is already associated",ERR,ERROR,*998)
+          CALL FlagError("Solver matrices is already associated",ERR,ERROR,*998)
         ELSE
           NULLIFY(SOLVER_EQUATIONS%SOLVER_MATRICES)
           CALL SOLVER_MATRICES_INITIALISE(SOLVER_EQUATIONS,ERR,ERROR,*999)
           SOLVER_MATRICES=>SOLVER_EQUATIONS%SOLVER_MATRICES
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver equations are not finished",ERR,ERROR,*998)
+        CALL FlagError("Solver equations are not finished",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated",ERR,ERROR,*998)
+      CALL FlagError("Solver is not associated",ERR,ERROR,*998)
     ENDIF
         
-    CALL EXITS("SOLVER_MATRICES_CREATE_START")
+    EXITS("SOLVER_MATRICES_CREATE_START")
     RETURN
 999 CALL SOLVER_MATRICES_FINALISE(SOLVER_EQUATIONS%SOLVER_MATRICES,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("SOLVER_MATRICES_CREATE_START",ERR,ERROR)    
-    CALL EXITS("SOLVER_MATRICES_CREATE_START")
+998 ERRORSEXITS("SOLVER_MATRICES_CREATE_START",ERR,ERROR)    
     RETURN 1
    
   END SUBROUTINE SOLVER_MATRICES_CREATE_START
@@ -264,18 +264,17 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("SOLVER_MATRICES_DESTROY",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRICES_DESTROY",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
       CALL SOLVER_MATRICES_FINALISE(SOLVER_MATRICES,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Solver matrices is not associated",ERR,ERROR,*999)
+      CALL FlagError("Solver matrices is not associated",ERR,ERROR,*999)
     ENDIF
         
-    CALL EXITS("SOLVER_MATRICES_DESTROY")
+    EXITS("SOLVER_MATRICES_DESTROY")
     RETURN
-999 CALL ERRORS("SOLVER_MATRICES_DESTROY",ERR,ERROR)    
-    CALL EXITS("SOLVER_MATRICES_DESTROY")
+999 ERRORSEXITS("SOLVER_MATRICES_DESTROY",ERR,ERROR)    
     RETURN 1
    
   END SUBROUTINE SOLVER_MATRICES_DESTROY
@@ -294,7 +293,7 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: matrix_idx
 
-    CALL ENTERS("SOLVER_MATRICES_FINALISE",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRICES_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
       IF(ALLOCATED(SOLVER_MATRICES%MATRICES)) THEN
@@ -308,10 +307,9 @@ CONTAINS
       DEALLOCATE(SOLVER_MATRICES)
     ENDIF
         
-    CALL EXITS("SOLVER_MATRICES_FINALISE")
+    EXITS("SOLVER_MATRICES_FINALISE")
     RETURN
-999 CALL ERRORS("SOLVER_MATRICES_FINALISE",ERR,ERROR)    
-    CALL EXITS("SOLVER_MATRICES_FINALISE")
+999 ERRORSEXITS("SOLVER_MATRICES_FINALISE",ERR,ERROR)    
     RETURN 1
    
   END SUBROUTINE SOLVER_MATRICES_FINALISE
@@ -332,16 +330,16 @@ CONTAINS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(VARYING_STRING) :: DUMMY_ERROR
 
-    CALL ENTERS("SOLVER_MATRICES_INITIALISE",ERR,ERROR,*998)
+    ENTERS("SOLVER_MATRICES_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
       IF(ASSOCIATED(SOLVER_EQUATIONS%SOLVER_MATRICES)) THEN
-        CALL FLAG_ERROR("Solver matrices is already associated for this solver equations.",ERR,ERROR,*998)
+        CALL FlagError("Solver matrices is already associated for this solver equations.",ERR,ERROR,*998)
       ELSE
         SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
         IF(ASSOCIATED(SOLVER_MAPPING)) THEN
           ALLOCATE(SOLVER_EQUATIONS%SOLVER_MATRICES,STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver matrices.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate solver matrices.",ERR,ERROR,*999)
           SOLVER_EQUATIONS%SOLVER_MATRICES%SOLVER_EQUATIONS=>SOLVER_EQUATIONS
           SOLVER_EQUATIONS%SOLVER_MATRICES%SOLVER_MATRICES_FINISHED=.FALSE.
           SOLVER_EQUATIONS%SOLVER_MATRICES%SOLVER_MAPPING=>SOLVER_MAPPING
@@ -350,7 +348,7 @@ CONTAINS
           SOLVER_EQUATIONS%SOLVER_MATRICES%LIBRARY_TYPE=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
           SOLVER_EQUATIONS%SOLVER_MATRICES%NUMBER_OF_MATRICES=SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
           ALLOCATE(SOLVER_EQUATIONS%SOLVER_MATRICES%MATRICES(SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES),STAT=ERR)
-          IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver matrices matrices.",ERR,ERROR,*999)
+          IF(ERR/=0) CALL FlagError("Could not allocate solver matrices matrices.",ERR,ERROR,*999)
           DO matrix_idx=1,SOLVER_MAPPING%NUMBER_OF_SOLVER_MATRICES
             NULLIFY(SOLVER_EQUATIONS%SOLVER_MATRICES%MATRICES(matrix_idx)%PTR)
             CALL SOLVER_MATRIX_INITIALISE(SOLVER_EQUATIONS%SOLVER_MATRICES,matrix_idx,ERR,ERROR,*999)
@@ -394,18 +392,17 @@ CONTAINS
           SOLVER_EQUATIONS%SOLVER_MATRICES%UPDATE_RHS_VECTOR=.TRUE.
           NULLIFY(SOLVER_EQUATIONS%SOLVER_MATRICES%RHS_VECTOR)
         ELSE
-          CALL FLAG_ERROR("Solver equations solver mapping is not associated",ERR,ERROR,*999)
+          CALL FlagError("Solver equations solver mapping is not associated",ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver equations is not associated",ERR,ERROR,*998)
+      CALL FlagError("Solver equations is not associated",ERR,ERROR,*998)
     ENDIF
         
-    CALL EXITS("SOLVER_MATRICES_INITIALISE")
+    EXITS("SOLVER_MATRICES_INITIALISE")
     RETURN
 999 CALL SOLVER_MATRICES_FINALISE(SOLVER_EQUATIONS%SOLVER_MATRICES,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("SOLVER_MATRICES_INITIALISE",ERR,ERROR)    
-    CALL EXITS("SOLVER_MATRICES_INITIALISE")
+998 ERRORSEXITS("SOLVER_MATRICES_INITIALISE",ERR,ERROR)    
     RETURN 1
    
   END SUBROUTINE SOLVER_MATRICES_INITIALISE
@@ -424,22 +421,21 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
 
-    CALL ENTERS("SOLVER_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
       IF(SOLVER_MATRICES%SOLVER_MATRICES_FINISHED) THEN
         LIBRARY_TYPE=SOLVER_MATRICES%LIBRARY_TYPE
       ELSE
-        CALL FLAG_ERROR("Solver matrices has not finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver matrices has not finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("SOLVER_MATRICES_LIBRARY_TYPE_GET")
+    EXITS("SOLVER_MATRICES_LIBRARY_TYPE_GET")
     RETURN
-999 CALL ERRORS("SOLVER_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR)
-    CALL EXITS("SOLVER_MATRICES_LIBRARY_TYPE_GET")
+999 ERRORSEXITS("SOLVER_MATRICES_LIBRARY_TYPE_GET",ERR,ERROR)
     RETURN
   END SUBROUTINE SOLVER_MATRICES_LIBRARY_TYPE_GET
   
@@ -459,11 +455,11 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("SOLVER_MATRICES_LIBRARY_TYPE_SET",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRICES_LIBRARY_TYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
       IF(SOLVER_MATRICES%SOLVER_MATRICES_FINISHED) THEN
-        CALL FLAG_ERROR("Solver matrices has been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver matrices has been finished.",ERR,ERROR,*999)
       ELSE
         SELECT CASE(LIBRARY_TYPE)
         CASE(DISTRIBUTED_MATRIX_VECTOR_CMISS_TYPE)
@@ -472,17 +468,16 @@ CONTAINS
           SOLVER_MATRICES%LIBRARY_TYPE=DISTRIBUTED_MATRIX_VECTOR_PETSC_TYPE
         CASE DEFAULT
           LOCAL_ERROR="The library type of "// TRIM(NUMBER_TO_VSTRING(LIBRARY_TYPE,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("SOLVER_MATRICES_LIBRARY_TYPE_SET")
+    EXITS("SOLVER_MATRICES_LIBRARY_TYPE_SET")
     RETURN
-999 CALL ERRORS("SOLVER_MATRICES_LIBRARY_TYPE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_MATRICES_LIBRARY_TYPE_SET")
+999 ERRORSEXITS("SOLVER_MATRICES_LIBRARY_TYPE_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE SOLVER_MATRICES_LIBRARY_TYPE_SET
 
@@ -503,7 +498,7 @@ CONTAINS
     INTEGER(INTG) :: matrix_idx
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     
-    CALL ENTERS("SOLVER_MATRICES_OUTPUT",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRICES_OUTPUT",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
       IF(SOLVER_MATRICES%SOLVER_MATRICES_FINISHED) THEN
@@ -521,7 +516,7 @@ CONTAINS
               CALL WRITE_STRING_VALUE(ID,"Solver matrix : ",matrix_idx,ERR,ERROR,*999)
               CALL DISTRIBUTED_MATRIX_OUTPUT(ID,SOLVER_MATRIX%MATRIX,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDDO !matrix_idx
         ENDIF
@@ -546,16 +541,15 @@ CONTAINS
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver matrices have not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver matrices have not been finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("SOLVER_MATRICES_OUTPUT")
+    EXITS("SOLVER_MATRICES_OUTPUT")
     RETURN
-999 CALL ERRORS("SOLVER_MATRICES_OUTPUT",ERR,ERROR)
-    CALL EXITS("SOLVER_MATRICES_OUTPUT")
+999 ERRORSEXITS("SOLVER_MATRICES_OUTPUT",ERR,ERROR)
     RETURN 1
   END SUBROUTINE SOLVER_MATRICES_OUTPUT
   
@@ -576,7 +570,7 @@ CONTAINS
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("SOLVER_MATRICES_STORAGE_TYPE_GET",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRICES_STORAGE_TYPE_GET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
       IF(SOLVER_MATRICES%SOLVER_MATRICES_FINISHED) THEN
@@ -586,26 +580,25 @@ CONTAINS
             IF(ASSOCIATED(SOLVER_MATRIX)) THEN
               STORAGE_TYPE(matrix_idx)=SOLVER_MATRIX%STORAGE_TYPE
             ELSE
-              CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDDO !matrix_idx
         ELSE
           LOCAL_ERROR="The size of STORAGE_TYPE is too small. The supplied size is "// &
             & TRIM(NUMBER_TO_VSTRING(SIZE(STORAGE_TYPE,1),"*",ERR,ERROR))//" and it needs to be >= "// &
             & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))//"."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver matrices have not finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver matrices have not finished.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("SOLVER_MATRICES_STORAGE_TYPE_GET")
+    EXITS("SOLVER_MATRICES_STORAGE_TYPE_GET")
     RETURN
-999 CALL ERRORS("SOLVER_MATRICES_STORAGE_TYPE_GET",ERR,ERROR)
-    CALL EXITS("SOLVER_MATRICES_STORAGE_TYPE_GET")
+999 ERRORSEXITS("SOLVER_MATRICES_STORAGE_TYPE_GET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE SOLVER_MATRICES_STORAGE_TYPE_GET
 
@@ -626,11 +619,11 @@ CONTAINS
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("SOLVER_MATRICES_STORAGE_TYPE_SET",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRICES_STORAGE_TYPE_SET",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
       IF(SOLVER_MATRICES%SOLVER_MATRICES_FINISHED) THEN
-        CALL FLAG_ERROR("Solver matrices have been finished.",ERR,ERROR,*999)
+        CALL FlagError("Solver matrices have been finished.",ERR,ERROR,*999)
       ELSE
         IF(SIZE(STORAGE_TYPE,1)==SOLVER_MATRICES%NUMBER_OF_MATRICES) THEN
           DO matrix_idx=1,SOLVER_MATRICES%NUMBER_OF_MATRICES
@@ -654,27 +647,26 @@ CONTAINS
               CASE DEFAULT
                 LOCAL_ERROR="The specified storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE(matrix_idx),"*",ERR,ERROR))// &
                   & " for the matrix number "//TRIM(NUMBER_TO_VSTRING(matrix_idx,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
             ENDIF
           ENDDO !matrix_idx
         ELSE
           LOCAL_ERROR="The size of the storage type array ("//TRIM(NUMBER_TO_VSTRING(SIZE(STORAGE_TYPE,1),"*",ERR,ERROR))// &
             & ") is not equal to the number of matrices ("// &
             & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))//")."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver matrices is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("SOLVER_MATRICES_STORAGE_TYPE_SET")
+    EXITS("SOLVER_MATRICES_STORAGE_TYPE_SET")
     RETURN
-999 CALL ERRORS("SOLVER_MATRICES_STORAGE_TYPE_SET",ERR,ERROR)
-    CALL EXITS("SOLVER_MATRICES_STORAGE_TYPE_SET")
+999 ERRORSEXITS("SOLVER_MATRICES_STORAGE_TYPE_SET",ERR,ERROR)
     RETURN 1
   END SUBROUTINE SOLVER_MATRICES_STORAGE_TYPE_SET
 
@@ -707,7 +699,7 @@ CONTAINS
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("SOLVER_MATRIX_EQUATIONS_MATRIX_ADD",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRIX_EQUATIONS_MATRIX_ADD",ERR,ERROR,*999)
 
     NULLIFY(EQUATIONS_MATRIX_DATA)
     NULLIFY(COLUMN_INDICES)
@@ -806,9 +798,9 @@ CONTAINS
                                   ENDDO !solver_row_idx
                                 ENDDO !equations_row_number
                               CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                               CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                               CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                                 CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(EQUATIONS_DISTRIBUTED_MATRIX, &
                                   & ROW_INDICES,COLUMN_INDICES,ERR,ERROR,*999)
@@ -844,62 +836,61 @@ CONTAINS
                                   ENDDO !solution_row_idx
                                 ENDDO !equations_row_number
                               CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                               CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                               CASE DEFAULT
                                 LOCAL_ERROR="The equations matrix storage type of "// &
                                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                               CALL DISTRIBUTED_MATRIX_DATA_RESTORE(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_MATRIX_DATA, &
                                 & ERR,ERROR,*999)
                             ELSE
-                              CALL FLAG_ERROR("The equations matrix distributed matrix is not associated",ERR,ERROR,*999)
+                              CALL FlagError("The equations matrix distributed matrix is not associated",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Equations to solver map is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations to solver map is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="The specified equations set index of "// &
                           & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
                           & " is invalid. The equations set index needs to be between 1 and "// &
                           & TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Equations matrices have not been finished.",ERR,ERROR,*999)
+                      CALL FlagError("Equations matrices have not been finished.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Dynamic or linear matrices equations matrices is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Dynamic or linear matrices equations matrices is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Equations matrix dynamic or linear matrices is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations matrix dynamic or linear matrices is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver matrices solver mapping is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver matrices solver mapping is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver matrices have not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Solver matrices have not been finished.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver matrix solver matrices is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver matrix solver matrices is not associated.",ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations matrix is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("SOLVER_MATRIX_EQUATIONS_MATRIX_ADD")
+    EXITS("SOLVER_MATRIX_EQUATIONS_MATRIX_ADD")
     RETURN
-999 CALL ERRORS("SOLVER_MATRIX_EQUATIONS_MATRIX_ADD",ERR,ERROR)
-    CALL EXITS("SOLVER_MATRIX_EQUATIONS_MATRIX_ADD")
+999 ERRORSEXITS("SOLVER_MATRIX_EQUATIONS_MATRIX_ADD",ERR,ERROR)
     RETURN 1
   END SUBROUTINE SOLVER_MATRIX_EQUATIONS_MATRIX_ADD
 
@@ -930,7 +921,7 @@ CONTAINS
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("SOLVER_MATRIX_INTERFACE_MATRIX_ADD",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRIX_INTERFACE_MATRIX_ADD",ERR,ERROR,*999)
 
     NULLIFY(INTERFACE_MATRIX_DATA)
     NULLIFY(COLUMN_INDICES)
@@ -1034,9 +1025,9 @@ CONTAINS
                                 ENDDO !solver_row_idx
                               ENDDO !interface_row_number
                             CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                               CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(INTERFACE_DISTRIBUTED_MATRIX, &
                                 & ROW_INDICES,COLUMN_INDICES,ERR,ERROR,*999)
@@ -1078,13 +1069,13 @@ CONTAINS
                                 ENDDO !solution_row_idx
                               ENDDO !interface_row_number
                             CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE DEFAULT
                               LOCAL_ERROR="The interface matrix storage type of "// &
                                 & TRIM(NUMBER_TO_VSTRING(INTERFACE_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             END SELECT
                             CALL DISTRIBUTED_MATRIX_DATA_RESTORE(INTERFACE_DISTRIBUTED_MATRIX,INTERFACE_MATRIX_DATA, &
                               & ERR,ERROR,*999)
@@ -1159,9 +1150,9 @@ CONTAINS
                                       ENDDO !solver_row_idx
                                     ENDDO !interface_column_number
                                   CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                   CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                                     CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(INTERFACE_DISTRIBUTED_MATRIX, &
                                       & ROW_INDICES,COLUMN_INDICES,ERR,ERROR,*999)
@@ -1198,65 +1189,64 @@ CONTAINS
                                       ENDDO !solution_row_idx
                                     ENDDO !interface_column_number
                                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                   CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                   CASE DEFAULT
                                     LOCAL_ERROR="The interface matrix storage type of "// &
                                       & TRIM(NUMBER_TO_VSTRING(INTERFACE_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                   END SELECT
                                   CALL DISTRIBUTED_MATRIX_DATA_RESTORE(INTERFACE_DISTRIBUTED_MATRIX,INTERFACE_MATRIX_DATA, &
                                     & ERR,ERROR,*999)
                                 ELSE
-                                  CALL FLAG_ERROR("The transpose interface matrix distributed matrix is not associated", &
+                                  CALL FlagError("The transpose interface matrix distributed matrix is not associated", &
                                     & ERR,ERROR,*999)
                                 ENDIF
                               ENDIF
                             ENDIF !Interface matrix transpose
                           ELSE
-                            CALL FLAG_ERROR("The interface matrix distributed matrix is not associated",ERR,ERROR,*999)
+                            CALL FlagError("The interface matrix distributed matrix is not associated",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Interface to solver map is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Interface to solver map is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
                       LOCAL_ERROR="The specified interface condition index of "// &
                         & TRIM(NUMBER_TO_VSTRING(interface_condition_idx,"*",ERR,ERROR))// &
                         & " is invalid. The interface condition index needs to be between 1 and "// &
                         & TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING%NUMBER_OF_INTERFACE_CONDITIONS,"*",ERR,ERROR))//"."
-                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Interface matrices have not been finished.",ERR,ERROR,*999)
+                    CALL FlagError("Interface matrices have not been finished.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Interface matrix interface matrices is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Interface matrix interface matrices is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver matrices solver mapping is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver matrices solver mapping is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver matrices have not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Solver matrices have not been finished.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver matrix solver matrices is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver matrix solver matrices is not associated.",ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Interface matrix is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Interface matrix is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("SOLVER_MATRIX_INTERFACE_MATRIX_ADD")
+    EXITS("SOLVER_MATRIX_INTERFACE_MATRIX_ADD")
     RETURN
-999 CALL ERRORS("SOLVER_MATRIX_INTERFACE_MATRIX_ADD",ERR,ERROR)
-    CALL EXITS("SOLVER_MATRIX_INTERFACE_MATRIX_ADD")
+999 ERRORSEXITS("SOLVER_MATRIX_INTERFACE_MATRIX_ADD",ERR,ERROR)
     RETURN 1
   END SUBROUTINE SOLVER_MATRIX_INTERFACE_MATRIX_ADD
 
@@ -1288,7 +1278,7 @@ CONTAINS
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("SOLVER_MATRIX_JACOBIAN_MATRIX_ADD",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRIX_JACOBIAN_MATRIX_ADD",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRIX)) THEN
       NULLIFY(SOLVER_MATRICES)
@@ -1389,9 +1379,9 @@ CONTAINS
                                   ENDDO !solver_row_idx
                                 ENDDO !jacobian_row_number
                               CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                               CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                               CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                                 CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(JACOBIAN_DISTRIBUTED_MATRIX,ROW_INDICES, &
                                   & COLUMN_INDICES,ERR,ERROR,*999)
@@ -1428,62 +1418,61 @@ CONTAINS
                                   ENDDO !solution_row_idx
                                 ENDDO !jacobian_row_number
                               CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                               CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
                               CASE DEFAULT
                                 LOCAL_ERROR="The Jacobian matrix storage type of "// &
                                   & TRIM(NUMBER_TO_VSTRING(JACOBIAN_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                               END SELECT
                               CALL DISTRIBUTED_MATRIX_DATA_RESTORE(JACOBIAN_DISTRIBUTED_MATRIX,JACOBIAN_MATRIX_DATA, &
                                 & ERR,ERROR,*999)
                             ELSE
-                              CALL FLAG_ERROR("The Jacobian matrix distributed matrix is not associated",ERR,ERROR,*999)
+                              CALL FlagError("The Jacobian matrix distributed matrix is not associated",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Solver matrix distributed matrix is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Jacobian to solver map is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Jacobian to solver map is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
                         LOCAL_ERROR="The specified equations set index of "// &
                           & TRIM(NUMBER_TO_VSTRING(equations_set_idx,"*",ERR,ERROR))// &
                           & " is invalid. The equations set index needs to be between 1 and "// &
                           & TRIM(NUMBER_TO_VSTRING(SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS,"*",ERR,ERROR))//"."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Equations matrices have not been finished.",ERR,ERROR,*999)
+                      CALL FlagError("Equations matrices have not been finished.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Nonlinear matrices equations matrices is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Nonlinear matrices equations matrices is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Jacobian matrix nonlinear matrices is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Jacobian matrix nonlinear matrices is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver matrices solver mapping is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver matrices solver mapping is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver matrices have not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Solver matrices have not been finished.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver matrix solver matrices is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Solver matrix solver matrices is not associated.",ERR,ERROR,*999)
           ENDIF
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Jacobian matrix is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("SOLVER_MATRIX_JACOBIAN_MATRIX_ADD")
+    EXITS("SOLVER_MATRIX_JACOBIAN_MATRIX_ADD")
     RETURN
-999 CALL ERRORS("SOLVER_MATRIX_JACOBIAN_MATRIX_ADD",ERR,ERROR)
-    CALL EXITS("SOLVER_MATRIX_JACOBIAN_MATRIX_ADD")
+999 ERRORSEXITS("SOLVER_MATRIX_JACOBIAN_MATRIX_ADD",ERR,ERROR)
     RETURN 1
   END SUBROUTINE SOLVER_MATRIX_JACOBIAN_MATRIX_ADD
 
@@ -1529,7 +1518,7 @@ CONTAINS
     TYPE(SOLVER_MATRICES_TYPE), POINTER :: SOLVER_MATRICES
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
     
-    CALL ENTERS("SOLVER_MATRIX_STRUCTURE_CALCULATE",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRIX_STRUCTURE_CALCULATE",ERR,ERROR,*999)
 
     NUMBER_OF_NON_ZEROS=0
     IF(ASSOCIATED(SOLVER_MATRIX)) THEN
@@ -1538,7 +1527,7 @@ CONTAINS
           SOLVER_DISTRIBUTED_MATRIX=>SOLVER_MATRIX%MATRIX
           IF(ASSOCIATED(SOLVER_DISTRIBUTED_MATRIX)) THEN
             IF(SOLVER_DISTRIBUTED_MATRIX%MATRIX_FINISHED) THEN
-              CALL FLAG_ERROR("The solver distributed matrix has already been finished.",ERR,ERROR,*998)
+              CALL FlagError("The solver distributed matrix has already been finished.",ERR,ERROR,*998)
             ELSE
               SOLVER_MATRICES=>SOLVER_MATRIX%SOLVER_MATRICES
               IF(ASSOCIATED(SOLVER_MATRICES)) THEN
@@ -1546,13 +1535,13 @@ CONTAINS
                 IF(ASSOCIATED(SOLVER_MAPPING)) THEN
                   SELECT CASE(SOLVER_MATRIX%STORAGE_TYPE)
                   CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
-                    CALL FLAG_ERROR("Can not calcualte the structure for a block storage matrix.",ERR,ERROR,*999)
+                    CALL FlagError("Can not calcualte the structure for a block storage matrix.",ERR,ERROR,*999)
                   CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-                    CALL FLAG_ERROR("Can not calcualte the structure for a diagonal matrix.",ERR,ERROR,*999)
+                    CALL FlagError("Can not calcualte the structure for a diagonal matrix.",ERR,ERROR,*999)
                   CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                     solver_matrix_idx=SOLVER_MATRIX%MATRIX_NUMBER
                     !Find the maximum number of column indices
@@ -1578,19 +1567,19 @@ CONTAINS
                                       & ERR,ERROR,*999)
                                     MAX_COLUMN_INDICES=MAX_COLUMN_INDICES+MAX_COLUMNS_PER_ROW
                                   ELSE
-                                    CALL FLAG_ERROR("Equations matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Equations matrix distributed matrix is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Dynamic matrices equations matrices is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Dynamic matrices equations matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Equations matrix dynamic matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations matrix dynamic matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations matrix is not assocaited.",ERR,ERROR,*999)
+                              CALL FlagError("Equations matrix is not assocaited.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations to solver matrix map is not assocaited.",ERR,ERROR,*999)
+                            CALL FlagError("Equations to solver matrix map is not assocaited.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !equations_matrix_idx
                       ELSE
@@ -1612,19 +1601,19 @@ CONTAINS
                                       & ERR,ERROR,*999)
                                     MAX_COLUMN_INDICES=MAX_COLUMN_INDICES+MAX_COLUMNS_PER_ROW
                                   ELSE
-                                    CALL FLAG_ERROR("Equations matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Equations matrix distributed matrix is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Linear matrices equations matrices is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Linear matrices equations matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Equations matrix linear matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Equations matrix linear matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Equations matrix is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Equations matrix is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Equations to solver matrix map is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Equations to solver matrix map is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !equations_matrix_idx
                         DO equations_matrix_idx=1,SOLVER_MAPPING%EQUATIONS_SET_TO_SOLVER_MAP(equations_set_idx)% &
@@ -1645,16 +1634,16 @@ CONTAINS
                                       & ERR,ERROR,*999)
                                     MAX_COLUMN_INDICES=MAX_COLUMN_INDICES+MAX_COLUMNS_PER_ROW
                                   ELSE
-                                    CALL FLAG_ERROR("Jacobian distributed matrix is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Jacobian distributed matrix is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Nonlinear matrices equations matrices is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Nonlinear matrices equations matrices is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Jacobian matrix nonlinear matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Jacobian matrix nonlinear matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                             ELSE
-                              CALL FLAG_ERROR("Jacobian matrix is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Jacobian matrix is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ENDIF
                         ENDDO !equations_matrix_idx
@@ -1679,10 +1668,10 @@ CONTAINS
                                   CALL DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET(DISTRIBUTED_MATRIX,MAX_COLUMNS_PER_ROW, &
                                     & ERR,ERROR,*999)
                                 ELSE
-                                  CALL FLAG_ERROR("Interface matrix distributed matrix is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Interface matrix distributed matrix is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Interface matrix interface matrices is not associated.",ERR,ERROR,*999)
+                                CALL FlagError("Interface matrix interface matrices is not associated.",ERR,ERROR,*999)
                               ENDIF
                               MAX_TRANSPOSE_COLUMNS_PER_ROW=0
                               IF(INTERFACE_MATRIX%HAS_TRANSPOSE) THEN
@@ -1691,34 +1680,34 @@ CONTAINS
                                   CALL DISTRIBUTED_MATRIX_MAX_COLUMNS_PER_ROW_GET(DISTRIBUTED_MATRIX, &
                                     & MAX_TRANSPOSE_COLUMNS_PER_ROW,ERR,ERROR,*999)
                                 ELSE
-                                  CALL FLAG_ERROR("Interface matrix distributed matrix transpose is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Interface matrix distributed matrix transpose is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ENDIF
                               MAX_COLUMN_INDICES=MAX_COLUMN_INDICES+MAX(MAX_COLUMNS_PER_ROW,MAX_TRANSPOSE_COLUMNS_PER_ROW)
                             ELSE
-                              CALL FLAG_ERROR("Interface to solver map interface matrix is not associated.",ERR,ERROR,*999)
+                              CALL FlagError("Interface to solver map interface matrix is not associated.",ERR,ERROR,*999)
                             ENDIF
                           ELSE
-                            CALL FLAG_ERROR("Interface to solver matrix map is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Interface to solver matrix map is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ENDDO !interface_matrix_idx
                       CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                       CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                       CASE DEFAULT
                         LOCAL_ERROR="The interface condition method of "// &
                           & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
                           & " is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT
                     ENDDO !interface_condition_idx
                     !Allocate lists
                     ALLOCATE(COLUMN_INDICES_LISTS(SOLVER_MAPPING%NUMBER_OF_ROWS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices lists.",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FlagError("Could not allocate column indices lists.",ERR,ERROR,*999)
                     !Allocate row indices
                     ALLOCATE(ROW_INDICES(SOLVER_MAPPING%NUMBER_OF_ROWS+1),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate row indices.",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FlagError("Could not allocate row indices.",ERR,ERROR,*999)
                     ROW_INDICES(1)=1
                     !Set up the column indicies lists
                     DO solver_row_number=1,SOLVER_MAPPING%NUMBER_OF_ROWS
@@ -1788,9 +1777,9 @@ CONTAINS
                               ENDDO !solver_row_idx
                             ENDDO !equations_row_number
                           CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                             CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(DISTRIBUTED_MATRIX,EQUATIONS_ROW_INDICES, &
                               & EQUATIONS_COLUMN_INDICES,ERR,ERROR,*999)
@@ -1818,13 +1807,13 @@ CONTAINS
                               ENDDO !equations_row_idx
                             ENDDO !equations_row_number
                           CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE DEFAULT
                             LOCAL_ERROR="The matrix storage type of "// &
                               & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT
                         ENDDO !equations_matrix_idx
                       ELSE
@@ -1884,9 +1873,9 @@ CONTAINS
                               ENDDO !solver_row_idx
                             ENDDO !equations_row_number 
                           CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                             CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(DISTRIBUTED_MATRIX,EQUATIONS_ROW_INDICES, &
                               & EQUATIONS_COLUMN_INDICES,ERR,ERROR,*999)
@@ -1914,13 +1903,13 @@ CONTAINS
                               ENDDO !equations_row_idx
                             ENDDO !equations_row_number
                           CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE DEFAULT
                             LOCAL_ERROR="The matrix storage type of "// &
                               & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT
                         ENDDO !equations_matrix_idx
                         !Now add any columns from the Jacobians
@@ -1980,9 +1969,9 @@ CONTAINS
                                 ENDDO !solver_row_idx
                               ENDDO !jacobian_row_number
                             CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                               CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(DISTRIBUTED_MATRIX,EQUATIONS_ROW_INDICES, &
                                 & EQUATIONS_COLUMN_INDICES,ERR,ERROR,*999)
@@ -2010,13 +1999,13 @@ CONTAINS
                                 ENDDO !solver_row_idx
                               ENDDO !jacobian_row_number
                             CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE DEFAULT
                               LOCAL_ERROR="The Jacobian storage type of "// &
                                 & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             END SELECT
                           ENDIF
                         ENDDO !equations_matrix_idx
@@ -2090,9 +2079,9 @@ CONTAINS
                               ENDDO !solver_row_idx
                             ENDDO !interface_row_number 
                           CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                             CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(DISTRIBUTED_MATRIX,INTERFACE_ROW_INDICES, &
                               & INTERFACE_COLUMN_INDICES,ERR,ERROR,*999)
@@ -2123,13 +2112,13 @@ CONTAINS
                               ENDDO !solver_row_idx
                             ENDDO !interface_row_number
                           CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
                           CASE DEFAULT
                             LOCAL_ERROR="The matrix storage type of "// &
                               & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT
                           IF(INTERFACE_MATRIX%HAS_TRANSPOSE) THEN
                             DISTRIBUTED_MATRIX=>INTERFACE_MATRIX%MATRIX_TRANSPOSE
@@ -2177,9 +2166,9 @@ CONTAINS
                                 ENDDO !solver_row_idx
                               ENDDO !interface_column_number 
                             CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
                               CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(DISTRIBUTED_MATRIX,INTERFACE_ROW_INDICES, &
                                 & INTERFACE_COLUMN_INDICES,ERR,ERROR,*999)
@@ -2206,25 +2195,25 @@ CONTAINS
                                 ENDDO !solver_row_idx
                               ENDDO !interface_col_number
                             CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                              CALL FlagError("Not implemented.",ERR,ERROR,*999)
                             CASE DEFAULT
                               LOCAL_ERROR="The matrix storage type of "// &
                                 & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             END SELECT
                           ENDIF
                         ENDDO !interface_matrix_idx
                       CASE(INTERFACE_CONDITION_AUGMENTED_LAGRANGE_METHOD)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                       CASE(INTERFACE_CONDITION_POINT_TO_POINT_METHOD)
-                        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                        CALL FlagError("Not implemented.",ERR,ERROR,*999)
                       CASE DEFAULT
                         LOCAL_ERROR="The interface condition method of "// &
                           & TRIM(NUMBER_TO_VSTRING(INTERFACE_CONDITION%METHOD,"*",ERR,ERROR))// &
                           & " is invalid."
-                        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       END SELECT                        
                     ENDDO !interface_condition_idx
                     !Loop over the rows to calculate the number of non-zeros and setup the row indicces
@@ -2236,7 +2225,7 @@ CONTAINS
                     ENDDO !solver_row_number
                     !Allocate and setup the column locations
                     ALLOCATE(COLUMN_INDICES(NUMBER_OF_NON_ZEROS),STAT=ERR)
-                    IF(ERR/=0) CALL FLAG_ERROR("Could not allocate column indices.",ERR,ERROR,*999)
+                    IF(ERR/=0) CALL FlagError("Could not allocate column indices.",ERR,ERROR,*999)
                     DO solver_row_number=1,SOLVER_MAPPING%NUMBER_OF_ROWS
                       CALL LIST_DETACH_AND_DESTROY(COLUMN_INDICES_LISTS(solver_row_number)%PTR,NUMBER_OF_COLUMNS,COLUMNS, &
                         & ERR,ERROR,*999)
@@ -2246,13 +2235,13 @@ CONTAINS
                       DEALLOCATE(COLUMNS)
                     ENDDO !solver_row_idx
                   CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                        
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)                        
                   CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)                      
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)                      
                   CASE DEFAULT
                     LOCAL_ERROR="The matrix storage type of "// &
                       & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
 
                   IF(DIAGNOSTICS1) THEN
@@ -2277,26 +2266,26 @@ CONTAINS
                     ENDIF
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Solver matrices solver mapping is not associated",ERR,ERROR,*999)
+                  CALL FlagError("Solver matrices solver mapping is not associated",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Solver matrix solver matrices is not associated",ERR,ERROR,*999)
+                CALL FlagError("Solver matrix solver matrices is not associated",ERR,ERROR,*999)
               ENDIF
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver matrix distributed matrix is not associated",ERR,ERROR,*999)
+            CALL FlagError("Solver matrix distributed matrix is not associated",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Column indices is already associated",ERR,ERROR,*998)
+          CALL FlagError("Column indices is already associated",ERR,ERROR,*998)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Row indices is already associated",ERR,ERROR,*998)
+        CALL FlagError("Row indices is already associated",ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("SOLVER_MATRIX_STRUCTURE_CALCULATE")
+    EXITS("SOLVER_MATRIX_STRUCTURE_CALCULATE")
     RETURN
 999 IF(ASSOCIATED(ROW_INDICES)) DEALLOCATE(ROW_INDICES)
     IF(ASSOCIATED(COLUMN_INDICES)) DEALLOCATE(COLUMN_INDICES)
@@ -2308,8 +2297,7 @@ CONTAINS
       ENDDO !solver_row_number
       DEALLOCATE(COLUMN_INDICES_LISTS)
     ENDIF
-998 CALL ERRORS("SOLVER_MATRIX_STRUCTURE_CALCULATE",ERR,ERROR)    
-    CALL EXITS("SOLVER_MATRIX_STRUCTURE_CALCULATE")
+998 ERRORSEXITS("SOLVER_MATRIX_STRUCTURE_CALCULATE",ERR,ERROR)    
     RETURN 1
    
   END SUBROUTINE SOLVER_MATRIX_STRUCTURE_CALCULATE
@@ -2327,7 +2315,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    CALL ENTERS("SOLVER_MATRIX_FINALISE",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRIX_FINALISE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRIX)) THEN
       IF(ASSOCIATED(SOLVER_MATRIX%MATRIX)) CALL DISTRIBUTED_MATRIX_DESTROY(SOLVER_MATRIX%MATRIX,ERR,ERROR,*999)
@@ -2335,10 +2323,9 @@ CONTAINS
       DEALLOCATE(SOLVER_MATRIX)
     ENDIF
     
-    CALL EXITS("SOLVER_MATRIX_FINALISE")
+    EXITS("SOLVER_MATRIX_FINALISE")
     RETURN
-999 CALL ERRORS("SOLVER_MATRIX_FINALISE",ERR,ERROR)    
-    CALL EXITS("SOLVER_MATRIX_FINALISE")
+999 ERRORSEXITS("SOLVER_MATRIX_FINALISE",ERR,ERROR)    
     RETURN 1
    
   END SUBROUTINE SOLVER_MATRIX_FINALISE
@@ -2356,18 +2343,17 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     
-    CALL ENTERS("SOLVER_MATRIX_FORM",ERR,ERROR,*999)
+    ENTERS("SOLVER_MATRIX_FORM",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER_MATRIX)) THEN
       CALL DISTRIBUTED_MATRIX_FORM(SOLVER_MATRIX%MATRIX,ERR,ERROR,*999)
     ELSE
-      CALL FLAG_ERROR("Solver matrix is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver matrix is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("SOLVER_MATRIX_FORM")
+    EXITS("SOLVER_MATRIX_FORM")
     RETURN
-999 CALL ERRORS("SOLVER_MATRIX_FORM",ERR,ERROR)    
-    CALL EXITS("SOLVER_MATRIX_FORM")
+999 ERRORSEXITS("SOLVER_MATRIX_FORM",ERR,ERROR)    
     RETURN 1
    
   END SUBROUTINE SOLVER_MATRIX_FORM
@@ -2390,17 +2376,17 @@ CONTAINS
     TYPE(SOLVER_MATRIX_TYPE), POINTER :: SOLVER_MATRIX
     TYPE(VARYING_STRING) :: DUMMY_ERROR,LOCAL_ERROR
     
-    CALL ENTERS("SOLVER_MATRIX_INITIALISE",ERR,ERROR,*998)
+    ENTERS("SOLVER_MATRIX_INITIALISE",ERR,ERROR,*998)
 
     IF(ASSOCIATED(SOLVER_MATRICES)) THEN
       IF(MATRIX_NUMBER>0.AND.MATRIX_NUMBER<=SOLVER_MATRICES%NUMBER_OF_MATRICES) THEN
         SOLVER_MAPPING=>SOLVER_MATRICES%SOLVER_MAPPING
         IF(ASSOCIATED(SOLVER_MAPPING)) THEN
           IF(ASSOCIATED(SOLVER_MATRICES%MATRICES(MATRIX_NUMBER)%PTR)) THEN
-            CALL FLAG_ERROR("Solver matrix is already associated.",ERR,ERROR,*998)
+            CALL FlagError("Solver matrix is already associated.",ERR,ERROR,*998)
           ELSE
             ALLOCATE(SOLVER_MATRICES%MATRICES(MATRIX_NUMBER)%PTR,STAT=ERR)
-            IF(ERR/=0) CALL FLAG_ERROR("Could not allocate solver matrix.",ERR,ERROR,*999)
+            IF(ERR/=0) CALL FlagError("Could not allocate solver matrix.",ERR,ERROR,*999)
             SOLVER_MATRIX=>SOLVER_MATRICES%MATRICES(MATRIX_NUMBER)%PTR
             SOLVER_MATRIX%MATRIX_NUMBER=MATRIX_NUMBER
             SOLVER_MATRIX%SOLVER_MATRICES=>SOLVER_MATRICES
@@ -2412,23 +2398,22 @@ CONTAINS
             NULLIFY(SOLVER_MATRIX%MATRIX)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*998)
+          CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*998)
         ENDIF
       ELSE
         LOCAL_ERROR="The specified matrix number of "//TRIM(NUMBER_TO_VSTRING(MATRIX_NUMBER,"*",ERR,ERROR))// &
           & " is invalid. The number must be > 0 and <= "// &
           & TRIM(NUMBER_TO_VSTRING(SOLVER_MATRICES%NUMBER_OF_MATRICES,"*",ERR,ERROR))//"."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*998)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*998)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver matrices is not associated.",ERR,ERROR,*998)
+      CALL FlagError("Solver matrices is not associated.",ERR,ERROR,*998)
     ENDIF
     
-    CALL EXITS("SOLVER_MATRIX_INITIALISE")
+    EXITS("SOLVER_MATRIX_INITIALISE")
     RETURN
 999 CALL SOLVER_MATRIX_FINALISE(SOLVER_MATRICES%MATRICES(MATRIX_NUMBER)%PTR,DUMMY_ERR,DUMMY_ERROR,*998)
-998 CALL ERRORS("SOLVER_MATRIX_INITIALISE",ERR,ERROR)    
-    CALL EXITS("SOLVER_MATRIX_INITIALISE")
+998 ERRORSEXITS("SOLVER_MATRIX_INITIALISE",ERR,ERROR)    
     RETURN 1
    
   END SUBROUTINE SOLVER_MATRIX_INITIALISE

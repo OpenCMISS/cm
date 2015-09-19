@@ -156,12 +156,14 @@ ifneq ($(DEBUG),false)
   FFLAGS += $(strip $(DBGCF_FLGS) $(DBGF_FLGS))
   DLFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
   CPPFLAGS += -DDEBUG
+  FPPFLAGS += -DDEBUG
 else
   ifneq ($(MPIPROF),false)
     CFLAGS += $(strip $(DBGCF_FLGS) $(DBGC_FLGS))
     FFLAGS += $(strip $(DBGCF_FLGS) $(DBGF_FLGS))
     CPPFLAGS += -DDEBUG
-  else
+    FPPFLAGS += -DDEBUG
+else
     CFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTC_FLGS))
     FFLAGS += $(strip $(OPTCFE_FLGS) $(OPTCF_FLGS) $(OPTF_FLGS))
     ELFLAGS += $(OPTCFE_FLGS)
@@ -218,6 +220,7 @@ ifeq ($(OPERATING_SYSTEM),linux)
     endif
     DBGC_FLGS += -O0 -fbounds-check
     OPTC_FLGS = -O3 -funroll-all-loops
+    #OPTC_FLGS = -Ofast -funroll-all-loops
     ifeq ($(PROF),false)
       ifneq ($(filter $(INSTRUCTION),i686 x86_64),)# i686 or x86_64
         OPTC_FLGS += -momit-leaf-frame-pointer
@@ -247,7 +250,8 @@ ifeq ($(OPERATING_SYSTEM),linux)
 	endif
       endif
     endif
-    OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
+    # OPTF_FLGS = -O3 -Wuninitialized -funroll-all-loops
+     OPTF_FLGS = -Ofast -Wuninitialized -funroll-all-loops
     ELFLAGS += -m$(ABI)
   else
     ifeq ($(COMPILER),intel)
@@ -665,7 +669,7 @@ ifeq ($(or ${OPENCMISS_USE_CELLML},${OPENCMISS_USE_FIELDML}),true)
   ZLIB_LIB_PATH += $(addprefix -L, $(OCE_ZLIBLIBPATH) )
   ZLIB_INCLUDE_PATH += $(addprefix -I, $(OCE_ZLIBINCLUDEPATH) )
 else
-  ifeq ($(and ${OPENCMISS_USE_HDF5},$(OCE_HDF5),true)
+  ifeq ($(and ${OPENCMISS_USE_HDF5},$(OCE_HDF5)),true)
     ZLIB_LIBRARIES += $(call convertlistlink,$(OCE_ZLIBLIBS))
     ZLIB_LIB_PATH += $(addprefix -L, $(OCE_ZLIBLIBPATH) )
     ZLIB_INCLUDE_PATH += $(addprefix -I, $(OCE_ZLIBINCLUDEPATH) )

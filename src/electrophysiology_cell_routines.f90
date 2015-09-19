@@ -48,6 +48,8 @@ module electrophysiology_cell_routines
   use strings
   use types
 
+#include "macros.h"  
+
   implicit none
   private
 
@@ -85,15 +87,14 @@ contains
     integer(intg) :: i
     REAL(DP), PARAMETER, DIMENSION(1:4) :: y0 = (/ -8.09242e+01,  9.99993e-01, 2.16366e-02, 9.84320e-01 /) ! paced initial condition
 
-    call enters('bueno_orovio_init',err,error,*999)
+    ENTERS('bueno_orovio_init',err,error,*999)
     DO I=1,4
       CALL FIELD_COMPONENT_VALUES_INITIALISE(field,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,y0(I),Err,ERROR,*999)
     END DO
 
-    call exits('bueno_orovio_init')
+    EXITS('bueno_orovio_init')
     return
-999 call errors('bueno_orovio_init',err,error)
-    call exits('bueno_orovio_init')
+999 ERRORSEXITS('bueno_orovio_init',err,error)
     return 1
 
   end subroutine bueno_orovio_initialize
@@ -168,7 +169,7 @@ contains
     type(domain_ptr_type), pointer :: domain
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: CELLS_VARIABLE, ACTIV_VARIABLE
 
-    call enters('bueno_orovio_integrate',err,error,*999)
+    ENTERS('bueno_orovio_integrate',err,error,*999)
 
     domain=>cells%decomposition%domain(1)
     ncells = domain%ptr%topology%nodes%number_of_nodes ! local
@@ -210,10 +211,9 @@ contains
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
 
 
-    call exits('bueno_orovio_integrate')
+    EXITS('bueno_orovio_integrate')
     return
-999 call errors('bueno_orovio_integrate',err,error)
-    call exits('bueno_orovio_integrate')
+999 ERRORSEXITS('bueno_orovio_integrate',err,error)
     return 1
   end subroutine bueno_orovio_integrate
   
@@ -231,15 +231,14 @@ contains
     REAL(DP), PARAMETER, DIMENSION(1:19) :: y0 = (/ -85.23, 0.9755, 0.9953, 0.7888, 3.64, 0.000126, 0.00036, 0.9073, 0.7444,&
         & 0.7045, 0.00172,  3.373e-5, 136.89, 0.00621, 0.4712, 0.0095, 8.604, 2.42e-8, 0.999998 /) ! paced initial condition
 
-    call enters('tentusscher06_init',err,error,*999)
+    ENTERS('tentusscher06_init',err,error,*999)
     DO I=1,19
       CALL FIELD_COMPONENT_VALUES_INITIALISE(field,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,I,y0(I),Err,ERROR,*999)
     END DO
 
-    call exits('tentusscher06_init')
+    EXITS('tentusscher06_init')
     return
-999 call errors('tentusscher06_init',err,error)
-    call exits('tentusscher06_init')
+999 ERRORSEXITS('tentusscher06_init',err,error)
     return 1
 
   end subroutine tentusscher06_initialize
@@ -381,7 +380,7 @@ contains
     type(domain_ptr_type), pointer :: domain
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: CELLS_VARIABLE, ACTIV_VARIABLE
 
-    call enters('tentusscher06_integrate',err,error,*999)
+    ENTERS('tentusscher06_integrate',err,error,*999)
 
     domain=>cells%decomposition%domain(1)
     ncells = domain%ptr%topology%nodes%number_of_nodes ! local
@@ -408,7 +407,7 @@ contains
         call tentusscher06_dydt(t,y,dydt,activ)
         dt = min(t1-t,1.0/3)  ! default max
         dt = min(dt,1 / abs(dydt(1))) ! maximum increase in Vm
-        
+
         m_inf0 = (1/pow((1+exp((1.10741971207087e-01*(-5.686e+01-Y(1))))),2))
         d_inf0 = (1/(1+exp((1.33333333333333e-01*(-8-Y(1))))))
         
@@ -438,10 +437,9 @@ contains
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(cells,field_u_variable_type,field_values_set_type,celldata,ERR,ERROR,*999)
     CALL FIELD_PARAMETER_SET_DATA_RESTORE(materials,field_u_variable_type,field_values_set_type,activdata,ERR,ERROR,*999)
 
-    call exits('tentusscher06_integrate')
+    EXITS('tentusscher06_integrate')
     return
-999 call errors('tentusscher06_integrate',err,error)
-    call exits('tentusscher06_integrate')
+999 ERRORSEXITS('tentusscher06_integrate',err,error)
     return 1
   end subroutine tentusscher06_integrate
 end module electrophysiology_cell_routines

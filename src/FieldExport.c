@@ -223,7 +223,7 @@ static SessionListEntry *FieldExport_GetSession( const int handle )
     return NULL;
 }
 
-const int FieldExport_InterpolationType( const int interpType );
+int FieldExport_InterpolationType( const int interpType );
 
 /*
     CMISS-formatted file export routines.
@@ -264,9 +264,8 @@ static int FieldExport_File_ScalingFactorCount( FileSession *const session, cons
 }
 
 
-static int FieldExport_File_InterpolationHeader( FileSession *const session, const int labelType, const int numberOfXi, const int* const interpolationXi )
+static int FieldExport_File_InterpolationHeader( FileSession *const session, const int labelType, const int numberOfXi, const int* const interpolationXi)
 {
-    int scaleFactorCount = 1;
     int i, j;
     const char * label;
     int *linked = malloc( sizeof(int) * numberOfXi );
@@ -294,7 +293,6 @@ static int FieldExport_File_InterpolationHeader( FileSession *const session, con
     {
         if( labelType == FIELD_IO_INTERPOLATION_HEADER_GRID )
         {
-	  scaleFactorCount *= 2;
 	  label = "l.Lagrange";
         }
         else if( labelType == FIELD_IO_INTERPOLATION_HEADER_CONSTANT )
@@ -303,7 +301,6 @@ static int FieldExport_File_InterpolationHeader( FileSession *const session, con
         }
         else if( labelType == FIELD_IO_INTERPOLATION_HEADER_GAUSS )
         {
-	  scaleFactorCount *= 2;
 	  label = "l.Lagrange"; 
         }
         else
@@ -311,39 +308,30 @@ static int FieldExport_File_InterpolationHeader( FileSession *const session, con
             switch( interpolationXi[i] )
             {
             case BASIS_LINEAR_LAGRANGE_INTERPOLATION:
-                scaleFactorCount *= 2;
                 label = "l.Lagrange";
                 break;
             case BASIS_QUADRATIC_LAGRANGE_INTERPOLATION:
-                scaleFactorCount *= 3;
                 label = "q.Lagrange";
                 break;
             case BASIS_CUBIC_LAGRANGE_INTERPOLATION:
-                scaleFactorCount *= 4;
                 label = "c.Lagrange";
                 break;
             case BASIS_CUBIC_HERMITE_INTERPOLATION:
-                scaleFactorCount *= 4;
                 label = "c.Hermite";
                 break;
             case BASIS_QUADRATIC1_HERMITE_INTERPOLATION:
-                scaleFactorCount *= 4;
-                label = "q1.Hermite";
+                label = "LagrangeHermite";
                 break;
             case BASIS_QUADRATIC2_HERMITE_INTERPOLATION:
-                scaleFactorCount *= 4;
-                label = "q2.Hermite";
+                label = "HermiteLagrange";
                 break;
             case BASIS_LINEAR_SIMPLEX_INTERPOLATION:
-                scaleFactorCount = numberOfXi + 1;
                 label = "l.simplex";
                 break;
             case BASIS_QUADRATIC_SIMPLEX_INTERPOLATION:
-                scaleFactorCount = ( numberOfXi + 1 ) * ( numberOfXi + 2 ) / 2;
                 label = "q.simplex";
                 break;
             case BASIS_CUBIC_SIMPLEX_INTERPOLATION:
-                scaleFactorCount = ( numberOfXi + 1 ) * ( numberOfXi + 2 ) * ( numberOfXi + 3 ) / 2;
                 label = "c.simplex";
                 break;
             default:
@@ -383,9 +371,6 @@ static int FieldExport_File_InterpolationHeader( FileSession *const session, con
 
     switch( labelType )
     {
-    case FIELD_IO_INTERPOLATION_HEADER_SCALE:
-        FieldExport_FPrintf( session, ", #Scale factors=%d\n", scaleFactorCount );
-        break;
     case FIELD_IO_INTERPOLATION_HEADER_NODAL:
         FieldExport_FPrintf( session, ", no modify, standard node based.\n" );
         break;
@@ -401,6 +386,102 @@ static int FieldExport_File_InterpolationHeader( FileSession *const session, con
     default:
         return FIELD_EXPORT_ERROR_UNKNOWN_LABEL_TYPE;
     }
+
+    return session->error;
+}
+
+
+static int FieldExport_File_InterpolationHeaderScale( FileSession *const session, const int numberOfXi, const int* const interpolationXi,
+        const int numberOfScaleFactors)
+{
+    int i, j;
+    const char * label;
+    int *linked = malloc( sizeof(int) * numberOfXi );
+    int linkCount = 0;
+
+    for( i = 0; i < numberOfXi; i++ )
+    {
+        switch( interpolationXi[i] )
+        {
+        case BASIS_LINEAR_SIMPLEX_INTERPOLATION:
+        case BASIS_QUADRATIC_SIMPLEX_INTERPOLATION:
+        case BASIS_CUBIC_SIMPLEX_INTERPOLATION:
+            linked[i] = 1;
+            linkCount++;
+            break;
+        default:
+            linked[i] = 0;
+            break;
+        }
+    }
+
+    FieldExport_FPrintf( session, " " );
+
+    for( i = 0; i < numberOfXi; i++ )
+    {
+        switch( interpolationXi[i] )
+        {
+        case BASIS_LINEAR_LAGRANGE_INTERPOLATION:
+            label = "l.Lagrange";
+            break;
+        case BASIS_QUADRATIC_LAGRANGE_INTERPOLATION:
+            label = "q.Lagrange";
+            break;
+        case BASIS_CUBIC_LAGRANGE_INTERPOLATION:
+            label = "c.Lagrange";
+            break;
+        case BASIS_CUBIC_HERMITE_INTERPOLATION:
+            label = "c.Hermite";
+            break;
+        case BASIS_QUADRATIC1_HERMITE_INTERPOLATION:
+            label = "LagrangeHermite";
+            break;
+        case BASIS_QUADRATIC2_HERMITE_INTERPOLATION:
+            label = "HermiteLagrange";
+            break;
+        case BASIS_LINEAR_SIMPLEX_INTERPOLATION:
+            label = "l.simplex";
+            break;
+        case BASIS_QUADRATIC_SIMPLEX_INTERPOLATION:
+            label = "q.simplex";
+            break;
+        case BASIS_CUBIC_SIMPLEX_INTERPOLATION:
+            label = "c.simplex";
+            break;
+        default:
+            free( linked );
+            return FIELD_EXPORT_ERROR_UNKNOWN_INTERPOLATION;
+        }
+        FieldExport_FPrintf( session, "%s", label );
+
+        if( linkCount > 0 )
+        {
+            linkCount--;
+            FieldExport_FPrintf( session, "(", label );
+            for( j = i+1; j < numberOfXi; j++ )
+            {
+                if( linked[j] == 1 )
+                {
+                    FieldExport_FPrintf( session, "%d", j+1 );
+                }
+                if( linkCount > 1 )
+                {
+                    FieldExport_FPrintf( session, ";" );
+                }
+                linkCount--;
+            }
+            FieldExport_FPrintf( session, ")", label );
+        }
+
+        if( i < ( numberOfXi - 1 ) )
+        {
+            FieldExport_FPrintf( session, "*" );
+        }
+    }
+    
+    free( linked );
+
+    FieldExport_FPrintf( session, ", #Scale factors=%d\n", numberOfScaleFactors );
 
     return session->error;
 }
@@ -689,10 +770,11 @@ static int FieldExport_File_ElementGridSize( FileSession *const session, const i
 
 
 static int FieldExport_File_NodeScaleIndexes( FileSession *const session, const int nodeCount, const int *const derivativeCount,
-    const int *const elementDerivatives, const int *const nodeIndexes, int firstScaleIndex )
+    const int *const elementDerivatives, const int *const nodeIndexes, const int *const scaleIndexes )
 {
     int i, j;
     int derivativeIndex = 0;
+    int scaleIndex = 0;
 
     FieldExport_FPrintf( session, "     #Nodes= %d\n", nodeCount );
 
@@ -709,10 +791,9 @@ static int FieldExport_File_NodeScaleIndexes( FileSession *const session, const 
         for( j = 0; j < derivativeCount[i]; j++ )
         {
             //We're currently using firstScaleIndex == -1 to tell us that there's no scaling. Ugly but functional.
-            if( firstScaleIndex >= 0 )
+            if( scaleIndex >= 0 )
             {
-                firstScaleIndex++;
-                FieldExport_FPrintf( session, " %3d", firstScaleIndex );
+                FieldExport_FPrintf( session, " %3d", scaleIndexes[scaleIndex++] );
             }
             else
             {
@@ -940,7 +1021,7 @@ static int FieldExport_File_NodeValues( FileSession *session, const int nodeNumb
 #ifdef USE_HDF5
     herr_t status;
 #endif
-    static lastNodeNumber = -1; //A little bit of a hack, but then so is the whole file format.
+    static int lastNodeNumber = -1; //A little bit of a hack, but then so is the whole file format.
 
     if( nodeNumber != lastNodeNumber )
     {
@@ -1092,7 +1173,7 @@ static int FieldExport_File_CoordinateDerivativeIndices( FileSession *session, c
     Public API implementation
 */
 
-const int FieldExport_InterpolationType( const int interpType )
+int FieldExport_InterpolationType( const int interpType )
 {
     if(interpType == 1) 
       {
@@ -1196,7 +1277,7 @@ int FieldExport_ScalingFactorCount( const int handle, const int scalingFactorCou
 }
 
 
-int FieldExport_ScaleFactors( const int handle, const int numberOfXi, const int* const interpolationXi )
+int FieldExport_ScaleFactors( const int handle, const int numberOfXi, const int* const interpolationXi, const int numberOfScaleFactors )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
     
@@ -1206,7 +1287,7 @@ int FieldExport_ScaleFactors( const int handle, const int numberOfXi, const int*
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_InterpolationHeader( &session->fileSession, FIELD_IO_INTERPOLATION_HEADER_SCALE, numberOfXi, interpolationXi );
+        return FieldExport_File_InterpolationHeaderScale( &session->fileSession, numberOfXi, interpolationXi, numberOfScaleFactors );
     }
     else
     {
@@ -1352,7 +1433,7 @@ int FieldExport_ElementGridSize( const int handle, const int interpType, const i
 
 
 int FieldExport_NodeScaleIndexes( const int handle, const int nodeCount, const int *const derivativeCount,
-    const int *const elementDerivatives, const int *const nodeIndexes, const int firstScaleIndex )
+    const int *const elementDerivatives, const int *const nodeIndexes, const int *const scaleIndexes )
 {
     SessionListEntry *session = FieldExport_GetSession( handle );
     
@@ -1362,7 +1443,7 @@ int FieldExport_NodeScaleIndexes( const int handle, const int nodeCount, const i
     }
     else if( session->type == EXPORT_TYPE_FILE )
     {
-        return FieldExport_File_NodeScaleIndexes( &session->fileSession, nodeCount, derivativeCount, elementDerivatives, nodeIndexes, firstScaleIndex );
+        return FieldExport_File_NodeScaleIndexes( &session->fileSession, nodeCount, derivativeCount, elementDerivatives, nodeIndexes, scaleIndexes );
     }
     else
     {
