@@ -25623,7 +25623,7 @@ CONTAINS
 
     !Argument variables
     TYPE(cmfe_EquationsSetType), INTENT(IN) :: equationsSet !<The equations set to get the specification size for.
-    INTEGER(INTG), INTENT(INOUT) :: specificationSize !<On return, the size of the equations set specification array. 
+    INTEGER(INTG), INTENT(OUT) :: specificationSize !<On return, the size of the equations set specification array. 
     INTEGER(INTG), INTENT(OUT) :: err !<The error code.
     !Local variables
 
