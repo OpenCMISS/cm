@@ -174,7 +174,7 @@ class LibrarySource(object):
         """Load library information from source files
 
         Arguments:
-        cm_path -- Path to OpenCMISS cm directory
+        cm_path -- Path to OpenCMISS iron directory
         """
 
         self.lib_source = self.SourceFile(
@@ -215,12 +215,12 @@ class LibrarySource(object):
 
         self.public_subroutines = sorted(
             self.public_subroutines, key=attrgetter('name'))
-        # Remove CMISS...TypesCopy routines, as these are only used within the
-        # C bindings.  Also remove CMISSGeneratedMeshSurfaceGet for now as it
+        # Remove cmfe...TypesCopy routines, as these are only used within the
+        # C bindings.  Also remove cmfe_GeneratedMeshSurfaceGet for now as it
         # takes an allocatable array but will be removed soon anyways.
         self.public_subroutines = filter(
                 lambda r:
-                not (r.name.startswith('CMISSGeneratedMesh_SurfaceGet') or
+                not (r.name.startswith('cmfe_GeneratedMesh_SurfaceGet') or
                 r.name.endswith('TypesCopy')),
                 self.public_subroutines)
 
@@ -292,11 +292,16 @@ class LibrarySource(object):
         for o in self.ordered_objects:
             if isinstance(o, DoxygenGrouping):
                 if o.type == 'group':
-                    if o.group in enum_dict:
-                        current_enum = enum_dict[o.group]
+                    # Strip CMISS prefix from some constant group names
+                    if o.group.startswith('CMISS'):
+                        group_name = o.group[5:]
                     else:
-                        current_enum = Enum(o.group)
-                        enum_dict[o.group] = current_enum
+                        group_name = o.group
+                    if group_name in enum_dict:
+                        current_enum = enum_dict[group_name]
+                    else:
+                        current_enum = Enum(group_name)
+                        enum_dict[group_name] = current_enum
                 elif o.type == 'brief':
                     current_enum.comment = o.brief
                 elif o.type == 'close':
@@ -549,8 +554,12 @@ class Subroutine(CodeObject):
         if len(self.parameters) == 0:
             return
 
-        if '_' in self.name:
-            routine_type_name = self.name.split('_')[0]
+        if self.name.count('_') > 1:
+            # Type name eg. = cmfe_Basis
+            # Sometimes the type name has an extra bit at the end, eg cmfe_FieldMLIO,
+            # but routines are named cmfe_FieldML_OutputCreate, so we check if
+            # the parameter type name starts with the routine type name
+            routine_type_name = '_'.join(self.name.split('_')[0:2])
             # Object parameter is either first or last, it is last if this
             # is a Create or CreateStart routine, otherwise it is first
             if self.parameters[0].var_type == Parameter.CUSTOM_TYPE:
@@ -558,6 +567,8 @@ class Subroutine(CodeObject):
                 if param_type_name.startswith(routine_type_name):
                     self.self_idx = 0
                     return param_type_name
+            # Some stuff like cmfe_FieldML_OutputCreate has the "self" object
+            # as the last parameter, check for these here:
             if (self.parameters[-1].var_type == Parameter.CUSTOM_TYPE and
                     self.name.find('Create') > -1):
                 param_type_name = self.parameters[-1].type_name

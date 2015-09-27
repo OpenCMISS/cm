@@ -1,55 +1,55 @@
-MODULE OPENCMISS
+MODULE CMFE
 
   PRIVATE
 
-  !>An example CMISS type.
-  TYPE CMISSExampleType
-  END TYPE CMISSExampleType
+  !>An example cmfe_ type.
+  TYPE cmfe_ExampleType
+  END TYPE cmfe_ExampleType
 
-  INTERFACE CMISSExample_SomeInterface
-    MODULE PROCEDURE CMISSExample_SomeInterfaceNumber
-    MODULE PROCEDURE CMISSExample_SomeInterfaceObj
-  END INTERFACE !CMISSExample_SomeInterface
+  INTERFACE cmfe_Example_SomeInterface
+    MODULE PROCEDURE cmfe_Example_SomeInterfaceNumber
+    MODULE PROCEDURE cmfe_Example_SomeInterfaceObj
+  END INTERFACE !cmfe_Example_SomeInterface
 
-  INTERFACE CMISSExample_CreateStart
-    MODULE PROCEDURE CMISSExample_CreateStartObj
-    MODULE PROCEDURE CMISSExample_CreateStartNumber
-  END INTERFACE !CMISSExample_CreateStart
+  INTERFACE cmfe_Example_CreateStart
+    MODULE PROCEDURE cmfe_Example_CreateStartObj
+    MODULE PROCEDURE cmfe_Example_CreateStartNumber
+  END INTERFACE !cmfe_Example_CreateStart
 
-  INTERFACE CMISSArrayRoutine
-    MODULE PROCEDURE CMISSArrayRoutine0
-    MODULE PROCEDURE CMISSArrayRoutine1
-  END INTERFACE !CMISSArrayRoutine
+  INTERFACE cmfe_ArrayRoutine
+    MODULE PROCEDURE cmfe_ArrayRoutine0
+    MODULE PROCEDURE cmfe_ArrayRoutine1
+  END INTERFACE !cmfe_ArrayRoutine
 
-  INTERFACE CMISSStringRoutine
-    MODULE PROCEDURE CMISSStringRoutineCObj
-    MODULE PROCEDURE CMISSStringRoutineVSObj
-    MODULE PROCEDURE CMISSStringRoutineCNumber
-    MODULE PROCEDURE CMISSStringRoutineVSNumber
-  END INTERFACE !CMISSStringRoutine
+  INTERFACE cmfe_StringRoutine
+    MODULE PROCEDURE cmfe_StringRoutineCObj
+    MODULE PROCEDURE cmfe_StringRoutineVSObj
+    MODULE PROCEDURE cmfe_StringRoutineCNumber
+    MODULE PROCEDURE cmfe_StringRoutineVSNumber
+  END INTERFACE !cmfe_StringRoutine
 
   !> \addtogroup OPENCMISS_ExampleEnum OPENCMISS::ExampleEnum
   !> \brief Example of an enum
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISS_ENUM_ONE = FIRST_VALUE !<Description of first enum value
-  INTEGER(INTG), PARAMETER :: CMISS_ENUM_TWO = SECOND_VALUE !<Description of second enum value
-  INTEGER(INTG), PARAMETER :: CMISS_ENUM_THREE = THIRD_VALUE !<Description of third enum value
+  INTEGER(INTG), PARAMETER :: CMFE_ENUM_ONE = FIRST_VALUE !<Description of first enum value
+  INTEGER(INTG), PARAMETER :: CMFE_ENUM_TWO = SECOND_VALUE !<Description of second enum value
+  INTEGER(INTG), PARAMETER :: CMFE_ENUM_THREE = THIRD_VALUE !<Description of third enum value
   !>@}
 
   INTEGER(INTG), PARAMETER :: UNGROUPED_CONSTANT = 1 !<Description
 
   INTEGER(INTG), PARAMETER :: NON_PUBLIC_CONSTANT = 1
 
-  PUBLIC CMISSExampleType, CMISSExample_SomeInterface, CMISSExample_CreateStart, &
-    & CMISSExample_Initialise, CMISSStringRoutine, CMISSArrayRoutine, CMISS_ENUM_ONE, &
-    & CMISS_ENUM_TWO, CMISS_ENUM_THREE, UNGROUPED_CONSTANT
+  PUBLIC cmfe_ExampleType, cmfe_Example_SomeInterface, cmfe_Example_CreateStart, &
+    & cmfe_Example_Initialise, cmfe_StringRoutine, cmfe_ArrayRoutine, CMFE_ENUM_ONE, &
+    & CMFE_ENUM_TWO, CMFE_ENUM_THREE, UNGROUPED_CONSTANT
 
 CONTAINS
 
   !>Doxygen comment describing subroutine
-  SUBROUTINE CMISSExample_SomeInterfaceObj(Example, InputString, OutputString, InputArray, &
+  SUBROUTINE cmfe_Example_SomeInterfaceObj(Example, InputString, OutputString, InputArray, &
       & OutputArray, InputArray2D, OutputArray2D, ArrayWithSize, InputReal, OutputReal, Err)
-    TYPE(CMISSExampleType), INTENT(INOUT) :: Example !<Comment for Example
+    TYPE(cmfe_ExampleType), INTENT(INOUT) :: Example !<Comment for Example
     CHARACTER(LEN=*), INTENT(IN) :: InputString !<Comment for InputString
     CHARACTER(LEN=*), INTENT(OUT) :: OutputString !<Comment for OutputString
     INTEGER(INTG), INTENT(IN) :: InputArray(:) !<Comment for InputArray
@@ -60,54 +60,54 @@ CONTAINS
     REAL(DP), INTENT(IN) :: InputReal !<Comment for InputReal
     REAL(DP), INTENT(OUT) :: OutputReal !<Comment for OutputReal
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSExample_SomeInterfaceObj
+  END SUBROUTINE cmfe_Example_SomeInterfaceObj
 
-  SUBROUTINE CMISSExample_SomeInterfaceNumber(Err)
+  SUBROUTINE cmfe_Example_SomeInterfaceNumber(Err)
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSExample_SomeInterfaceNumber
+  END SUBROUTINE cmfe_Example_SomeInterfaceNumber
 
-  SUBROUTINE CMISSStringRoutineCObj(Err)
+  SUBROUTINE cmfe_StringRoutineCObj(Err)
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSStringRoutineCObj
+  END SUBROUTINE cmfe_StringRoutineCObj
 
-  SUBROUTINE CMISSStringRoutineVSObj(Err)
+  SUBROUTINE cmfe_StringRoutineVSObj(Err)
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSStringRoutineVSObj
+  END SUBROUTINE cmfe_StringRoutineVSObj
 
-  SUBROUTINE CMISSStringRoutineCNumber(Err)
+  SUBROUTINE cmfe_StringRoutineCNumber(Err)
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSStringRoutineCNumber
+  END SUBROUTINE cmfe_StringRoutineCNumber
 
-  SUBROUTINE CMISSStringRoutineVSNumber(Err)
+  SUBROUTINE cmfe_StringRoutineVSNumber(Err)
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSStringRoutineVSNumber
+  END SUBROUTINE cmfe_StringRoutineVSNumber
 
-  SUBROUTINE CMISSArrayRoutine0(Err)
+  SUBROUTINE cmfe_ArrayRoutine0(Err)
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSArrayRoutine0
+  END SUBROUTINE cmfe_ArrayRoutine0
 
-  SUBROUTINE CMISSArrayRoutine1(Err)
+  SUBROUTINE cmfe_ArrayRoutine1(Err)
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSArrayRoutine1
+  END SUBROUTINE cmfe_ArrayRoutine1
 
-  SUBROUTINE CMISSExample_Initialise(Example, Err)
-    TYPE(CMISSExampleType), INTENT(OUT) :: Example
+  SUBROUTINE cmfe_Example_Initialise(Example, Err)
+    TYPE(cmfe_ExampleType), INTENT(OUT) :: Example
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSExample_Initialise
+  END SUBROUTINE cmfe_Example_Initialise
 
-  SUBROUTINE CMISSExample_CreateStartObj(UserNumber, Example, Err)
+  SUBROUTINE cmfe_Example_CreateStartObj(UserNumber, Example, Err)
     INTEGER(INTG), INTENT(IN) :: UserNumber
-    TYPE(CMISSExampleType), INTENT(INOUT) :: Example
+    TYPE(cmfe_ExampleType), INTENT(INOUT) :: Example
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSExample_CreateStartObj
+  END SUBROUTINE cmfe_Example_CreateStartObj
 
-  SUBROUTINE CMISSExample_CreateStartNumber(UserNumber, Err)
+  SUBROUTINE cmfe_Example_CreateStartNumber(UserNumber, Err)
     INTEGER(INTG), INTENT(IN) :: UserNumber
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSExample_CreateStartNumber
+  END SUBROUTINE cmfe_Example_CreateStartNumber
 
-  SUBROUTINE CMISSNonPublicRoutine(Err)
+  SUBROUTINE cmfe_NonPublicRoutine(Err)
     INTEGER(INTG), INTENT(OUT) :: Err !<The error code.
-  END SUBROUTINE CMISSNonPublicRoutine
+  END SUBROUTINE cmfe_NonPublicRoutine
 
-END MODULE OPENCMISS
+END MODULE CMFE

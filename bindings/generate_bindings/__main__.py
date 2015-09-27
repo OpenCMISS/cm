@@ -37,7 +37,7 @@ Testing
 -------
 
 The bindings generation scripts can be tested by running:
-    python -m tests/all_tests
+    python -m tests.all_tests
 
 The tests are also useful for illustrating how the bindings generation works.
 

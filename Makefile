@@ -72,8 +72,9 @@ MODULE_DIR := $(OBJECT_DIR)
 MOD_INC_NAME := opencmiss.mod
 MOD_INCLUDE := $(INC_DIR)/$(MOD_INC_NAME)
 MOD_SOURCE_INC := $(OBJECT_DIR)/$(MOD_INC_NAME)
-HEADER_INC_NAME := opencmiss.h
-HEADER_INCLUDE := $(INC_DIR)/$(HEADER_INC_NAME)
+HEADER_INC_NAME := iron.h
+HEADER_DIR := $(INC_DIR)/opencmiss
+HEADER_INCLUDE := $(HEADER_DIR)/$(HEADER_INC_NAME)
 C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_c.f90
 BINDINGS_DIR = $(OC_CM_GLOBAL_ROOT)/bindings
 BINDINGS_GENERATE_SCRIPT := $(BINDINGS_DIR)/generate_bindings
@@ -271,7 +272,7 @@ MOD_FIELDML: $(FIELDML_OBJECT) $(INC_DIR)/.directory
 	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
 	cp $(OBJECT_DIR)/fieldml_types.mod $(INC_DIR)/fieldml_types.mod
 
-$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py
+$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py $(HEADER_DIR)/.directory
 	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) C $(HEADER_INCLUDE) $(C_F90_SOURCE)
 
 # Place the list of dependencies for the objects here.
@@ -1870,10 +1871,10 @@ $(OBJECT_DIR)/util_array.o   :       $(SOURCE_DIR)/util_array.f90 \
 
 GENERATED_INTERFACE = $(BINDINGS_DIR)/python/opencmiss.i
 PYTHON_INTERFACE = $(BINDINGS_DIR)/python/opencmiss_py.i
-PYTHON_MODULE = $(BINDINGS_DIR)/python/opencmiss/CMISS.py
+PYTHON_MODULE = $(BINDINGS_DIR)/python/opencmiss/iron.py
 PYTHON_MODULE_SO = $(LIB_DIR)/opencmiss_pyswig$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).so
-PYTHON_MODULE_SO_INSTALL = $(BINDINGS_DIR)/python/opencmiss/_opencmiss_swig.so
-PYTHON_WRAPPER = $(BINDINGS_DIR)/python/opencmiss/opencmiss_wrap.c
+PYTHON_MODULE_SO_INSTALL = $(BINDINGS_DIR)/python/opencmiss/_iron_swig.so
+PYTHON_WRAPPER = $(BINDINGS_DIR)/python/opencmiss/iron_wrap.c
 PYTHON_WRAPPER_OBJ = $(OBJECT_DIR)/opencmiss_wrap.o
 PYTHON_INCLUDES = $(shell python-config --includes)
 NUMPY_INCLUDE = $(shell python $(OC_CM_GLOBAL_ROOT)/utils/numpy_include.py)
@@ -1894,8 +1895,8 @@ $(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIP
 	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) Python
 
 $(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(BINDINGS_DIR)/python/numpy.i $(BINDINGS_DIR)/python/numpy_extra.i $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
-# Remove opencmiss_swig.py after running SWIG as we generate our own Python wrapper code
-	( cd $(BINDINGS_DIR)/python/opencmiss && swig -python -o $@ -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE) && rm opencmiss_swig.py )
+# Remove iron_swig.py after running SWIG as we generate our own Python wrapper code
+	( cd $(BINDINGS_DIR)/python/opencmiss && swig -python -o $@ -module iron_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE) && rm iron_swig.py )
 
 $(PYTHON_WRAPPER_OBJ): $(PYTHON_WRAPPER)
 	( cd $(BINDINGS_DIR)/python && $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -I$(NUMPY_INCLUDE) -o $(PYTHON_WRAPPER_OBJ) )

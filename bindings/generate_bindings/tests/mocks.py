@@ -115,12 +115,12 @@ input_string_array = Mock(
         required_sizes=2,
         array_spec=[':', ':'])
 
-# CMISS Types
+# CMFE Types
 input_cmiss_type = Mock(
         intent='IN',
         pointer=False,
         var_type=parse.Parameter.CUSTOM_TYPE,
-        type_name="CMISSTestType",
+        type_name="cmfe_TestType",
         array_dims=0,
         required_sizes=0,
         array_spec=[])
@@ -129,7 +129,7 @@ output_cmiss_type = Mock(
         intent='OUT',
         pointer=False,
         var_type=parse.Parameter.CUSTOM_TYPE,
-        type_name="CMISSTestType",
+        type_name="cmfe_TestType",
         array_dims=0,
         required_sizes=0,
         array_spec=[])
@@ -138,7 +138,7 @@ input_cmiss_type_array = Mock(
         intent='IN',
         pointer=False,
         var_type=parse.Parameter.CUSTOM_TYPE,
-        type_name="CMISSTestType",
+        type_name="cmfe_TestType",
         array_dims=1,
         required_sizes=1,
         array_spec=[':'])

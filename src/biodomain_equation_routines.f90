@@ -88,7 +88,7 @@ MODULE BIODOMAIN_EQUATION_ROUTINES
 
   PUBLIC Biodomain_EquationsSetSolutionMethodSet
   
-  PUBLIC Biodomain_EquationsSetSubtypeSet
+  PUBLIC Biodomain_EquationsSetSpecificationSet
 
   PUBLIC BIODOMAIN_EQUATION_FINITE_ELEMENT_CALCULATE
   
@@ -96,7 +96,7 @@ MODULE BIODOMAIN_EQUATION_ROUTINES
   
   PUBLIC BIODOMAIN_EQUATION_PROBLEM_SETUP
 
-  PUBLIC BIODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET
+  PUBLIC Biodomain_ProblemSpecificationSet
   
 CONTAINS
 
@@ -248,6 +248,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: EQUATIONS_MATERIALS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: EQUATIONS_SET_SPEC_TYPE,EQUATIONS_SET_SPEC_SUBTYPE
     
     ENTERS("Biodomain_EquationsSetSetup",ERR,ERROR,*999)
 
@@ -257,6 +258,13 @@ CONTAINS
     NULLIFY(GEOMETRIC_DECOMPOSITION)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a biodomain equation class.",err,error,*999)
+      END IF
+      EQUATIONS_SET_SPEC_TYPE=EQUATIONS_SET%SPECIFICATION(2)
+      EQUATIONS_SET_SPEC_SUBTYPE=EQUATIONS_SET%SPECIFICATION(3)
       SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
       CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
         SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -276,7 +284,7 @@ CONTAINS
       CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
         SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
         CASE(EQUATIONS_SET_SETUP_START_ACTION)
-          SELECT CASE(EQUATIONS_SET%TYPE)
+          SELECT CASE(EQUATIONS_SET_SPEC_TYPE)
           CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
             IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD_AUTO_CREATED) THEN
               !Create the auto created dependent field
@@ -290,7 +298,7 @@ CONTAINS
                 & ERR,ERROR,*999)
               CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,EQUATIONS_SET%GEOMETRY% &
                 & GEOMETRIC_FIELD,ERR,ERROR,*999)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              SELECT CASE(EQUATIONS_SET_SPEC_SUBTYPE)
               CASE(EQUATIONS_SET_NO_SUBTYPE)
                 CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,2,ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE, &
@@ -306,7 +314,7 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE,3, &
                   & ERR,ERROR,*999)
               CASE(EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE)
-                CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,3,ERR,ERROR,*999)
+               CALL FIELD_NUMBER_OF_VARIABLES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,3,ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,[FIELD_U_VARIABLE_TYPE, &
                   & FIELD_DELUDELN_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE,"GeometryM3D",ERR, &
@@ -326,7 +334,8 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE,3, &
                   & ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="Equations Set Subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The third equations set specification of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_SUBTYPE,"*",ERR,ERROR))// &
                   & " is not valid for a monodomain equation set."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
@@ -380,7 +389,7 @@ CONTAINS
               !Check the user specified field
               CALL FIELD_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_GENERAL_TYPE,ERR,ERROR,*999)
               CALL FIELD_DEPENDENT_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DEPENDENT_TYPE,ERR,ERROR,*999)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              SELECT CASE(EQUATIONS_SET_SPEC_SUBTYPE)
               CASE(EQUATIONS_SET_NO_SUBTYPE)
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,2,ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE], &
@@ -392,7 +401,7 @@ CONTAINS
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,3,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE)
-                CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,3,ERR,ERROR,*999)
+               CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,3,ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_DELUDELN_VARIABLE_TYPE, &
                   & FIELD_V_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
@@ -404,7 +413,8 @@ CONTAINS
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,3,ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="Equations Set Subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The third equations set specification of "// &
+                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_SUBTYPE,"*",ERR,ERROR))// &
                   & " is not valid for a monodomain equation set."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
@@ -439,7 +449,7 @@ CONTAINS
               END SELECT
             ENDIF
           CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
-            SELECT CASE(EQUATIONS_SET%SUBTYPE)
+            SELECT CASE(EQUATIONS_SET_SPEC_SUBTYPE)
             CASE(EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE)
               IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD_AUTO_CREATED) THEN
                 !Create the auto created dependent field
@@ -631,12 +641,12 @@ CONTAINS
                 END SELECT
               ENDIF
             CASE DEFAULT
-              LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_SUBTYPE,"*",ERR,ERROR))// &
                 & " is invalid for a bidomain equations set type."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The equation set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equation set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a biodomain equations set class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -654,9 +664,9 @@ CONTAINS
       CASE(EQUATIONS_SET_SETUP_INDEPENDENT_TYPE)
         SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
         CASE(EQUATIONS_SET_SETUP_START_ACTION)
-          SELECT CASE(EQUATIONS_SET%TYPE)
+          SELECT CASE(EQUATIONS_SET_SPEC_TYPE)
           CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
-            SELECT CASE(EQUATIONS_SET%SUBTYPE)
+            SELECT CASE(EQUATIONS_SET_SPEC_SUBTYPE)
             CASE(EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE,EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE)
               IF(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD_AUTO_CREATED) THEN
                 !Create the auto created independent field
@@ -680,7 +690,7 @@ CONTAINS
                   & "sarcomere half length",ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_LABEL_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U2_VARIABLE_TYPE, &
                   & "contraction velocity",ERR,ERROR,*999)
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE) THEN
+                IF(EQUATIONS_SET_SPEC_SUBTYPE==EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE) THEN
                   CALL FIELD_DIMENSION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_SCALAR_DIMENSION_TYPE,ERR,ERROR,*999)
                 ENDIF
@@ -692,10 +702,10 @@ CONTAINS
                   & FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_V_VARIABLE_TYPE, &
                   & FIELD_INTG_TYPE,ERR,ERROR,*999)
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE) THEN
+                IF(EQUATIONS_SET_SPEC_SUBTYPE==EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE) THEN
                   CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & 1,ERR,ERROR,*999)
-                ELSEIF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
+                ELSEIF(EQUATIONS_SET_SPEC_SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
                   CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & 6,ERR,ERROR,*999)
                 ENDIF
@@ -710,7 +720,7 @@ CONTAINS
                   & GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,1, &
                   & GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
+                IF(EQUATIONS_SET_SPEC_SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,2, &
                     & GEOMETRIC_MESH_COMPONENT,ERR,ERROR,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE,3, &
@@ -750,7 +760,7 @@ CONTAINS
                 CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                   CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
                     & FIELD_U_VARIABLE_TYPE,1,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
+                  IF(EQUATIONS_SET_SPEC_SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
                       & FIELD_U_VARIABLE_TYPE,2,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(EQUATIONS_SET%INDEPENDENT%INDEPENDENT_FIELD, &
@@ -811,7 +821,7 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,4,ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE,FIELD_V_VARIABLE_TYPE, &
                   & FIELD_U1_VARIABLE_TYPE,FIELD_U2_VARIABLE_TYPE],ERR,ERROR,*999)
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE) THEN
+                IF(EQUATIONS_SET_SPEC_SUBTYPE==EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE) THEN
                   CALL FIELD_DIMENSION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_SCALAR_DIMENSION_TYPE, &
                     & ERR,ERROR,*999)
                 ENDIF
@@ -819,9 +829,9 @@ CONTAINS
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,FIELD_INTG_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U1_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U2_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE) THEN
+                IF(EQUATIONS_SET_SPEC_SUBTYPE==EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE) THEN
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
-                ELSEIF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
+                ELSE IF(EQUATIONS_SET_SPEC_SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,6,ERR,ERROR,*999)
                 ENDIF
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_V_VARIABLE_TYPE,5,ERR,ERROR,*999)
@@ -831,7 +841,7 @@ CONTAINS
                 CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1, &
                     & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
-                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
+                  IF(EQUATIONS_SET_SPEC_SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
                     CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,2, &
                       & FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                     CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,3, &
@@ -1001,7 +1011,7 @@ CONTAINS
                 END SELECT
               ENDIF
             CASE DEFAULT
-              LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_SUBTYPE,"*",ERR,ERROR))// &
                 " is not implemented for an equations set setup independent type."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -1009,7 +1019,7 @@ CONTAINS
             LOCAL_ERROR="Equations set setup independent type is not implemented for an equations set bidomain equation type"
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The equation set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equation set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a biodomain equations set class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -1052,7 +1062,7 @@ CONTAINS
                   & FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE) THEN
+                IF(EQUATIONS_SET_SPEC_TYPE==EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE) THEN
                   !Monodomain. Materials field components are 2 plus one for each dimension i.e., Am, Cm and \sigma
                   NUMBER_OF_MATERIALS_COMPONENTS=NUMBER_OF_DIMENSIONS+2
                   DIMENSION_MULTIPLIER=1
@@ -1102,7 +1112,7 @@ CONTAINS
                 CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-                SELECT CASE(EQUATIONS_SET%TYPE)
+                SELECT CASE(EQUATIONS_SET_SPEC_TYPE)
                 CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE,EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE)
                   !Monodomain. Materials field components are 2 plus one for each dimension i.e., Am, Cm and \sigma
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,NUMBER_OF_DIMENSIONS+2, &
@@ -1112,7 +1122,7 @@ CONTAINS
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,2*NUMBER_OF_DIMENSIONS+2, &
                     & ERR,ERROR,*999)
                 CASE DEFAULT
-                  LOCAL_ERROR="The equations set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The equations set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a bioelectrics class."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
@@ -1132,7 +1142,7 @@ CONTAINS
               !Set the default values for the materials field
               CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                 & NUMBER_OF_DIMENSIONS,ERR,ERROR,*999)
-              IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE) THEN
+              IF(EQUATIONS_SET_SPEC_TYPE==EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE) THEN
                 !Monodomain. Materials field components are 2 plus one for each dimension i.e., Am, Cm and \sigma
                 NUMBER_OF_MATERIALS_COMPONENTS=NUMBER_OF_DIMENSIONS+2
                 DIMENSION_MULTIPLIER=1
@@ -1197,22 +1207,24 @@ CONTAINS
                 !Create the equations
                 CALL EQUATIONS_CREATE_START(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
                 CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
-                SELECT CASE(EQUATIONS_SET%TYPE)
+                SELECT CASE(EQUATIONS_SET_SPEC_TYPE)
                 CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
                   CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_FIRST_ORDER_DYNAMIC,ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
-                  SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                  SELECT CASE(EQUATIONS_SET_SPEC_SUBTYPE)
                   CASE(EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE)
                     CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_FIRST_ORDER_DYNAMIC,ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE)
                     CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
                   CASE DEFAULT
-                    LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                      & " is invalid for a bidomain equation type."
+                    LOCAL_ERROR="The third equations set specification of "// &
+                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_SUBTYPE,"*",ERR,ERROR))// &
+                      & " is invalid for a bidomain equation."
                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
-                  LOCAL_ERROR="The equations set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+                  LOCAL_ERROR="The second equations set specification of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_TYPE,"*",ERR,ERROR))// &
                     & " is invalid for a bioelectrics class."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
@@ -1233,13 +1245,13 @@ CONTAINS
             CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
             !Create the equations mapping.
             CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-            SELECT CASE(EQUATIONS_SET%TYPE)
+            SELECT CASE(EQUATIONS_SET_SPEC_TYPE)
             CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
               CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.TRUE.,ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
             CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              SELECT CASE(EQUATIONS_SET_SPEC_SUBTYPE)
               CASE(EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE)
                 CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.TRUE.,ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
@@ -1250,19 +1262,19 @@ CONTAINS
                   & ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELVDELN_VARIABLE_TYPE,ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_SUBTYPE,"*",ERR,ERROR))// &
                   & " is invalid for a bidomain equation type."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
-              LOCAL_ERROR="The equations set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The equations set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a bioelectrics class."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
             CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
             !Create the equations matrices
             CALL EQUATIONS_MATRICES_CREATE_START(EQUATIONS,EQUATIONS_MATRICES,ERR,ERROR,*999)
-            SELECT CASE(EQUATIONS_SET%TYPE)
+            SELECT CASE(EQUATIONS_SET_SPEC_TYPE)
             CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
               !Set up matrix storage and structure
               IF(EQUATIONS%LUMPING_TYPE==EQUATIONS_LUMPED_MATRICES) THEN
@@ -1293,7 +1305,7 @@ CONTAINS
                 END SELECT
               ENDIF
             CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              SELECT CASE(EQUATIONS_SET_SPEC_SUBTYPE)
               CASE(EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE)
               !Set up matrix storage and structure
               IF(EQUATIONS%LUMPING_TYPE==EQUATIONS_LUMPED_MATRICES) THEN
@@ -1339,12 +1351,12 @@ CONTAINS
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE DEFAULT
-                LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_SUBTYPE,"*",ERR,ERROR))// &
                   & " is invalid for a bidomain equation type."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
-              LOCAL_ERROR="The equations set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The equations set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a bioelectrics class."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -1400,13 +1412,21 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: EQUATIONS_SET_SPEC_TYPE,EQUATIONS_SET_SPEC_SUBTYPE
     
     ENTERS("Biodomain_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Equations set specification does not have a subtype set.",err,error,*999)
+      END IF
+      EQUATIONS_SET_SPEC_TYPE=EQUATIONS_SET%SPECIFICATION(2)
+      EQUATIONS_SET_SPEC_SUBTYPE=EQUATIONS_SET%SPECIFICATION(3)
+      SELECT CASE(EQUATIONS_SET_SPEC_TYPE)
       CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)        
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET_SPEC_SUBTYPE)
         CASE(EQUATIONS_SET_NO_SUBTYPE,EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE, &
           & EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE,EQUATIONS_SET_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)
           SELECT CASE(SOLUTION_METHOD)
@@ -1427,12 +1447,12 @@ CONTAINS
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_SUBTYPE,"*",ERR,ERROR))// &
             & " is not valid for a bioelectric monodomain equation type of an bioelectrics equations set class."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)        
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET_SPEC_SUBTYPE)
         CASE(EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE)        
           SELECT CASE(SOLUTION_METHOD)
           CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -1470,12 +1490,12 @@ CONTAINS
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_SUBTYPE,"*",ERR,ERROR))// &
             & " is not valid for a bioelectric bidomain equation type of an bioelectrics equations set class."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SPEC_TYPE,"*",ERR,ERROR))// &
           & " is not valid for a bioelectrics equations set class."
         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -1495,75 +1515,77 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a bioelectric domain equation type of a bioelectric equations set class.
-  SUBROUTINE Biodomain_EquationsSetSubtypeSet(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the equation specification for a bioelectric domain equation type of a bioelectric equations set class.
+  SUBROUTINE Biodomain_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_TYPE_ !<The equation type to set
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    ENTERS("Biodomain_EquationsSetSubtypeSet",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET_TYPE_)
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: equationsSetType,equationsSetSubtype
+
+    ENTERS("BiodomainEquation_EquationsSetSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a biodomain equation type equations set.", &
+          & err,error,*999)
+      END IF
+      equationsSetType=specification(2)
+      equationsSetSubtype=specification(3)
+      SELECT CASE(equationsSetType)
       CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
-        SELECT CASE(EQUATIONS_SET_SUBTYPE)
+        SELECT CASE(equationsSetSubtype)
         CASE(EQUATIONS_SET_NO_SUBTYPE)
-          EQUATIONS_SET%CLASS=EQUATIONS_SET_BIOELECTRICS_CLASS
-          EQUATIONS_SET%TYPE=EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE
-          EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_NO_SUBTYPE
-        CASE(EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE)
-          EQUATIONS_SET%CLASS=EQUATIONS_SET_BIOELECTRICS_CLASS
-          EQUATIONS_SET%TYPE=EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE
-          EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE
-        CASE(PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE)
-          EQUATIONS_SET%CLASS=EQUATIONS_SET_BIOELECTRICS_CLASS
-          EQUATIONS_SET%TYPE=EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE
-          EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE
-        CASE(PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)
-          EQUATIONS_SET%CLASS=EQUATIONS_SET_BIOELECTRICS_CLASS
-          EQUATIONS_SET%TYPE=EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE
-          EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE
+          !ok
+          !\todo What are problem types doing setting up an equations set????
+        CASE(EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE, &
+          & PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE, &
+          & PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)
+          !ok
         CASE DEFAULT
-          LOCAL_ERROR="The specified equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a monodomain equation type of a bioelectric equations set class."
-          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
+          localError="The third equations set specification of "//TRIM(NumberToVstring(equationsSetSubtype,"*",err,error))// &
+            & " is not valid for a monodomain type of a bioelectric equations set."
+          CALL FlagError(localError,err,error,*999)
         END SELECT
       CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
-        SELECT CASE(EQUATIONS_SET_SUBTYPE)
+        SELECT CASE(equationsSetSubtype)
         CASE(EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE)
-          EQUATIONS_SET%CLASS=EQUATIONS_SET_BIOELECTRICS_CLASS
-          EQUATIONS_SET%TYPE=EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE
-          EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE
+          !ok
         CASE(EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE)
-          EQUATIONS_SET%CLASS=EQUATIONS_SET_BIOELECTRICS_CLASS
-          EQUATIONS_SET%TYPE=EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE
-          EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE
+          !ok
         CASE DEFAULT
-          LOCAL_ERROR="The specified equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
+          localError="The third equations set specification of "//TRIM(NumberToVstring(equationsSetSubtype,"*",err,error))// &
             & " is not valid for a bidomain equation type of a bioelectric equations set class."
-          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(localError,err,error,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="The equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_TYPE_,"*",ERR,ERROR))// &
-          & " is not valid for a bioelectric equations set class."
-        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
+        localError="The second equations set specification of "//TRIM(NumberToVstring(equationsSetType,"*",err,error))// &
+          & " is not valid for a bioelectric equations set."
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_BIOELECTRICS_CLASS,equationsSetType,equationsSetSubtype]
     ELSE
-      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    EXITS("Biodomain_EquationsSetSubtypeSet")
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+
+    EXITS("Biodomain_EquationsSetSpecificationSet")
     RETURN
-999 ERRORSEXITS("Biodomain_EquationsSetSubtypeSet",ERR,ERROR)
+999 ERRORS("Biodomain_EquationsSetSpecificationSet",err,error)
+    EXITS("Biodomain_EquationsSetSpecificationSet")
     RETURN 1
     
-  END SUBROUTINE Biodomain_EquationsSetSubtypeSet
+  END SUBROUTINE Biodomain_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
@@ -1593,9 +1615,14 @@ CONTAINS
           CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
           PROBLEM=>CONTROL_LOOP%PROBLEM
           IF(ASSOCIATED(PROBLEM)) THEN
-            SELECT CASE(PROBLEM%TYPE)
+            IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+              CALL FlagError("Problem specification is not allocated.",err,error,*999)
+            ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+              CALL FlagError("Problem specification must have three entries for a biodomain problem.",err,error,*999)
+            END IF
+            SELECT CASE(PROBLEM%SPECIFICATION(2))
             CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE)
-              SELECT CASE(PROBLEM%SUBTYPE)
+              SELECT CASE(PROBLEM%SPECIFICATION(3))
               CASE(PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE)
                 SELECT CASE(SOLVER%GLOBAL_NUMBER)
                 CASE(1)
@@ -1622,12 +1649,12 @@ CONTAINS
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE DEFAULT
-                LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                   & " is invalid for a monodomain problem type."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_BIDOMAIN_EQUATION_TYPE)
-              SELECT CASE(PROBLEM%SUBTYPE)
+              SELECT CASE(PROBLEM%SPECIFICATION(3))
               CASE(PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE)
                 SELECT CASE(SOLVER%GLOBAL_NUMBER)
                 CASE(1)
@@ -1658,12 +1685,12 @@ CONTAINS
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE DEFAULT
-                LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                   & " is invalid for a bidomain problem type."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
-              SELECT CASE(PROBLEM%SUBTYPE)
+              SELECT CASE(PROBLEM%SPECIFICATION(3))
               CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE,PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE, &
                 & PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE,EQUATIONS_SET_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)
                 SELECT CASE(SOLVER%GLOBAL_NUMBER)
@@ -1677,12 +1704,12 @@ CONTAINS
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE DEFAULT
-                LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                   & " is invalid for a monodomain problem type."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
-              LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
                 & " is invalid."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -1774,9 +1801,14 @@ CONTAINS
         CASE(PROBLEM_SETUP_START_ACTION)
           !Start the solvers creation
           CALL SOLVERS_CREATE_START(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-          SELECT CASE(PROBLEM%TYPE)
+          IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a biodomain problem.",err,error,*999)
+          END IF
+          SELECT CASE(PROBLEM%SPECIFICATION(2))
           CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE)
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE)
               CALL SOLVERS_NUMBER_SET(SOLVERS,2,ERR,ERROR,*999)
               !Set the first solver to be a differential-algebraic equations solver
@@ -1825,12 +1857,12 @@ CONTAINS
               !Set solver defaults
               CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_CMISS_LIBRARY,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is invalid for a monodomain problem type of a bioelectric problem class."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(PROBLEM_BIDOMAIN_EQUATION_TYPE)
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE)
               CALL SOLVERS_NUMBER_SET(SOLVERS,3,ERR,ERROR,*999)
               !Set the first solver to be a differential-algebraic equations solver
@@ -1893,12 +1925,12 @@ CONTAINS
              !Set solver defaults
               CALL SOLVER_LIBRARY_TYPE_SET(SOLVER,SOLVER_PETSC_LIBRARY,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is invalid for a monodomain problem type of a bioelectric problem class."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
               & " is invalid for a bioelectric problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -1921,7 +1953,12 @@ CONTAINS
           CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
           !Get the solver
           CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-          SELECT CASE(PROBLEM%TYPE)
+          IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a biodomain problem.",err,error,*999)
+          END IF
+          SELECT CASE(PROBLEM%SPECIFICATION(2))
           CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE)
             !Create the solver equations for the second (parabolic) solver
             CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
@@ -1939,13 +1976,13 @@ CONTAINS
             !Create the solver equations for the elliptic solver
             NULLIFY(SOLVER)
             NULLIFY(SOLVER_EQUATIONS)
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE)
               CALL SOLVERS_SOLVER_GET(SOLVERS,3,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE)
               CALL SOLVERS_SOLVER_GET(SOLVERS,4,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))//  &
+              LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))//  &
                 & " is invalid for a bidomain problem type."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -1954,7 +1991,7 @@ CONTAINS
             CALL SOLVER_EQUATIONS_TIME_DEPENDENCE_TYPE_SET(SOLVER_EQUATIONS,SOLVER_EQUATIONS_STATIC,ERR,ERROR,*999)
             CALL SOLVER_EQUATIONS_SPARSITY_TYPE_SET(SOLVER_EQUATIONS,SOLVER_SPARSE_MATRICES,ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))//  &
+            LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))//  &
               & " is invalid for a bioelectric problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -1963,7 +2000,12 @@ CONTAINS
           CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
           CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
           CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-          SELECT CASE(PROBLEM%TYPE)
+          IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a biodomain problem.",err,error,*999)
+          END IF
+          SELECT CASE(PROBLEM%SPECIFICATION(2))
           CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE)
             !Get the solver equations for the second (parabolic) solver
             CALL SOLVERS_SOLVER_GET(SOLVERS,2,SOLVER,ERR,ERROR,*999)
@@ -1979,13 +2021,13 @@ CONTAINS
             !Get the solver equations for the elliptic solver
             NULLIFY(SOLVER)
             NULLIFY(SOLVER_EQUATIONS)
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE)
               CALL SOLVERS_SOLVER_GET(SOLVERS,3,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE)
               CALL SOLVERS_SOLVER_GET(SOLVERS,4,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))//  &
+              LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))//  &
                 & " is invalid for a bidomain problem type."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -1993,7 +2035,7 @@ CONTAINS
             !Finish the solver equations creation
             CALL SOLVER_EQUATIONS_CREATE_FINISH(SOLVER_EQUATIONS,ERR,ERROR,*999)             
           CASE DEFAULT
-            LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))//  &
+            LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))//  &
               & " is invalid for a bioelectric problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -2011,12 +2053,17 @@ CONTAINS
           CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
           !Get the solver
           CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-          SELECT CASE(PROBLEM%TYPE)
+          IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a biodomain problem.",err,error,*999)
+          END IF
+          SELECT CASE(PROBLEM%SPECIFICATION(2))
           CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE)
             !Create the CellML equations for the first DAE solver
             CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
             CALL CELLML_EQUATIONS_CREATE_START(SOLVER,CELLML_EQUATIONS,ERR,ERROR,*999)
-            IF(PROBLEM%SUBTYPE==PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE) THEN
+            IF(PROBLEM%SPECIFICATION(3)==PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE) THEN
               !Create the CellML equations for the second DAE solver
               NULLIFY(SOLVER)
               NULLIFY(CELLML_EQUATIONS)
@@ -2027,7 +2074,7 @@ CONTAINS
             !Create the CellML equations for the first DAE solver
             CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
             CALL CELLML_EQUATIONS_CREATE_START(SOLVER,CELLML_EQUATIONS,ERR,ERROR,*999)
-            IF(PROBLEM%SUBTYPE==PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE) THEN
+            IF(PROBLEM%SPECIFICATION(3)==PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE) THEN
               !Create the CellML equations for the second DAE solver
               NULLIFY(SOLVER)
               NULLIFY(CELLML_EQUATIONS)
@@ -2035,7 +2082,7 @@ CONTAINS
               CALL CELLML_EQUATIONS_CREATE_START(SOLVER,CELLML_EQUATIONS,ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
-            LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))//  &
+            LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))//  &
               & " is invalid for a bioelectric problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -2044,14 +2091,19 @@ CONTAINS
           CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
           CALL CONTROL_LOOP_GET(CONTROL_LOOP_ROOT,CONTROL_LOOP_NODE,CONTROL_LOOP,ERR,ERROR,*999)
           CALL CONTROL_LOOP_SOLVERS_GET(CONTROL_LOOP,SOLVERS,ERR,ERROR,*999)
-          SELECT CASE(PROBLEM%TYPE)
+          IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a biodomain problem.",err,error,*999)
+          END IF
+          SELECT CASE(PROBLEM%SPECIFICATION(2))
           CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE)
             !Get the CellML equations for the first DAE solver
             CALL SOLVERS_SOLVER_GET(SOLVERS,1,SOLVER,ERR,ERROR,*999)
             CALL SOLVER_CELLML_EQUATIONS_GET(SOLVER,CELLML_EQUATIONS,ERR,ERROR,*999)
             !Finish the CellML equations creation
             CALL CELLML_EQUATIONS_CREATE_FINISH(CELLML_EQUATIONS,ERR,ERROR,*999)
-            IF(PROBLEM%SUBTYPE==PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE) THEN
+            IF(PROBLEM%SPECIFICATION(3)==PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE) THEN
               !Get the CellML equations for the second DAE solver
               NULLIFY(SOLVER)
               NULLIFY(CELLML_EQUATIONS)
@@ -2066,7 +2118,7 @@ CONTAINS
             CALL SOLVER_CELLML_EQUATIONS_GET(SOLVER,CELLML_EQUATIONS,ERR,ERROR,*999)
             !Finish the CellML equations creation
             CALL CELLML_EQUATIONS_CREATE_FINISH(CELLML_EQUATIONS,ERR,ERROR,*999)
-            IF(PROBLEM%SUBTYPE==PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE) THEN
+            IF(PROBLEM%SPECIFICATION(3)==PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE) THEN
               !Get the CellML equations for the second DAE solver
               NULLIFY(SOLVER)
               NULLIFY(CELLML_EQUATIONS)
@@ -2076,7 +2128,7 @@ CONTAINS
               CALL CELLML_EQUATIONS_CREATE_FINISH(CELLML_EQUATIONS,ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
-            LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))//  &
+            LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))//  &
               & " is invalid for a bioelectric problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT            
@@ -2105,66 +2157,72 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a bioelectric domain equation type of a bioelectric equations set class.
-  SUBROUTINE BIODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a bioelectric domain problem class.
+  SUBROUTINE Biodomain_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER, INTENT(IN) :: PROBLEM !<A pointer to the problem
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_EQUATION_TYPE !<The problem type
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER, INTENT(IN) :: problem !<A pointer to the problem to set the specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    ENTERS("BIODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_EQUATION_TYPE)
-      CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE)
-        SELECT CASE(PROBLEM_SUBTYPE)
-        CASE(PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE)
-          PROBLEM%CLASS=PROBLEM_BIOELECTRICS_CLASS
-          PROBLEM%TYPE=PROBLEM_MONODOMAIN_EQUATION_TYPE
-          PROBLEM%SUBTYPE=PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE
-        CASE(PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE)
-          PROBLEM%CLASS=PROBLEM_BIOELECTRICS_CLASS
-          PROBLEM%TYPE=PROBLEM_MONODOMAIN_EQUATION_TYPE
-          PROBLEM%SUBTYPE=PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE         
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemType
+    INTEGER(INTG) :: problemSubtype
+
+    ENTERS("Biodomain_ProblemSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemType=problemSpecification(2)
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemType)
+        CASE(PROBLEM_MONODOMAIN_EQUATION_TYPE)
+          SELECT CASE(problemSubtype)
+          CASE(PROBLEM_MONODOMAIN_GUDUNOV_SPLIT_SUBTYPE, &
+              & PROBLEM_MONODOMAIN_STRANG_SPLIT_SUBTYPE)
+            !ok
+          CASE DEFAULT
+            localError="The third problem specification of "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+              & " is not valid for a monodomain type of a bioelectric problem."
+            CALL FlagError(localError,err,error,*999)
+          END SELECT
+        CASE(PROBLEM_BIDOMAIN_EQUATION_TYPE)
+          SELECT CASE(problemSubtype)
+          CASE(PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE, &
+              & PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE)
+            !ok
+          CASE DEFAULT
+            localError="The third problem specification of "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+              & " is not valid for a bidomain type of a bioelectric problem."
+            CALL FlagError(localError,err,error,*999)
+          END SELECT
         CASE DEFAULT
-          LOCAL_ERROR="The specified problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a monodomain problem type of a bioelectric problem class."
-          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
+          localError="The second problem specification of "//TRIM(NumberToVstring(problemType,"*",err,error))// &
+            & " is not valid for a bioelectric problem."
+          CALL FlagError(localError,err,error,*999)
         END SELECT
-      CASE(PROBLEM_BIDOMAIN_EQUATION_TYPE)
-        SELECT CASE(PROBLEM_SUBTYPE)
-        CASE(PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE)
-          PROBLEM%CLASS=PROBLEM_BIOELECTRICS_CLASS
-          PROBLEM%TYPE=PROBLEM_BIDOMAIN_EQUATION_TYPE
-          PROBLEM%SUBTYPE=PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE
-        CASE(PROBLEM_BIDOMAIN_STRANG_SPLIT_SUBTYPE)
-          PROBLEM%CLASS=PROBLEM_BIOELECTRICS_CLASS
-          PROBLEM%TYPE=PROBLEM_BIDOMAIN_EQUATION_TYPE
-          PROBLEM%SUBTYPE=PROBLEM_BIDOMAIN_GUDUNOV_SPLIT_SUBTYPE
-        CASE DEFAULT
-          LOCAL_ERROR="The specified problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a bidomain problem type of a bioelectric problem class."
-          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-        END SELECT
-      CASE DEFAULT
-        LOCAL_ERROR="The problem type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
-          & " is not valid for a bioelectric equations set class."
-        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_BIOELECTRICS_CLASS,problemType,problemSubtype]
+      ELSE
+        CALL FlagError("Biodomain problem specification must have three entries.",err,error,*999)
+      END IF
     ELSE
-      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    EXITS("BIODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    EXITS("Biodomain_ProblemSpecificationSet")
     RETURN
-999 ERRORSEXITS("BIODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR)
+999 ERRORS("Biodomain_ProblemSpecificationSet",err,error)
+    EXITS("Biodomain_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE BIODOMAIN_EQUATION_PROBLEM_SUBTYPE_SET
+    
+  END SUBROUTINE Biodomain_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -2223,7 +2281,12 @@ CONTAINS
         IF(USE_FIBRES) CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS% &
           & INTERPOLATION%FIBRE_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
         
-        SELECT CASE(EQUATIONS_SET%TYPE)
+        IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+          CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+          CALL FlagError("Equations set specification does not have a type set.",err,error,*999)
+        END IF
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
         CASE(EQUATIONS_SET_MONODOMAIN_EQUATION_TYPE)
           
           DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
@@ -2315,16 +2378,19 @@ CONTAINS
             ENDDO !ng
           ENDIF
         CASE(EQUATIONS_SET_BIDOMAIN_EQUATION_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Equations set specification does not have a subtype set.",err,error,*999)
+          END IF
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_FIRST_BIDOMAIN_SUBTYPE)
           CASE(EQUATIONS_SET_SECOND_BIDOMAIN_SUBTYPE)
           CASE DEFAULT
-            LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a bioelectric domain type of a bioelectrics equations set class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
-          LOCAL_ERROR="The equations set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The equations set type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(2),"*",ERR,ERROR))// &
             & " is not valid for a bioelectric domain type of a bioelectrics equations set class."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT

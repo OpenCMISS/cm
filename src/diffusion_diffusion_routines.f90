@@ -82,11 +82,11 @@ MODULE DIFFUSION_DIFFUSION_ROUTINES
   IMPLICIT NONE
 
   PUBLIC DIFFUSION_DIFFUSION_EQUATIONS_SET_SETUP
-  PUBLIC DiffusionDiffusionEquationsSetSubtypeSet
+  PUBLIC DiffusionDiffusion_EquationsSetSpecificationSet
   PUBLIC DiffusionDiffusion_EquationsSetSolutionMethodSet
 
   PUBLIC DIFFUSION_DIFFUSION_PROBLEM_SETUP
-  PUBLIC DIFFUSION_DIFFUSION_PROBLEM_SUBTYPE_SET
+  PUBLIC DiffusionDiffusion_ProblemSpecificationSet
   
   PUBLIC DiffusionDiffusion_FiniteElementCalculate
 
@@ -114,7 +114,13 @@ CONTAINS
     ENTERS("DiffusionDiffusion_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a "// &
+          & "diffusion-diffusion type equations set.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE)
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -134,7 +140,7 @@ CONTAINS
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a diffusion-diffusion equation type of a multi physics equations set class."
         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -204,64 +210,78 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a coupled diffusion-diffusion equation type of a multi physics equations set class.
-  SUBROUTINE DiffusionDiffusionEquationsSetSubtypeSet(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the equation specification for a coupled diffusion-diffusion equation type of a multi physics equations set class.
+  SUBROUTINE DiffusionDiffusion_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-    ENTERS("DiffusionDiffusionEquationsSetSubtypeSet",ERR,ERROR,*999)
-    
-    CALL FlagError("Not implemented.",ERR,ERROR,*999)
-       
-    EXITS("DiffusionDiffusionEquationsSetSubtypeSet")
+    ENTERS("DiffusionDiffusion_EquationsSetSpecificationSet",err,error,*999)
+
+    CALL FlagError("Not implemented.",err,error,*999)
+
+    EXITS("DiffusionDiffusion_EquationsSetSpecificationSet")
     RETURN
-999 ERRORSEXITS("DiffusionDiffusionEquationsSetSubtypeSet",ERR,ERROR)
+999 ERRORS("DiffusionDiffusion_EquationsSetSpecificationSet",err,error)
+    EXITS("DiffusionDiffusion_EquationsSetSpecificationSet")
     RETURN 1
     
-  END SUBROUTINE DiffusionDiffusionEquationsSetSubtypeSet
+  END SUBROUTINE DiffusionDiffusion_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the problem subtype for a coupled diffusion-diffusion equation type .
-  SUBROUTINE DIFFUSION_DIFFUSION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a coupled diffusion-diffusion equation type.
+  SUBROUTINE DiffusionDiffusion_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    ENTERS("DIFFUSION_DIFFUSION_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_DIFFUSION_DIFFUSION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE     
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a coupled diffusion-diffusion equation type of a multi physics problem class."
-        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
+
+    ENTERS("DiffusionDiffusion_ProblemSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE)
+          !ok
+        CASE DEFAULT
+          localError="The third problem specification of "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a coupled diffusion-diffusion type of a multi physics problem."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_MULTI_PHYSICS_CLASS,PROBLEM_DIFFUSION_DIFFUSION_TYPE, &
+          & problemSubtype]
+      ELSE
+        CALL FlagError("Diffusion-diffusion problem specification must have three elements.",err,error,*999)
+      END IF
     ELSE
-      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    EXITS("DIFFUSION_DIFFUSION_PROBLEM_SUBTYPE_SET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    EXITS("DiffusionDiffusion_ProblemSpecificationSet")
     RETURN
-999 ERRORSEXITS("DIFFUSION_DIFFUSION_PROBLEM_SUBTYPE_SET",ERR,ERROR)
+999 ERRORS("DiffusionDiffusion_ProblemSpecificationSet",err,error)
+    EXITS("DiffusionDiffusion_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE DIFFUSION_DIFFUSION_PROBLEM_SUBTYPE_SET
+    
+  END SUBROUTINE DiffusionDiffusion_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -290,8 +310,14 @@ CONTAINS
     NULLIFY(SOLVER_DIFFUSION_TWO)
     NULLIFY(SOLVER_EQUATIONS_DIFFUSION_ONE)
     NULLIFY(SOLVER_EQUATIONS_DIFFUSION_TWO)
-     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+    IF(ASSOCIATED(PROBLEM)) THEN
+      IF(.NOT.ALLOCATED(problem%specification)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(problem%specification,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a diffusion-diffusion problem.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
 
       !--------------------------------------------------------------------
       !   coupled source diffusion-diffusion
@@ -424,7 +450,7 @@ CONTAINS
       !   c a s e   d e f a u l t
       !-----------------------------------------------------------------
       CASE DEFAULT
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a coupled source diffusion-diffusion equation subtype."
         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 
@@ -461,7 +487,13 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a diffusion-diffusion problem.", &
+              & err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE)
 
               IF(SOLVER%GLOBAL_NUMBER==1) THEN
@@ -474,7 +506,7 @@ CONTAINS
                 !CALL Diffusion_PreSolveGetSourceValue(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a diffusion type of a multi physics problem class."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -515,7 +547,13 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a diffusion-diffusion problem.", &
+              & err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE)
               IF(SOLVER%GLOBAL_NUMBER==1) THEN
 !              CALL DIFFUSION_EQUATION_POST_SOLVE_EVALUATE_SOURCE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -524,7 +562,7 @@ CONTAINS
               !do nothing?!
               ENDIF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a diffusion-diffusion type of a multi physics problem class."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -565,11 +603,17 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a diffusion-diffusion problem.", &
+              & err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_COUPLED_SOURCE_DIFFUSION_DIFFUSION_SUBTYPE)
                 !CALL DIFFUSION_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a diffusion type of a multi physics problem class."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT

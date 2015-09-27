@@ -73,12 +73,11 @@ MODULE BIOELECTRIC_FINITE_ELASTICITY_ROUTINES
   IMPLICIT NONE
 
   PUBLIC BioelectricFiniteElasticity_EquationsSetSetup
-  PUBLIC BioelectricFiniteElasticity_EquationsSetSubtypeSet
   PUBLIC BioelectricFiniteElasticity_EquationsSetSolutionMethodSet
 
   PUBLIC BIOELECTRIC_FINITE_ELASTICITY_PROBLEM_SETUP
-  PUBLIC BioelectricFiniteElasticity_ProblemSubtypeSet
-  
+  PUBLIC BioelectricFiniteElasticity_ProblemSpecificationSet
+ 
   PUBLIC BioelectricFiniteElasticity_FiniteElementCalculate
 
   PUBLIC BIOELECTRIC_FINITE_ELASTICITY_PRE_SOLVE
@@ -109,7 +108,14 @@ CONTAINS
     ENTERS("BioelectricFiniteElasticity_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a "// &
+          & "Bioelectric-finite elasticity type equations set.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
+        !\todo what are problem constants doing here???
       CASE(EQUATIONS_SET_STANDARD_MONODOMAIN_ELASTICITY_SUBTYPE,EQUATIONS_SET_1D3D_MONODOMAIN_ELASTICITY_SUBTYPE, &
         & EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE,PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)
         SELECT CASE(SOLUTION_METHOD)
@@ -130,7 +136,7 @@ CONTAINS
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a bioelectrics finite elasticity equation type of a multi physics equations set class."
         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -200,79 +206,56 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a bioelectrics finite elasticity equation type of a multi physics equations set class.
-  SUBROUTINE BioelectricFiniteElasticity_EquationsSetSubtypeSet(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a bioelectric finite elasticity problem type .
+  SUBROUTINE BioelectricFiniteElasticity_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
 
-    ENTERS("BioelectricFiniteElasticity_EquationsSetSubtypeSet",ERR,ERROR,*999)
+    ENTERS("BioelectricFiniteElasticity_ProblemSpecificationSet",err,error,*999)
 
-    CALL FlagError("BioelectricFiniteElasticity_EquationsSetSubtypeSet is not implemented.",ERR,ERROR,*999)
-
-    EXITS("BioelectricFiniteElasticity_EquationsSetSubtypeSet")
-    RETURN
-999 ERRORS("BioelectricFiniteElasticity_EquationsSetSubtypeSet",ERR,ERROR)
-    EXITS("BioelectricFiniteElasticity_EquationsSetSubtypeSet")
-    RETURN 1
-    
-  END SUBROUTINE BioelectricFiniteElasticity_EquationsSetSubtypeSet
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the problem subtype for a bioelectric finite elasticity problem type .
-  SUBROUTINE BioelectricFiniteElasticity_ProblemSubtypeSet(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    ENTERS("BioelectricFiniteElasticity_ProblemSubtypeSet",ERR,ERROR,*999)
-    
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE
-      CASE(PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE
-      CASE(PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE
-      CASE(PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a bioelectric finite elasticity problem type of a multi physics problem class."
-        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE, &
+            & PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE, &
+            & PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE, &
+            & PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)
+          !ok
+        CASE DEFAULT
+          localError="The third problem specification of "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a bioelectric finite elasticity type of a multi physics problem."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_MULTI_PHYSICS_CLASS,PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE, &
+          & problemSubtype]
+      ELSE
+        CALL FlagError("Bioelectric finite elasticity problem specification must have three entries.",err,error,*999)
+      END IF
     ELSE
-      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    EXITS("BioelectricFiniteElasticity_ProblemSubtypeSet")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    EXITS("BioelectricFiniteElasticity_ProblemSpecificationSet")
     RETURN
-999 ERRORS("BioelectricFiniteElasticity_ProblemSubtypeSet",ERR,ERROR)
-    EXITS("BioelectricFiniteElasticity_ProblemSubtypeSet")
+999 ERRORS("BioelectricFiniteElasticity_ProblemSpecificationSet",err,error)
+    EXITS("BioelectricFiniteElasticity_ProblemSpecificationSet")
     RETURN 1
     
-  END SUBROUTINE BioelectricFiniteElasticity_ProblemSubtypeSet
+  END SUBROUTINE BioelectricFiniteElasticity_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -308,7 +291,12 @@ CONTAINS
     NULLIFY(CELLML_EQUATIONS)
     
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(.NOT.ALLOCATED(problem%specification)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(problem%specification,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a bioelectric-finite elasticity problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
 
       !--------------------------------------------------------------------
       !   Transient Gudunov monodomain, simple finite elasticity  
@@ -343,7 +331,7 @@ CONTAINS
             CALL CONTROL_LOOP_TYPE_SET(MONODOMAIN_SUB_LOOP,PROBLEM_CONTROL_TIME_LOOP_TYPE,ERR,ERROR,*999)
             CALL CONTROL_LOOP_OUTPUT_TYPE_SET(MONODOMAIN_SUB_LOOP,CONTROL_LOOP_PROGRESS_OUTPUT,ERR,ERROR,*999)
 
-            IF(PROBLEM%SUBTYPE==PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE) THEN
+            IF(PROBLEM%specification(3)==PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE) THEN
               !Set up the control sub loop for finite elasicity
               CALL CONTROL_LOOP_SUB_LOOP_GET(CONTROL_LOOP,2,ELASTICITY_SUB_LOOP,ERR,ERROR,*999)
               CALL CONTROL_LOOP_LABEL_SET(ELASTICITY_SUB_LOOP,'ELASTICITY_WHILE_LOOP',ERR,ERROR,*999)
@@ -520,7 +508,7 @@ CONTAINS
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a transient monodomain quasistatic finite elasticity equation subtype."
         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -556,9 +544,15 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a bioelectric-finite elasticity problem.", &
+              & err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE,PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE, &
-            & PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE)
+              & PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE)
             SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
             CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
               CALL BIODOMAIN_PRE_SOLVE(SOLVER,ERR,ERROR,*999)
@@ -581,7 +575,7 @@ CONTAINS
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a bioelectrics finite elasticity type of a multi physics problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -623,7 +617,13 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a bioelectric-finite elasticity problem.", &
+              & err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE,PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE, &
             & PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE,PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)
             SELECT CASE(SOLVER%SOLVE_TYPE)
@@ -639,7 +639,7 @@ CONTAINS
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a bioelectrics finite elasticity type of a multi physics problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -681,26 +681,33 @@ CONTAINS
       IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
         PROBLEM=>CONTROL_LOOP%PROBLEM
         IF(ASSOCIATED(PROBLEM)) THEN
-          SELECT CASE(PROBLEM%TYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a bioelectric-finite elasticity problem.", &
+              & err,error,*999)
+          END IF
+          SELECT CASE(PROBLEM%SPECIFICATION(2))
           CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
             SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
             CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
               !do nothing ???
             CASE(PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE)
-              SELECT CASE(PROBLEM%SUBTYPE)
+              SELECT CASE(PROBLEM%SPECIFICATION(3))
               CASE(PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE)
                 CALL BioelectricFiniteElasticity_IndependentFieldInterpolate(CONTROL_LOOP,ERR,ERROR,*999)
               CASE(PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE)
                 CALL BIOELECTRIC_FINITE_ELASTICITY_COMPUTE_TITIN(CONTROL_LOOP,ERR,ERROR,*999)
                 CALL BioelectricFiniteElasticity_IndependentFieldInterpolate(CONTROL_LOOP,ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                  & " is not valid for bioelectric finite elasticity problem type."
+                LOCAL_ERROR="The third problem specification of "// &
+                  & TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
+                  & " is not valid for bioelectric finite elasticity problem."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               CALL FiniteElasticity_ControlTimeLoopPreLoop(CONTROL_LOOP,ERR,ERROR,*999)
             CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
-              SELECT CASE(PROBLEM%SUBTYPE)
+              SELECT CASE(PROBLEM%SPECIFICATION(3))
               CASE(PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)
                 IF(CONTROL_LOOP%WHILE_LOOP%ITERATION_NUMBER==1) THEN
                   CALL BioelectricFiniteElasticity_IndependentFieldInterpolate(CONTROL_LOOP,ERR,ERROR,*999)
@@ -708,8 +715,9 @@ CONTAINS
                 CALL BioelectricFiniteElasticity_ComputeFibreStretch(CONTROL_LOOP,ERR,ERROR,*999)
                 CALL BioelectricFiniteElasticity_ForceLengthVelocityRelation(CONTROL_LOOP,ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                  & " is not valid for bioelectric finite elasticity problem type."
+                LOCAL_ERROR="The third problem specification of "// &
+                  & TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
+                  & " is not valid for bioelectric finite elasticity problem."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               CALL FiniteElasticity_ControlTimeLoopPreLoop(CONTROL_LOOP,ERR,ERROR,*999)
@@ -719,8 +727,9 @@ CONTAINS
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
-              & " is not valid for a multi physics problem class."
+            LOCAL_ERROR="The second problem specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
+              & " is not valid for a multi physics problem."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
@@ -1355,14 +1364,20 @@ CONTAINS
       IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
         PROBLEM=>CONTROL_LOOP%PROBLEM
         IF(ASSOCIATED(PROBLEM)) THEN
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a bioelectric-finite elasticity problem.", &
+              & err,error,*999)
+          END IF
           SELECT CASE(CONTROL_LOOP%LOOP_TYPE)
           CASE(PROBLEM_CONTROL_TIME_LOOP_TYPE)
-            SELECT CASE(PROBLEM%TYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(2))
             CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
               !the monodomain time loop - output of the monodomain fields
               CALL BIODOMAIN_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
                 & " is not valid for a multi physics problem class."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -1420,9 +1435,9 @@ CONTAINS
               ELSE
                 CALL FlagError("Solver solver equations are not associated.",ERR,ERROR,*999)
               ENDIF
-              IF((PROBLEM%SUBTYPE==PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE).OR. &
-               & (PROBLEM%SUBTYPE==PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE).OR. &
-               & (PROBLEM%SUBTYPE==PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)) THEN
+              IF((PROBLEM%SPECIFICATION(3)==PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE).OR. &
+               & (PROBLEM%SPECIFICATION(3)==PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE).OR. &
+               & (PROBLEM%SPECIFICATION(3)==PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)) THEN
                 NULLIFY(SOLVERS)
                 NULLIFY(SOLVER)
                 NULLIFY(SOLVER_EQUATIONS)
@@ -1696,9 +1711,15 @@ CONTAINS
       IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
         PROBLEM=>CONTROL_LOOP%PROBLEM
         IF(ASSOCIATED(PROBLEM)) THEN
-          SELECT CASE(PROBLEM%TYPE)
+          IF(.NOT.ALLOCATED(problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a bioelectric-finite elasticity problem.", &
+              & err,error,*999)
+          END IF
+          SELECT CASE(PROBLEM%SPECIFICATION(2))
           CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
-            SELECT CASE(PROBLEM%SUBTYPE)
+            SELECT CASE(PROBLEM%SPECIFICATION(3))
 
             CASE(PROBLEM_GUDUNOV_MONODOMAIN_SIMPLE_ELASTICITY_SUBTYPE)
 
@@ -2516,13 +2537,15 @@ CONTAINS
               ENDDO !element_idx
 
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a bioelectrics finite elasticity problem type of a multi physics problem class."
+              LOCAL_ERROR="The third problem specification of "// &
+                & TRIM(NUMBER_TO_VSTRING(PROBLEM%specification(2),"*",ERR,ERROR))// &
+                & " is not valid for a bioelectrics finite elasticity of a multi physics problem."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
-              & " is not valid for a multi physics problem class."
+            LOCAL_ERROR="The second problem specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(PROBLEM%specification(2),"*",ERR,ERROR))// &
+              & " is not valid for a multi physics problem."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
@@ -2594,7 +2617,13 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       PROBLEM=>CONTROL_LOOP%PROBLEM
       IF(ASSOCIATED(PROBLEM)) THEN
-        SELECT CASE(PROBLEM%SUBTYPE)
+        IF(.NOT.ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(problem%specification,1)<3) THEN
+          CALL FlagError("Problem specification must have three entries for a bioelectric-finite elasticity problem.", &
+            & err,error,*999)
+        END IF
+        SELECT CASE(PROBLEM%SPECIFICATION(3))
         CASE(PROBLEM_GUDUNOV_MONODOMAIN_1D3D_ELASTICITY_SUBTYPE,PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE, &
           & PROBLEM_MONODOMAIN_ELASTICITY_VELOCITY_SUBTYPE)
           IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
@@ -2704,7 +2733,7 @@ CONTAINS
                   !add up the active stress value
                   ACTIVE_STRESS_VALUES(nearestGP)=ACTIVE_STRESS_VALUES(nearestGP)+ACTIVE_STRESS
 
-                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
+                  IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
                     !component 2 of variable U contains the titin stress unbound
                     dof_idx=FIELD_VARIABLE_U%COMPONENTS(2)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP%NODES(node_idx)%DERIVATIVES(1)% &
                       & VERSIONS(1)
@@ -2767,7 +2796,7 @@ CONTAINS
                 CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
                   & FIELD_VALUES_SET_TYPE,dof_idx,ACTIVE_STRESS,ERR,ERROR,*999)
 
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
+                IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE) THEN
                   dof_idx=FIELD_VARIABLE_FE%COMPONENTS(2)%PARAM_TO_DOF_MAP%GAUSS_POINT_PARAM2DOF_MAP%GAUSS_POINTS(gauss_idx,ne)
                   CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(INDEPENDENT_FIELD_ELASTICITY,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_VALUES_SET_TYPE,dof_idx,TITIN_STRESS_UNBOUND,ERR,ERROR,*999)
@@ -2797,7 +2826,7 @@ CONTAINS
           ENDIF
         CASE DEFAULT
           LOCAL_ERROR="Independent field interpolation is not implemented for problem subtype " &
-            & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))
+            & //TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
@@ -2941,7 +2970,7 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       PROBLEM=>CONTROL_LOOP%PROBLEM
       IF(ASSOCIATED(PROBLEM)) THEN
-        SELECT CASE(PROBLEM%SUBTYPE)
+        SELECT CASE(PROBLEM%SPECIFICATION(3))
         CASE(PROBLEM_MONODOMAIN_ELASTICITY_W_TITIN_SUBTYPE)
           IF(CONTROL_LOOP%NUMBER_OF_SUB_LOOPS==0) THEN
             CONTROL_LOOP_ROOT=>PROBLEM%CONTROL_LOOP
