@@ -2649,17 +2649,17 @@ CONTAINS
       PIOLA_TENSOR(3,3)=2.0_DP*(VAL1+VAL2*(AZL(1,1)+AZL(2,2))+P*AZU(3,3))
 
       !passive anisotropic part -- only in the tension range (Markert)
-        IF(AZL(1,1) > 1.0_DP) THEN
+      IF(AZL(1,1) > 1.0_DP) THEN
         VAL1=C(3)/AZL(1,1)*(AZL(1,1)**(C(4)/2)-1)
         VAL2=C(7)/AZL(1,1)*(AZL(1,1)**(C(8)/2)-1)
         PIOLA_TENSOR(1,1)=PIOLA_TENSOR(1,1)+(VAL1*C(10)+VAL2*(1.0_DP-C(10)))
-        ENDIF
+      ENDIF
 
       !active part
-        IF((SQRT(AZL(1,1))>0.84_DP).AND.(SQRT(AZL(1,1))<1.96_DP)) THEN
-          VALUE=(-25.0_DP/4.0_DP*AZL(1,1)/1.4/1.4 + 25.0_DP/2.0_DP*SQRT(AZL(1,1))/1.4_DP - 5.25_DP)
-          VALUE=VALUE*(1/SQRT(AZL(1,1)))*300000000*C(9)*C(10)  ! P_max here as a constant
-        ENDIF
+      IF((SQRT(AZL(1,1))>0.84_DP).AND.(SQRT(AZL(1,1))<1.96_DP)) THEN
+        VALUE=(-25.0_DP/4.0_DP*AZL(1,1)/1.4/1.4 + 25.0_DP/2.0_DP*SQRT(AZL(1,1))/1.4_DP - 5.25_DP)
+        VALUE=VALUE*(1/SQRT(AZL(1,1)))*300000000*C(9)*C(10)  ! P_max here as a constant
+      ENDIF
 
     CASE(EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE)
       !Form of constitutive model is:
@@ -2750,7 +2750,7 @@ CONTAINS
       PIOLA_TENSOR=PIOLA_TENSOR - DARCY_DEPENDENT_INTERPOLATED_POINT%VALUES(1,NO_PART_DERIV)*Jznu*AZU
 
       IF((SQRT(AZL(1,1))>0.72_DP).AND.(SQRT(AZL(1,1))<1.68_DP)) THEN
-        VALUE=VALUE*(-25.0_DP/4.0_DP*AZL(1,1)/1.2_DP/1.2_DP + 25.0_DP/2.0_DP*SQRT(AZL(1,1))/1.2_DP - 5.25_DP)
+        VALUE=(-25.0_DP/4.0_DP*AZL(1,1)/1.2_DP/1.2_DP + 25.0_DP/2.0_DP*SQRT(AZL(1,1))/1.2_DP - 5.25_DP)
       ELSE
         VALUE=0.0_DP
       END IF
