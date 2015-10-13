@@ -91,7 +91,7 @@ MODULE POISSON_EQUATIONS_ROUTINES
 
   PUBLIC Poisson_EquationsSetSolutionMethodSet
 
-  PUBLIC PoissonEquation_EquationsSetSpecificationSet
+  PUBLIC Poisson_EquationsSetSpecificationSet
 
   PUBLIC POISSON_EQUATION_FINITE_ELEMENT_CALCULATE
 
@@ -99,7 +99,7 @@ MODULE POISSON_EQUATIONS_ROUTINES
 
   PUBLIC POISSON_EQUATION_PROBLEM_SETUP
 
-  PUBLIC PoissonEquation_ProblemSpecificationSet
+  PUBLIC Poisson_ProblemSpecificationSet
 
   PUBLIC POISSON_PRE_SOLVE,POISSON_POST_SOLVE
     
@@ -564,7 +564,7 @@ CONTAINS
   !
 
   !>Sets the equation specification for a Poisson equation type of a classical field equations set class.
-  SUBROUTINE PoissonEquation_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
+  SUBROUTINE Poisson_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
@@ -575,7 +575,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: localError
     INTEGER(INTG) :: subtype
 
-    ENTERS("PoissonEquation_EquationsSetSpecificationSet",err,error,*999)
+    ENTERS("Poisson_EquationsSetSpecificationSet",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
       IF(SIZE(specification,1)<3) THEN
@@ -611,13 +611,13 @@ CONTAINS
       CALL FlagError("Equations set is not associated.",err,error,*999)
     END IF
 
-    EXITS("PoissonEquation_EquationsSetSpecificationSet")
+    EXITS("Poisson_EquationsSetSpecificationSet")
     RETURN
-999 ERRORS("PoissonEquation_EquationsSetSpecificationSet",err,error)
-    EXITS("PoissonEquation_EquationsSetSpecificationSet")
+999 ERRORS("Poisson_EquationsSetSpecificationSet",err,error)
+    EXITS("Poisson_EquationsSetSpecificationSet")
     RETURN 1
     
-  END SUBROUTINE PoissonEquation_EquationsSetSpecificationSet
+  END SUBROUTINE Poisson_EquationsSetSpecificationSet
   
   !
   !================================================================================================================================
@@ -4530,7 +4530,7 @@ CONTAINS
   !
 
   !>Sets the problem specification for a Poisson equation type.
-  SUBROUTINE PoissonEquation_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
+  SUBROUTINE Poisson_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem specification for
@@ -4541,7 +4541,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: localError
     INTEGER(INTG) :: problemSubtype
 
-    ENTERS("PoissonEquation_ProblemSpecificationSet",err,error,*999)
+    ENTERS("Poisson_ProblemSpecificationSet",err,error,*999)
 
     IF(ASSOCIATED(problem)) THEN
       IF(SIZE(problemSpecification,1)==3) THEN
@@ -4574,12 +4574,12 @@ CONTAINS
       CALL FlagError("Problem is not associated.",err,error,*999)
     END IF
 
-    EXITS("PoissonEquation_ProblemSpecificationSet")
+    EXITS("Poisson_ProblemSpecificationSet")
     RETURN
-999 ERRORSEXITS("PoissonEquation_ProblemSpecificationSet",err,error)
+999 ERRORSEXITS("Poisson_ProblemSpecificationSet",err,error)
     RETURN 1
     
-  END SUBROUTINE PoissonEquation_ProblemSpecificationSet
+  END SUBROUTINE Poisson_ProblemSpecificationSet
 
   !
   !================================================================================================================================

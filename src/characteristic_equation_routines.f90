@@ -85,7 +85,7 @@ MODULE CHARACTERISTIC_EQUATION_ROUTINES
   
   PUBLIC Characteristic_EquationsSetSpecificationSet
   
-  PUBLIC Characteristic_EquationsSet_Setup
+  PUBLIC Characteristic_EquationsSetSetup
   
   PUBLIC Characteristic_NodalResidualEvaluate
   
@@ -218,7 +218,7 @@ CONTAINS
 !
 
   !>Sets up the Characteristic equations fluid setup.
-  SUBROUTINE Characteristic_EquationsSet_Setup(equationsSet,equationsSetSetup,err,error,*)
+  SUBROUTINE Characteristic_EquationsSetSetup(equationsSet,equationsSetSetup,err,error,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
@@ -239,7 +239,7 @@ CONTAINS
     INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsFieldNumberOfComponents1,materialsFieldNumberOfComponents2
     TYPE(VARYING_STRING) :: localError
 
-    ENTERS("Characteristic_EquationsSet_Setup",err,error,*999)
+    ENTERS("Characteristic_EquationsSetSetup",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -837,12 +837,12 @@ CONTAINS
       CALL FlagError("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    EXITS("Characteristic_EquationsSet_Setup")
+    EXITS("Characteristic_EquationsSetSetup")
     RETURN
-999 ERRORSEXITS("Characteristic_EquationsSet_Setup",err,error)
+999 ERRORSEXITS("Characteristic_EquationsSetSetup",err,error)
     RETURN 1
     
-  END SUBROUTINE Characteristic_EquationsSet_Setup
+  END SUBROUTINE Characteristic_EquationsSetSetup
 
   !
   !================================================================================================================================

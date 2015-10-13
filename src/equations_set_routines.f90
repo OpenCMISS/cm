@@ -138,7 +138,7 @@ MODULE EQUATIONS_SET_ROUTINES
 
   PUBLIC EQUATIONS_SET_SOURCE_DESTROY
 
-  PUBLIC EquationsSet_SpecificationGet
+  PUBLIC EquationsSet_SpecificationGet,EquationsSet_SpecificationSizeGet
 
   PUBLIC EquationsSet_StrainInterpolateXi
 
@@ -2773,7 +2773,7 @@ CONTAINS
             & err,error,*999)
         END IF
         IF(EQUATIONS_SET%SPECIFICATION(2) == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
-          CALL MONODOMAIN_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+          CALL Monodomain_FiniteElementCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
         ELSE
           CALL BIOELECTRIC_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
         END IF
@@ -6087,6 +6087,43 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE EquationsSet_SpecificationGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the size of the equations set specification array for a problem identified by a pointer. \see OPENCMISS::cmfe_EquationsSetSpecificationSizeGet
+  SUBROUTINE EquationsSet_SpecificationSizeGet(equationsSet,specificationSize,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations Set to get the specification for.
+    INTEGER(INTG), INTENT(OUT) :: specificationSize !<On return, the size of the problem specifcation array.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("EquationsSet_SpecificationSizeGet",err,error,*999)
+
+    specificationSize=0
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(equationsSet%equations_set_finished) THEN
+        IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+          CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+        END IF
+        specificationSize=SIZE(equationsSet%specification,1)
+      ELSE
+        CALL FlagError("Equations set has not been finished.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    ENDIF
+
+    EXITS("EquationsSet_SpecificationSizeGet")
+    RETURN
+999 ERRORSEXITS("EquationsSet_SpecificationSizeGet",err,error)
+    RETURN 1
+    
+  END SUBROUTINE EquationsSet_SpecificationSizeGet
 
   !
   !================================================================================================================================

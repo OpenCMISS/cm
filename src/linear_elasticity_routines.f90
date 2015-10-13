@@ -2767,7 +2767,6 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: localError
-    INTEGER(INTG) :: subtype
 
     ENTERS("LinearElasticity_EquationsSetSpecificationSet",err,error,*999)
 
@@ -2798,7 +2797,7 @@ CONTAINS
         ALLOCATE(equationsSet%specification(3),stat=err)
         IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
       END IF
-      equationsSet%specification(1:3)=[EQUATIONS_SET_ELASTICITY_CLASS,EQUATIONS_SET_LINEAR_ELASTICITY_TYPE,subtype]
+      equationsSet%specification(1:3)=[EQUATIONS_SET_ELASTICITY_CLASS,EQUATIONS_SET_LINEAR_ELASTICITY_TYPE,specification(3)]
     ELSE
       CALL FlagError("Equations set is not associated.",err,error,*999)
     END IF

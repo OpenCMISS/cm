@@ -69,9 +69,10 @@ MODULE FINITE_ELASTICITY_FLUID_PRESSURE_ROUTINES
 
   PUBLIC FinElasticityFluidPressure_EquationsSetSetup
   PUBLIC FinElasticityFluidPressure_EquationsSetSolnMethodSet
+  PUBLIC FinElasticityFluidPressure_EquationsSetSpecificationSet
 
   PUBLIC ELASTICITY_FLUID_PRESSURE_PROBLEM_SETUP
-  PUBLIC ElasticityFluidPressure_ProblemSpecificationSet
+  PUBLIC FinElasticityFluidPressure_ProblemSpecificationSet
   
   PUBLIC FinElasticityFluidPressure_FiniteElementCalculate
 
@@ -147,6 +148,32 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Sets the equation specification for a finite elasticity fluid pressure equation type of a fluid mechanics equations set class.
+  SUBROUTINE FinElasticityFluidPressure_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("FinElasticityFluidPressure_EquationsSetSpecificationSet",ERR,ERROR,*999)
+
+    CALL FlagError("FinElasticityFluidPressure_EquationsSetSpecificationSet is not implemented.",ERR,ERROR,*999)
+
+    EXITS("FinElasticityFluidPressure_EquationsSetSpecificationSet")
+    RETURN
+999 ERRORS("FinElasticityFluidPressure_EquationsSetSpecificationSet",ERR,ERROR)
+    EXITS("FinElasticityFluidPressure_EquationsSetSpecificationSet")
+    RETURN 1
+    
+  END SUBROUTINE FinElasticityFluidPressure_EquationsSetSpecificationSet
+
+  !
+  !================================================================================================================================
+  !
+
   !>Sets up the finite elasticity fluid pressure equation.
   SUBROUTINE FinElasticityFluidPressure_EquationsSetSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
@@ -199,7 +226,7 @@ CONTAINS
   !
 
   !>Sets the problem specification for a finite elasticity fluid pressure equation type.
-  SUBROUTINE ElasticityFluidPressure_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
+  SUBROUTINE FinElasticityFluidPressure_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the specification for
@@ -210,7 +237,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: localError
     INTEGER(INTG) :: problemSubtype
 
-    ENTERS("ElasticityFluidPressure_ProblemSpecificationSet",err,error,*999)
+    ENTERS("FinElasticityFluidPressure_ProblemSpecificationSet",err,error,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
       IF(SIZE(problemSpecification,1)==3) THEN
@@ -238,13 +265,13 @@ CONTAINS
       CALL FlagError("Problem is not associated.",err,error,*999)
     END IF
 
-    EXITS("ElasticityFluidPressure_ProblemSpecificationSet")
+    EXITS("FinElasticityFluidPressure_ProblemSpecificationSet")
     RETURN
-999 ERRORS("ElasticityFluidPressure_ProblemSpecificationSet",err,error)
-    EXITS("ElasticityFluidPressure_ProblemSpecificationSet")
+999 ERRORS("FinElasticityFluidPressure_ProblemSpecificationSet",err,error)
+    EXITS("FinElasticityFluidPressure_ProblemSpecificationSet")
     RETURN 1
     
-  END SUBROUTINE ElasticityFluidPressure_ProblemSpecificationSet
+  END SUBROUTINE FinElasticityFluidPressure_ProblemSpecificationSet
 
   !
   !================================================================================================================================

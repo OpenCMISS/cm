@@ -252,7 +252,7 @@ CONTAINS
       CASE(EQUATIONS_SET_ADVECTION_EQUATION_TYPE)
         CALL Advection_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
       CASE(EQUATIONS_SET_ADVECTION_DIFFUSION_EQUATION_TYPE)
-        CALL AdvectionDiffusion_EquationEquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
+        CALL AdvectionDiffusion_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
       CASE(EQUATIONS_SET_REACTION_DIFFUSION_EQUATION_TYPE)
         CALL ReactionDiffusion_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
       CASE(EQUATIONS_SET_BIHARMONIC_EQUATION_TYPE)

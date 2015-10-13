@@ -70,12 +70,17 @@ OBJECT_DIR := $(MAIN_OBJECT_DIR)
 BASE_LIB_NAME = OpenCMISS
 MODULE_DIR := $(OBJECT_DIR)
 MOD_INC_NAME := opencmiss.mod
+IRON_MOD_INC_NAME := opencmiss_iron.mod
 MOD_INCLUDE := $(INC_DIR)/$(MOD_INC_NAME)
+IRON_MOD_INCLUDE := $(INC_DIR)/$(IRON_MOD_INC_NAME)
 MOD_SOURCE_INC := $(OBJECT_DIR)/$(MOD_INC_NAME)
-HEADER_INC_NAME := iron.h
+IRON_MOD_SOURCE_INC := $(OBJECT_DIR)/$(IRON_MOD_INC_NAME)
+HEADER_INC_NAME := opencmiss.h
+IRON_HEADER_INC_NAME := iron.h
 HEADER_DIR := $(INC_DIR)/opencmiss
 HEADER_INCLUDE := $(HEADER_DIR)/$(HEADER_INC_NAME)
-C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_c.f90
+IRON_HEADER_INCLUDE := $(HEADER_DIR)/$(IRON_HEADER_INC_NAME)
+C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_iron_c.f90
 BINDINGS_DIR = $(OC_CM_GLOBAL_ROOT)/bindings
 BINDINGS_GENERATE_SCRIPT := $(BINDINGS_DIR)/generate_bindings
 LIB_NAME := lib$(BASE_LIB_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).a
@@ -98,8 +103,10 @@ FPPFLAGS += $(addprefix -I, $(F_INCLUDE_DIRS) )
 main:	preliminaries \
 	$(LIBRARY) \
 	$(MOD_INCLUDE) \
+	$(IRON_MOD_INCLUDE) \
 	$(MOD_FIELDML_TARGET) \
-	$(HEADER_INCLUDE)
+	$(IRON_HEADER_INCLUDE) #\
+	#$(HEADER_INCLUDE)
 
 PREPROCESSED_OBJECTS = 
 
@@ -135,7 +142,8 @@ endif
 #else
     WRAPPER_OBJECTS =  \
     $(OBJECT_DIR)/opencmiss.o \
-    $(OBJECT_DIR)/opencmiss_c.o
+    $(OBJECT_DIR)/opencmiss_iron.o \
+    $(OBJECT_DIR)/opencmiss_iron_c.o
 #endif
 
 OBJECTS = $(OBJECT_DIR)/advection_equation_routines.o \
@@ -266,14 +274,20 @@ $(LIBRARY) : $(OBJECTS) $(LIB_DIR)/.directory
 $(MOD_INCLUDE) : $(MOD_SOURCE_INC) $(INC_DIR)/.directory
 	cp $(MOD_SOURCE_INC) $@
 
+$(IRON_MOD_INCLUDE) : $(IRON_MOD_SOURCE_INC) $(INC_DIR)/.directory
+	cp $(IRON_MOD_SOURCE_INC) $@
+
 MOD_FIELDML: $(FIELDML_OBJECT) $(INC_DIR)/.directory
 	cp $(OBJECT_DIR)/fieldml_input_routines.mod $(INC_DIR)/fieldml_input_routines.mod
 	cp $(OBJECT_DIR)/fieldml_output_routines.mod $(INC_DIR)/fieldml_output_routines.mod
 	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
 	cp $(OBJECT_DIR)/fieldml_types.mod $(INC_DIR)/fieldml_types.mod
 
-$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py $(HEADER_DIR)/.directory
-	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) C $(HEADER_INCLUDE) $(C_F90_SOURCE)
+#$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss_iron.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py $(HEADER_DIR)/.directory
+#	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) C $(HEADER_INCLUDE) $(C_F90_SOURCE)
+
+$(IRON_HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss_iron.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py $(HEADER_DIR)/.directory
+	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) C $(IRON_HEADER_INCLUDE) $(C_F90_SOURCE)
 
 # Place the list of dependencies for the objects here.
 #
@@ -1543,7 +1557,12 @@ $(OBJECT_DIR)/node_routines.o	:	$(SOURCE_DIR)/node_routines.f90 \
 
 $(MOD_SOURCE_INC) : $(OBJECT_DIR)/opencmiss.o
 
+$(IRON_MOD_SOURCE_INC) : $(OBJECT_DIR)/opencmiss_iron.o
+
 $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
+	$(OBJECT_DIR)/kinds.o 
+
+$(OBJECT_DIR)/opencmiss_iron.o	:	$(SOURCE_DIR)/opencmiss_iron.f90 \
 	$(FIELDML_OBJECT) \
 	$(OBJECT_DIR)/Hamilton_Jacobi_equations_routines.o \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
@@ -1585,9 +1604,9 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/opencmiss_c.o	:	$(C_F90_SOURCE) \
+$(OBJECT_DIR)/opencmiss_iron_c.o	:	$(C_F90_SOURCE) \
 	$(OBJECT_DIR)/cmiss_fortran_c.o \
-	$(OBJECT_DIR)/opencmiss.o
+	$(OBJECT_DIR)/opencmiss_iron.o
 
 $(OBJECT_DIR)/Poiseuille_equations_routines.o	:	$(SOURCE_DIR)/Poiseuille_equations_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1887,14 +1906,14 @@ python: $(PYTHON_MODULE) $(PYTHON_MODULE_SO) python_cp
 python_cp: $(PYTHON_MODULE_SO)
 	cp $(PYTHON_MODULE_SO) $(PYTHON_MODULE_SO_INSTALL)
 
-$(GENERATED_INTERFACE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/swig.py $(SOURCE_DIR)/opencmiss.f90
+$(GENERATED_INTERFACE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/swig.py $(SOURCE_DIR)/opencmiss_iron.f90
 	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) SWIG $@
 
 $(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/python.py \
-	$(SOURCE_DIR)/opencmiss.f90 $(BINDINGS_DIR)/python/extra_content.py
+	$(SOURCE_DIR)/opencmiss_iron.f90 $(BINDINGS_DIR)/python/extra_content.py
 	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) Python
 
-$(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(BINDINGS_DIR)/python/numpy.i $(BINDINGS_DIR)/python/numpy_extra.i $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
+$(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(BINDINGS_DIR)/python/numpy.i $(BINDINGS_DIR)/python/numpy_extra.i $(GENERATED_INTERFACE) $(IRON_HEADER_INCLUDE)
 # Remove iron_swig.py after running SWIG as we generate our own Python wrapper code
 	( cd $(BINDINGS_DIR)/python/opencmiss && swig -python -o $@ -module iron_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE) && rm iron_swig.py )
 
@@ -1910,7 +1929,7 @@ $(PYTHON_MODULE_SO): $(LIBRARY) $(PYTHON_WRAPPER_OBJ) $(OBJECTS)
 
 clean:
 	@echo "Cleaning house ..."
-	rm -rf $(OBJECT_DIR) $(LIBRARY) $(MOD_INCLUDE) $(HEADER_INCLUDE) $(C_F90_SOURCE)
+	rm -rf $(OBJECT_DIR) $(LIBRARY) $(MOD_INCLUDE) $(IRON_MOD_INCLUDE) $(HEADER_INCLUDE) $(IRON_HEADER_INCLUDE) $(C_F90_SOURCE)
 
 allclean:
 	@echo "Cleaning house ..."

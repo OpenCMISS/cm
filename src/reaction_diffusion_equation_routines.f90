@@ -94,7 +94,7 @@ MODULE REACTION_DIFFUSION_EQUATION_ROUTINES
   
   PUBLIC REACTION_DIFFUSION_EQUATION_PROBLEM_SETUP
 
-  PUBLIC ReactionDiffusionEquation_ProblemSpecificationSet
+  PUBLIC ReactionDiffusion_ProblemSpecificationSet
 
   PUBLIC REACTION_DIFFUSION_POST_SOLVE
 
@@ -713,8 +713,8 @@ CONTAINS
     ENTERS("ReactionDiffusion_EquationsSetSpecificationSet",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
-      IF(SIZE(specification,1)>=3) THEN
-        CALL FlagError("Equations set specification must have >= 3 entries for a reaction-diffusion type equations set.", &
+      IF(SIZE(specification,1)>3) THEN
+        CALL FlagError("Equations set specification must have 3 entries for a reaction-diffusion type equations set.", &
           & err,error,*999)
       END IF
       subtype=specification(3)
@@ -984,7 +984,7 @@ CONTAINS
   !================================================================================================================================
   !
   !>Sets the problem specification for a reaction-diffusion problem.
-  SUBROUTINE ReactionDiffusionEquation_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
+  SUBROUTINE ReactionDiffusion_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
     TYPE(PROBLEM_TYPE), POINTER, INTENT(IN) :: problem !<A pointer to the problem to set the problem specification for.
@@ -995,7 +995,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: localError
     INTEGER(INTG) :: problemSubtype
 
-    ENTERS("ReactionDiffusionEquation_ProblemSpecificationSet",err,error,*999)
+    ENTERS("ReactionDiffusion_ProblemSpecificationSet",err,error,*999)
 
     IF(ASSOCIATED(problem)) THEN
       IF(SIZE(problemSpecification,1)>=3) THEN
@@ -1024,13 +1024,13 @@ CONTAINS
       CALL FlagError("Problem is not associated.",err,error,*999)
     END IF
 
-    EXITS("ReactionDiffusionEquation_ProblemSpecificationSet")
+    EXITS("ReactionDiffusion_ProblemSpecificationSet")
     RETURN
-999 ERRORS("ReactionDiffusionEquation_ProblemSpecificationSet",err,error)
-    EXITS("ReactionDiffusionEquation_ProblemSpecificationSet")
+999 ERRORS("ReactionDiffusion_ProblemSpecificationSet",err,error)
+    EXITS("ReactionDiffusion_ProblemSpecificationSet")
     RETURN 1
     
-  END SUBROUTINE ReactionDiffusionEquation_ProblemSpecificationSet
+  END SUBROUTINE ReactionDiffusion_ProblemSpecificationSet
 
   !
   !================================================================================================================================

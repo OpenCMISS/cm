@@ -1795,7 +1795,7 @@ CONTAINS
                         FILE=OUTPUT_FILE
  
                         IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                          CALL ANALYTIC_ANALYSIS_OUTPUT(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
+                          CALL AnalyticAnalysis_Output(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
                         ENDIF
                       ENDIF
                     ENDIF

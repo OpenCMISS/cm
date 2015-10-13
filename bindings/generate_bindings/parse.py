@@ -178,12 +178,12 @@ class LibrarySource(object):
         """
 
         self.lib_source = self.SourceFile(
-            os.sep.join((cm_path, 'src', 'opencmiss.f90')))
+            os.sep.join((cm_path, 'src', 'opencmiss_iron.f90')))
         cm_source_path = cm_path + os.sep + 'src'
         source_files = [
                 cm_source_path + os.sep + file_name
                 for file_name in os.listdir(cm_source_path)
-                if file_name.endswith('.f90') and file_name != 'opencmiss.f90']
+                if file_name.endswith('.f90') and file_name != 'opencmiss_iron.f90']
         self.sources = [
                 self.SourceFile(source, params_only=True)
                 for source in source_files]

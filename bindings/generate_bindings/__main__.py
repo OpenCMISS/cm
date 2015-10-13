@@ -2,7 +2,7 @@
 OpenCMISS Interface Generation
 ==============================
 
-This python script parses opencmiss.f90 and generates
+This python script parses opencmiss_iron.f90 and generates
 code for the bindings to other languages.
 
 C
@@ -10,7 +10,7 @@ C
 
 Integer constants are included in opencmiss.h
 
-C functions are written to opencmiss_c.f90 from subroutines in opencmiss.f90
+C functions are written to opencmiss_iron_c.f90 from subroutines in opencmiss_iron.f90
 and function declarations are written to opencmiss.h.
 
 For interfaces where one routine takes parameters as scalars and another takes
@@ -18,7 +18,7 @@ them as arrays, only the routine that takes arrays is included. This is done
 by checking the routine names for "Number0", "Number1", "Number01" etc. so
 relies on this naming convention to work correctly.
 
-Extra arguments required: path to opencmiss.h, path to opencmiss_c.f90
+Extra arguments required: path to opencmiss.h, path to opencmiss_iron_c.f90
 
 Python
 ------

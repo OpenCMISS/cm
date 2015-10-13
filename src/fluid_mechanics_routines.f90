@@ -202,7 +202,7 @@ CONTAINS
       CASE(EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)
         CALL NavierStokes_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        CALL DarcyEquation_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
+        CALL Darcy_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
       CASE(EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE)
         CALL DarcyPressure_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
       CASE(EQUATIONS_SET_POISEUILLE_EQUATION_TYPE)
@@ -544,9 +544,9 @@ CONTAINS
       CASE(EQUATIONS_SET_BURGERS_EQUATION_TYPE)
         CALL BURGERS_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE)
-        CALL Characteristic_EquationsSet_Setup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL Characteristic_EquationsSetSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_STREE_EQUATION_TYPE)
-        CALL Stree_EquationsSet_Setup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL Stree_EquationsSetSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
         LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a fluid mechanics equation set class."

@@ -118,8 +118,8 @@ CONTAINS
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
         CALL FlagError("Equations set specification is not allocated.",err,error,*999)
-      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)>=3) THEN
-        CALL FlagError("Equations set specification must have >= 3 entries for a Stokes equations set.", &
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have 3 entries for a Stokes equations set.", &
           & err,error,*999)
       END IF
       SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
@@ -181,7 +181,7 @@ CONTAINS
     ENTERS("Stokes_EquationsSetSpecificationSet",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
-      IF(SIZE(specification,1)>=3) THEN
+      IF(SIZE(specification,1)/=3) THEN
         CALL FlagError("Equations set specification must have three entries for a Stokes type equations set.", &
           & err,error,*999)
       END IF
@@ -934,7 +934,7 @@ CONTAINS
     ENTERS("Stokes_ProblemSpecificationSet",err,error,*999)
 
     IF(ASSOCIATED(problem)) THEN
-      IF(SIZE(problemSpecification,1)>=3) THEN
+      IF(SIZE(problemSpecification,1)==3) THEN
         problemSubtype=problemSpecification(3)
         SELECT CASE(problemSubtype)
         CASE(PROBLEM_STATIC_STOKES_SUBTYPE, &
@@ -3185,7 +3185,7 @@ CONTAINS
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4.OR. &
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5.OR. &
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1) THEN
-                            CALL ANALYTIC_ANALYSIS_OUTPUT(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
+                            CALL AnalyticAnalysis_Output(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
                           ENDIF
                         ENDIF
                       ENDIF 
