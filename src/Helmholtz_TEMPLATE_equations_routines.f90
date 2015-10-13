@@ -82,7 +82,7 @@ MODULE HELMHOLTZ_EQUATIONS_ROUTINES
   !Interfaces
 
   PUBLIC HELMHOLTZ_EQUATION_FINITE_ELEMENT_CALCULATE,HELMHOLTZ_EQUATION_EQUATIONS_SET_SETUP, &
-    & HELMHOLTZ_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET,HELMHOLTZ_EQUATION_EQUATIONS_SET_SUBTYPE_SET, &
+    & HELMHOLTZ_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET,HelmholtzEquation_EquationsSetSpecificationSet, &
     & HELMHOLTZ_EQUATION_PROBLEM_SUBTYPE_SET,HELMHOLTZ_EQUATION_PROBLEM_SETUP
   
 CONTAINS
@@ -223,39 +223,53 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a Helmholtz equation type of a classical field equations set class.
-  SUBROUTINE HELMHOLTZ_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the equation specification for a Helmholtz equation type of a classical field equations set class.
+  SUBROUTINE HelmholtzEquation_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    ENTERS("HELMHOLTZ_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET_SUBTYPE)
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: subtype
+
+    ENTERS("HelmholtzEquation_EquationsSetSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Helmholtz type equations set.", &
+          & err,error,*999)
+      END IF
+      subtype=specification(3)
+      SELECT CASE(subtype)
       CASE(EQUATIONS_SET_NO_SOURCE_HELMHOLTZ_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_HELMHOLTZ_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_NO_SOURCE_HELMHOLTZ_SUBTYPE
+        !ok
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Helmholtz equation type of a classical field equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        localError="The third equations set specification of "//TRIM(NumberToVstring(subtype,"*",err,error))// &
+          & " is not valid for a Helmholtz type of a classical field equations set."
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_CLASSICAL_FIELD_CLASS,EQUATIONS_SET_HELMHOLTZ_EQUATION_TYPE,subtype]
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    EXITS("HELMHOLTZ_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+
+    EXITS("HelmholtzEquation_EquationsSetSpecificationSet")
     RETURN
-999 ERRORSEXITS("HELMHOLTZ_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
+999 ERRORS("HelmholtzEquation_EquationsSetSpecificationSet",err,error)
+    EXITS("HelmholtzEquation_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE HELMHOLTZ_EQUATION_EQUATIONS_SET_SUBTYPE_SET
+    
+  END SUBROUTINE HelmholtzEquation_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================

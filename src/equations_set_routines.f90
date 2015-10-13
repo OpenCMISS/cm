@@ -138,7 +138,7 @@ MODULE EQUATIONS_SET_ROUTINES
 
   PUBLIC EQUATIONS_SET_SOURCE_DESTROY
 
-  PUBLIC EQUATIONS_SET_SPECIFICATION_GET,EQUATIONS_SET_SPECIFICATION_SET
+  PUBLIC EquationsSet_SpecificationGet,EquationsSet_SpecificationSizeGet
 
   PUBLIC EquationsSet_StrainInterpolateXi
 
@@ -744,7 +744,12 @@ CONTAINS
     ENTERS("EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%CLASS)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<1) THEN
+        CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
       CASE(EQUATIONS_SET_ELASTICITY_CLASS)
         CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -752,9 +757,13 @@ CONTAINS
       CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
         CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
-        CALL CLASSICAL_FIELD_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%TYPE,ANALYTIC_FUNCTION_TYPE,POSITION, &
-          & TANGENTS,NORMAL,TIME,VARIABLE_TYPE,GLOBAL_DERIVATIVE,COMPONENT_NUMBER,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
-          & VALUE,ERR,ERROR,*999)
+        IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+          CALL FlagError("Equations set specification must have at least two entries for a "// &
+            & "classical field equations set.",err,error,*999)
+        END IF
+        CALL CLASSICAL_FIELD_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET,EQUATIONS_SET%SPECIFICATION(2), &
+          & ANALYTIC_FUNCTION_TYPE,POSITION,TANGENTS,NORMAL,TIME,VARIABLE_TYPE,GLOBAL_DERIVATIVE, &
+          & COMPONENT_NUMBER,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FITTING_CLASS)
         CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
@@ -764,8 +773,9 @@ CONTAINS
       CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
         CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
-        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
+        LOCAL_ERROR="The first equations set specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(1),"*",ERR,ERROR))//" is not valid."
+        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
       CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
@@ -775,6 +785,7 @@ CONTAINS
     RETURN
 999 ERRORSEXITS("EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE EQUATIONS_SET_ANALYTIC_FUNCTIONS_EVALUATE
 
   !
@@ -2233,10 +2244,15 @@ CONTAINS
     ENTERS("EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<1) THEN
+        CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+      END IF
       IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
         IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
           IF(EQUATIONS_SET%ANALYTIC%ANALYTIC_FINISHED) THEN
-            SELECT CASE(EQUATIONS_SET%CLASS)
+            SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
             CASE(EQUATIONS_SET_ELASTICITY_CLASS)
               CALL Elasticity_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -2252,7 +2268,8 @@ CONTAINS
             CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
               CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is invalid."
+              LOCAL_ERROR="The first equations set specification of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(1),"*", &
+                & ERR,ERROR))//" is invalid."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
@@ -2324,9 +2341,6 @@ CONTAINS
 
   !>Starts the process of creating an equations set defined by USER_NUMBER in the region identified by REGION. \see OPENCMISS::CMISSEquationsSetCreateStart
   !>Default values set for the EQUATIONS_SET's attributes are:
-  !>- CLASS: 4 (EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
-  !>- TYPE: 1 (EQUATIONS_SET_LAPLACE_EQUATION_TYPE)
-  !>- SUBTYPE: 1 (EQUATIONS_SET_STANDARD_LAPLACE_SUBTYPE)
   !>- LINEARITY: 1 (EQUATIONS_SET_LINEAR)
   !>- TIME_DEPENDENCE: 1 (EQUATIONS_SET_STATIC)
   !>- SOLUTION_METHOD: 1 (EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -2337,21 +2351,17 @@ CONTAINS
   !>- ANALYTIC
   !>- FIXED_CONDITIONS 
   !>- EQUATIONS 
-!   SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET,ERR,ERROR,*)
-
-  SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_,&
-    & EQUATIONS_SET_SUBTYPE,EQUATIONS_SET_FIELD_USER_NUMBER,EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,ERR,ERROR,*)
+  SUBROUTINE EQUATIONS_SET_CREATE_START(USER_NUMBER,REGION,GEOM_FIBRE_FIELD,EQUATIONS_SET_SPECIFICATION,&
+      & EQUATIONS_SET_FIELD_USER_NUMBER,EQUATIONS_SET_FIELD_FIELD,EQUATIONS_SET,ERR,ERROR,*)
 
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: USER_NUMBER !<The user number of the equations set
     TYPE(REGION_TYPE), POINTER :: REGION !<A pointer to the region to create the equations set on
     TYPE(FIELD_TYPE), POINTER :: GEOM_FIBRE_FIELD !<A pointer to the either the geometry or, if appropriate, the fibre field for the equation set
+    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SPECIFICATION(:) !<The equations set specification array to set
     INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_FIELD_USER_NUMBER !<The user number of the equations set field
     TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<On return, a pointer to the equations set field
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<On return, a pointer to the equations set
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_CLASS !<The equations set class to set
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_TYPE_ !<The equations set type to set
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equations set subtype to set
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
@@ -2442,8 +2452,7 @@ CONTAINS
                       NEW_EQUATIONS_SET%EQUATIONS_SETS=>REGION%EQUATIONS_SETS
                       NEW_EQUATIONS_SET%REGION=>REGION
                       !Set the equations set class, type and subtype
-                      CALL EQUATIONS_SET_SPECIFICATION_SET(NEW_EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_, &
-                        & EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+                      CALL EquationsSet_SpecificationSet(NEW_EQUATIONS_SET,EQUATIONS_SET_SPECIFICATION,ERR,ERROR,*999)
                       NEW_EQUATIONS_SET%EQUATIONS_SET_FINISHED=.FALSE.
                       !Initialise the setup
                       CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
@@ -2671,7 +2680,8 @@ CONTAINS
     RETURN
 999 IF(ASSOCIATED(NEW_EQUATIONS_SETS)) DEALLOCATE(NEW_EQUATIONS_SETS)
 998 ERRORSEXITS("EQUATIONS_SET_DESTROY",ERR,ERROR)
-    RETURN 1   
+    RETURN 1
+    
   END SUBROUTINE EQUATIONS_SET_DESTROY
   
   !
@@ -2699,6 +2709,7 @@ CONTAINS
       CALL EQUATIONS_SET_EQUATIONS_SET_FIELD_FINALISE(EQUATIONS_SET%EQUATIONS_SET_FIELD,ERR,ERROR,*999)
       CALL EquationsSet_DerivedFinalise(EQUATIONS_SET%derived,ERR,ERROR,*999)
       IF(ASSOCIATED(EQUATIONS_SET%EQUATIONS)) CALL EQUATIONS_DESTROY(EQUATIONS_SET%EQUATIONS,ERR,ERROR,*999)
+      IF(ALLOCATED(EQUATIONS_SET%SPECIFICATION)) DEALLOCATE(EQUATIONS_SET%SPECIFICATION)
       DEALLOCATE(EQUATIONS_SET)
     ENDIF
        
@@ -2706,6 +2717,7 @@ CONTAINS
     RETURN
 999 ERRORSEXITS("EQUATIONS_SET_FINALISE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE EQUATIONS_SET_FINALISE
 
   !
@@ -2739,7 +2751,12 @@ CONTAINS
     ENTERS("EQUATIONS_SET_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%CLASS)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<1) THEN
+        CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
       CASE(EQUATIONS_SET_ELASTICITY_CLASS)
         CALL ELASTICITY_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -2751,8 +2768,12 @@ CONTAINS
       CASE(EQUATIONS_SET_FITTING_CLASS)
         CALL FITTING_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
-        IF(EQUATIONS_SET%TYPE == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
-          CALL MONODOMAIN_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+          CALL FlagError("Equations set specification must have at least two entries for a bioelectrics equation class.", &
+            & err,error,*999)
+        END IF
+        IF(EQUATIONS_SET%SPECIFICATION(2) == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
+          CALL Monodomain_FiniteElementCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
         ELSE
           CALL BIOELECTRIC_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
         END IF
@@ -2761,7 +2782,8 @@ CONTAINS
       CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
        CALL MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
+        LOCAL_ERROR="The first equations set specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(1),"*",ERR,ERROR))//" is not valid."
         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
@@ -2904,6 +2926,11 @@ CONTAINS
     ENTERS("EquationsSet_FiniteElementJacobianEvaluate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<1) THEN
+        CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+      END IF
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
         EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
@@ -2918,7 +2945,7 @@ CONTAINS
                 IF(matrix_idx>1) THEN
                   CALL FlagError("Analytic off-diagonal Jacobian calculation not implemented.",ERR,ERROR,*999)
                 END IF
-                SELECT CASE(EQUATIONS_SET%CLASS)
+                SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
                 CASE(EQUATIONS_SET_ELASTICITY_CLASS)
                   CALL ELASTICITY_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
                 CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -2934,7 +2961,9 @@ CONTAINS
                 CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
                   CALL MultiPhysics_FiniteElementJacobianEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
                 CASE DEFAULT
-                  LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
+                  LOCAL_ERROR="The first equations set specification of"// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(1),"*", &
+                    & ERR,ERROR))//" is not valid."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
               CASE(EQUATIONS_JACOBIAN_FINITE_DIFFERENCE_CALCULATED)
@@ -3148,7 +3177,12 @@ CONTAINS
     ENTERS("EquationsSet_FiniteElementResidualEvaluate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%CLASS)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<1) THEN
+        CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
       CASE(EQUATIONS_SET_ELASTICITY_CLASS)
         CALL ELASTICITY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -3164,7 +3198,8 @@ CONTAINS
       CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
         CALL MultiPhysics_FiniteElementResidualEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
+        LOCAL_ERROR="The first equations set specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(1),"*",ERR,ERROR))//" is not valid."
         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
@@ -3585,9 +3620,6 @@ CONTAINS
       EQUATIONS_SET%EQUATIONS_SET_FINISHED=.FALSE.
       NULLIFY(EQUATIONS_SET%EQUATIONS_SETS)
       NULLIFY(EQUATIONS_SET%REGION)
-      EQUATIONS_SET%CLASS=EQUATIONS_SET_NO_CLASS
-      EQUATIONS_SET%TYPE=EQUATIONS_SET_NO_TYPE
-      EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_NO_SUBTYPE
       EQUATIONS_SET%SOLUTION_METHOD=0
       CALL EQUATIONS_SET_GEOMETRY_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
       CALL EQUATIONS_SET_DEPENDENT_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
@@ -4491,7 +4523,12 @@ CONTAINS
     ENTERS("EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%CLASS)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<1) THEN
+        CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
       CASE(EQUATIONS_SET_ELASTICITY_CLASS)
         CALL ELASTICITY_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -4501,7 +4538,11 @@ CONTAINS
       CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
         CALL CLASSICAL_FIELD_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
-        IF(EQUATIONS_SET%TYPE == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
+        IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+          CALL FlagError("Equations set specification must have at least two entries for a bioelectrics equation class.", &
+            & err,error,*999)
+        END IF
+        IF(EQUATIONS_SET%SPECIFICATION(2) == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
           CALL MONODOMAIN_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
         ELSE
           CALL BIOELECTRIC_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
@@ -4513,7 +4554,8 @@ CONTAINS
       CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
         CALL MULTI_PHYSICS_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is not valid."
+        LOCAL_ERROR="The first equations set specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(1),"*",ERR,ERROR))//" is not valid."
         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
@@ -5661,7 +5703,12 @@ CONTAINS
       IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
         CALL FlagError("Equations set has already been finished.",ERR,ERROR,*999)
       ELSE
-        SELECT CASE(EQUATIONS_SET%CLASS)
+        IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+          CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<1) THEN
+          CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+        END IF
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
         CASE(EQUATIONS_SET_ELASTICITY_CLASS)
           CALL Elasticity_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -5671,7 +5718,11 @@ CONTAINS
         CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
           CALL ClassicalField_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
         CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
-          IF(EQUATIONS_SET%TYPE == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
+          IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+            CALL FlagError("Equations set specification must have at least two entries for a bioelectrics equation set.", &
+              & err,error,*999)
+          END IF
+          IF(EQUATIONS_SET%SPECIFICATION(2) == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
             CALL Monodomain_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
           ELSE
             CALL Bioelectric_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
@@ -5681,7 +5732,8 @@ CONTAINS
         CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
           CALL MultiPhysics_EquationsSetSolnMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%CLASS,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The first equations set specification of "// &
+            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(1),"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
@@ -5693,6 +5745,7 @@ CONTAINS
     RETURN
 999 ERRORSEXITS("EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE EQUATIONS_SET_SOLUTION_METHOD_SET
   
   !
@@ -5984,6 +6037,7 @@ CONTAINS
 999 CALL EQUATIONS_SET_SOURCE_FINALISE(EQUATIONS_SET%SOURCE,DUMMY_ERR,DUMMY_ERROR,*998)
 998 ERRORSEXITS("EQUATIONS_SET_SOURCE_INITIALISE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE EQUATIONS_SET_SOURCE_INITIALISE
 
   !
@@ -5991,37 +6045,85 @@ CONTAINS
   !
 
   !>Returns the equations set specification i.e., equations set class, type and subtype for an equations set. \see OPENCMISS::CMISSEquationsSetSpecificationGet
-  SUBROUTINE EQUATIONS_SET_SPECIFICATION_GET(EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE, &
-    & ERR,ERROR,*)
+  SUBROUTINE EquationsSet_SpecificationGet(equationsSet,equationsSetSpecification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to get the specification for
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_CLASS !<On return, the equations set class.
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_TYPE_ !<On return, the equations set type.
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SET_SUBTYPE !<On return, the equations set subtype.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to get the specification for
+    INTEGER(INTG), INTENT(INOUT) :: equationsSetSpecification(:) !<On return, The equations set specifcation array. Must be allocated on entry.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: specificationLength,specificationIdx
+    TYPE(VARYING_STRING) :: localError
+
+    ENTERS("EquationsSet_SpecificationGet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(equationsSet%equations_set_finished) THEN
+        specificationLength=0
+        DO specificationIdx=1,SIZE(equationsSet%specification,1)
+          IF(equationsSet%specification(specificationIdx)>0) THEN
+            specificationLength=specificationIdx
+          END IF
+        END DO
+        IF(SIZE(equationsSetSpecification,1)>=specificationLength) THEN
+          equationsSetSpecification(1:specificationLength)=equationsSet%specification(1:specificationLength)
+        ELSE
+          localError="The equations set specification array size is "//TRIM(NumberToVstring(specificationLength,"*",err,error))// &
+            & " and it needs to be >= "//TRIM(NumberToVstring(SIZE(equationsSetSpecification,1),"*",err,error))//"."
+          CALL FlagError(localError,err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("Equations set has not been finished.",err,error,*999)
+      END IF
+    ELSE
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+
+    EXITS("EquationsSet_SpecificationGet")
+    RETURN
+999 ERRORS("EquationsSet_SpecificationGet",err,error)
+    EXITS("EquationsSet_SpecificationGet")
+    RETURN 1
+    
+  END SUBROUTINE EquationsSet_SpecificationGet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Gets the size of the equations set specification array for a problem identified by a pointer. \see OPENCMISS::cmfe_EquationsSetSpecificationSizeGet
+  SUBROUTINE EquationsSet_SpecificationSizeGet(equationsSet,specificationSize,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations Set to get the specification for.
+    INTEGER(INTG), INTENT(OUT) :: specificationSize !<On return, the size of the problem specifcation array.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-    ENTERS("EQUATIONS_SET_SPECIFICATION_GET",ERR,ERROR,*999)
+    ENTERS("EquationsSet_SpecificationSizeGet",err,error,*999)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
-        EQUATIONS_SET_CLASS=EQUATIONS_SET%CLASS
-        EQUATIONS_SET_TYPE_=EQUATIONS_SET%TYPE
-        EQUATIONS_SET_SUBTYPE=EQUATIONS_SET%SUBTYPE
+    specificationSize=0
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(equationsSet%equations_set_finished) THEN
+        IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+          CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+        END IF
+        specificationSize=SIZE(equationsSet%specification,1)
       ELSE
-        CALL FlagError("Equations set has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations set has not been finished.",err,error,*999)
       ENDIF
     ELSE
-      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",err,error,*999)
     ENDIF
-    
-    EXITS("EQUATIONS_SET_SPECIFICATION_GET")
+
+    EXITS("EquationsSet_SpecificationSizeGet")
     RETURN
-999 ERRORSEXITS("EQUATIONS_SET_SPECIFICATION_GET",ERR,ERROR)
+999 ERRORSEXITS("EquationsSet_SpecificationSizeGet",err,error)
     RETURN 1
-  END SUBROUTINE EQUATIONS_SET_SPECIFICATION_GET
+    
+  END SUBROUTINE EquationsSet_SpecificationSizeGet
 
   !
   !================================================================================================================================
@@ -6042,7 +6144,12 @@ CONTAINS
       IF(.NOT.equationsSet%EQUATIONS_SET_FINISHED) THEN
         CALL FlagError("Equations set has not been finished.",err,error,*999)
       ELSE
-        SELECT CASE(equationsSet%CLASS)
+        IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+          CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(equationsSet%specification,1)<1) THEN
+          CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+        END IF
+        SELECT CASE(equationsSet%specification(1))
         CASE(EQUATIONS_SET_ELASTICITY_CLASS)
           CALL Elasticity_EquationsSetDerivedVariableCalculate(equationsSet,derivedType,err,error,*999)
         CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -6060,7 +6167,8 @@ CONTAINS
         CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
           CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
-          CALL FlagError("Equations set class "//TRIM(NUMBER_TO_VSTRING(equationsSet%CLASS,"*",ERR,ERROR))// &
+          CALL FlagError("The first equations set specification of "// &
+            & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(1),"*",ERR,ERROR))// &
             & " is not valid.",ERR,ERROR,*999)
         END SELECT
       ENDIF
@@ -6129,69 +6237,75 @@ CONTAINS
 999 ERRORSEXITS("EquationsSet_DerivedVariableSet",err,error)
     RETURN 1
   END SUBROUTINE EquationsSet_DerivedVariableSet
-
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the equations set specification i.e., equations set class, type and subtype for an equations set. \see OPENCMISS::CMISSEquationsSetSpecificationSet
-  SUBROUTINE EQUATIONS_SET_SPECIFICATION_SET(EQUATIONS_SET,EQUATIONS_SET_CLASS,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE, &
-    & ERR,ERROR,*)
+  SUBROUTINE EquationsSet_SpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the specification for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_CLASS !<The equations set class to set
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_TYPE_ !<The equations set type to set
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equations set subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification array to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: localError
 
-    ENTERS("EQUATIONS_SET_SPECIFICATION_SET",ERR,ERROR,*999)
+    ENTERS("EquationsSet_SpecificationSet",err,error,*999)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
-        CALL FlagError("Equations set has been finished.",ERR,ERROR,*999)
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(equationsSet%equations_set_finished) THEN
+        CALL FlagError("Equations set has been finished.",err,error,*999)
       ELSE
-        SELECT CASE(EQUATIONS_SET_CLASS)
+        IF(SIZE(specification,1)<1) THEN
+          CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+        END IF
+        SELECT CASE(specification(1))
         CASE(EQUATIONS_SET_ELASTICITY_CLASS)
-          CALL ELASTICITY_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+          CALL Elasticity_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
         CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-          CALL FluidMechanics_EquationsSetClassTypeSet(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+          CALL FluidMechanics_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
         CASE(EQUATIONS_SET_ELECTROMAGNETICS_CLASS)
-          CALL FlagError("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE(EQUATIONS_SET_CLASSICAL_FIELD_CLASS)
-          CALL ClassicalField_EquationsSetClassTypeSet(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+          CALL ClassicalField_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
         CASE(EQUATIONS_SET_BIOELECTRICS_CLASS)
-          IF(EQUATIONS_SET_TYPE_ == EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
-            CALL MONODOMAIN_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+          IF(SIZE(specification,1)<2) THEN
+            CALL FlagError("Equations set specification must have at least two entries for a bioelectrics equation class.", &
+              & err,error,*999)
+          END IF
+          IF(specification(2)==EQUATIONS_SET_MONODOMAIN_STRANG_SPLITTING_EQUATION_TYPE) THEN
+            CALL Monodomain_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
           ELSE
-            CALL BIOELECTRIC_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+            CALL Bioelectric_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
           END IF
         CASE(EQUATIONS_SET_MODAL_CLASS)
-          CALL FlagError("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
-          CALL MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+          CALL MultiPhysics_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
         CASE(EQUATIONS_SET_FITTING_CLASS)
-          CALL FITTING_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_SET_TYPE_,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*999)
+          CALL Fitting_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
         CASE(EQUATIONS_SET_OPTIMISATION_CLASS)
-          CALL FlagError("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE DEFAULT
-          LOCAL_ERROR="Equations set class "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_CLASS,"*",ERR,ERROR))//" is not valid."
-          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
+          localError="The first equations set specification of "// &
+            & TRIM(NumberToVstring(specification(1),"*",err,error))//" is not valid."
+          CALL FlagError(localError,err,error,*999)
         END SELECT
       END IF
     ELSE
-      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",err,error,*999)
     END IF
-    
-    EXITS("EQUATIONS_SET_SPECIFICATION_SET")
-    RETURN
-999 ERRORSEXITS("EQUATIONS_SET_SPECIFICATION_SET",ERR,ERROR)
-    RETURN 1
-  END SUBROUTINE EQUATIONS_SET_SPECIFICATION_SET
 
+    EXITS("EquationsSet_SpecificationSet")
+    RETURN
+999 ERRORS("EquationsSet_SpecificationSet",err,error)
+    EXITS("EquationsSet_SpecificationSet")
+    RETURN 1
+    
+  END SUBROUTINE EquationsSet_SpecificationSet
+  
   !
   !================================================================================================================================
   !
@@ -6215,8 +6329,13 @@ CONTAINS
     IF(.NOT.equationsSet%equations_set_finished) THEN
       CALL FlagError("Equations set has not been finished.",err,error,*999)
     END IF
+    IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+      CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+    ELSE IF(SIZE(equationsSet%specification,1)<1) THEN
+      CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+    END IF
 
-    SELECT CASE(equationsSet%class)
+    SELECT CASE(equationsSet%specification(1))
     CASE(EQUATIONS_SET_ELASTICITY_CLASS)
       CALL Elasticity_StrainInterpolateXi(equationsSet,userElementNumber,xi,values,err,error,*999)
     CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -6234,7 +6353,8 @@ CONTAINS
     CASE(EQUATIONS_SET_OPTIMISATION_CLASS)
       CALL FlagError("Not implemented.",err,error,*999)
     CASE DEFAULT
-      CALL FlagError("Equations set class "//TRIM(NumberToVstring(equationsSet%class,"*",err,error))// &
+      CALL FlagError("The first equations set specification of "// &
+        & TRIM(NumberToVstring(equationsSet%specification(1),"*",err,error))// &
         & " is not valid.",err,error,*999)
     END SELECT
 
@@ -6242,6 +6362,7 @@ CONTAINS
     RETURN
 999 ERRORSEXITS("EquationsSet_StrainInterpolateXi",err,error)
     RETURN 1
+    
   END SUBROUTINE EquationsSet_StrainInterpolateXi
 
   !
@@ -6684,7 +6805,12 @@ CONTAINS
         & MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
 
       !Apply any other equation set specific increments
-      SELECT CASE(EQUATIONS_SET%CLASS)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<1) THEN
+        CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
       CASE(EQUATIONS_SET_ELASTICITY_CLASS)
         CALL ELASTICITY_LOAD_INCREMENT_APPLY(EQUATIONS_SET,ITERATION_NUMBER,MAXIMUM_NUMBER_OF_ITERATIONS,ERR,ERROR,*999)
       CASE DEFAULT
@@ -6891,7 +7017,12 @@ CONTAINS
                 IF(matrixIdx>1) THEN
                   CALL FlagError("Analytic off-diagonal Jacobian calculation not implemented.",err,error,*999)
                 END IF
-                SELECT CASE(equationsSet%CLASS)
+                IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+                  CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+                ELSE IF(SIZE(equationsSet%specification,1)<1) THEN
+                  CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+                END IF
+                SELECT CASE(equationsSet%specification(1))
                 CASE(EQUATIONS_SET_ELASTICITY_CLASS)
                   CALL FlagError("Not implemented.",err,error,*999)
                 CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -6907,7 +7038,9 @@ CONTAINS
                 CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
                   CALL FlagError("Not implemented.",err,error,*999)
                 CASE DEFAULT
-                  localError="Equations set class "//TRIM(NUMBER_TO_VSTRING(equationsSet%CLASS,"*",err,error))//" is not valid."
+                  localError="The first equations set specification of "// &
+                    & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(1),"*", &
+                    & err,error))//" is not valid."
                   CALL FlagError(localError,err,error,*999)
                 END SELECT
               CASE(EQUATIONS_JACOBIAN_FINITE_DIFFERENCE_CALCULATED)
@@ -6994,7 +7127,12 @@ CONTAINS
     ENTERS("EquationsSet_NodalResidualEvaluate",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
-      SELECT CASE(equationsSet%CLASS)
+      IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(equationsSet%specification,1)<1) THEN
+        CALL FlagError("Equations set specification must have at least one entry.",err,error,*999)
+      END IF
+      SELECT CASE(equationsSet%specification(1))
       CASE(EQUATIONS_SET_ELASTICITY_CLASS)
         CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
@@ -7010,7 +7148,8 @@ CONTAINS
       CASE(EQUATIONS_SET_MULTI_PHYSICS_CLASS)
         CALL FlagError("Not implemented.",err,error,*999)
       CASE DEFAULT
-        localError="Equations set class "//TRIM(NUMBER_TO_VSTRING(equationsSet%CLASS,"*",err,error))//" is not valid."
+        localError="The first equations set specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(1),"*",err,error))//" is not valid."
         CALL FlagError(localError,err,error,*999)
       END SELECT
       equations=>equationsSet%EQUATIONS
