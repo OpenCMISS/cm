@@ -1,6 +1,6 @@
 !> \file
 !> \author Chris Bradley
-!> \brief The top level cmiss module.
+!> \brief The top level OpenCMISS Iron module.
 !>
 !> \mainpage OpenCMISS Documentation
 !>
@@ -75,51 +75,51 @@ MODULE Cmiss
 
   !Module parameters
 
-  INTEGER(INTG), PARAMETER :: CMISS_MAJOR_VERSION = 0
-  INTEGER(INTG), PARAMETER :: CMISS_MINOR_VERSION = 3
-  INTEGER(INTG), PARAMETER :: CMISS_REVISION_VERSION = 0
+  INTEGER(INTG), PARAMETER :: CMFE_MAJOR_VERSION = 0
+  INTEGER(INTG), PARAMETER :: CMFE_MINOR_VERSION = 3
+  INTEGER(INTG), PARAMETER :: CMFE_REVISION_VERSION = 0
 
-  CHARACTER(LEN=MAXSTRLEN), PARAMETER :: CMISS_BUILD_VERSION = "$Rev"
+  CHARACTER(LEN=MAXSTRLEN), PARAMETER :: CMFE_BUILD_VERSION = "$Rev"
 
-  !> \addtogroup CMISS_ErrorHandlingModes CMISS::ErrorHandlingModes
+  !> \addtogroup CMFE_ErrorHandlingModes CMISS::ErrorHandlingModes
   !> \brief Error handling mode parameters
   !> \see CMISS
   !>@{
-  INTEGER(INTG), PARAMETER :: CMISS_RETURN_ERROR_CODE = 0 !<Just return the error code \see CMISS_ErrorHandlingModes,CMISS
-  INTEGER(INTG), PARAMETER :: CMISS_OUTPUT_ERROR = 1 !<Output the error traceback and return the error code \see CMISS_ErrorHandlingModes,CMISS
-  INTEGER(INTG), PARAMETER :: CMISS_TRAP_ERROR = 2 !<Trap the error by outputing the error traceback and stopping the program \see CMISS_ErrorHandlingModes,CMISS
+  INTEGER(INTG), PARAMETER :: CMFE_RETURN_ERROR_CODE = 0 !<Just return the error code \see CMFE_ErrorHandlingModes,CMISS
+  INTEGER(INTG), PARAMETER :: CMFE_OUTPUT_ERROR = 1 !<Output the error traceback and return the error code \see CMFE_ErrorHandlingModes,CMISS
+  INTEGER(INTG), PARAMETER :: CMFE_TRAP_ERROR = 2 !<Trap the error by outputing the error traceback and stopping the program \see CMFE_ErrorHandlingModes,CMISS
   !>@}
   
   !Module types
 
   !Module variables
 
-  INTEGER(INTG), SAVE :: CmissErrorHandlingMode !<The current error handling mode for OpenCMISS \see CMISS_ErrorHandlingModes
+  INTEGER(INTG), SAVE :: cmfe_ErrorHandlingMode !<The current error handling mode for OpenCMISS \see CMFE_ErrorHandlingModes
  
   !Interfaces
 
   INTERFACE
 
-    SUBROUTINE CMISSInitFatalHandler() BIND(C,NAME="CMISSInitFatalHandler")
-    END SUBROUTINE CMISSInitFatalHandler
+    SUBROUTINE cmfe_InitFatalHandler() BIND(C,NAME="cmfe_InitFatalHandler")
+    END SUBROUTINE cmfe_InitFatalHandler
 
-    SUBROUTINE CMISSResetFatalHandler() BIND(C,NAME="CMISSResetFatalHandler")
-    END SUBROUTINE CMISSResetFatalHandler
+    SUBROUTINE cmfe_ResetFatalHandler() BIND(C,NAME="cmfe_ResetFatalHandler")
+    END SUBROUTINE cmfe_ResetFatalHandler
     
-    SUBROUTINE CMISSSetFatalHandler() BIND(C,NAME="CMISSSetFatalHandler")
-    END SUBROUTINE CMISSSetFatalHandler
+    SUBROUTINE cmfe_SetFatalHandler() BIND(C,NAME="cmfe_SetFatalHandler")
+    END SUBROUTINE cmfe_SetFatalHandler
 
   END INTERFACE
 
-  PUBLIC CMISS_MAJOR_VERSION,CMISS_MINOR_VERSION,CMISS_REVISION_VERSION,CMISS_BUILD_VERSION
+  PUBLIC CMFE_MAJOR_VERSION,CMFE_MINOR_VERSION,CMFE_REVISION_VERSION,CMFE_BUILD_VERSION
 
-  PUBLIC CMISS_RETURN_ERROR_CODE,CMISS_OUTPUT_ERROR,CMISS_TRAP_ERROR
+  PUBLIC CMFE_RETURN_ERROR_CODE,CMFE_OUTPUT_ERROR,CMFE_TRAP_ERROR
 
-  PUBLIC CmissErrorHandlingModeGet_,CmissErrorHandlingModeSet_
+  PUBLIC cmfe_ErrorHandlingModeGet_,cmfe_ErrorHandlingModeSet_
   
-  PUBLIC CmissHandleError
+  PUBLIC cmfe_HandleError
   
-  PUBLIC CmissFinalise_,CmissInitialise_
+  PUBLIC cmfe_Finalise_,cmfe_Initialise_
 
 CONTAINS
 
@@ -130,24 +130,24 @@ CONTAINS
 !!TODO Underscore to avoid name clash. Can be removed upon prefix rename.
 
   !>Returns the error handling mode for CMISS \see OPENCMISS::CMISSErrorHandlingModeGet
-  SUBROUTINE CmissErrorHandlingModeGet_(errorHandlingMode,err,error,*)
+  SUBROUTINE cmfe_ErrorHandlingModeGet_(errorHandlingMode,err,error,*)
   
     !Argument variables
-    INTEGER(INTG), INTENT(OUT) :: errorHandlingMode !<On return, the error handling mode. \see CMISS_ErrorHandlingModes,CMISS
+    INTEGER(INTG), INTENT(OUT) :: errorHandlingMode !<On return, the error handling mode. \see CMFE_ErrorHandlingModes,CMISS
     INTEGER(INTG), INTENT(INOUT) :: err !<The error string
     TYPE(VARYING_STRING), INTENT(INOUT) :: error !<The error code
     !Local Variables
 
-    ENTERS("CmissErrorHandlingModeGet_",err,error,*999)
+    ENTERS("cmfe_ErrorHandlingModeGet_",err,error,*999)
 
-    errorHandlingMode=CmissErrorHandlingMode
+    errorHandlingMode=cmfe_ErrorHandlingMode
     
-    EXITS("CmissErrorHandlingModeGet_")
+    EXITS("cmfe_ErrorHandlingModeGet_")
     RETURN
 999 ERRORSEXITS("",err,error)
     RETURN 1
     
-  END SUBROUTINE CmissErrorHandlingModeGet_
+  END SUBROUTINE cmfe_ErrorHandlingModeGet_
 
   !
   !================================================================================================================================
@@ -156,36 +156,36 @@ CONTAINS
 !!TODO Underscore to avoid name clash. Can be removed upon prefix rename.
 
   !>Sets the error handling mode for cmiss \see OPENCMISS::CMISSErrorHandlingModeSet
-  SUBROUTINE CmissErrorHandlingModeSet_(errorHandlingMode,err,error,*)
+  SUBROUTINE cmfe_ErrorHandlingModeSet_(errorHandlingMode,err,error,*)
   
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: errorHandlingMode !<The error handling mode to set. \see CMISS_ErrorHandlingModes,CMISS
+    INTEGER(INTG), INTENT(IN) :: errorHandlingMode !<The error handling mode to set. \see CMFE_ErrorHandlingModes,CMISS
     INTEGER(INTG), INTENT(INOUT) :: err !<The error string
     TYPE(VARYING_STRING), INTENT(INOUT) :: error !<The error code
     !Local Variables
     TYPE(VARYING_STRING) :: localError
     
-    ENTERS("CmissErrorHandlingModeSet_",err,error,*999)
+    ENTERS("cmfe_ErrorHandlingModeSet",err,error,*999)
 
     SELECT CASE(errorHandlingMode)
-    CASE(CMISS_RETURN_ERROR_CODE)
-      CmissErrorHandlingMode=CMISS_RETURN_ERROR_CODE
-    CASE(CMISS_OUTPUT_ERROR)
-      CmissErrorHandlingMode=CMISS_OUTPUT_ERROR
-    CASE(CMISS_TRAP_ERROR)
-      CmissErrorHandlingMode=CMISS_TRAP_ERROR
+    CASE(CMFE_RETURN_ERROR_CODE)
+      cmfe_ErrorHandlingMode=CMFE_RETURN_ERROR_CODE
+    CASE(CMFE_OUTPUT_ERROR)
+      cmfe_ErrorHandlingMode=CMFE_OUTPUT_ERROR
+    CASE(CMFE_TRAP_ERROR)
+      cmfe_ErrorHandlingMode=CMFE_TRAP_ERROR
     CASE DEFAULT
       localError="The supplied error handling mode of "//TRIM(NumberToVString(errorHandlingMode,"*",err,error))// &
         & " is invalid."
       CALL FlagError(localError,err,error,*999)
     END SELECT
 
-    EXITS("CmissErrorHandlingModeSet_")
+    EXITS("cmfe_ErrorHandlingModeSet_")
     RETURN
-999 ERRORSEXITS("CmissErrorHandlingModeSet_",err,error)
+999 ERRORSEXITS("cmfe_ErrorHandlingModeSet_",err,error)
     RETURN 1
     
-  END SUBROUTINE CmissErrorHandlingModeSet_
+  END SUBROUTINE cmfe_ErrorHandlingModeSet_
 
   !
   !================================================================================================================================
@@ -194,7 +194,7 @@ CONTAINS
 !!TODO Underscore to avoid name clash. Can be removed upon prefix rename.
   
   !>Finalises CMISS. \see OPENCMISS::CMISSFinalise
-  SUBROUTINE CmissFinalise_(err,error,*)
+  SUBROUTINE cmfe_Finalise_(err,error,*)
   
     !Argument variables
     INTEGER(INTG), INTENT(INOUT) :: err !<The error string
@@ -210,7 +210,7 @@ CONTAINS
     !Finalise bases
     CALL BASES_FINALISE(err,error,*999)
     !Reset the signal handler
-    CALL CMISSResetFatalHandler()
+    CALL cmfe_ResetFatalHandler()
     !Finalise computational enviroment
     CALL COMPUTATIONAL_ENVIRONMENT_FINALISE(err,error,*999)
     !Finalise the base routines
@@ -219,7 +219,7 @@ CONTAINS
     RETURN
 999 RETURN 1
     
-  END SUBROUTINE CmissFinalise_
+  END SUBROUTINE cmfe_Finalise_
 
   !
   !================================================================================================================================
@@ -228,7 +228,7 @@ CONTAINS
 !!TODO Underscore to avoid name clash. Can be removed upon prefix rename.
 
   !>Initialises CMISS. \see OPENCMISS::CMISSInitialise
-  SUBROUTINE CmissInitialise_(worldRegion,err,error,*)
+  SUBROUTINE cmfe_Initialise_(worldRegion,err,error,*)
   
     !Argument variables
     TYPE(REGION_TYPE), POINTER :: worldRegion !<On exit, a pointer to the world region. Must not be associated on entry.
@@ -238,14 +238,14 @@ CONTAINS
     TYPE(VARYING_STRING) :: versionString
 
     !Initialise error mode
-    CmissErrorHandlingMode = CMISS_OUTPUT_ERROR !Default for now, maybe make CMISS_RETURN_ERROR_CODE the default
+    cmfe_ErrorHandlingMode = CMFE_OUTPUT_ERROR !Default for now, maybe make CMFE_RETURN_ERROR_CODE the default
     !Initialise the base routines
     CALL BASE_ROUTINES_INITIALISE(err,error,*999)
     !Intialise the computational environment
     CALL COMPUTATIONAL_ENVIRONMENT_INITIALISE(err,error,*999)
     !Setup signal handling
-    CALL CMISSInitFatalHandler()
-    CALL CMISSSetFatalHandler()
+    CALL cmfe_InitFatalHandler()
+    CALL cmfe_SetFatalHandler()
     IF(ASSOCIATED(worldRegion)) THEN
       CALL FlagError("World region is already associated.",err,error,*999)
     ELSE
@@ -260,13 +260,13 @@ CONTAINS
       
       !Write out the CMISS version
       IF(COMPUTATIONAL_ENVIRONMENT%MY_COMPUTATIONAL_NODE_NUMBER==0) THEN
-        versionString="OpenCMISS(cm) version "//TRIM(NumberToVString(CMISS_MAJOR_VERSION,"*",err,error))
+        versionString="OpenCMISS(Iron) version "//TRIM(NumberToVString(CMFE_MAJOR_VERSION,"*",err,error))
         versionString=versionString//"."
-        versionString=versionString//TRIM(NumberToVString(CMISS_MINOR_VERSION,"*",err,error))
+        versionString=versionString//TRIM(NumberToVString(CMFE_MINOR_VERSION,"*",err,error))
         versionString=versionString//"."
-        versionString=versionString//TRIM(NumberToVString(CMISS_REVISION_VERSION,"*",err,error))
+        versionString=versionString//TRIM(NumberToVString(CMFE_REVISION_VERSION,"*",err,error))
         !versionString=versionString//" ("
-        !versionString=versionString//TRIM(CMISS_BUILD_VERSION(6:))
+        !versionString=versionString//TRIM(CMFE_BUILD_VERSION(6:))
         !versionString=versionString//" )"
         
         WRITE(*,'(A)') CHAR(versionString)
@@ -277,14 +277,14 @@ CONTAINS
     RETURN
 999 RETURN 1
     
-  END SUBROUTINE CmissInitialise_
+  END SUBROUTINE cmfe_Initialise_
 
   !
   !================================================================================================================================
   !
 
   !>Handle an error condition
-  SUBROUTINE CmissHandleError(err,error)
+  SUBROUTINE cmfe_HandleError(err,error)
   
     !Argument variables
     INTEGER(INTG), INTENT(INOUT) :: err !<The error code
@@ -292,12 +292,12 @@ CONTAINS
     !Local Variables
     INTEGER(INTG) :: mpiError
     
-    SELECT CASE(CmissErrorHandlingMode)
-    CASE(CMISS_RETURN_ERROR_CODE)
+    SELECT CASE(cmfe_ErrorHandlingMode)
+    CASE(CMFE_RETURN_ERROR_CODE)
       !Do nothing
-    CASE(CMISS_OUTPUT_ERROR)
+    CASE(CMFE_OUTPUT_ERROR)
       CALL WriteError(err,error,*999)
-    CASE(CMISS_TRAP_ERROR)
+    CASE(CMFE_TRAP_ERROR)
       CALL WriteError(err,error,*999)
       CALL MPI_ABORT(MPI_COMM_WORLD,err,mpiError)
       STOP
@@ -308,7 +308,7 @@ CONTAINS
     RETURN
 999 RETURN
 
-  END SUBROUTINE CmissHandleError
+  END SUBROUTINE cmfe_HandleError
   
   !
   !================================================================================================================================

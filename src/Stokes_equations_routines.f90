@@ -76,15 +76,24 @@ MODULE STOKES_EQUATIONS_ROUTINES
 
   PRIVATE
 
-  PUBLIC  STOKES_EQUATIONS_SET_SUBTYPE_SET
+  PUBLIC  Stokes_EquationsSetSpecificationSet
+
   PUBLIC  Stokes_EquationsSetSolutionMethodSet
+
   PUBLIC  STOKES_EQUATIONS_SET_SETUP
+
   PUBLIC  Stokes_BoundaryConditionsAnalyticCalculate
-  PUBLIC  STOKES_PROBLEM_SUBTYPE_SET
+
+  PUBLIC  Stokes_ProblemSpecificationSet
+
   PUBLIC  STOKES_PROBLEM_SETUP
+
   PUBLIC  STOKES_FINITE_ELEMENT_CALCULATE
+
   PUBLIC  STOKES_POST_SOLVE
+
   PUBLIC  STOKES_PRE_SOLVE
+
   PUBLIC  STOKES_EQUATION_ANALYTIC_FUNCTIONS
 
 CONTAINS 
@@ -107,7 +116,13 @@ CONTAINS
     ENTERS("Stokes_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have 3 entries for a Stokes equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE, &
         & EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
         & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE, &
@@ -131,8 +146,9 @@ CONTAINS
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Stokes flow equation type of a fluid mechanics equations set class."
+        LOCAL_ERROR="The third equations set specification of "// &
+          & TRIM(NumberToVstring(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+          & " is not valid for a Stokes flow equation of a fluid mechanics equations set."
         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
@@ -143,63 +159,66 @@ CONTAINS
     RETURN
 999 ERRORSEXITS("Stokes_EquationsSetSolutionMethodSet",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE Stokes_EquationsSetSolutionMethodSet
 
 ! 
 !================================================================================================================================
 !
 
-  !>Sets/changes the equation subtype for a Stokes fluid type of a fluid mechanics equations set class.
-  SUBROUTINE STOKES_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the equation specification for a Stokes flow equation of a fluid mechanics equations set.
+  SUBROUTINE Stokes_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: subtype
 
-    ENTERS("STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("Stokes_EquationsSetSpecificationSet",err,error,*999)
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET_SUBTYPE)
-      CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE)
-            EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-            EQUATIONS_SET%TYPE=EQUATIONS_SET_STOKES_EQUATION_TYPE
-            EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STATIC_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE)
-            EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-            EQUATIONS_SET%TYPE=EQUATIONS_SET_STOKES_EQUATION_TYPE
-            EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
-            EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-            EQUATIONS_SET%TYPE=EQUATIONS_SET_STOKES_EQUATION_TYPE
-            EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_ALE_STOKES_SUBTYPE)
-            EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-            EQUATIONS_SET%TYPE=EQUATIONS_SET_STOKES_EQUATION_TYPE
-            EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_ALE_STOKES_SUBTYPE
-      CASE(EQUATIONS_SET_PGM_STOKES_SUBTYPE)
-            EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-            EQUATIONS_SET%TYPE=EQUATIONS_SET_STOKES_EQUATION_TYPE
-            EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_PGM_STOKES_SUBTYPE
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Stokes type equations set.", &
+          & err,error,*999)
+      END IF
+      subtype=specification(3)
+      SELECT CASE(subtype)
+      CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_ALE_STOKES_SUBTYPE, &
+          & EQUATIONS_SET_PGM_STOKES_SUBTYPE)
+        !ok
       CASE(EQUATIONS_SET_OPTIMISED_STOKES_SUBTYPE)
-            CALL FlagError("Not implemented yet.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented yet.",err,error,*999)
       CASE DEFAULT
-            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
-              & " is not valid for a Stokes fluid type of a fluid mechanics equations set class."
-            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
+        localError="The third equations set specification of "//TRIM(NumberToVstring(specification(3),"*",err,error))// &
+          & " is not valid for Stokes flow of a fluid mechanics equations set."
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_FLUID_MECHANICS_CLASS,EQUATIONS_SET_STOKES_EQUATION_TYPE,subtype]
     ELSE
-         CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
 
-    EXITS("STOKES_EQUATIONS_SET_SUBTYPE_SET")
+    EXITS("Stokes_EquationsSetSpecificationSet")
     RETURN
-999 ERRORSEXITS("STOKES_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
+999 ERRORS("Stokes_EquationsSetSpecificationSet",err,error)
+    EXITS("Stokes_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE STOKES_EQUATIONS_SET_SUBTYPE_SET
+    
+  END SUBROUTINE Stokes_EquationsSetSpecificationSet
 
 ! 
 !================================================================================================================================
@@ -234,7 +253,13 @@ CONTAINS
     NULLIFY(GEOMETRIC_DECOMPOSITION)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Equations set specification must have >= 3 entries for a Stokes flow equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         !Select Stokes subtypes  
         CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE, &
           & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE, &
@@ -244,7 +269,7 @@ CONTAINS
           SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
             !Set solution method  
             CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_PGM_STOKES_SUBTYPE)
@@ -262,26 +287,27 @@ CONTAINS
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
-                  LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " is invalid for a Stokes equation."
+                  LOCAL_ERROR="The third equations set specification of "// &
+                    & TRIM(NumberToVstring(EQUATIONS_SET%SPECIFICATION(3),"*", &
+                    & ERR,ERROR))//" is invalid for a Stokes flow equations set."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-            !Set geometric field
             CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              !Set geometric field
+              SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_PGM_STOKES_SUBTYPE)
                     !Do nothing???
                 CASE DEFAULT
-                  LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " is invalid for a Stokes equation."
+                  LOCAL_ERROR="The third equations set specification of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*", &
+                    & ERR,ERROR))//" is invalid for a Stokes flow equations set."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
-            !Set dependent field  
             CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              !Set dependent field  
+              SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_PGM_STOKES_SUBTYPE)
@@ -405,14 +431,14 @@ CONTAINS
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
-                  LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " is invalid for a Stokes equation."
-                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
-            !define an independent field for ALE information
+                  LOCAL_ERROR="The third equations set specification of "// &
+                    & TRIM(NumberToVstring(EQUATIONS_SET%SPECIFICATION(3),"*", &
+                    & ERR,ERROR))//" is invalid for a Stokes flow equations set."
+                   CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                 END SELECT
             CASE(EQUATIONS_SET_SETUP_INDEPENDENT_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              !define an independent field for ALE information
+              SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
               CASE(EQUATIONS_SET_ALE_STOKES_SUBTYPE,EQUATIONS_SET_PGM_STOKES_SUBTYPE)
                 SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                  !Set start action
@@ -523,14 +549,14 @@ CONTAINS
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
-                  LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " is invalid for a Stokes equation."
+                  LOCAL_ERROR="The third equations set specification of "// &
+                    & TRIM(NumberToVstring(EQUATIONS_SET%SPECIFICATION(3),"*", &
+                    & ERR,ERROR))//" is invalid for a Stokes flow equations set."
                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-              END SELECT
+                 END SELECT
             !Define analytic part for Stokes problem
             CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, & 
                   & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE)
                   SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -604,14 +630,14 @@ CONTAINS
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END SELECT
                   CASE DEFAULT
-                    LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                      & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                      & " is invalid for a Stokes equation."
-                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
+                    LOCAL_ERROR="The third equations set specification of "// &
+                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+                       " is invalid for a Stokes flow equations set."
+                     CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
             !Define materials field              
             CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
                 & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE, &
                 & EQUATIONS_SET_PGM_STOKES_SUBTYPE)
@@ -704,14 +730,14 @@ CONTAINS
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
-                  LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " is invalid for a Stokes equation."
+                  LOCAL_ERROR="The third equations set specification of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+                    & " is invalid for a Stokes flow equations set."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             !Define the source field    
             CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,EQUATIONS_SET_ALE_STOKES_SUBTYPE, &
                   & EQUATIONS_SET_PGM_STOKES_SUBTYPE)
@@ -729,14 +755,14 @@ CONTAINS
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
-                  LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " is invalid for a Stokes equation."
-                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
+                  LOCAL_ERROR="The third equations set specification of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+                    & " is invalid for a Stokes flow equations set."
+                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             !Define equations type
             CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
-              SELECT CASE(EQUATIONS_SET%SUBTYPE)
+              SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                 CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE)
                   SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                     CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -864,9 +890,9 @@ CONTAINS
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 CASE DEFAULT
-                  LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                    & " is invalid for a Stokes equation."
+                  LOCAL_ERROR="The third equations set specification of "// &
+                    & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+                    & " is invalid for a Stokes flow equations set."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
@@ -875,7 +901,7 @@ CONTAINS
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
-          LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
             & " does not equal a standard Stokes fluid subtype."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -888,63 +914,63 @@ CONTAINS
 999 ERRORSEXITS("STOKES_EQUATIONS_SET_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE STOKES_EQUATIONS_SET_SETUP
-         
-! 
+
+!
 !================================================================================================================================
-!         
-          
-  !>Sets/changes the problem subtype for a Stokes fluid type .
-  SUBROUTINE STOKES_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+!
+
+  !>Sets the problem specification for a Stokes fluid problem.
+  SUBROUTINE Stokes_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-          
-    ENTERS("STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
-          
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-        CASE(PROBLEM_STATIC_STOKES_SUBTYPE)
-          PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-          PROBLEM%TYPE=PROBLEM_STOKES_EQUATION_TYPE
-          PROBLEM%SUBTYPE=PROBLEM_STATIC_STOKES_SUBTYPE
-        CASE(PROBLEM_LAPLACE_STOKES_SUBTYPE)
-          PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-          PROBLEM%TYPE=PROBLEM_STOKES_EQUATION_TYPE
-          PROBLEM%SUBTYPE=PROBLEM_LAPLACE_STOKES_SUBTYPE
-        CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
-          PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-          PROBLEM%TYPE=PROBLEM_STOKES_EQUATION_TYPE
-          PROBLEM%SUBTYPE=PROBLEM_TRANSIENT_STOKES_SUBTYPE
-        CASE(PROBLEM_ALE_STOKES_SUBTYPE)
-          PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-          PROBLEM%TYPE=PROBLEM_STOKES_EQUATION_TYPE
-          PROBLEM%SUBTYPE=PROBLEM_ALE_STOKES_SUBTYPE
-        CASE(PROBLEM_PGM_STOKES_SUBTYPE)
-          PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-          PROBLEM%TYPE=PROBLEM_STOKES_EQUATION_TYPE
-          PROBLEM%SUBTYPE=PROBLEM_PGM_STOKES_SUBTYPE
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
+
+    ENTERS("Stokes_ProblemSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_STATIC_STOKES_SUBTYPE, &
+            & PROBLEM_LAPLACE_STOKES_SUBTYPE, &
+            & PROBLEM_TRANSIENT_STOKES_SUBTYPE, &
+            & PROBLEM_ALE_STOKES_SUBTYPE, &
+            & PROBLEM_PGM_STOKES_SUBTYPE)
+          !All ok
         CASE(PROBLEM_OPTIMISED_STOKES_SUBTYPE)
-          CALL FlagError("Not implemented yet.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented yet.",err,error,*999)
         CASE DEFAULT
-          LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a Stokes fluid type of a fluid mechanics problem class."
-          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE  
-      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF 
-          
-    EXITS("STOKES_PROBLEM_SUBTYPE_SET")
+          localError="The third problem specification of "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a Stokes flow fluid mechanics problem."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        ENDIF
+        problem%specification(1:3)=[PROBLEM_FLUID_MECHANICS_CLASS,PROBLEM_STOKES_EQUATION_TYPE,problemSubtype]
+      ELSE
+        CALL FlagError("Stokes flow problem specification must have >= 3 entries.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    ENDIF
+
+    EXITS("Stokes_ProblemSpecificationSet")
     RETURN
-999 ERRORSEXITS("STOKES_PROBLEM_SUBTYPE_SET",ERR,ERROR)
+999 ERRORSEXITS("Stokes_ProblemSpecificationSet",err,error)
     RETURN 1
-  END SUBROUTINE STOKES_PROBLEM_SUBTYPE_SET
-          
+    
+  END SUBROUTINE Stokes_ProblemSpecificationSet
+
 ! 
 !================================================================================================================================
 !
@@ -973,7 +999,12 @@ CONTAINS
     NULLIFY(MESH_SOLVER_EQUATIONS)
     NULLIFY(SOLVERS)
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(.NOT.ALLOCATED(problem%specification)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(problem%specification,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a Stokes problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
         !Set problem subtype for steady state Stokes problems
         CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
           SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
@@ -1273,7 +1304,7 @@ CONTAINS
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
-          LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
             & " is not valid for a Stokes fluid type of a fluid mechanics problem class."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -1356,9 +1387,15 @@ CONTAINS
     UPDATE_RHS_VECTOR=.FALSE.
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Stokes type equations set.", &
+          & err,error,*999)
+      END IF
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE, &
             & EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE,PROBLEM_ALE_STOKES_SUBTYPE,PROBLEM_PGM_STOKES_SUBTYPE)
           !Set Pointers
@@ -1377,7 +1414,7 @@ CONTAINS
             QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
             RHS_VECTOR=>EQUATIONS_MATRICES%RHS_VECTOR
             EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-            SELECT CASE(EQUATIONS_SET%SUBTYPE)
+            SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
               CASE(EQUATIONS_SET_STATIC_STOKES_SUBTYPE,EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE)
                 LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
                 STIFFNESS_MATRIX=>LINEAR_MATRICES%MATRICES(1)%PTR
@@ -1416,7 +1453,7 @@ CONTAINS
                 CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_MESH_VELOCITY_SET_TYPE,ELEMENT_NUMBER, & 
                   & EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
                   & " is not valid for a Stokes fluid type of a fluid mechanics equations set class."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
@@ -1441,8 +1478,8 @@ CONTAINS
                 & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_STOKES_SUBTYPE) THEN
+              IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_STOKES_SUBTYPE) THEN
                 CALL FIELD_INTERPOLATE_GAUSS(FIRST_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                   & INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
                   W_VALUE(1)=EQUATIONS%INTERPOLATION%INDEPENDENT_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
@@ -1462,11 +1499,11 @@ CONTAINS
 #endif
               !Calculate partial matrices
 !\todo: Check time spent here
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_STOKES_SUBTYPE.OR. &
-                & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
+              IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_STOKES_SUBTYPE.OR. &
+                & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
                 !Loop over field components
                 mhs=0
                 DO mh=1,(FIELD_VARIABLE%NUMBER_OF_COMPONENTS-1)
@@ -1563,7 +1600,7 @@ CONTAINS
 !#ifdef TAUPROF
 !                            CALL TAU_STATIC_PHASE_START("A STANDARD")
 !#endif
-                            IF(EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE) THEN 
+                            IF(EQUATIONS_SET%SPECIFICATION(3)/=EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE) THEN 
                               IF(nh<FIELD_VARIABLE%NUMBER_OF_COMPONENTS) THEN 
                                 SUM=0.0_DP
                                 !Calculate SUM 
@@ -1587,8 +1624,8 @@ CONTAINS
 !#ifdef TAUPROF
 !                            CALL TAU_STATIC_PHASE_START("ALE CONTRIBUTION")
 !#endif
-                            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
-                              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_STOKES_SUBTYPE) THEN  
+                            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
+                              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_STOKES_SUBTYPE) THEN  
                               IF(nh==mh) THEN 
                                 SUM=0.0_DP
                                 !Calculate SUM 
@@ -1627,9 +1664,9 @@ CONTAINS
                           END IF
                           !Calculate mass matrix if needed
 !\todo: Check update flags
-                          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE.OR. &
-                            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
-                            & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_STOKES_SUBTYPE) THEN
+                          IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE.OR. &
+                            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
+                            & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_STOKES_SUBTYPE) THEN
 !#ifdef TAUPROF
 !                            CALL TAU_STATIC_PHASE_START("M")
 !#endif
@@ -1788,11 +1825,11 @@ CONTAINS
             mhs_max=nhs
             nhs_min=mhs
             nhs_max=nhs
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_STOKES_SUBTYPE.OR.  &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_STOKES_SUBTYPE.OR.  &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_LAPLACE_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE) THEN
               IF(UPDATE_STIFFNESS_MATRIX) THEN
                 STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=AL_MATRIX(1:mhs_min,1:nhs_min)+AG_MATRIX(1:mhs_min, &
                   & 1:nhs_min)+ALE_MATRIX(1:mhs_min,1:nhs_min)
@@ -1805,9 +1842,9 @@ CONTAINS
                 END DO
               END IF
             END IF
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE.OR. & 
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
-              & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_PGM_STOKES_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT_STOKES_SUBTYPE.OR. & 
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_STOKES_SUBTYPE.OR. &
+              & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_PGM_STOKES_SUBTYPE) THEN
               IF(UPDATE_DAMPING_MATRIX) THEN
                 DAMPING_MATRIX%ELEMENT_MATRIX%MATRIX(1:mhs_min,1:nhs_min)=MT_MATRIX(1:mhs_min,1:nhs_min)
               END IF
@@ -1870,7 +1907,7 @@ CONTAINS
                       CALL TAU_STATIC_PHASE_STOP("DEFINE SCALING")
 #endif
           CASE DEFAULT
-            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a Stokes fluid type of a fluid mechanics equations set class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
@@ -1909,7 +1946,12 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
               CALL STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE(PROBLEM_PGM_STOKES_SUBTYPE)
@@ -1932,7 +1974,7 @@ CONTAINS
                 CALL STOKES_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               END IF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Stokes fluid type of a fluid mechanics problem class."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -1974,7 +2016,12 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
               ! do nothing ???
             CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
@@ -2016,7 +2063,7 @@ CONTAINS
                 CALL FlagError("Solver type is not associated for ALE problem.",ERR,ERROR,*999)
               END IF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Stokes fluid type of a fluid mechanics problem class."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -2079,7 +2126,12 @@ CONTAINS
 !       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
               ! do nothing ???
             CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
@@ -2597,7 +2649,7 @@ CONTAINS
               END IF
               ! do nothing ???
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -2653,7 +2705,12 @@ CONTAINS
       NULLIFY(SOLVER_ALE_STOKES)
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
               ! do nothing ???
             CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
@@ -2864,7 +2921,7 @@ CONTAINS
                 CALL FlagError("Mesh update is not defined for non-dynamic problems.",ERR,ERROR,*999)
               END IF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -2916,7 +2973,12 @@ CONTAINS
       CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
               ! do nothing ???
             CASE(PROBLEM_TRANSIENT_STOKES_SUBTYPE)
@@ -2987,7 +3049,7 @@ CONTAINS
                 CALL FlagError("Mesh motion calculation not successful for ALE problem.",ERR,ERROR,*999)
               END IF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -3044,7 +3106,12 @@ CONTAINS
 !       write(*,*)'TIME_INCREMENT = ',TIME_INCREMENT
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Stokes problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_STOKES_SUBTYPE,PROBLEM_LAPLACE_STOKES_SUBTYPE)
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
                 IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -3118,7 +3185,7 @@ CONTAINS
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_4.OR. &
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_5.OR. &
                             & EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_THREE_DIM_1) THEN
-                            CALL ANALYTIC_ANALYSIS_OUTPUT(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
+                            CALL AnalyticAnalysis_Output(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
                           ENDIF
                         ENDIF
                       ENDIF 
@@ -3127,7 +3194,7 @@ CONTAINS
                 ENDIF
               ENDIF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Stokes equation fluid type of a fluid mechanics problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT

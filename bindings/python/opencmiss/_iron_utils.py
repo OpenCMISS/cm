@@ -1,7 +1,7 @@
-"""Utility routines and classes used by OpenCMISS
+"""Utility routines and classes used by OpenCMISS-Iron
 """
 
-import _opencmiss_swig
+from . import _iron_swig
 
 
 class CMISSError(Exception):
@@ -64,15 +64,15 @@ def wrap_cmiss_routine(routine, args=None):
     else:
         status = r
         return_val = None
-    if status != _opencmiss_swig.cvar.CMISS_NO_ERROR:
-        if status == _opencmiss_swig.cvar.CMISS_POINTER_IS_NULL:
+    if status != _iron_swig.cvar.CMFE_NO_ERROR:
+        if status == _iron_swig.cvar.CMFE_POINTER_IS_NULL:
             raise CMISSError("CMISS type pointer is null")
-        elif status == _opencmiss_swig.cvar.CMISS_POINTER_NOT_NULL:
+        elif status == _iron_swig.cvar.CMFE_POINTER_NOT_NULL:
             raise CMISSError("CMISS type pointer is not null")
-        elif status == _opencmiss_swig.cvar.CMISS_COULD_NOT_ALLOCATE_POINTER:
+        elif status == _iron_swig.cvar.CMFE_COULD_NOT_ALLOCATE_POINTER:
             raise CMISSError("Could not allocate pointer")
-        elif status == _opencmiss_swig.cvar.CMISS_ERROR_CONVERTING_POINTER:
+        elif status == _iron_swig.cvar.CMFE_ERROR_CONVERTING_POINTER:
             raise CMISSError("Error converting pointer")
         else:
-            raise CMISSError(_opencmiss_swig.CMISSExtractErrorMessage()[1])
+            raise CMISSError(_iron_swig.cmfe_ExtractErrorMessage()[1])
     return return_val

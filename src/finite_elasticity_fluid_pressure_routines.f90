@@ -68,11 +68,11 @@ MODULE FINITE_ELASTICITY_FLUID_PRESSURE_ROUTINES
   IMPLICIT NONE
 
   PUBLIC FinElasticityFluidPressure_EquationsSetSetup
-  PUBLIC FinElasticityFluidPressure_EquationsSetSubtypeSet
   PUBLIC FinElasticityFluidPressure_EquationsSetSolnMethodSet
+  PUBLIC FinElasticityFluidPressure_EquationsSetSpecificationSet
 
   PUBLIC ELASTICITY_FLUID_PRESSURE_PROBLEM_SETUP
-  PUBLIC FinElasticityFluidPressure_ProblemSubtypeSet
+  PUBLIC FinElasticityFluidPressure_ProblemSpecificationSet
   
   PUBLIC FinElasticityFluidPressure_FiniteElementCalculate
 
@@ -101,7 +101,13 @@ CONTAINS
     ENTERS("FinElasticityFluidPressure_EquationsSetSolnMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a "// &
+          & "finite elasticity-fluid pressure class equations set.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE, &
           & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE)
         SELECT CASE(SOLUTION_METHOD)
@@ -122,7 +128,7 @@ CONTAINS
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a finite elasticity fluid pressure equation type of a multi physics equations set class."
         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
@@ -137,6 +143,32 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE FinElasticityFluidPressure_EquationsSetSolnMethodSet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the equation specification for a finite elasticity fluid pressure equation type of a fluid mechanics equations set class.
+  SUBROUTINE FinElasticityFluidPressure_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("FinElasticityFluidPressure_EquationsSetSpecificationSet",ERR,ERROR,*999)
+
+    CALL FlagError("FinElasticityFluidPressure_EquationsSetSpecificationSet is not implemented.",ERR,ERROR,*999)
+
+    EXITS("FinElasticityFluidPressure_EquationsSetSpecificationSet")
+    RETURN
+999 ERRORS("FinElasticityFluidPressure_EquationsSetSpecificationSet",ERR,ERROR)
+    EXITS("FinElasticityFluidPressure_EquationsSetSpecificationSet")
+    RETURN 1
+    
+  END SUBROUTINE FinElasticityFluidPressure_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
@@ -193,67 +225,53 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a finite elasticity fluid pressure  equation type of a multi physics equations set class.
-  SUBROUTINE FinElasticityFluidPressure_EquationsSetSubtypeSet(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a finite elasticity fluid pressure equation type.
+  SUBROUTINE FinElasticityFluidPressure_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
 
-    ENTERS("FinElasticityFluidPressure_EquationsSetSubtypeSet",ERR,ERROR,*999)
+    ENTERS("FinElasticityFluidPressure_ProblemSpecificationSet",err,error,*999)
 
-    CALL FlagError("FinElasticityFluidPressure_EquationsSetSubtypeSet is not implemented.",ERR,ERROR,*999)
-
-    EXITS("FinElasticityFluidPressure_EquationsSetSubtypeSet")
-    RETURN
-999 ERRORS("FinElasticityFluidPressure_EquationsSetSubtypeSet",ERR,ERROR)
-    EXITS("FinElasticityFluidPressure_EquationsSetSubtypeSet")
-    RETURN 1
-    
-  END SUBROUTINE FinElasticityFluidPressure_EquationsSetSubtypeSet
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the problem subtype for a finite elasticity fluid pressure equation type .
-  SUBROUTINE FinElasticityFluidPressure_ProblemSubtypeSet(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    ENTERS("FinElasticityFluidPressure_ProblemSubtypeSet",ERR,ERROR,*999)
-    
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a finite elasticity fluid pressure equation type of a multi physics problem class."
-        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
+          !ok
+        CASE DEFAULT
+          localError="The third problem specification of "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a finite elasticity fluid pressure type of a multi physics problem."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_MULTI_PHYSICS_CLASS,PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE, &
+          & problemSubtype]
+      ELSE
+        CALL FlagError("Finite elasticity fluid pressure problem specificaion must have three entries.",err,error,*999)
+      END IF
     ELSE
-      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    EXITS("FinElasticityFluidPressure_ProblemSubtypeSet")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    EXITS("FinElasticityFluidPressure_ProblemSpecificationSet")
     RETURN
-999 ERRORS("FinElasticityFluidPressure_ProblemSubtypeSet",ERR,ERROR)
-    EXITS("FinElasticityFluidPressure_ProblemSubtypeSet")
+999 ERRORS("FinElasticityFluidPressure_ProblemSpecificationSet",err,error)
+    EXITS("FinElasticityFluidPressure_ProblemSpecificationSet")
     RETURN 1
     
-  END SUBROUTINE FinElasticityFluidPressure_ProblemSubtypeSet
+  END SUBROUTINE FinElasticityFluidPressure_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -281,7 +299,17 @@ CONTAINS
     NULLIFY(SOLVERS)
     NULLIFY(SOLVER_EQUATIONS)
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(ALLOCATED(problem%specification)) THEN
+        IF(.NOT.ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(problem%specification,1)<3) THEN
+          CALL FlagError("Problem specification must have three entries for a finite elasticity-Darcy problem.", &
+            & err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
 
       !--------------------------------------------------------------------
       !   Standard finite elasticity fluid pressure
@@ -378,7 +406,7 @@ CONTAINS
         END SELECT
 
       CASE DEFAULT
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a standard finite elasticity fluid pressure equation subtype."
         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 
@@ -414,13 +442,18 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for an elasticity fluid pressure problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
             IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
               CALL FINITE_ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a fluid pressure fluid type of a multi physics problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
@@ -461,11 +494,16 @@ CONTAINS
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for an elasticity fluid pressure problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
             CALL FINITE_ELASTICITY_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a finite elasticity fluid pressure type of a multi physics problem class."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT

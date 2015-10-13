@@ -84,9 +84,9 @@ MODULE Stree_EQUATION_ROUTINES
 
   PRIVATE
 
-  PUBLIC Stree_EquationsSet_SolutionMethodSet
-  PUBLIC Stree_EquationsSet_SubtypeSet
-  PUBLIC Stree_EquationsSet_Setup
+  PUBLIC Stree_EquationsSetSolutionMethodSet
+  PUBLIC Stree_EquationsSetSpecificationSet
+  PUBLIC Stree_EquationsSetSetup
   PUBLIC Stree_FINITE_ELEMENT_CALCULATE
   PUBLIC Stree_PRE_SOLVE
 
@@ -97,7 +97,7 @@ CONTAINS
 !
 
   !>Sets/changes the solution method for a Stree equation type of an fluid mechanics equations set class.
-  SUBROUTINE Stree_EquationsSet_SolutionMethodSet(equationsSet,solutionMethod,err,error,*)
+  SUBROUTINE Stree_EquationsSetSolutionMethodSet(equationsSet,solutionMethod,err,error,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
@@ -107,10 +107,16 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: localError
     
-    ENTERS("Stree_EquationsSet_SolutionMethodSet",err,error,*999)
+    ENTERS("Stree_EquationsSetSolutionMethodSet",err,error,*999)
     
     IF(ASSOCIATED(equationsSet)) THEN
-      SELECT CASE(equationsSet%SUBTYPE)
+      IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(equationsSet%specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a structured tree type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(equationsSet%specification(3))
       CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)                                
         SELECT CASE(solutionMethod)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
@@ -133,66 +139,79 @@ CONTAINS
           CALL FLAG_ERROR(localError,err,error,*999)
         END SELECT
       CASE DEFAULT
-        localError="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-          & " is not valid for a Stree equation type of a fluid mechanics equations set class."
+        localError="The third equations set specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
+          & " is not valid for a Stree type of a fluid mechanics equations set."
         CALL FLAG_ERROR(localError,err,error,*999)
       END SELECT
     ELSE
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
        
-    EXITS("Stree_EquationsSet_SolutionMethodSet")
+    EXITS("Stree_EquationsSetSolutionMethodSet")
     RETURN
-999 ERRORSEXITS("Stree_EquationsSet_SolutionMethodSet",err,error)
+999 ERRORSEXITS("Stree_EquationsSetSolutionMethodSet",err,error)
     RETURN 1
     
-  END SUBROUTINE Stree_EquationsSet_SolutionMethodSet
+  END SUBROUTINE Stree_EquationsSetSolutionMethodSet
 
 !
 !================================================================================================================================
 !
 
-  !>Sets/changes the equation subtype for a Stree type of a fluid mechanics equations set class.
-  SUBROUTINE Stree_EquationsSet_SubtypeSet(equationsSet,equationsSetSubtype,err,error,*)
+  !>Sets the equation specification for a Stree type of a fluid mechanics equations set.
+  SUBROUTINE Stree_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
-    INTEGER(INTG), INTENT(IN) :: equationsSetSubtype
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: error
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
+    INTEGER(INTG) :: subtype
     TYPE(VARYING_STRING) :: localError
 
-    ENTERS("Stree_EquationsSet_SubtypeSet",err,error,*999)
+    ENTERS("Stree_EquationsSetSpecificationSet",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
-      SELECT CASE(equationsSetSubtype)
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Stree type equations set.", &
+          & err,error,*999)
+      END IF
+      subtype=specification(3)
+      SELECT CASE(subtype)
       CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
-        equationsSet%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        equationsSet%TYPE=EQUATIONS_SET_Stree_EQUATION_TYPE
-        equationsSet%SUBTYPE=EQUATIONS_SET_STREE1D0D_SUBTYPE
+        !ok
       CASE DEFAULT
-        localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSetSubtype,"*",err,error))// &
-          & " is not valid for a Stree fluid type of a fluid mechanics equations set class."
-        CALL FLAG_ERROR(localError,err,error,*999)
+        localError="The third equations set specification of "//TRIM(NumberToVstring(subtype,"*",err,error))// &
+          & " is not valid for a Stree type of a fluid mechanics equations set."
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_CLASSICAL_FIELD_CLASS,EQUATIONS_SET_STREE_EQUATION_TYPE,subtype]
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
-    ENDIF
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
 
-    EXITS("Stree_EquationsSet_SubtypeSet")
+    EXITS("Stree_EquationsSetSpecificationSet")
     RETURN
-999 ERRORSEXITS("Stree_EquationsSet_SubtypeSet",err,error)
+999 ERRORSEXITS("Stree_EquationsSetSpecificationSet",err,error)
     RETURN 1
     
-  END SUBROUTINE Stree_EquationsSet_SubtypeSet
+  END SUBROUTINE Stree_EquationsSetSpecificationSet
 
 !
 !================================================================================================================================
 !
 
   !>Sets up the Stree equations fluid setup.
-  SUBROUTINE Stree_EquationsSet_Setup(equationsSet,equationsSetSetup,err,error,*)
+  SUBROUTINE Stree_EquationsSetSetup(equationsSet,equationsSetSetup,err,error,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
@@ -212,7 +231,7 @@ CONTAINS
     INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsFieldNumberOfComponents
     TYPE(VARYING_STRING) :: localError
 
-    ENTERS("Stree_EquationsSet_Setup",err,error,*999)
+    ENTERS("Stree_EquationsSetSetup",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -221,18 +240,24 @@ CONTAINS
     NULLIFY(geometricDecomposition)
 
     IF(ASSOCIATED(equationsSet)) THEN
-      SELECT CASE(equationsSet%SUBTYPE)
+      IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(equationsSet%specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Stree type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(equationsSet%specification(3))
       CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
         SELECT CASE(equationsSetSetup%SETUP_TYPE)
         !-----------------------------------------------------------------
         ! I n i t i a l   s e t u p
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
-          SELECT CASE(equationsSet%SUBTYPE)
+          SELECT CASE(equationsSet%specification(3))
           CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
-              CALL Stree_EquationsSet_SolutionMethodSet(equationsSet, &
+              CALL Stree_EquationsSetSolutionMethodSet(equationsSet, &
                 & EQUATIONS_SET_FEM_SOLUTION_METHOD,err,error,*999)
               equationsSet%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
               equationsEquationsSetField=>equationsSet%EQUATIONS_SET_FIELD
@@ -263,8 +288,8 @@ CONTAINS
               CALL FLAG_ERROR(localError,err,error,*999)
             END SELECT
           CASE DEFAULT
-            localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+            localError="The third equations set specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
               & " is invalid for a Stree equations set."
             CALL FLAG_ERROR(localError,err,error,*999)
           END SELECT
@@ -272,7 +297,7 @@ CONTAINS
         ! G e o m e t r i c   f i e l d
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
-          SELECT CASE(equationsSet%SUBTYPE)
+          SELECT CASE(equationsSet%specification(3))
           CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -304,7 +329,8 @@ CONTAINS
               CALL FLAG_ERROR(localError,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+            localError="The third equations set specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
               & " is invalid for a Stree equations set."
             CALL FLAG_ERROR(localError,err,error,*999)
           END SELECT
@@ -312,7 +338,7 @@ CONTAINS
         ! D e p e n d e n t   f i e l d
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
-          SELECT CASE(equationsSet%SUBTYPE)
+          SELECT CASE(equationsSet%specification(3))
           CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
             dependentFieldNumberOfVariables=2
             dependentFieldNumberOfComponents=1
@@ -420,14 +446,14 @@ CONTAINS
                 CALL FIELD_CREATE_FINISH(equationsSet%DEPENDENT%DEPENDENT_FIELD,err,error,*999)
               ENDIF
             CASE DEFAULT
-              localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-                & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+              localError="The third equations set specification of "// &
+                & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
                 & " is invalid for a Stree equations set."
               CALL FLAG_ERROR(localError,err,error,*999)
             END SELECT
           CASE DEFAULT
-            localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+            localError="The third equations set specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
               & " is invalid for a Stree equations set."
             CALL FLAG_ERROR(localError,err,error,*999)
           END SELECT
@@ -435,7 +461,7 @@ CONTAINS
         ! M a t e r i a l s   f i e l d 
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
-          SELECT CASE(equationsSet%SUBTYPE)
+          SELECT CASE(equationsSet%specification(3))
           CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
             materialsFieldNumberOfVariables=2
             materialsFieldNumberOfComponents=27
@@ -533,8 +559,8 @@ CONTAINS
               CALL FLAG_ERROR(localError,err,error,*999)
             END SELECT
           CASE DEFAULT
-            localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+            localError="The third equations set specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
               & " is invalid for a Stree equation."
             CALL FLAG_ERROR(localError,err,error,*999)
           END SELECT
@@ -542,7 +568,7 @@ CONTAINS
         ! E q u a t i o n s    t y p e
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
-          SELECT CASE(equationsSet%SUBTYPE)
+          SELECT CASE(equationsSet%specification(3))
           CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -608,9 +634,9 @@ CONTAINS
               CALL FLAG_ERROR(localError,err,error,*999)
             END SELECT
           CASE DEFAULT
-            localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-              & " is invalid for a Strees equation."
+            localError="The third equations set specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
+              & " is invalid for a Stree equation."
             CALL FLAG_ERROR(localError,err,error,*999)
           END SELECT
         CASE DEFAULT
@@ -619,7 +645,8 @@ CONTAINS
           CALL FLAG_ERROR(localError,err,error,*999)
         END SELECT
       CASE DEFAULT
-        localError="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+        localError="The third equations set specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
           & " does not equal a Strees equation set."
         CALL FLAG_ERROR(localError,err,error,*999)
       END SELECT
@@ -627,12 +654,12 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    EXITS("Stree_EquationsSet_Setup")
+    EXITS("Stree_EquationsSetSetup")
     RETURN
-999 ERRORSEXITS("Stree_EquationsSet_Setup",err,error)
+999 ERRORSEXITS("Stree_EquationsSetSetup",err,error)
     RETURN 1
     
-  END SUBROUTINE Stree_EquationsSet_Setup
+  END SUBROUTINE Stree_EquationsSetSetup
 
   !
   !================================================================================================================================
@@ -697,7 +724,7 @@ CONTAINS
       CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    SELECT CASE(equationsSet%SUBTYPE)
+    SELECT CASE(equationsSet%specification(3))
     CASE(EQUATIONS_SET_STREE1D0D_SUBTYPE)
       !Set General and Specific Pointers
       equationsMatrices=>equations%EQUATIONS_MATRICES
@@ -708,8 +735,9 @@ CONTAINS
       stiffnessMatrix%ELEMENT_MATRIX%matrix=0.0_DP
 
     CASE DEFAULT
-      localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-        & " is not valid for a Stree equation type of a fluid mechanics equations set class."
+      localError="The third equations set specification of "// &
+        & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
+        & " is not valid for a Stree type of a fluid mechanics equations set."
       CALL FLAG_ERROR(localError,err,error,*999)
     END SELECT
 
@@ -762,7 +790,7 @@ CONTAINS
         navierstokesLoop=>parentLoop%SUB_LOOPS(2)%PTR
         navierstokesSolver=>navierstokesLoop%SOLVERS%SOLVERS(2)%PTR
         IF(ASSOCIATED(controlLoop%PROBLEM)) THEN
-          SELECT CASE(controlLoop%PROBLEM%SUBTYPE)
+          SELECT CASE(controlLoop%PROBLEM%specification(3))
           CASE(PROBLEM_STREE1D0D_NAVIER_STOKES_SUBTYPE, &
              & PROBLEM_STREE1D0D_ADV_NAVIER_STOKES_SUBTYPE)
             solverEquations=>solver%SOLVER_EQUATIONS
@@ -795,7 +823,8 @@ CONTAINS
               CALL FLAG_ERROR("Solver equations is not associated.",err,error,*999)
             END IF
           CASE DEFAULT
-            localError="Problem subtype "//TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%SUBTYPE,"*",err,error))// &
+            localError="The third problem specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(controlLoop%PROBLEM%specification(3),"*",err,error))// &
               & " is not valid for boundary flux calculation."
             CALL FLAG_ERROR(localError,ERR,ERROR,*999)
           END SELECT
