@@ -70,11 +70,17 @@ OBJECT_DIR := $(MAIN_OBJECT_DIR)
 BASE_LIB_NAME = OpenCMISS
 MODULE_DIR := $(OBJECT_DIR)
 MOD_INC_NAME := opencmiss.mod
+IRON_MOD_INC_NAME := opencmiss_iron.mod
 MOD_INCLUDE := $(INC_DIR)/$(MOD_INC_NAME)
+IRON_MOD_INCLUDE := $(INC_DIR)/$(IRON_MOD_INC_NAME)
 MOD_SOURCE_INC := $(OBJECT_DIR)/$(MOD_INC_NAME)
+IRON_MOD_SOURCE_INC := $(OBJECT_DIR)/$(IRON_MOD_INC_NAME)
 HEADER_INC_NAME := opencmiss.h
-HEADER_INCLUDE := $(INC_DIR)/$(HEADER_INC_NAME)
-C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_c.f90
+IRON_HEADER_INC_NAME := iron.h
+HEADER_DIR := $(INC_DIR)/opencmiss
+HEADER_INCLUDE := $(HEADER_DIR)/$(HEADER_INC_NAME)
+IRON_HEADER_INCLUDE := $(HEADER_DIR)/$(IRON_HEADER_INC_NAME)
+C_F90_SOURCE := $(SOURCE_DIR)/opencmiss_iron_c.f90
 BINDINGS_DIR = $(OC_CM_GLOBAL_ROOT)/bindings
 BINDINGS_GENERATE_SCRIPT := $(BINDINGS_DIR)/generate_bindings
 LIB_NAME := lib$(BASE_LIB_NAME)$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).a
@@ -97,8 +103,10 @@ FPPFLAGS += $(addprefix -I, $(F_INCLUDE_DIRS) )
 main:	preliminaries \
 	$(LIBRARY) \
 	$(MOD_INCLUDE) \
+	$(IRON_MOD_INCLUDE) \
 	$(MOD_FIELDML_TARGET) \
-	$(HEADER_INCLUDE)
+	$(IRON_HEADER_INCLUDE) #\
+	#$(HEADER_INCLUDE)
 
 PREPROCESSED_OBJECTS = 
 
@@ -134,7 +142,8 @@ endif
 #else
     WRAPPER_OBJECTS =  \
     $(OBJECT_DIR)/opencmiss.o \
-    $(OBJECT_DIR)/opencmiss_c.o
+    $(OBJECT_DIR)/opencmiss_iron.o \
+    $(OBJECT_DIR)/opencmiss_iron_c.o
 #endif
 
 OBJECTS = $(OBJECT_DIR)/advection_equation_routines.o \
@@ -206,6 +215,7 @@ OBJECTS = $(OBJECT_DIR)/advection_equation_routines.o \
 	$(OBJECT_DIR)/interface_operators_routines.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/lapack.o \
 	$(OBJECT_DIR)/Laplace_equations_routines.o \
 	$(OBJECT_DIR)/linear_elasticity_routines.o \
 	$(OBJECT_DIR)/linkedlist_routines.o \
@@ -264,14 +274,20 @@ $(LIBRARY) : $(OBJECTS) $(LIB_DIR)/.directory
 $(MOD_INCLUDE) : $(MOD_SOURCE_INC) $(INC_DIR)/.directory
 	cp $(MOD_SOURCE_INC) $@
 
+$(IRON_MOD_INCLUDE) : $(IRON_MOD_SOURCE_INC) $(INC_DIR)/.directory
+	cp $(IRON_MOD_SOURCE_INC) $@
+
 MOD_FIELDML: $(FIELDML_OBJECT) $(INC_DIR)/.directory
 	cp $(OBJECT_DIR)/fieldml_input_routines.mod $(INC_DIR)/fieldml_input_routines.mod
 	cp $(OBJECT_DIR)/fieldml_output_routines.mod $(INC_DIR)/fieldml_output_routines.mod
 	cp $(OBJECT_DIR)/fieldml_util_routines.mod $(INC_DIR)/fieldml_util_routines.mod
 	cp $(OBJECT_DIR)/fieldml_types.mod $(INC_DIR)/fieldml_types.mod
 
-$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py
-	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) C $(HEADER_INCLUDE) $(C_F90_SOURCE)
+#$(HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss_iron.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py $(HEADER_DIR)/.directory
+#	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) C $(HEADER_INCLUDE) $(C_F90_SOURCE)
+
+$(IRON_HEADER_INCLUDE) $(C_F90_SOURCE): $(SOURCE_DIR)/opencmiss_iron.f90  $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/c.py $(HEADER_DIR)/.directory
+	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) C $(IRON_HEADER_INCLUDE) $(C_F90_SOURCE)
 
 # Place the list of dependencies for the objects here.
 #
@@ -498,6 +514,7 @@ $(OBJECT_DIR)/cmiss_petsc.o	:	$(SOURCE_DIR)/cmiss_petsc.f90 \
 	$(OBJECT_DIR)/cmiss_petsc_types.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
 $(OBJECT_DIR)/cmiss_petsc_types.o	:	$(SOURCE_DIR)/cmiss_petsc_types.f90 \
@@ -727,6 +744,7 @@ $(OBJECT_DIR)/bioelectric_finite_elasticity_routines.o	:	$(SOURCE_DIR)/bioelectr
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/maths.o \
 	$(OBJECT_DIR)/problem_constants.o \
 	$(OBJECT_DIR)/solver_routines.o \
 	$(OBJECT_DIR)/strings.o \
@@ -1057,7 +1075,6 @@ $(OBJECT_DIR)/finite_elasticity_routines.o	:	$(SOURCE_DIR)/finite_elasticity_rou
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
 	$(OBJECT_DIR)/boundary_condition_routines.o \
-	$(OBJECT_DIR)/cmiss_petsc.o \
 	$(OBJECT_DIR)/computational_environment.o \
 	$(OBJECT_DIR)/constants.o \
 	$(OBJECT_DIR)/control_loop_routines.o \
@@ -1316,6 +1333,9 @@ $(OBJECT_DIR)/Hamilton_Jacobi_equations_routines.o	:	$(SOURCE_DIR)/Hamilton_Jaco
 	$(OBJECT_DIR)/timer_f.o \
 	$(OBJECT_DIR)/types.o
 
+$(OBJECT_DIR)/lapack.o	:	$(SOURCE_DIR)/lapack.f90 \
+	$(OBJECT_DIR)/kinds.o
+
 $(OBJECT_DIR)/Laplace_equations_routines.o	:	$(SOURCE_DIR)/Laplace_equations_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
 	$(OBJECT_DIR)/basis_routines.o \
@@ -1516,6 +1536,7 @@ $(OBJECT_DIR)/Navier_Stokes_equations_routines.o	:	$(SOURCE_DIR)/Navier_Stokes_e
 	$(OBJECT_DIR)/input_output.o \
 	$(OBJECT_DIR)/iso_varying_string.o \
 	$(OBJECT_DIR)/kinds.o \
+	$(OBJECT_DIR)/lapack.o \
 	$(OBJECT_DIR)/matrix_vector.o \
 	$(OBJECT_DIR)/node_routines.o \
 	$(OBJECT_DIR)/problem_constants.o \
@@ -1536,7 +1557,12 @@ $(OBJECT_DIR)/node_routines.o	:	$(SOURCE_DIR)/node_routines.f90 \
 
 $(MOD_SOURCE_INC) : $(OBJECT_DIR)/opencmiss.o
 
+$(IRON_MOD_SOURCE_INC) : $(OBJECT_DIR)/opencmiss_iron.o
+
 $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
+	$(OBJECT_DIR)/kinds.o 
+
+$(OBJECT_DIR)/opencmiss_iron.o	:	$(SOURCE_DIR)/opencmiss_iron.f90 \
 	$(FIELDML_OBJECT) \
 	$(OBJECT_DIR)/Hamilton_Jacobi_equations_routines.o \
 	$(OBJECT_DIR)/analytic_analysis_routines.o \
@@ -1578,9 +1604,9 @@ $(OBJECT_DIR)/opencmiss.o	:	$(SOURCE_DIR)/opencmiss.f90 \
 	$(OBJECT_DIR)/strings.o \
 	$(OBJECT_DIR)/types.o
 
-$(OBJECT_DIR)/opencmiss_c.o	:	$(C_F90_SOURCE) \
+$(OBJECT_DIR)/opencmiss_iron_c.o	:	$(C_F90_SOURCE) \
 	$(OBJECT_DIR)/cmiss_fortran_c.o \
-	$(OBJECT_DIR)/opencmiss.o
+	$(OBJECT_DIR)/opencmiss_iron.o
 
 $(OBJECT_DIR)/Poiseuille_equations_routines.o	:	$(SOURCE_DIR)/Poiseuille_equations_routines.f90 \
 	$(OBJECT_DIR)/base_routines.o \
@@ -1864,10 +1890,10 @@ $(OBJECT_DIR)/util_array.o   :       $(SOURCE_DIR)/util_array.f90 \
 
 GENERATED_INTERFACE = $(BINDINGS_DIR)/python/opencmiss.i
 PYTHON_INTERFACE = $(BINDINGS_DIR)/python/opencmiss_py.i
-PYTHON_MODULE = $(BINDINGS_DIR)/python/opencmiss/CMISS.py
+PYTHON_MODULE = $(BINDINGS_DIR)/python/opencmiss/iron.py
 PYTHON_MODULE_SO = $(LIB_DIR)/opencmiss_pyswig$(EXE_ABI_SUFFIX)$(MT_SUFFIX)$(DEBUG_SUFFIX)$(PROF_SUFFIX).so
-PYTHON_MODULE_SO_INSTALL = $(BINDINGS_DIR)/python/opencmiss/_opencmiss_swig.so
-PYTHON_WRAPPER = $(BINDINGS_DIR)/python/opencmiss/opencmiss_wrap.c
+PYTHON_MODULE_SO_INSTALL = $(BINDINGS_DIR)/python/opencmiss/_iron_swig.so
+PYTHON_WRAPPER = $(BINDINGS_DIR)/python/opencmiss/iron_wrap.c
 PYTHON_WRAPPER_OBJ = $(OBJECT_DIR)/opencmiss_wrap.o
 PYTHON_INCLUDES = $(shell python-config --includes)
 NUMPY_INCLUDE = $(shell python $(OC_CM_GLOBAL_ROOT)/utils/numpy_include.py)
@@ -1880,16 +1906,16 @@ python: $(PYTHON_MODULE) $(PYTHON_MODULE_SO) python_cp
 python_cp: $(PYTHON_MODULE_SO)
 	cp $(PYTHON_MODULE_SO) $(PYTHON_MODULE_SO_INSTALL)
 
-$(GENERATED_INTERFACE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/swig.py $(SOURCE_DIR)/opencmiss.f90
+$(GENERATED_INTERFACE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/swig.py $(SOURCE_DIR)/opencmiss_iron.f90
 	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) SWIG $@
 
 $(PYTHON_MODULE): $(BINDINGS_GENERATE_SCRIPT)/parse.py $(BINDINGS_GENERATE_SCRIPT)/python.py \
-	$(SOURCE_DIR)/opencmiss.f90 $(BINDINGS_DIR)/python/extra_content.py
+	$(SOURCE_DIR)/opencmiss_iron.f90 $(BINDINGS_DIR)/python/extra_content.py
 	python $(BINDINGS_GENERATE_SCRIPT) $(OC_CM_GLOBAL_ROOT) Python
 
-$(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(BINDINGS_DIR)/python/numpy.i $(BINDINGS_DIR)/python/numpy_extra.i $(GENERATED_INTERFACE) $(HEADER_INCLUDE)
-# Remove opencmiss_swig.py after running SWIG as we generate our own Python wrapper code
-	( cd $(BINDINGS_DIR)/python/opencmiss && swig -python -o $@ -module opencmiss_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE) && rm opencmiss_swig.py )
+$(PYTHON_WRAPPER): $(PYTHON_INTERFACE) $(BINDINGS_DIR)/python/numpy.i $(BINDINGS_DIR)/python/numpy_extra.i $(GENERATED_INTERFACE) $(IRON_HEADER_INCLUDE)
+# Remove iron_swig.py after running SWIG as we generate our own Python wrapper code
+	( cd $(BINDINGS_DIR)/python/opencmiss && swig -python -o $@ -module iron_swig -outdir . -I$(INC_DIR) $(PYTHON_INTERFACE) && rm iron_swig.py )
 
 $(PYTHON_WRAPPER_OBJ): $(PYTHON_WRAPPER)
 	( cd $(BINDINGS_DIR)/python && $(CC) -c $(PYTHON_WRAPPER) $(CFLAGS) $(CPPFLAGS) -I$(INC_DIR) $(PYTHON_INCLUDES) -I$(NUMPY_INCLUDE) -o $(PYTHON_WRAPPER_OBJ) )
@@ -1903,7 +1929,7 @@ $(PYTHON_MODULE_SO): $(LIBRARY) $(PYTHON_WRAPPER_OBJ) $(OBJECTS)
 
 clean:
 	@echo "Cleaning house ..."
-	rm -rf $(OBJECT_DIR) $(LIBRARY) $(MOD_INCLUDE) $(HEADER_INCLUDE) $(C_F90_SOURCE)
+	rm -rf $(OBJECT_DIR) $(LIBRARY) $(MOD_INCLUDE) $(IRON_MOD_INCLUDE) $(HEADER_INCLUDE) $(IRON_HEADER_INCLUDE) $(C_F90_SOURCE)
 
 allclean:
 	@echo "Cleaning house ..."

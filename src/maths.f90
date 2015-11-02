@@ -42,13 +42,15 @@
 !>
 
 !> This module contains all mathematics support routines.
-MODULE MATHS
+MODULE Maths
 
   USE BASE_ROUTINES
-  USE CONSTANTS
-  USE KINDS
+  USE Constants
+  USE Kinds
   USE ISO_VARYING_STRING
-  USE STRINGS
+  USE Strings
+
+#include "macros.h"  
   
   IMPLICIT NONE
 
@@ -167,30 +169,42 @@ MODULE MATHS
     MODULE PROCEDURE L2NORM_DP
   END INTERFACE L2Norm
 
-  !>Calculates and returns the matrix-prouct of the single precision matrix A*B in C.
+  !>Calculates and returns the matrix-prouct A*B in the matrix C.
   INTERFACE MATRIX_PRODUCT
     MODULE PROCEDURE MATRIX_PRODUCT_SP
     MODULE PROCEDURE MATRIX_PRODUCT_DP
   END INTERFACE MATRIX_PRODUCT
   
-  !>Calculates and returns the matrix-prouct of the single precision matrix A*B in C.
+  !>Calculates and returns the matrix-prouct A*B in the matrix C.
   INTERFACE MatrixProduct
     MODULE PROCEDURE MATRIX_PRODUCT_SP
     MODULE PROCEDURE MATRIX_PRODUCT_DP
   END INTERFACE MatrixProduct
   
-  !>Returns the transpose of a matrix A in AT.
+  !>Returns the transpose of a matrix A in A^T.
   INTERFACE MATRIX_TRANSPOSE
     MODULE PROCEDURE MATRIX_TRANSPOSE_SP
     MODULE PROCEDURE MATRIX_TRANSPOSE_DP
   END INTERFACE MATRIX_TRANSPOSE
 
- !>Returns the transpose of a matrix A in AT.
+  !>Returns the transpose of a matrix A in A^T.
   INTERFACE MatrixTranspose
     MODULE PROCEDURE MATRIX_TRANSPOSE_SP
     MODULE PROCEDURE MATRIX_TRANSPOSE_DP
   END INTERFACE MatrixTranspose
 
+  !>Calculates and returns the matrix-vector-prouct A*b in the vector c.
+  INTERFACE MATRIX_VECTOR_PRODUCT
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_SP
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_DP
+  END INTERFACE MATRIX_VECTOR_PRODUCT
+
+  !>Calculates and returns the matrix-vector-prouct A*b in the vector c.
+  INTERFACE MatrixVectorProduct
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_SP
+    MODULE PROCEDURE MATRIX_VECTOR_PRODUCT_DP
+  END INTERFACE MatrixVectorProduct
+  
   !>Normalises a vector
   INTERFACE Normalise
     MODULE PROCEDURE NORMALISE_SP
@@ -225,13 +239,12 @@ MODULE MATHS
   INTERFACE COTH
     MODULE PROCEDURE COTH_SP
     MODULE PROCEDURE COTH_DP
-  END INTERFACE !COTH
+  END INTERFACE COTH 
 
   PUBLIC CROSS_PRODUCT,CrossProduct,D_CROSS_PRODUCT,dCrossProduct,Determinant,Eigenvalue,Eigenvector,IdentityMatrix,Invert, &
     & L2Norm,MATRIX_PRODUCT,MatrixProduct,MATRIX_TRANSPOSE,MatrixTranspose,Normalise,NORM_CROSS_PRODUCT,NormCrossProduct, &
-    & SOLVE_SMALL_LINEAR_SYSTEM,SolveSmallLinearSystem,Coth,spline_cubic_set,s3_fs,spline_cubic_val,J_DPC,fft,ifft, &
-	& MATRIX_VECTOR_PRODUCT
-  
+    & SOLVE_SMALL_LINEAR_SYSTEM,SolveSmallLinearSystem,Coth,spline_cubic_set,s3_fs,spline_cubic_val,MATRIX_VECTOR_PRODUCT, &
+    & MatrixVectorProduct
   
   
 CONTAINS
@@ -251,7 +264,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
-    CALL ENTERS("CROSS_PRODUCT_INTG",ERR,ERROR,*999)
+    ENTERS("CROSS_PRODUCT_INTG",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(B,1)) THEN
       IF(SIZE(C,1)==3) THEN
@@ -261,20 +274,20 @@ CONTAINS
           C(2)=A(3)*B(1)-A(1)*B(3)
           C(3)=A(1)*B(2)-A(2)*B(1)
         CASE DEFAULT
-          CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+          CALL FlagError("Invalid vector size",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+        CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors A and B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors A and B are not the same size",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CROSS_PRODUCT_INTG")
+    EXITS("CROSS_PRODUCT_INTG")
     RETURN
-999 CALL ERRORS("CROSS_PRODUCT_INTG",ERR,ERROR)
-    CALL EXITS("CROSS_PRODUCT_INTG")
+999 ERRORSEXITS("CROSS_PRODUCT_INTG",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE CROSS_PRODUCT_INTG
   
   !
@@ -292,7 +305,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
-    CALL ENTERS("CROSS_PRODUCT_SP",ERR,ERROR,*999)
+    ENTERS("CROSS_PRODUCT_SP",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(B,1)) THEN
       IF(SIZE(C,1)==3) THEN
@@ -302,20 +315,20 @@ CONTAINS
           C(2)=A(3)*B(1)-A(1)*B(3)
           C(3)=A(1)*B(2)-A(2)*B(1)
         CASE DEFAULT
-          CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+          CALL FlagError("Invalid vector size",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+        CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors A and B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors A and B are not the same size",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CROSS_PRODUCT_SP")
+    EXITS("CROSS_PRODUCT_SP")
     RETURN
-999 CALL ERRORS("CROSS_PRODUCT_SP",ERR,ERROR)
-    CALL EXITS("CROSS_PRODUCT_SP")
+999 ERRORSEXITS("CROSS_PRODUCT_SP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE CROSS_PRODUCT_SP
   
   !
@@ -333,7 +346,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
-    CALL ENTERS("CROSS_PRODUCT_DP",ERR,ERROR,*999)
+    ENTERS("CROSS_PRODUCT_DP",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(B,1)) THEN
       IF(SIZE(C,1)==3) THEN
@@ -343,20 +356,20 @@ CONTAINS
           C(2)=A(3)*B(1)-A(1)*B(3)
           C(3)=A(1)*B(2)-A(2)*B(1)
         CASE DEFAULT
-          CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+          CALL FlagError("Invalid vector size",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+        CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors A and B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors A and B are not the same size",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("CROSS_PRODUCT_DP")
+    EXITS("CROSS_PRODUCT_DP")
     RETURN
-999 CALL ERRORS("CROSS_PRODUCT_DP",ERR,ERROR)
-    CALL EXITS("CROSS_PRODUCT_DP")
+999 ERRORSEXITS("CROSS_PRODUCT_DP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE CROSS_PRODUCT_DP
   
   !
@@ -380,7 +393,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: ni
     
-    CALL ENTERS("D_CROSS_PRODUCT_INTG",ERR,ERROR,*999)
+    ENTERS("D_CROSS_PRODUCT_INTG",ERR,ERROR,*999)
 
     CALL CROSS_PRODUCT(A,B,C,ERR,ERROR,*999)
     IF(SIZE(D_A,1)==SIZE(D_B,1).AND.SIZE(A,1)==SIZE(D_A,1).AND.SIZE(B,1)==SIZE(D_B,1)) THEN
@@ -394,23 +407,23 @@ CONTAINS
               D_C(3,ni)=D_A(1,ni)*B(2)-D_A(2,ni)*B(1)+A(1)*D_B(2,ni)-A(2)*D_B(1,ni)
             ENDDO !ni
           CASE DEFAULT
-            CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+            CALL FlagError("Invalid vector size",ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+          CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The number of derivative vectors is too small",ERR,ERROR,*999)
+        CALL FlagError("The number of derivative vectors is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("D_CROSS_PRODUCT_INTG")
+    EXITS("D_CROSS_PRODUCT_INTG")
     RETURN
-999 CALL ERRORS("D_CROSS_PRODUCT_INTG",ERR,ERROR)
-    CALL EXITS("D_CROSS_PRODUCT_INTG")
+999 ERRORSEXITS("D_CROSS_PRODUCT_INTG",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE D_CROSS_PRODUCT_INTG
   
   !
@@ -434,7 +447,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: ni
     
-    CALL ENTERS("D_CROSS_PRODUCT_SP",ERR,ERROR,*999)
+    ENTERS("D_CROSS_PRODUCT_SP",ERR,ERROR,*999)
 
     CALL CROSS_PRODUCT(A,B,C,ERR,ERROR,*999)
     IF(SIZE(D_A,1)==SIZE(D_B,1).AND.SIZE(A,1)==SIZE(D_A,1).AND.SIZE(B,1)==SIZE(D_B,1)) THEN
@@ -448,23 +461,23 @@ CONTAINS
               D_C(3,ni)=D_A(1,ni)*B(2)-D_A(2,ni)*B(1)+A(1)*D_B(2,ni)-A(2)*D_B(1,ni)
             ENDDO !ni
           CASE DEFAULT
-            CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+            CALL FlagError("Invalid vector size",ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+          CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The number of derivative vectors is too small",ERR,ERROR,*999)
+        CALL FlagError("The number of derivative vectors is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("D_CROSS_PRODUCT_SP")
+    EXITS("D_CROSS_PRODUCT_SP")
     RETURN
-999 CALL ERRORS("D_CROSS_PRODUCT_SP",ERR,ERROR)
-    CALL EXITS("D_CROSS_PRODUCT_SP")
+999 ERRORSEXITS("D_CROSS_PRODUCT_SP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE D_CROSS_PRODUCT_SP
   
   !
@@ -488,7 +501,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: ni
     
-    CALL ENTERS("D_CROSS_PRODUCT_DP",ERR,ERROR,*999)
+    ENTERS("D_CROSS_PRODUCT_DP",ERR,ERROR,*999)
 
     CALL CROSS_PRODUCT(A,B,C,ERR,ERROR,*999)
     IF(SIZE(D_A,1)==SIZE(D_B,1).AND.SIZE(A,1)==SIZE(D_A,1).AND.SIZE(B,1)==SIZE(D_B,1)) THEN
@@ -502,23 +515,23 @@ CONTAINS
               D_C(3,ni)=D_A(1,ni)*B(2)-D_A(2,ni)*B(1)+A(1)*D_B(2,ni)-A(2)*D_B(1,ni)
             ENDDO !ni
           CASE DEFAULT
-            CALL FLAG_ERROR("Invalid vector size",ERR,ERROR,*999)
+            CALL FlagError("Invalid vector size",ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("The vector C is not the correct size",ERR,ERROR,*999)
+          CALL FlagError("The vector C is not the correct size",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("The number of derivative vectors is too small",ERR,ERROR,*999)
+        CALL FlagError("The number of derivative vectors is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
+      CALL FlagError("The vectors for D_A and D_B are not the same size",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("D_CROSS_PRODUCT_DP")
+    EXITS("D_CROSS_PRODUCT_DP")
     RETURN
-999 CALL ERRORS("D_CROSS_PRODUCT_DP",ERR,ERROR)
-    CALL EXITS("D_CROSS_PRODUCT_DP")
+999 ERRORSEXITS("D_CROSS_PRODUCT_DP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE D_CROSS_PRODUCT_DP
 
   !
@@ -535,7 +548,7 @@ CONTAINS
     INTEGER(INTG) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-    CALL ENTERS("MATRIX_VECTOR_PRODUCT_SP",err,error,*999)
+    ENTERS("MATRIX_VECTOR_PRODUCT_SP",err,error,*999)
 
     IF(SIZE(A,2)==SIZE(B,1).AND.SIZE(A,1)==SIZE(C,1)) THEN
        SELECT CASE(SIZE(A,1))
@@ -549,17 +562,17 @@ CONTAINS
          C(2)=A(2,1)*B(1)+A(2,2)*B(2)+A(2,3)*B(3)
          C(3)=A(3,1)*B(1)+A(3,2)*B(2)+A(3,3)*B(3)
        CASE DEFAULT
-         CALL FLAG_ERROR("Invalid matrix and/or vector size.",err,error,*999)
+         CALL FlagError("Invalid matrix and/or vector size.",err,error,*999)
        END SELECT
      ELSE
-       CALL FLAG_ERROR("Invalid matrix sizes.",err,error,*999)
+       CALL FlagError("Invalid matrix sizes.",err,error,*999)
      ENDIF
 
-     CALL EXITS("MATRIX_VECTOR_PRODUCT_SP")
+     EXITS("MATRIX_VECTOR_PRODUCT_SP")
      RETURN
- 999 CALL ERRORS("MATRIX_VECTOR_PRODUCT_SP",err,error)
-     CALL EXITS("MATRIX_VECTOR_PRODUCT_SP")
+ 999 ERRORSEXITS("MATRIX_VECTOR_PRODUCT_SP",err,error)
      RETURN 1
+     
   END SUBROUTINE MATRIX_VECTOR_PRODUCT_SP
 
   !
@@ -576,7 +589,7 @@ CONTAINS
     INTEGER(INTG) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-    CALL ENTERS("MATRIX_VECTOR_PRODUCT_DP",err,error,*999)
+    ENTERS("MATRIX_VECTOR_PRODUCT_DP",err,error,*999)
 
     IF(SIZE(A,2)==SIZE(B,1).AND.SIZE(A,1)==SIZE(C,1)) THEN
        SELECT CASE(SIZE(A,1))
@@ -590,17 +603,17 @@ CONTAINS
          C(2)=A(2,1)*B(1)+A(2,2)*B(2)+A(2,3)*B(3)
          C(3)=A(3,1)*B(1)+A(3,2)*B(2)+A(3,3)*B(3)
        CASE DEFAULT
-         CALL FLAG_ERROR("Invalid matrix and/or vector size.",err,error,*999)
+         CALL FlagError("Invalid matrix and/or vector size.",err,error,*999)
        END SELECT
      ELSE
-       CALL FLAG_ERROR("Invalid matrix sizes.",err,error,*999)
+       CALL FlagError("Invalid matrix sizes.",err,error,*999)
      ENDIF
 
-     CALL EXITS("MATRIX_VECTOR_PRODUCT_DP")
+     EXITS("MATRIX_VECTOR_PRODUCT_DP")
      RETURN
- 999 CALL ERRORS("MATRIX_VECTOR_PRODUCT_DP",err,error)
-     CALL EXITS("MATRIX_VECTOR_PRODUCT_DP")
+ 999 ERRORSEXITS("MATRIX_VECTOR_PRODUCT_DP",err,error)
      RETURN 1
+     
   END SUBROUTINE MATRIX_VECTOR_PRODUCT_DP
   
   !
@@ -617,7 +630,7 @@ CONTAINS
     !Function variable
     INTEGER(INTG) :: DETERMINANT_FULL_INTG
     
-    CALL ENTERS("DETERMINANT_FULL_INTG",ERR,ERROR,*999)
+    ENTERS("DETERMINANT_FULL_INTG",ERR,ERROR,*999)
 
     DETERMINANT_FULL_INTG=0
     
@@ -631,17 +644,17 @@ CONTAINS
         DETERMINANT_FULL_INTG=A(1,1)*A(2,2)*A(3,3)+A(1,2)*A(2,3)*A(3,1)+A(1,3)*A(2,1)*A(3,2)-A(1,1)*A(3,2)*A(2,3)- &
           A(2,1)*A(1,2)*A(3,3)-A(3,1)*A(2,2)*A(1,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+        CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("DETERMINANT_FULL_INTG")
+    EXITS("DETERMINANT_FULL_INTG")
     RETURN
-999 CALL ERRORS("DETERMINANT_FULL_INTG",ERR,ERROR)
-    CALL EXITS("DETERMINANT_FULL_INTG")
-    RETURN 
+999 ERRORSEXITS("DETERMINANT_FULL_INTG",ERR,ERROR)
+    RETURN
+    
   END FUNCTION DETERMINANT_FULL_INTG
   
   !
@@ -658,7 +671,7 @@ CONTAINS
     !Function variable
     REAL(SP) :: DETERMINANT_FULL_SP
     
-    CALL ENTERS("DETERMINANT_FULL_SP",ERR,ERROR,*999)
+    ENTERS("DETERMINANT_FULL_SP",ERR,ERROR,*999)
 
     DETERMINANT_FULL_SP=0.0_SP
     
@@ -672,17 +685,17 @@ CONTAINS
         DETERMINANT_FULL_SP=A(1,1)*A(2,2)*A(3,3)+A(1,2)*A(2,3)*A(3,1)+A(1,3)*A(2,1)*A(3,2)-A(1,1)*A(3,2)*A(2,3)- &
           A(2,1)*A(1,2)*A(3,3)-A(3,1)*A(2,2)*A(1,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+        CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("DETERMINANT_FULL_SP")
+    EXITS("DETERMINANT_FULL_SP")
     RETURN
-999 CALL ERRORS("DETERMINANT_FULL_SP",ERR,ERROR)
-    CALL EXITS("DETERMINANT_FULL_SP")
-    RETURN 
+999 ERRORSEXITS("DETERMINANT_FULL_SP",ERR,ERROR)
+    RETURN
+    
   END FUNCTION DETERMINANT_FULL_SP
   
   !
@@ -699,7 +712,7 @@ CONTAINS
     !Function variable
     REAL(DP) :: DETERMINANT_FULL_DP
     
-    CALL ENTERS("DETERMINANT_FULL_DP",ERR,ERROR,*999)
+    ENTERS("DETERMINANT_FULL_DP",ERR,ERROR,*999)
 
     DETERMINANT_FULL_DP=0.0_DP
 
@@ -713,17 +726,17 @@ CONTAINS
         DETERMINANT_FULL_DP=A(1,1)*A(2,2)*A(3,3)+A(1,2)*A(2,3)*A(3,1)+A(1,3)*A(2,1)*A(3,2)-A(1,1)*A(3,2)*A(2,3)- &
           A(2,1)*A(1,2)*A(3,3)-A(3,1)*A(2,2)*A(1,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+        CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("DETERMINANT_FULL_DP")
+    EXITS("DETERMINANT_FULL_DP")
     RETURN
-999 CALL ERRORS("DETERMINANT_FULL_DP",ERR,ERROR)
-    CALL EXITS("DETERMINANT_FULL_DP")
-    RETURN    
+999 ERRORSEXITS("DETERMINANT_FULL_DP",ERR,ERROR)
+    RETURN
+    
   END FUNCTION DETERMINANT_FULL_DP
 
   !
@@ -785,7 +798,8 @@ CONTAINS
     TERM2=(B1+(B2+(B3+B4*X1)*X1)*X1)*X1
     EDP_SP=TERM1+TERM2*LOG(1.0_SP/X1)
         
-    RETURN 
+    RETURN
+    
   END FUNCTION EDP_SP
   
   !
@@ -804,7 +818,7 @@ CONTAINS
     INTEGER(INTG) :: i
     REAL(SP) :: ANGLE,B2,B3,C1,C2,D,Q,Q3,R,RI1,RI2,RI3,RI4,RQ,TEMP,THETA
     
-    CALL ENTERS("EIGENVALUE_FULL_SP",ERR,ERROR,*999)
+    ENTERS("EIGENVALUE_FULL_SP",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(A,2)) THEN
       IF(SIZE(A,1)<=SIZE(EVALUES,1)) THEN
@@ -818,7 +832,7 @@ CONTAINS
             B2=RI1/2.0_SP
             C1=RI1*RI1
             C2=4.0_SP*RI2
-            IF(C2>C1) CALL FLAG_ERROR("Complex roots found in quadratic equation",ERR,ERROR,*999)
+            IF(C2>C1) CALL FlagError("Complex roots found in quadratic equation",ERR,ERROR,*999)
             B3=SQRT(C1-C2)/2.0_SP
             EVALUES(1)=B2+B3
             EVALUES(2)=B2-B3
@@ -841,7 +855,7 @@ CONTAINS
           R=RI4*(RI4*RI4-RI2/2.0_SP)+RI3/2.0_SP
           Q3=Q*Q*Q
           D=R*R-Q3
-          IF(ABS(D)>ZERO_TOLERANCE_SP) CALL FLAG_ERROR("Complex roots found in solution of cubic equation",ERR,ERROR,*999)
+          IF(ABS(D)>ZERO_TOLERANCE_SP) CALL FlagError("Complex roots found in solution of cubic equation",ERR,ERROR,*999)
           RQ=SQRT(ABS(Q))
           IF(ABS(Q)<ZERO_TOLERANCE_SP) THEN
             THETA=0.0_SP
@@ -860,20 +874,20 @@ CONTAINS
             ENDIF
           ENDDO !i
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Evalues is too small",ERR,ERROR,*999)
+        CALL FlagError("Evalues is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("EIGENVALUE_FULL_SP")
+    EXITS("EIGENVALUE_FULL_SP")
     RETURN
-999 CALL ERRORS("EIGENVALUE_FULL_SP",ERR,ERROR)
-    CALL EXITS("EIGENVALUE_FULL_SP")
+999 ERRORSEXITS("EIGENVALUE_FULL_SP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE EIGENVALUE_FULL_SP
 
   !
@@ -892,7 +906,7 @@ CONTAINS
     INTEGER(INTG) :: i
     REAL(DP) :: ANGLE,B2,B3,C1,C2,D,Q,Q3,R,RI1,RI2,RI3,RI4,RQ,TEMP,THETA
     
-    CALL ENTERS("EIGENVALUE_FULL_SP",ERR,ERROR,*999)
+    ENTERS("EIGENVALUE_FULL_SP",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(A,2)) THEN
       IF(SIZE(A,1)<= SIZE(EVALUES,1)) THEN
@@ -906,7 +920,7 @@ CONTAINS
             B2=RI1/2.0_DP
             C1=RI1*RI1
             C2=4.0_DP*RI2
-            IF(C2>C1) CALL FLAG_ERROR("Complex roots found in quadratic equation",ERR,ERROR,*999)
+            IF(C2>C1) CALL FlagError("Complex roots found in quadratic equation",ERR,ERROR,*999)
             B3=SQRT(C1-C2)/2.0_DP
             EVALUES(1)=B2+B3
             EVALUES(2)=B2-B3
@@ -929,7 +943,7 @@ CONTAINS
           R=RI4*(RI4*RI4-RI2/2.0_DP)+RI3/2.0_DP
           Q3=Q*Q*Q
           D=R*R-Q3
-          IF(ABS(D)>ZERO_TOLERANCE) CALL FLAG_ERROR("Complex roots found in solution of cubic equation",ERR,ERROR,*999)
+          IF(ABS(D)>ZERO_TOLERANCE) CALL FlagError("Complex roots found in solution of cubic equation",ERR,ERROR,*999)
           RQ=SQRT(ABS(Q))
           IF(ABS(Q)<ZERO_TOLERANCE) THEN
             THETA=0.0_DP
@@ -948,20 +962,20 @@ CONTAINS
             ENDIF
           ENDDO !i
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Evalues is too small",ERR,ERROR,*999)
+        CALL FlagError("Evalues is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("EIGENVALUE_FULL_DP")
+    EXITS("EIGENVALUE_FULL_DP")
     RETURN
-999 CALL ERRORS("EIGENVALUE_FULL_DP",ERR,ERROR)
-    CALL EXITS("EIGENVALUE_FULL_DP")
+999 ERRORSEXITS("EIGENVALUE_FULL_DP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE EIGENVALUE_FULL_DP
 
   !
@@ -983,7 +997,7 @@ CONTAINS
 
     DATA ICYCLE /2,1,1,3,1,2,1,2,1/
     
-    CALL ENTERS("EIGENVECTOR_FULL_SP",ERR,ERROR,*999)
+    ENTERS("EIGENVECTOR_FULL_SP",ERR,ERROR,*999)
 
 !!THIS NEEDS TO BE CHECKED
     
@@ -1013,7 +1027,7 @@ CONTAINS
         CASE(3)
           IF(ABS(A(1,2))<ZERO_TOLERANCE_SP.AND.ABS(A(1,3))<ZERO_TOLERANCE_SP.AND.ABS(A(2,3))<ZERO_TOLERANCE_SP) THEN
             EVECTOR=0.0_SP
-            CALL FLAG_ERROR("Zero matrix?? Eigenvectors undetermined",ERR,ERROR,*999)
+            CALL FlagError("Zero matrix?? Eigenvectors undetermined",ERR,ERROR,*999)
           ELSE
             DO i=1,3
               U(i,:)=A(i,:)
@@ -1035,20 +1049,20 @@ CONTAINS
             ENDDO !i
           ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Evector is too small",ERR,ERROR,*999)
+        CALL FlagError("Evector is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("EIGENVECTOR_FULL_SP")
+    EXITS("EIGENVECTOR_FULL_SP")
     RETURN
-999 CALL ERRORS("EIGENVECTOR_FULL_SP",ERR,ERROR)
-    CALL EXITS("EIGENVECTOR_FULL_SP")
+999 ERRORSEXITS("EIGENVECTOR_FULL_SP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE EIGENVECTOR_FULL_SP
 
   !
@@ -1070,7 +1084,7 @@ CONTAINS
 
     DATA ICYCLE /2,1,1,3,1,2,1,2,1/
     
-    CALL ENTERS("EIGENVECTOR_FULL_SP",ERR,ERROR,*999)
+    ENTERS("EIGENVECTOR_FULL_SP",ERR,ERROR,*999)
 
 !!THIS NEEDS TO BE CHECKED
 
@@ -1100,7 +1114,7 @@ CONTAINS
         CASE(3)
           IF(ABS(A(1,2))<ZERO_TOLERANCE.AND.ABS(A(1,3))<ZERO_TOLERANCE.AND.ABS(A(2,3))<ZERO_TOLERANCE) THEN
             EVECTOR=0.0_DP
-            CALL FLAG_ERROR("Zero matrix?? Eigenvectors undetermined",ERR,ERROR,*999)
+            CALL FlagError("Zero matrix?? Eigenvectors undetermined",ERR,ERROR,*999)
           ELSE
             DO i=1,3
               U(i,:)=A(i,:)
@@ -1122,20 +1136,20 @@ CONTAINS
             ENDDO !i
           ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Evector is too small",ERR,ERROR,*999)
+        CALL FlagError("Evector is too small",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("EIGENVECTOR_FULL_DP")
+    EXITS("EIGENVECTOR_FULL_DP")
     RETURN
-999 CALL ERRORS("EIGENVECTOR_FULL_DP",ERR,ERROR)
-    CALL EXITS("EIGENVECTOR_FULL_DP")
+999 ERRORSEXITS("EIGENVECTOR_FULL_DP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE EIGENVECTOR_FULL_DP
 
   !
@@ -1165,7 +1179,8 @@ CONTAINS
     T=X*X/(3.75_DP*3.75_DP)
     I0_DP=A1+(A2+(A3+(A4+(A5+(A6+A7*T)*T)*T)*T)*T)*T
     
-    RETURN 
+    RETURN
+    
   END FUNCTION I0_DP
   
   !
@@ -1195,7 +1210,8 @@ CONTAINS
     T=X*X/(3.75_SP*3.75_SP)
     I0_SP=A1+(A2+(A3+(A4+(A5+(A6+A7*T)*T)*T)*T)*T)*T
     
-    RETURN 
+    RETURN
+    
   END FUNCTION I0_SP
   
   !
@@ -1225,7 +1241,8 @@ CONTAINS
     T=(X/3.75_DP)*(X/3.75_DP)
     I1_DP=(A1+(A2+(A3+(A4+(A5+(A6+A7*T)*T)*T)*T)*T)*T)*X
     
-    RETURN 
+    RETURN
+    
   END FUNCTION I1_DP
   
   !
@@ -1255,7 +1272,8 @@ CONTAINS
     T=(X/3.75_SP)*(X/3.75_SP)
     I1_SP=(A1+(A2+(A3+(A4+(A5+(A6+A7*T)*T)*T)*T)*T)*T)*X
     
-    RETURN 
+    RETURN
+    
   END FUNCTION I1_SP
   
   !
@@ -1272,7 +1290,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: i
     
-    CALL ENTERS("IdentityMatrixSP",ERR,ERROR,*999)
+    ENTERS("IdentityMatrixSP",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(A,2)) THEN
       SELECT CASE(SIZE(A,1)) 
@@ -1303,11 +1321,11 @@ CONTAINS
       CALL FlagError("Matrix A is not square",err,error,*999)
     ENDIF
 
-    CALL Exits("IdentityMatrixSP")
+    EXITS("IdentityMatrixSP")
     RETURN
-999 CALL Errors("IdentityMatrixSP",err,error)
-    CALL Exits("IdentityMatrixSP")
+999 ERRORSEXITS("IdentityMatrixSP",err,error)
     RETURN 1
+    
   END SUBROUTINE IdentityMatrixSP
 
   !
@@ -1324,7 +1342,7 @@ CONTAINS
     !Local variables
     INTEGER(INTG) :: i
     
-    CALL Enters("IdentityMatrixDP",err,error,*999)
+    ENTERS("IdentityMatrixDP",err,error,*999)
 
     IF(SIZE(A,1)==SIZE(A,2)) THEN
       SELECT CASE(SIZE(A,1)) 
@@ -1355,11 +1373,11 @@ CONTAINS
       CALL FlagError("Matrix A is not square",err,error,*999)
     ENDIF
 
-    CALL Exits("IdentityMatrixDP")
+    EXITS("IdentityMatrixDP")
     RETURN
-999 CALL Errors("IdentityMatrixDP",err,error)
-    CALL Exits("IdentityMatrixDP")
+999 ERRORSEXITS("IdentityMatrixDP",err,error)
     RETURN 1
+    
   END SUBROUTINE IdentityMatrixDP
 
   !
@@ -1377,7 +1395,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
 
-    CALL ENTERS("INVERT_FULL_SP",ERR,ERROR,*999)
+    ENTERS("INVERT_FULL_SP",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(A,2)) THEN
       IF(SIZE(B,1)==SIZE(A,1).AND.SIZE(B,2)==SIZE(A,2)) THEN
@@ -1419,20 +1437,20 @@ CONTAINS
             B=0.0_DP
           ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size is not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size is not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Matrix B is not the same size as matrix A",ERR,ERROR,*999)
+        CALL FlagError("Matrix B is not the same size as matrix A",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix A is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix A is not square",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("INVERT_FULL_SP")
+    EXITS("INVERT_FULL_SP")
     RETURN
-999 CALL ERRORS("INVERT_FULL_SP",ERR,ERROR)
-    CALL EXITS("INVERT_FULL_SP")
+999 ERRORSEXITS("INVERT_FULL_SP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE INVERT_FULL_SP
 
   !
@@ -1450,7 +1468,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
 
-    CALL ENTERS("INVERT_FULL_DP",ERR,ERROR,*999)
+    ENTERS("INVERT_FULL_DP",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(A,2)) THEN
       IF(SIZE(B,1)==SIZE(A,1).AND.SIZE(B,2)==SIZE(A,2)) THEN
@@ -1492,20 +1510,20 @@ CONTAINS
             B=0.0_DP
           ENDIF
         CASE DEFAULT
-          CALL FLAG_ERROR("Matrix size is not implemented",ERR,ERROR,*999)
+          CALL FlagError("Matrix size is not implemented",ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Matrix B is not the same size as matrix A",ERR,ERROR,*999)
+        CALL FlagError("Matrix B is not the same size as matrix A",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix A is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix A is not square",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("INVERT_FULL_DP")
+    EXITS("INVERT_FULL_DP")
     RETURN
-999 CALL ERRORS("INVERT_FULL_DP",ERR,ERROR)
-    CALL EXITS("INVERT_FULL_DP")
+999 ERRORSEXITS("INVERT_FULL_DP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE INVERT_FULL_DP
   
   !
@@ -1551,7 +1569,8 @@ CONTAINS
       ENDIF
     ENDIF
     
-    RETURN 
+    RETURN
+    
   END FUNCTION K0_DP
   
   !
@@ -1597,7 +1616,8 @@ CONTAINS
       ENDIF
     ENDIF
     
-    RETURN 
+    RETURN
+    
   END FUNCTION K0_SP
   
   !
@@ -1644,7 +1664,8 @@ CONTAINS
       ENDIF
     ENDIF
     
-    RETURN 
+    RETURN
+    
   END FUNCTION K1_DP
   
   !
@@ -1691,7 +1712,8 @@ CONTAINS
       ENDIF
     ENDIF
     
-    RETURN 
+    RETURN
+    
   END FUNCTION K1_SP
   
   !
@@ -1724,7 +1746,8 @@ CONTAINS
     TERM2=B0+(B1+(B2+(B3+B4*X)*X)*X)*X
     KDP_DP=TERM1+TERM2*LOG(1.0_DP/X)    
     
-    RETURN 
+    RETURN
+    
   END FUNCTION KDP_DP
   
   !
@@ -1757,7 +1780,8 @@ CONTAINS
     TERM2=B0+(B1+(B2+(B3+B4*X)*X)*X)*X
     KDP_SP=TERM1+TERM2*LOG(1.0_SP/X)    
     
-    RETURN 
+    RETURN
+    
   END FUNCTION KDP_SP
   
   !
@@ -1778,6 +1802,7 @@ CONTAINS
     L2NORM_SP=SQRT(ASUM)
 
     RETURN
+    
   END FUNCTION L2NORM_SP
 
   !
@@ -1798,6 +1823,7 @@ CONTAINS
     L2NORM_DP=SQRT(ASUM)
 
     RETURN
+    
   END FUNCTION L2NORM_DP
 
   !
@@ -1815,7 +1841,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
-    CALL ENTERS("MATRIX_PRODUCT_SP",ERR,ERROR,*999)
+    ENTERS("MATRIX_PRODUCT_SP",ERR,ERROR,*999)
 
     IF(SIZE(A,2)==SIZE(B,1).AND.SIZE(A,1)==SIZE(C,1).AND.SIZE(B,2)==SIZE(C,2)) THEN
       SELECT CASE(SIZE(A,1))
@@ -1837,17 +1863,17 @@ CONTAINS
         C(3,2)=A(3,1)*B(1,2)+A(3,2)*B(2,2)+A(3,3)*B(3,2)
         C(3,3)=A(3,1)*B(1,3)+A(3,2)*B(2,3)+A(3,3)*B(3,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+        CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Invalid matrix sizes.",ERR,ERROR,*999)
+      CALL FlagError("Invalid matrix sizes.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("MATRIX_PRODUCT_SP")
+    EXITS("MATRIX_PRODUCT_SP")
     RETURN
-999 CALL ERRORS("MATRIX_PRODUCT_SP",ERR,ERROR)
-    CALL EXITS("MATRIX_PRODUCT_SP")
+999 ERRORSEXITS("MATRIX_PRODUCT_SP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE MATRIX_PRODUCT_SP
 
   !
@@ -1865,7 +1891,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
         
-    CALL ENTERS("MATRIX_PRODUCT_DP",ERR,ERROR,*999)
+    ENTERS("MATRIX_PRODUCT_DP",ERR,ERROR,*999)
     
    IF(SIZE(A,2)==SIZE(B,1).AND.SIZE(A,1)==SIZE(C,1).AND.SIZE(B,2)==SIZE(C,2)) THEN
       SELECT CASE(SIZE(A,1))
@@ -1887,17 +1913,17 @@ CONTAINS
         C(3,2)=A(3,1)*B(1,2)+A(3,2)*B(2,2)+A(3,3)*B(3,2)
         C(3,3)=A(3,1)*B(1,3)+A(3,2)*B(2,3)+A(3,3)*B(3,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+        CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Invalid matrix sizes.",ERR,ERROR,*999)
+      CALL FlagError("Invalid matrix sizes.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("MATRIX_PRODUCT_DP")
+    EXITS("MATRIX_PRODUCT_DP")
     RETURN
-999 CALL ERRORS("MATRIX_PRODUCT_DP",ERR,ERROR)
-    CALL EXITS("MATRIX_PRODUCT_DP")
+999 ERRORSEXITS("MATRIX_PRODUCT_DP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE MATRIX_PRODUCT_DP
 
   !
@@ -1914,7 +1940,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
-    CALL ENTERS("MATRIX_TRANSPOSE_SP",ERR,ERROR,*999)
+    ENTERS("MATRIX_TRANSPOSE_SP",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(AT,2).AND.SIZE(A,2)==SIZE(AT,1)) THEN
       SELECT CASE(SIZE(A,1))
@@ -1936,17 +1962,17 @@ CONTAINS
         AT(3,2)=A(2,3)
         AT(3,3)=A(3,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+        CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+      CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
     ENDIF
  
-    CALL EXITS("MATRIX_TRANSPOSE_SP")
+    EXITS("MATRIX_TRANSPOSE_SP")
     RETURN
-999 CALL ERRORS("MATRIX_TRANSPOSE_SP",ERR,ERROR)
-    CALL EXITS("MATRIX_TRANSPOSE_SP")
+999 ERRORSEXITS("MATRIX_TRANSPOSE_SP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE MATRIX_TRANSPOSE_SP
 
   !
@@ -1963,7 +1989,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
         
-    CALL ENTERS("MATRIX_TRANSPOSE_DP",ERR,ERROR,*999)
+    ENTERS("MATRIX_TRANSPOSE_DP",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(AT,2).AND.SIZE(A,2)==SIZE(AT,1)) THEN
       SELECT CASE(SIZE(A,1))
@@ -1985,17 +2011,17 @@ CONTAINS
         AT(3,2)=A(2,3)
         AT(3,3)=A(3,3)
       CASE DEFAULT
-        CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+        CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Invalid matrix size.",ERR,ERROR,*999)
+      CALL FlagError("Invalid matrix size.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("MATRIX_TRANSPOSE_DP")
+    EXITS("MATRIX_TRANSPOSE_DP")
     RETURN
-999 CALL ERRORS("MATRIX_TRANSPOSE_DP",ERR,ERROR)
-    CALL EXITS("MATRIX_TRANSPOSE_DP")
+999 ERRORSEXITS("MATRIX_TRANSPOSE_DP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE MATRIX_TRANSPOSE_DP
 
   !
@@ -2014,21 +2040,21 @@ CONTAINS
     !Local variables
     REAL(SP) :: LENGTH
     
-    CALL ENTERS("NORMALISE_SP",ERR,ERROR,*999)
+    ENTERS("NORMALISE_SP",ERR,ERROR,*999)
 
     LENGTH=L2NORM(A)
     IF(ABS(LENGTH)<ZERO_TOLERANCE_SP) THEN
         NORMALISE_SP=A
-        CALL FLAG_ERROR("Length of vector to normalise is zero",ERR,ERROR,*999)
+        CALL FlagError("Length of vector to normalise is zero",ERR,ERROR,*999)
     ELSE
         NORMALISE_SP=A/LENGTH
     ENDIF
 
-    CALL EXITS("NORMALISE_SP")
+    EXITS("NORMALISE_SP")
     RETURN
-999 CALL ERRORS("NORMALISE_SP",ERR,ERROR)
-    CALL EXITS("NORMALISE_SP")
-    RETURN    
+999 ERRORSEXITS("NORMALISE_SP",ERR,ERROR)
+    RETURN
+    
   END FUNCTION NORMALISE_SP
 
   !
@@ -2047,21 +2073,21 @@ CONTAINS
     !Local variables
     REAL(DP) :: LENGTH
     
-    CALL ENTERS("NORMALISE_DP",ERR,ERROR,*999)
+    ENTERS("NORMALISE_DP",ERR,ERROR,*999)
 
     LENGTH=L2NORM(A)
     IF(ABS(LENGTH)<ZERO_TOLERANCE) THEN
       NORMALISE_DP=A
-      CALL FLAG_ERROR("Length of vector to normalise is zero",ERR,ERROR,*999)
+      CALL FlagError("Length of vector to normalise is zero",ERR,ERROR,*999)
     ELSE
       NORMALISE_DP=A/LENGTH
     ENDIF
 
-    CALL EXITS("NORMALISE_DP")
+    EXITS("NORMALISE_DP")
     RETURN
-999 CALL ERRORS("NORMALISE_DP",ERR,ERROR)
-    CALL EXITS("NORMALISE_DP")
-    RETURN    
+999 ERRORSEXITS("NORMALISE_DP",ERR,ERROR)
+    RETURN
+    
   END FUNCTION NORMALISE_DP
 
   !
@@ -2079,17 +2105,17 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
-    CALL ENTERS("NORM_CROSS_PRODUCT_SP",ERR,ERROR,*999)
+    ENTERS("NORM_CROSS_PRODUCT_SP",ERR,ERROR,*999)
 
     CALL CROSS_PRODUCT(A,B,C,ERR,ERROR,*999)
     C=NORMALISE(C,ERR,ERROR)
     IF(ERR/=0) GOTO 999
 
-    CALL EXITS("NORM_CROSS_PRODUCT_SP")
+    EXITS("NORM_CROSS_PRODUCT_SP")
     RETURN
-999 CALL ERRORS("NORM_CROSS_PRODUCT_SP",ERR,ERROR)
-    CALL EXITS("NORM_CROSS_PRODUCT_SP")
+999 ERRORSEXITS("NORM_CROSS_PRODUCT_SP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE NORM_CROSS_PRODUCT_SP
   
   !
@@ -2107,17 +2133,17 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     
-    CALL ENTERS("NORM_CROSS_PRODUCT_DP",ERR,ERROR,*999)
+    ENTERS("NORM_CROSS_PRODUCT_DP",ERR,ERROR,*999)
 
     CALL CROSS_PRODUCT(A,B,C,ERR,ERROR,*999)
     C=NORMALISE(C,ERR,ERROR)
     IF(ERR/=0) GOTO 999
 
-    CALL EXITS("NORM_CROSS_PRODUCT_DP")
+    EXITS("NORM_CROSS_PRODUCT_DP")
     RETURN
-999 CALL ERRORS("NORM_CROSS_PRODUCT_DP",ERR,ERROR)
-    CALL EXITS("NORM_CROSS_PRODUCT_DP")
+999 ERRORSEXITS("NORM_CROSS_PRODUCT_DP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE NORM_CROSS_PRODUCT_DP
   
   !
@@ -2136,7 +2162,7 @@ CONTAINS
     !Local variables
     REAL(SP) :: AINV(SIZE(A,1),SIZE(A,2)),ADET
     
-    CALL ENTERS("SOLVE_SMALL_LINEAR_SYSTEM_SP",ERR,ERROR,*999)
+    ENTERS("SOLVE_SMALL_LINEAR_SYSTEM_SP",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(A,2)) THEN
       IF(SIZE(A,1)==SIZE(b,1)) THEN
@@ -2146,23 +2172,23 @@ CONTAINS
             CALL INVERT(A,AINV,ADET,ERR,ERROR,*999)
             x=MATMUL(AINV,b)
           CASE DEFAULT
-            CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+            CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("x is too small",ERR,ERROR,*999)
+          CALL FlagError("x is too small",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Size of b is not the same as the number of rows in A",ERR,ERROR,*999)
+        CALL FlagError("Size of b is not the same as the number of rows in A",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("SOLVE_SMALL_LINEAR_SYSTEM_SP")
+    EXITS("SOLVE_SMALL_LINEAR_SYSTEM_SP")
     RETURN
-999 CALL ERRORS("SOLVE_SMALL_LINEAR_SYSTEM_SP",ERR,ERROR)
-    CALL EXITS("SOLVE_SMALL_LINEAR_SYSTEM_SP")
+999 ERRORSEXITS("SOLVE_SMALL_LINEAR_SYSTEM_SP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE SOLVE_SMALL_LINEAR_SYSTEM_SP
 
   !
@@ -2181,7 +2207,7 @@ CONTAINS
     !Local variables
     REAL(DP) :: AINV(SIZE(A,1),SIZE(A,2)),ADET
     
-    CALL ENTERS("SOLVE_SMALL_LINEAR_SYSTEM_DP",ERR,ERROR,*999)
+    ENTERS("SOLVE_SMALL_LINEAR_SYSTEM_DP",ERR,ERROR,*999)
 
     IF(SIZE(A,1)==SIZE(A,2)) THEN
       IF(SIZE(A,1)==SIZE(b,1)) THEN
@@ -2191,23 +2217,23 @@ CONTAINS
             CALL INVERT(A,AINV,ADET,ERR,ERROR,*999)
             x=MATMUL(AINV,b)
           CASE DEFAULT
-            CALL FLAG_ERROR("Matrix size not implemented",ERR,ERROR,*999)
+            CALL FlagError("Matrix size not implemented",ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("x is too small",ERR,ERROR,*999)
+          CALL FlagError("x is too small",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Size of b is not the same as the number of rows in A",ERR,ERROR,*999)
+        CALL FlagError("Size of b is not the same as the number of rows in A",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Matrix is not square",ERR,ERROR,*999)
+      CALL FlagError("Matrix is not square",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("SOLVE_SMALL_LINEAR_SYSTEM_DP")
+    EXITS("SOLVE_SMALL_LINEAR_SYSTEM_DP")
     RETURN
-999 CALL ERRORS("SOLVE_SMALL_LINEAR_SYSTEM_DP",ERR,ERROR)
-    CALL EXITS("SOLVE_SMALL_LINEAR_SYSTEM_DP")
+999 ERRORSEXITS("SOLVE_SMALL_LINEAR_SYSTEM_DP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE SOLVE_SMALL_LINEAR_SYSTEM_DP
 
   !
@@ -2225,6 +2251,7 @@ CONTAINS
     COTH_SP=(EXP(A)+EXP(-1.0_SP*A))/(EXP(A)-EXP(-1.0_SP*A))
 
     RETURN
+    
   END FUNCTION COTH_SP
 
   !
@@ -2242,6 +2269,7 @@ CONTAINS
     COTH_DP=(EXP(A)+EXP(-1.0_DP*A))/(EXP(A)-EXP(-1.0_DP*A))
 
     RETURN
+    
   END FUNCTION COTH_DP
 
   !
@@ -2249,7 +2277,7 @@ CONTAINS
   !
 
   !> Calculates second derivatives of a cubic spline function for a tabulated function y(x). Call  spline_cubic_val to evaluate at t values.
-  !> algorithm adapted from John Burkhardt's spline_cubic_set routine from the SPLINE package (https://orion.math.iastate.edu/burkardt/f_src/spline/spline.html)
+  !> algorithm adapted from John Burkhardt's spline_cubic_set routine from the SPLINE package (http://people.sc.fsu.edu/~jburkardt/f_src/spline/spline.html)
   SUBROUTINE spline_cubic_set (n, t, y, ibcbeg, ybcbeg, ibcend, ybcend, ypp, err, error, *)
 
     !Argument variables
@@ -2270,17 +2298,17 @@ CONTAINS
     INTEGER(INTG) :: i
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("spline_cubic_set",ERR,ERROR,*999)
+    ENTERS("spline_cubic_set",ERR,ERROR,*999)
 
     ! Sanity checks
     IF ( n <= 1 ) then
-      localError="spline interpolation requires at least 2 knots- user supplied "//TRIM(NUMBER_TO_VSTRING(n,"*",ERR,ERROR))
-      CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+      localError="spline interpolation requires at least 2 knots- user supplied "//TRIM(NumberToVString(n,"*",ERR,ERROR))
+      CALL FlagError(localError,ERR,ERROR,*999)
     ENDIF
     DO i = 1, n-1
       IF ( t(i) >= t(i+1) ) then
         localError="Non-increasing knots supplied for cubic spline interpolation."
-        CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+        CALL FlagError(localError,ERR,ERROR,*999)
       ENDIF
     ENDDO
 
@@ -2299,7 +2327,7 @@ CONTAINS
       sup(1) = 0.0E+00_DP
     ELSE
       localError="The boundary flag IBCBEG must be 0, 1 or 2."
-      CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+      CALL FlagError(localError,ERR,ERROR,*999)
     ENDIF
 
     !  Set the intermediate equations.
@@ -2326,7 +2354,7 @@ CONTAINS
       diag(n) = 1.0E+00_DP
     ELSE
       localError="The boundary flag IBCEND must be 0, 1 or 2."
-      CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+      CALL FlagError(localError,ERR,ERROR,*999)
     ENDIF
 
     !  Special case:
@@ -2340,11 +2368,11 @@ CONTAINS
       CALL s3_fs ( sub, diag, sup, n, ypp, ypp, err, error, *999 )
     ENDIF
 
-    CALL EXITS("spline_cubic_set")
+    EXITS("spline_cubic_set")
     RETURN
-999 CALL ERRORS("spline_cubic_set",ERR,ERROR)
-    CALL EXITS("spline_cubic_set")
+999 ERRORSEXITS("spline_cubic_set",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE spline_cubic_set
 
   !
@@ -2352,7 +2380,7 @@ CONTAINS
   !
 
   !> S3_FS factors and solves a tridiagonal linear system.
-  !> algorithm adapted from John Burkhardt's s3_fs routine from the SPLINE package (https://orion.math.iastate.edu/burkardt/f_src/spline/spline.html)
+  !> algorithm adapted from John Burkhardt's s3_fs routine from the SPLINE package (http://people.sc.fsu.edu/~jburkardt/f_src/spline/spline.html)
   SUBROUTINE s3_fs ( a1, a2, a3, n, b, x, err, error, *)
 
     !Argument variables
@@ -2369,13 +2397,13 @@ CONTAINS
     REAL(DP) :: xmult
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("s3_fs",ERR,ERROR,*999)
+    ENTERS("s3_fs",ERR,ERROR,*999)
 
     !  The diagonal entries can't be zero.
     DO i = 1, n
-      IF ( a2(i) == 0.0E+00 ) then
+      IF ( ABS(a2(i)) < ZERO_TOLERANCE ) then
         localError="Zero diagonal entry in tridiagonal linear system."
-        CALL FLAG_ERROR(localError,ERR,ERROR,*999)
+        CALL FlagError(localError,ERR,ERROR,*999)
       ENDIF
     ENDDO
 
@@ -2392,11 +2420,11 @@ CONTAINS
       x(i) = ( b(i) - a3(i) * x(i+1) ) / a2(i)
     ENDDO
 
-    CALL EXITS("s3_fs")
+    EXITS("s3_fs")
     RETURN
-999 CALL ERRORS("s3_fs",ERR,ERROR)
-    CALL EXITS("s3_fs")
+999 ERRORSEXITS("s3_fs",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE s3_fs
 
   !
@@ -2404,7 +2432,7 @@ CONTAINS
   !
   
   !> Evaluates a cubic spline at a specified point. First call spline_cubic_set to calculate derivatives
-  !> algorithm adapted from John Burkhardt's spline_cubic_val routine from the SPLINE package (https://orion.math.iastate.edu/burkardt/f_src/spline/spline.html)
+  !> algorithm adapted from John Burkhardt's spline_cubic_val routine from the SPLINE package (http://people.sc.fsu.edu/~jburkardt/f_src/spline/spline.html)
   SUBROUTINE spline_cubic_val (n, t, y, ypp, tval, yval, ypval, yppval, err, error, *)
 
     !Argument variables
@@ -2426,7 +2454,7 @@ CONTAINS
     INTEGER(INTG) :: right
     LOGICAL :: foundInterval
 
-    CALL ENTERS("spline_cubic_val",ERR,ERROR,*999)
+    ENTERS("spline_cubic_val",ERR,ERROR,*999)
 
     !  Determine the interval [T(LEFT), T(RIGHT)] that contains TVAL.
     !  Values below T(1) or above T(N) use extrapolation.
@@ -2461,322 +2489,12 @@ CONTAINS
 
     yppval = ypp(left) + dt * ( ypp(right) - ypp(left) ) / h 
 
-    CALL EXITS("spline_cubic_val")
+    EXITS("spline_cubic_val")
     RETURN
-999 CALL ERRORS("spline_cubic_val",ERR,ERROR)
-    CALL EXITS("spline_cubic_val")
+999 ERRORSEXITS("spline_cubic_val",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE spline_cubic_val
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE J_DPC (z,J0,J1,err,error,*)
-
-    !Argument variables
-    COMPLEX(DPC), INTENT(IN) :: z
-    COMPLEX(DPC), INTENT(OUT) :: J0,J1
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: error
-    !Local Variables
-    REAL(DP) :: a0
-    REAL(DP),SAVE,DIMENSION(12) :: a = (/ &
-      -0.703125E-01,0.112152099609375, &
-      -0.5725014209747314,0.6074042001273483E+01, &
-      -0.1100171402692467E+03,0.3038090510922384E+04, &
-      -0.1188384262567832E+06,0.6252951493434797E+07, &
-      -0.4259392165047669E+09,0.3646840080706556E+11, &
-      -0.3833534661393944E+13,0.4854014686852901E+15 /)
-    REAL(DP),SAVE,DIMENSION(12) :: a1 = (/ &
-      0.1171875,-0.144195556640625, &
-      0.6765925884246826,-0.6883914268109947E+01, &
-      0.1215978918765359E+03,-0.3302272294480852E+04, &
-      0.1276412726461746E+06,-0.6656367718817688E+07, &
-      0.4502786003050393E+09,-0.3833857520742790E+11, &
-      0.4011838599133198E+13,-0.5060568503314727E+15 /)
-    REAL(DP),SAVE,DIMENSION(12) :: b = (/ &
-      0.732421875E-01,-0.2271080017089844, &
-      0.1727727502584457E+01,-0.2438052969955606E+02, &
-      0.5513358961220206E+03,-0.1825775547429318E+05, &
-      0.8328593040162893E+06,-0.5006958953198893E+08, &
-      0.3836255180230433E+10,-0.3649010818849833E+12, &
-      0.4218971570284096E+14,-0.5827244631566907E+16 /)
-    REAL(DP),SAVE,DIMENSION(12) :: b1 = (/ &
-      -0.1025390625,0.2775764465332031, &
-      -0.1993531733751297E+01,0.2724882731126854E+02, &
-      -0.6038440767050702E+03,0.1971837591223663E+05, &
-      -0.8902978767070678E+06,0.5310411010968522E+08, &
-      -0.4043620325107754E+10,0.3827011346598605E+12, &
-      -0.4406481417852278E+14,0.6065091351222699E+16 /)
-    COMPLEX(DPC) :: ci,cp,cp0,cp1,cq0,cq1,cr,cs,ct1,ct2,cu,z1,z2
-    INTEGER(INTG) :: k,k0
-    REAL(DP) :: el,rp2,w0,w1
-
-    CALL ENTERS("J_DPC",err,error,*999)
-
-    rp2 = 2.0/PI
-    el = 0.5772156649015329
-    ci = CMPLX(0.0,1.0)
-    a0 = ABS(z)
-    z2 = z*z
-    z1 = z
-
-    IF (a0 .EQ. 0.0) THEN
-      J0 = CMPLX(1.0,0.0)
-      J1 = CMPLX(0.0,0.0)
-      RETURN
-    ENDIF
-    IF (REAL(z,DP)<0.0) THEN
-      z1 = -z
-    ENDIF
-    IF (a0 .LE. 12.0) THEN
-      J0 = CMPLX(1.0,0.0)
-      cr = CMPLX(1.0,0.0)
-      DO k = 1,40
-        cr = -0.25*cr*z2/(k*k)
-        J0 = J0+cr
-        IF (ABS(cr) < ABS(J0)*1.0e-15) THEN
-          EXIT
-        ENDIF
-      ENDDO
-      J1 = CMPLX(1.0,0.0)
-      cr = CMPLX(1.0,0.0)
-      DO k = 1,40
-        cr = -0.25*cr*z2/(k*(k+1.0))
-        J1 = J1+cr
-        IF (ABS(cr) < ABS(J1)*1.0e-15) THEN
-          EXIT
-        ENDIF
-      ENDDO
-      J1 = 0.5*z1*J1
-      w0 = 0.0
-      cr = CMPLX(1.0,0.0)
-      cs = CMPLX(0.0,0.0)
-      DO k = 1,40
-        w0 = w0+1.0/k
-        cr = -0.25*cr/(k*k)*z2
-        cp = cr*w0
-        cs = cs+cp
-        IF (ABS(cp) < ABS(cs)*1.0e-15) THEN
-          EXIT
-        ENDIF
-      ENDDO
-      w1 = 0.0
-      cr = CMPLX(1.0,0.0)
-      cs = CMPLX(1.0,0.0)
-      DO k = 1,40
-        w1 = w1+1.0/k
-        cr = -0.25*cr/(k*(k+1))*z2
-        cp = cr*(2.0*w1+1.0/(k+1.0))
-        cs = cs+cp
-        IF (ABS(cp) < ABS(cs)*1.0e-15) THEN
-          EXIT
-        ENDIF
-      ENDDO
-    ELSE
-      IF (a0 < 35.0) THEN
-        k0 = 12
-      ELSEIF (a0 < 50.0) THEN
-        k0 = 10
-      ELSE
-        k0 = 8
-      ENDIF
-      ct1 = z1-0.25*PI
-      cp0 = CMPLX(1.0,0.0)
-      DO k = 1,k0
-        cp0 = cp0+a(k)*z1**(-2*k)
-      ENDDO
-      cq0 = -0.125/z1
-      DO k = 1,k0
-        cq0 = cq0+b(k)*z1**(-2*k-1)
-      ENDDO
-      cu = SQRT(rp2/z1)
-      J0 = cu*(cp0*COS(ct1)-cq0*SIN(ct1))
-      ct2 = z1-0.75*PI
-      cp1 = CMPLX(1.0,0.0)
-      DO k = 1,k0
-        cp1 = cp1+a1(k)*z1**(-2*k)
-      ENDDO
-      cq1 = 0.375/z1
-      DO k = 1,k0
-        cq1 = cq1+b1(k)*z1**(-2*k-1)
-      ENDDO
-      J1 = cu*(cp1*COS(ct2)-cq1*SIN(ct2))
-    ENDIF
-    IF (REAL(z,DP) < 0.0) THEN
-      J1 = -J1
-    ENDIF
-
-    CALL EXITS("J_DPC")
-    RETURN
-999 CALL ERRORS("J_DPC",err,error)
-    CALL EXITS("J_DPC")
-    RETURN 1
-  END SUBROUTINE J_DPC
-
-  !
-  !================================================================================================================================
-  !
-  
-  SUBROUTINE FFT (A,N,err,error,*)
-
-    !Argument variables
-    INTEGER(INTG) :: N             !Number of data points
-    COMPLEX(DPC) :: A(N)           !Complex transform data vector
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: error
-    !Local Variables
-    INTEGER(INTG) :: M,NN,N_half,Nm1,i,j,k,ke,ke1,ip
-    REAL(DP) :: angle
-    COMPLEX(DPC) :: U,W,T
- 
-    CALL ENTERS("FFT",err,error,*999)
-
-    !Determine size of input data and check that it is power of 2
-    M = INT(ALOG(FLOAT(N))/ALOG(2.0)+0.5)  !N=2^M
-    NN = INT(2.0**M+0.5)
-    IF (N .NE. NN) THEN
-      WRITE(*,*) "ERROR in FFT(): Number of points not power of 2"
-      RETURN
-    ENDIF
-    N_half = N/2
-    Nm1 = N-1
-    !Bit-scramble the input data by swapping elements
-    j=1
-    DO i=1,Nm1
-      IF (i .LT. j) THEN
-        !Swap elements i and j of RealA and ImagA
-        T = A(j)
-        A(j) = A(i)
-        A(i) = T
-      ENDIF
-      k = N_half
-      !While loop
-1     IF (k .GE. j) GOTO 2
-        j = j-k
-        k = k/2
-        GOTO 1
-2     CONTINUE
-      j = j+k
-    ENDDO
-    !Loop over number of layers,M=log_2(N)
-    DO k=1,M
-      ke = 2**k
-      ke1 = ke/2
-      !Compute lowest, non-zero power of W for this layer
-      U = (1.0,0.0)
-      angle = -PI/ke1
-      W = CMPLX(COS(angle),SIN(angle))
-      !Loop over elements in binary order (outer loop)
-      DO j=1,ke1
-        !Loop over elements in binary order (inner loop)
-        DO i=j,N,ke
-          ip = i+ke1
-          !Compute the y(.)*W^. factor for this element
-          T = A(ip)*U
-          !Update the current element and its binary pair
-          A(ip) = A(i)-T
-          A(i)  = A(i)+T
-        ENDDO
-        !Increment the power of W for next set of elements
-        U = U*W
-      ENDDO
-    ENDDO
-
-    CALL EXITS("FFT")
-    RETURN
-999 CALL ERRORS("FFT",err,error)
-    CALL EXITS("FFT")
-    RETURN 1
-  END SUBROUTINE FFT
-
-  !
-  !================================================================================================================================
-  !
-
-  SUBROUTINE IFFT (A,N,B,err,error,*)
-
-    !Argument variables
-    COMPLEX(DPC) :: A(N)                       !Complex transform data vector
-    INTEGER(INTG), INTENT(IN) :: N             !Number of data points
-    REAL(DP), INTENT(OUT) :: B(N)              !Real transform data vector
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: error
-    !Local Variables
-    INTEGER(INTG) :: i
-
-    CALL ENTERS("IFFT",err,error,*999)
-
-    !Take complex conjugate of input transform
-    DO i=1,N
-      !Complex conjugate
-      A(i) = CONJG(A(i))
-    ENDDO
-    !Evaluate fast fourier transform
-    CALL FFT(A,N,err,error,*999)
-    !Take complex conjugate and normalize by N
-    DO i=1,N
-      !Normalize and complex conjugate
-      B(i) = REAL(CONJG(A(i))/N)
-    ENDDO
-
-    CALL EXITS("IFFT")
-    RETURN
-999 CALL ERRORS("IFFT",err,error)
-    CALL EXITS("IFFT")
-    RETURN 1
-  END SUBROUTINE IFFT
-
-  !
-  !================================================================================================================================
-  !
-
-!  ! In place Cooley-Tukey FFT
-!  RECURSIVE SUBROUTINE FFT (x,err,error,*)
-!
-!    !Argument variables
-!    COMPLEX(DPC), DIMENSION(:), INTENT(INOUT)  :: x
-!    INTEGER(INTG), INTENT(OUT) :: err
-!    TYPE(VARYING_STRING), INTENT(OUT) :: error
-!    !Local Variables
-!    COMPLEX(DPC), DIMENSION(:), ALLOCATABLE :: even, odd
-!    COMPLEX(DPC) :: t
-!    INTEGER(INTG) :: N,i
-! 
-!    CALL ENTERS("FFT",err,error,*999)
-!
-!    N=SIZE(x)
-!
-!    IF(N .LE. 1) RETURN
-!
-!    ALLOCATE(odd((N+1)/2))
-!    ALLOCATE(even(N/2))
-!
-!    !Divide
-!    odd =x(1:N:2)
-!    even=x(2:N:2)
-!
-!    !Conquer
-!    CALL FFT(odd,err,error,*999)
-!    CALL FFT(even,err,error,*999)
-!
-!    !Combine
-!    DO i=1,N/2
-!       t=EXP(CMPLX(0.0_DP,-2.0_DP*PI*REAL(i-1,DP)/REAL(N,DP),DP))*even(i)
-!       x(i)     = odd(i) + t
-!       x(i+N/2) = odd(i) - t
-!    ENDDO
-!
-!    DEALLOCATE(odd)
-!    DEALLOCATE(even)
-!
-!    CALL EXITS("FFT")
-!    RETURN
-!999 CALL ERRORS("FFT",err,error)
-!    CALL EXITS("FFT")
-!    RETURN 1
-!  END SUBROUTINE FFT
 
   !
   !================================================================================================================================

@@ -10,7 +10,7 @@ class ParseTestClass(unittest.TestCase):
         self.routines = dict(
             (r.name, r) for r in self.library.public_subroutines)
         self.test_routine = (
-            self.routines["CMISSExample_SomeInterfaceObj"])
+            self.routines["cmfe_Example_SomeInterfaceObj"])
 
     def test_string_routines(self):
         """Only routines that use C strings should be included
@@ -18,15 +18,15 @@ class ParseTestClass(unittest.TestCase):
         This is based purely on the routine name
         """
 
-        self.assertFalse("CMISSStringRoutineVSObj" in self.routines)
-        self.assertFalse("CMISSStringRoutineVSNumber" in self.routines)
-        self.assertTrue("CMISSStringRoutineCObj" in self.routines)
-        self.assertTrue("CMISSStringRoutineCNumber" in self.routines)
+        self.assertFalse("cmfe_StringRoutineVSObj" in self.routines)
+        self.assertFalse("cmfe_StringRoutineVSNumber" in self.routines)
+        self.assertTrue("cmfe_StringRoutineCObj" in self.routines)
+        self.assertTrue("cmfe_StringRoutineCNumber" in self.routines)
 
     def test_public(self):
         """Check we don't get any non-public routines"""
 
-        self.assertFalse("CMISSNonPublicRoutine" in self.routines)
+        self.assertFalse("cmfe_NonPublicRoutine" in self.routines)
 
     def test_array_routines(self):
         """Routine that takes an array rather than scalar should be used
@@ -34,8 +34,8 @@ class ParseTestClass(unittest.TestCase):
         This is based purely on the routine name
         """
 
-        self.assertFalse("CMISSArrayRoutine0" in self.routines)
-        self.assertTrue("CMISSArrayRoutine1" in self.routines)
+        self.assertFalse("cmfe_ArrayRoutine0" in self.routines)
+        self.assertTrue("cmfe_ArrayRoutine1" in self.routines)
 
     def test_parameter_intent(self):
         """Check parameter intents are correct"""
@@ -100,7 +100,7 @@ class ParseTestClass(unittest.TestCase):
     def test_method(self):
         """Test that correct routines are set as methods of type"""
 
-        type = self.library.lib_source.types["CMISSExampleType"]
+        type = self.library.lib_source.types["cmfe_ExampleType"]
         # Make sure we get Initialise and CreateStart
         self.assertEqual(len(type.methods), 3)
 

@@ -2,6 +2,7 @@
 object/
 bin/
 lib/
+build/
 /include/
 src/opencmiss_c.f90
 

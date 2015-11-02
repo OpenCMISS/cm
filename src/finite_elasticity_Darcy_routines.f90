@@ -76,15 +76,17 @@ MODULE FINITE_ELASTICITY_DARCY_ROUTINES
   USE TIMER
   USE TYPES
 
+#include "macros.h"  
+
 
   IMPLICIT NONE
 
   PUBLIC ELASTICITY_DARCY_EQUATIONS_SET_SETUP
-  PUBLIC ELASTICITY_DARCY_EQUATIONS_SET_SUBTYPE_SET
-  PUBLIC ELASTICITY_DARCY_EQUATIONS_SET_SOLUTION_METHOD_SET
+  PUBLIC FiniteElasticityDarcy_EquationsSetSpecificationSet
+  PUBLIC FiniteElasticityDarcy_EquationsSetSolutionMethodSet
 
   PUBLIC ELASTICITY_DARCY_PROBLEM_SETUP
-  PUBLIC ELASTICITY_DARCY_PROBLEM_SUBTYPE_SET
+  PUBLIC FiniteElasticityDarcy_ProblemSpecificationSet
   
   PUBLIC ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE
 
@@ -101,7 +103,7 @@ CONTAINS
   !
 
   !>Sets/changes the solution method for a finite elasticity Darcy equation type of a multi physics equations set class.
-  SUBROUTINE ELASTICITY_DARCY_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE FiniteElasticityDarcy_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -111,43 +113,50 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ELASTICITY_DARCY_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("FiniteElasticityDarcy_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a "// &
+          & "finite elasticity-Darcy type equations set.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_STANDARD_ELASTICITY_DARCY_SUBTYPE)
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a finite elasticity Darcy  equation type of a multi physics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ELASTICITY_DARCY_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("FiniteElasticityDarcy_EquationsSetSolutionMethodSet")
     RETURN
-999 CALL ERRORS("ELASTICITY_DARCY_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
-    CALL EXITS("ELASTICITY_DARCY_EQUATIONS_SET_SOLUTION_METHOD_SET")
+999 ERRORS("FiniteElasticityDarcy_EquationsSetSolutionMethodSet",ERR,ERROR)
+    EXITS("FiniteElasticityDarcy_EquationsSetSolutionMethodSet")
     RETURN 1
-  END SUBROUTINE ELASTICITY_DARCY_EQUATIONS_SET_SOLUTION_METHOD_SET
+    
+  END SUBROUTINE FiniteElasticityDarcy_EquationsSetSolutionMethodSet
 
   !
   !================================================================================================================================
@@ -163,9 +172,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
 
-    CALL ENTERS("ELASTICITY_DARCY_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
+    ENTERS("ELASTICITY_DARCY_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
-    CALL FLAG_ERROR("ELASTICITY_DARCY_EQUATIONS_SET_SETUP still needs to be implemented.",ERR,ERROR,*999)
+    CALL FlagError("ELASTICITY_DARCY_EQUATIONS_SET_SETUP still needs to be implemented.",ERR,ERROR,*999)
 
     !=================================================================
     ! This routine still needs to be implemented.
@@ -176,10 +185,9 @@ CONTAINS
     !=================================================================
 
              
-    CALL EXITS("ELASTICITY_DARCY_EQUATIONS_SET_SETUP")
+    EXITS("ELASTICITY_DARCY_EQUATIONS_SET_SETUP")
     RETURN
-999 CALL ERRORS("ELASTICITY_DARCY_EQUATIONS_SET_SETUP",ERR,ERROR)
-    CALL EXITS("ELASTICITY_DARCY_EQUATIONS_SET_SETUP")
+999 ERRORSEXITS("ELASTICITY_DARCY_EQUATIONS_SET_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ELASTICITY_DARCY_EQUATIONS_SET_SETUP
 
@@ -197,9 +205,9 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
 
-    CALL ENTERS("ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+    ENTERS("ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
-    CALL FLAG_ERROR("ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE still needs to be implemented.",ERR,ERROR,*999)
+    CALL FlagError("ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE still needs to be implemented.",ERR,ERROR,*999)
 
     !=================================================================
     ! This routine still needs to be implemented.
@@ -210,10 +218,9 @@ CONTAINS
     !=================================================================
 
 
-  CALL EXITS("ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE")
+  EXITS("ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE")
     RETURN
-999 CALL ERRORS("ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
-    CALL EXITS("ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE")
+999 ERRORSEXITS("ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE
 
@@ -221,20 +228,18 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a finite elasticity Darcy  equation type of a multi physics equations set class.
-  SUBROUTINE ELASTICITY_DARCY_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the equation specification for a finite elasticity Darcy  equation type of a multi physics equations set class.
+  SUBROUTINE FiniteElasticityDarcy_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-    CALL ENTERS("ELASTICITY_DARCY_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("FiniteElasticityDarcy_EquationsSetSpecificationSet",err,error,*999)
 
-    CALL FLAG_ERROR("ELASTICITY_DARCY_EQUATIONS_SET_SUBTYPE_SET still needs to be implemented.",ERR,ERROR,*999)
+    CALL FlagError("FiniteElasticityDarcy_EquationsSetSpecificationSet still needs to be implemented.",err,error,*999)
 
     !=================================================================
     ! This routine still needs to be implemented.
@@ -244,64 +249,68 @@ CONTAINS
     ! since EQUATIONS_SET_SUBTYPE_SET of respective equations_set is called.
     !=================================================================
 
-       
-    CALL EXITS("ELASTICITY_DARCY_EQUATIONS_SET_SUBTYPE_SET")
+    EXITS("FiniteElasticityDarcy_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("ELASTICITY_DARCY_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("ELASTICITY_DARCY_EQUATIONS_SET_SUBTYPE_SET")
+999 ERRORS("FiniteElasticityDarcy_EquationsSetSpecificationSet",err,error)
+    EXITS("FiniteElasticityDarcy_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE ELASTICITY_DARCY_EQUATIONS_SET_SUBTYPE_SET
+    
+  END SUBROUTINE FiniteElasticityDarcy_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the problem subtype for a finite elasticity Darcy equation type .
-  SUBROUTINE ELASTICITY_DARCY_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a finite elasticity Darcy equation type.
+  SUBROUTINE FiniteElasticityDarcy_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("ELASTICITY_DARCY_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_FINITE_ELASTICITY_DARCY_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE     
-      CASE(PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_FINITE_ELASTICITY_DARCY_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE     
-      CASE(PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_FINITE_ELASTICITY_DARCY_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE     
-      CASE(PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_FINITE_ELASTICITY_DARCY_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE     
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a finite elasticity Darcy equation type of a multi physics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
+
+    ENTERS("FiniteElasticityDarcy_ProblemSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE, &
+            & PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE, &
+            & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE, &
+            & PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
+          !ok
+        CASE DEFAULT
+          localError="The third problem specification of "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a finite elasticity Darcy type of a multi physics problem."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_MULTI_PHYSICS_CLASS,PROBLEM_FINITE_ELASTICITY_DARCY_TYPE, &
+          & problemSubtype]
+      ELSE
+        CALL FlagError("Finite elasticity Darcy problem specification must have three entries",err,error,*999)
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("ELASTICITY_DARCY_PROBLEM_SUBTYPE_SET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    EXITS("FiniteElasticityDarcy_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("ELASTICITY_DARCY_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("ELASTICITY_DARCY_PROBLEM_SUBTYPE_SET")
+999 ERRORS("FiniteElasticityDarcy_ProblemSpecificationSet",err,error)
+    EXITS("FiniteElasticityDarcy_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE ELASTICITY_DARCY_PROBLEM_SUBTYPE_SET
+    
+  END SUBROUTINE FiniteElasticityDarcy_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -322,7 +331,7 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLID_SOLVERS,FLUID_SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ELASTICITY_DARCY_PROBLEM_SETUP",ERR,ERROR,*999)
+    ENTERS("ELASTICITY_DARCY_PROBLEM_SETUP",ERR,ERROR,*999)
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(SUBITERATION_LOOP)
@@ -337,7 +346,13 @@ CONTAINS
     NULLIFY(SOLVER_EQUATIONS_MAT_PROPERTIES)
     NULLIFY(SOLVER_EQUATIONS_SOLID)
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(.NOT.ALLOCATED(problem%specification)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(problem%specification,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a finite elasticity-Darcy problem.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
 
       !--------------------------------------------------------------------
       !   s t a n d a r d   f i n i t e   e l a s t i c i t y   D a r c y
@@ -354,7 +369,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an finite elasticity ALE Darcy  equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -379,7 +394,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a finite elasticity ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -426,7 +441,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a finite elasticity ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -490,12 +505,12 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a finite elasticity ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a finite elasticity ALE Darcy equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       !--------------------------------------------------------------------
@@ -513,7 +528,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an finite elasticity ALE Darcy  equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -558,7 +573,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a finite elasticity ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -607,7 +622,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a finite elasticity ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -660,12 +675,12 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a finite elasticity ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a finite elasticity ALE Darcy equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       !--------------------------------------------------------------------
@@ -683,7 +698,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an finite elasticity ALE Darcy  equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -725,7 +740,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a finite elasticity ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -779,7 +794,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a finite elasticity ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -845,31 +860,30 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a finite elasticity ALE Darcy equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a finite elasticity ALE Darcy equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       !-----------------------------------------------------------------
       !   c a s e   d e f a u l t
       !-----------------------------------------------------------------
       CASE DEFAULT
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a standard finite elasticity Darcy equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ELASTICITY_DARCY_PROBLEM_SETUP")
+    EXITS("ELASTICITY_DARCY_PROBLEM_SETUP")
     RETURN
-999 CALL ERRORS("ELASTICITY_DARCY_PROBLEM_SETUP",ERR,ERROR)
-    CALL EXITS("ELASTICITY_DARCY_PROBLEM_SETUP")
+999 ERRORSEXITS("ELASTICITY_DARCY_PROBLEM_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ELASTICITY_DARCY_PROBLEM_SETUP
 
@@ -889,12 +903,18 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ELASTICITY_DARCY_PRE_SOLVE",ERR,ERROR,*999)
+    ENTERS("ELASTICITY_DARCY_PRE_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a finite elasticity-Darcy problem.", &
+              & err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)
               IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE.AND.SOLVER%GLOBAL_NUMBER==1) THEN
                 CALL FINITE_ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
@@ -932,24 +952,23 @@ CONTAINS
 
 
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Darcy fluid type of a multi physics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ELASTICITY_DARCY_PRE_SOLVE")
+    EXITS("ELASTICITY_DARCY_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("ELASTICITY_DARCY_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("ELASTICITY_DARCY_PRE_SOLVE")
+999 ERRORSEXITS("ELASTICITY_DARCY_PRE_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ELASTICITY_DARCY_PRE_SOLVE
       
@@ -969,36 +988,41 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ELASTICITY_DARCY_POST_SOLVE",ERR,ERROR,*999)
+    ENTERS("ELASTICITY_DARCY_POST_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a finite elasticity-Darcy problem.", &
+              & err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
 !               CALL ELASTICITY_DARCY_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               CALL FINITE_ELASTICITY_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               CALL DARCY_EQUATION_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a finite elasticity Darcy type of a multi physics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ELASTICITY_DARCY_POST_SOLVE")
+    EXITS("ELASTICITY_DARCY_POST_SOLVE")
     RETURN
-999 CALL ERRORS("ELASTICITY_DARCY_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("ELASTICITY_DARCY_POST_SOLVE")
+999 ERRORSEXITS("ELASTICITY_DARCY_POST_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ELASTICITY_DARCY_POST_SOLVE
 
@@ -1020,7 +1044,7 @@ CONTAINS
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP_DARCY
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ELASTICITY_DARCY_CONTROL_LOOP_PRE_LOOP",ERR,ERROR,*999)
+    ENTERS("ELASTICITY_DARCY_CONTROL_LOOP_PRE_LOOP",ERR,ERROR,*999)
 
     NULLIFY(CONTROL_LOOP_DARCY)
     NULLIFY(SOLVER_DARCY)
@@ -1047,7 +1071,7 @@ CONTAINS
               CALL WRITE_STRING(DIAGNOSTIC_OUTPUT_TYPE,"==================================================",ERR,ERROR,*999)
             ENDIF
             CALL DARCY_CONTROL_TIME_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
-            CALL FINITE_ELASTICITY_CONTROL_TIME_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+            CALL FiniteElasticity_ControlTimeLoopPreLoop(CONTROL_LOOP,ERR,ERROR,*999)
 
           CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
             !Subiteration loop
@@ -1067,18 +1091,24 @@ CONTAINS
             ENDIF
             CALL CONTROL_LOOP_GET(CONTROL_LOOP,(/2,CONTROL_LOOP_NODE/),CONTROL_LOOP_DARCY,ERR,ERROR,*999)
 
-            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+              CALL FlagError("Problem specification is not allocated.",err,error,*999)
+            ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+              CALL FlagError("Problem specification must have three entries for a finite elasticity-Darcy problem.", &
+                & err,error,*999)
+            END IF
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
               CASE(PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)
                 CALL SOLVERS_SOLVER_GET(CONTROL_LOOP_DARCY%SOLVERS,1,SOLVER_DARCY,ERR,ERROR,*999)
               CASE(PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
                 CALL SOLVERS_SOLVER_GET(CONTROL_LOOP_DARCY%SOLVERS,2,SOLVER_DARCY,ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                   & " is not valid for ELASTICITY_DARCY_CONTROL_LOOP_PRE_LOOP."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
 
-            CALL DARCY_EQUATION_PRE_SOLVE_STORE_PREVIOUS_ITERATE(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
+            CALL Darcy_PreSolveStorePreviousIterate(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
 
           CASE(PROBLEM_CONTROL_SIMPLE_TYPE)
             IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
@@ -1112,16 +1142,15 @@ CONTAINS
             !do nothing
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ELASTICITY_DARCY_CONTROL_LOOP_PRE_LOOP")
+    EXITS("ELASTICITY_DARCY_CONTROL_LOOP_PRE_LOOP")
     RETURN
-999 CALL ERRORS("ELASTICITY_DARCY_CONTROL_LOOP_PRE_LOOP",ERR,ERROR)
-    CALL EXITS("ELASTICITY_DARCY_CONTROL_LOOP_PRE_LOOP")
+999 ERRORSEXITS("ELASTICITY_DARCY_CONTROL_LOOP_PRE_LOOP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ELASTICITY_DARCY_CONTROL_LOOP_PRE_LOOP
 
@@ -1145,7 +1174,7 @@ CONTAINS
     NULLIFY(SOLVER_DARCY)
     NULLIFY(CONTROL_LOOP_DARCY)
 
-    CALL ENTERS("ELASTICITY_DARCY_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
+    ENTERS("ELASTICITY_DARCY_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
@@ -1155,7 +1184,13 @@ CONTAINS
             CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"End of time step",ERR,ERROR,*999)
           ENDIF
         CASE(PROBLEM_CONTROL_WHILE_LOOP_TYPE)
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a finite elasticity-Darcy problem.", &
+              & err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE)
             !subiteration
             IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
@@ -1177,9 +1212,9 @@ CONTAINS
             CALL DARCY_EQUATION_MONITOR_CONVERGENCE(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
             !CALL DARCY_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER_DARCY,ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a Darcy fluid type of a multi physics problem class with a while control loop."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_CONTROL_SIMPLE_TYPE)
           IF(CONTROL_LOOP%OUTPUT_TYPE>=CONTROL_LOOP_PROGRESS_OUTPUT) THEN
@@ -1193,16 +1228,15 @@ CONTAINS
           !do nothing
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ELASTICITY_DARCY_CONTROL_LOOP_POST_LOOP")
+    EXITS("ELASTICITY_DARCY_CONTROL_LOOP_POST_LOOP")
     RETURN
-999 CALL ERRORS("ELASTICITY_DARCY_CONTROL_LOOP_POST_LOOP",ERR,ERROR)
-    CALL EXITS("ELASTICITY_DARCY_CONTROL_LOOP_POST_LOOP")
+999 ERRORSEXITS("ELASTICITY_DARCY_CONTROL_LOOP_POST_LOOP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ELASTICITY_DARCY_CONTROL_LOOP_POST_LOOP
 
@@ -1222,12 +1256,18 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ELASTICITY_DARCY_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
+    ENTERS("ELASTICITY_DARCY_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(control_loop%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(control_loop%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a finite elasticity-Darcy problem.", &
+              & err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STANDARD_ELASTICITY_DARCY_SUBTYPE,PROBLEM_PGM_ELASTICITY_DARCY_SUBTYPE, &
               & PROBLEM_QUASISTATIC_ELASTICITY_TRANSIENT_DARCY_SUBTYPE,PROBLEM_QUASISTATIC_ELAST_TRANS_DARCY_MAT_SOLVE_SUBTYPE)
 
@@ -1238,24 +1278,23 @@ CONTAINS
               ENDIF
 
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Darcy fluid type of a multi physics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
       
-    CALL EXITS("ELASTICITY_DARCY_POST_SOLVE_OUTPUT_DATA")
+    EXITS("ELASTICITY_DARCY_POST_SOLVE_OUTPUT_DATA")
     RETURN
-999 CALL ERRORS("ELASTICITY_DARCY_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
-    CALL EXITS("ELASTICITY_DARCY_POST_SOLVE_OUTPUT_DATA")
+999 ERRORSEXITS("ELASTICITY_DARCY_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ELASTICITY_DARCY_POST_SOLVE_OUTPUT_DATA
       

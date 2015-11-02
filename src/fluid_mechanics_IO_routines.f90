@@ -53,6 +53,8 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
  USE INPUT_OUTPUT 
  USE KINDS   
 
+#include "macros.h"  
+
   IMPLICIT NONE
 
   PRIVATE
@@ -129,7 +131,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
     REAL(DP):: X1, X2, Y1, Y2, Z1, Z2
     REAL(DP):: LENGTH, GEOM_TOL
     REAL(DP):: max_node_spacing
-    LOGICAL :: STAB, DEBUG, ANALYTIC
+    LOGICAL :: STAB, DEBUG_MODE, ANALYTIC
   END TYPE DARCY_PARAMETERS
 
   TYPE COUPLING_PARAMETERS
@@ -206,7 +208,7 @@ MODULE FLUID_MECHANICS_IO_ROUTINES
 
   LOGICAL :: DN
 
-  LOGICAL :: OUTPUT_SOURCE
+  LOGICAL :: OUTPUT_MATERIAL,OUTPUT_SOURCE
 
   REAL(DP), DIMENSION(:,:), ALLOCATABLE::ElementNodesScales
   REAL(DP), DIMENSION(:), ALLOCATABLE:: XI_COORDINATES,COORDINATES
@@ -305,16 +307,16 @@ CONTAINS
     INTEGER(INTG) :: EQUATIONS_SET_GLOBAL_NUMBER !<The error code
     TYPE(VARYING_STRING):: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG):: I,J,K,icompartment
+    INTEGER(INTG):: I,J,K,icompartment,FIELD_COMPONENT
     INTEGER(INTG):: MATERIAL_INTERPOLATION_TYPE
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field
+    TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD
     INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
 
     REAL(DP), POINTER :: ANALYTIC_VALUES(:)
     LOGICAL:: ANALYTIC
 
-    CALL ENTERS("FLUID_MECHANICS_IO_WRITE_CMGUI",ERR,ERROR,*999)
+    ENTERS("FLUID_MECHANICS_IO_WRITE_CMGUI",ERR,ERROR,*999)
 
     NULLIFY(EQUATIONS_SET)
     NULLIFY(EQUATIONS_SET_FIELD_FIELD)
@@ -400,11 +402,11 @@ CONTAINS
 
     var_idx = 1
     FIELD_VAR_TYPE = FIELD_U_VARIABLE_TYPE
-    SELECT CASE(EQUATIONS_SET%CLASS)
+    SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
     CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
           var_idx = 3
@@ -424,11 +426,11 @@ CONTAINS
 
 
     parameter_set_idx = 1
-    SELECT CASE(EQUATIONS_SET%CLASS)
+    SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
     CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
 !          parameter_set_idx = 3  ! of shared dependent variable field
@@ -439,15 +441,21 @@ CONTAINS
 
 !     NumberOfFields=REGION%fields%number_of_fields
 ! Hack for ALE... to be removed later
-    NumberOfFields=3
+    NumberOfFields=2
     NumberOfDimensions=REGION%coordinate_system%number_of_dimensions
 !     NumberOfVariableComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
 !       & variables(1)%number_of_components
     NumberOfVariableComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
       & variables(var_idx)%number_of_components
-
-    NumberOfMaterialComponents=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-      & variables(1)%number_of_components
+    NULLIFY(MATERIAL_FIELD)
+    NumberOfMaterialComponents=0
+    IF(ASSOCIATED(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials)) THEN
+      MATERIAL_FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field
+      IF(ASSOCIATED(MATERIAL_FIELD)) THEN
+        NumberOfMaterialComponents=MATERIAL_FIELD%variables(1)%number_of_components
+        NumberOfFields=NumberOfFields+1
+      ENDIF
+    ENDIF
     NumberOfElements=REGION%meshes%meshes(1)%ptr%number_of_elements
     NumberOfMeshComponents=REGION%meshes%meshes(1)%ptr%number_of_components
 !     IF(.NOT.ALLOCATED(NodesPerElement)) ALLOCATE(NodesPerElement(NumberOfMeshComponents))
@@ -462,8 +470,8 @@ CONTAINS
     DO I=1,NumberOfMeshComponents
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(1)%basis%number_of_element_parameters
-      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%number_of_nodes
-      DofsPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%dofs%number_of_dofs
+      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%numberOfNodes
+      DofsPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%dofs%numberOfDofs
     END DO
 
 !     MaxNodesPerElement=NodesPerElement(1)
@@ -527,21 +535,20 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeWValue_error)) ALLOCATE(NodeWValue_error(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePValue_error)) ALLOCATE(NodePValue_error(NodesPerMeshComponent(1)))
 
-    CALL ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
+    ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
 
-    NULLIFY(MATERIAL_FIELD)
     NULLIFY(SOURCE_FIELD)
 
     FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field
 
-    !material
-    MATERIAL_FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field
-
+    !material field
+    OUTPUT_MATERIAL = ASSOCIATED(MATERIAL_FIELD)
+    
     !source field
     OUTPUT_SOURCE = .FALSE.
-    IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-      & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
-        & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+    IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+      & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+        & .AND.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
           SOURCE_FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field
           IF( ASSOCIATED(SOURCE_FIELD) ) OUTPUT_SOURCE = .TRUE.
     END IF
@@ -553,10 +560,12 @@ CONTAINS
     CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(FIELD,INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
     CALL FIELD_INTERPOLATED_POINTS_INITIALISE(INTERPOLATION_PARAMETERS,INTERPOLATED_POINT,ERR,ERROR,*999)
 
-    !material
-    CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(MATERIAL_FIELD,MATERIAL_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
-    CALL FIELD_INTERPOLATED_POINTS_INITIALISE(MATERIAL_INTERPOLATION_PARAMETERS,MATERIAL_INTERPOLATED_POINT,ERR,ERROR,*999)
-
+    IF(OUTPUT_MATERIAL) THEN
+      !material
+      CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(MATERIAL_FIELD,MATERIAL_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
+      CALL FIELD_INTERPOLATED_POINTS_INITIALISE(MATERIAL_INTERPOLATION_PARAMETERS,MATERIAL_INTERPOLATED_POINT,ERR,ERROR,*999)
+    ENDIF
+    
     !source field
     IF( OUTPUT_SOURCE ) THEN
       CALL FIELD_INTERPOLATION_PARAMETERS_INITIALISE(SOURCE_FIELD,SOURCE_INTERPOLATION_PARAMETERS,ERR,ERROR,*999)
@@ -595,8 +604,8 @@ CONTAINS
 !          & geometric_interp_parameters%bases(1)%ptr%node_position_index(J,2)-1.0)/(REGION%equations_sets% &
 !          & equations_sets(1)%ptr%equations%interpolation%geometric_interp_parameters%bases(1) &
 !          & %ptr%number_of_nodes_xi(2)-1.0)
-        IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE.OR. &
-          & EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)THEN
+        IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_TRANSIENT1D_NAVIER_STOKES_SUBTYPE.OR. &
+          & EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE)THEN
            XI_COORDINATES(1)=(REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%equations%interpolation% &
              & geometric_field%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(J))
         ELSE
@@ -708,12 +717,14 @@ CONTAINS
           CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,ANALYTIC_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr, &
             & ERR,ERROR,*999)
         END IF
-
+        
         !material
-        CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
-          & MATERIAL_INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
-        CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr, &
-          & ERR,ERROR,*999)
+        IF( OUTPUT_MATERIAL ) THEN
+          CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER, &
+            & MATERIAL_INTERPOLATION_PARAMETERS(FIELD_U_VARIABLE_TYPE)%ptr,ERR,ERROR,*999)
+          CALL FIELD_INTERPOLATE_XI(NO_PART_DERIV,XI_COORDINATES,MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr, &
+            & ERR,ERROR,*999)
+        ENDIF
 
         !source field
         IF( OUTPUT_SOURCE ) THEN
@@ -740,10 +751,10 @@ CONTAINS
         !chrm, 19.12.2010
         !If geometry uses a quadratic mesh, but Darcy velocity and mass increase only a linear one,
         !   then we do need to interpolate the velocities and mass increase on the geometric mesh
-        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) ) THEN
-          IF ((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) .OR. &
-          & (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)) THEN
+        IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+          & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_DARCY_EQUATION_TYPE) ) THEN
+          IF ((EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) .OR. &
+          & (EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE)) THEN
             NodeUValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(1,1)
             IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
               NodeVValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(2,1)
@@ -755,8 +766,8 @@ CONTAINS
         ELSE
           NodeUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
             & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
-          IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS .OR. &
-            & EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) THEN  
+          IF(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS .OR. &
+            & EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS) THEN  
             NodeVValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
              & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters% &
              & cmiss%data_dp(K+NodesPerMeshComponent(1))
@@ -773,11 +784,12 @@ CONTAINS
 ! ! !       NodeVValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(2,1)
 ! ! !       NodeWValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(3,1)
 
-        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
-              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
+        IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+          & .OR.(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_CONSTITUTIVE_AND_GROWTH_LAW_IN_CELLML_SUBTYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
           IF(NumberOfDimensions==3)THEN
             NodePValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(4,1)
           ELSE IF(NumberOfDimensions==2)THEN
@@ -785,7 +797,7 @@ CONTAINS
           END IF
         END IF
 
-        IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) THEN         
+        IF(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) THEN         
           IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN         
             NodeUValue_analytic(K)=ANALYTIC_VALUES(K)
             IF(NumberOfDimensions==2 .OR. NumberOfDimensions==3)THEN
@@ -807,104 +819,105 @@ CONTAINS
 
 
 !---tob: Mass increase for coupled elasticity Darcy INRIA model
-        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
-            & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
+        IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+          & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+            & .AND.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
               IF(NumberOfDimensions==3)THEN
                 NodeMIValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(5,1)
               END IF
         END IF
 !---toe
-
-        MATERIAL_INTERPOLATION_TYPE=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr% &
-          & materials%materials_field%variables(1)%COMPONENTS(1)%INTERPOLATION_TYPE 
-
-        IF(MATERIAL_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION)THEN
-
-          IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-            & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
-            NodeMUValue(K)   =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(1,1)
-            NodeRHOValue(K)  =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(2,1)
-!           !--- Remaining tensor material data of permeability tensor
-            NodePerm2Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
-            NodePerm3Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
-            NodePerm4Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(5,1)
-            NodePerm5Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(6,1)
-            NodePerm6Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(7,1)
-          ELSE
-            NodeMUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
-            NodeRHOValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
-          END IF
-
-          IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
-            IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
-              IF( (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
-              & .OR. (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
-                NodeKappaValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-                  & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+        
+        IF(OUTPUT_MATERIAL) THEN
+          MATERIAL_INTERPOLATION_TYPE=MATERIAL_FIELD%variables(1)%COMPONENTS(1)%INTERPOLATION_TYPE 
+          
+          IF(MATERIAL_INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION)THEN
+            
+            IF( (EQUATIONS_SET%specification(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+              & .AND.(EQUATIONS_SET%specification(2)==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+              & .AND.(EQUATIONS_SET%specification(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+              NodeMUValue(K)   =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(1,1)
+              NodeRHOValue(K)  =MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(2,1)
+              !           !--- Remaining tensor material data of permeability tensor
+              NodePerm2Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
+              NodePerm3Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
+              NodePerm4Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(5,1)
+              NodePerm5Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(6,1)
+              NodePerm6Value(K)=MATERIAL_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(7,1)
+            ELSE
+              NodeMUValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+                & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K)
+              NodeRHOValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+                & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
+            END IF
+            
+            IF(EQUATIONS_SET%specification(1)==EQUATIONS_SET_ELASTICITY_CLASS)THEN
+              IF(EQUATIONS_SET%specification(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
+                IF( (EQUATIONS_SET%specification(3)==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+                  & .OR.(EQUATIONS_SET%specification(3)==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
+                  & .OR.(EQUATIONS_SET%specification(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
+                  & .OR. (EQUATIONS_SET%specification(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
+                  NodeKappaValue(K)=MATERIAL_FIELD%variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters% &
+                    & cmiss%data_dp(K+2*NodesPerMeshComponent(1))
+                END IF
+              END IF
+            END IF          
+          
+          ELSE !default to FIELD_CONSTANT_INTERPOLATION
+            NodeMUValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(1)
+            NodeRHOValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+              & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
+            
+            IF(EQUATIONS_SET%specification(3)==EQUATIONS_SET_TRANSIENT1D_NAVIER_STOKES_SUBTYPE) THEN
+              NodeEValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+                & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
+              NodeH0Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+                & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(6)
+              NodeA0Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+                & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(9)
+              NodeA1Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+                & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(12)!39
+              NodeA2Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+                & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(15)!51
+            END IF
+            
+            IF(EQUATIONS_SET%specification(1)==EQUATIONS_SET_ELASTICITY_CLASS)THEN
+              IF(EQUATIONS_SET%specification(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
+                IF( (EQUATIONS_SET%specification(3)==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+                  & .OR.(EQUATIONS_SET%specification(3)==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
+                  & .OR.(EQUATIONS_SET%specification(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
+                  & .OR. (EQUATIONS_SET%specification(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
+                  NodeKappaValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
+                    & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
+                END IF
               END IF
             END IF
           END IF
-
-          IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-            & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
-            !source field
-            IF( OUTPUT_SOURCE ) THEN
+        ENDIF !oUTPUT MATERIAL
+        !source field
+        IF( OUTPUT_SOURCE ) THEN
+          IF( (EQUATIONS_SET%specification(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+            & .AND.(EQUATIONS_SET%specification(2)==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+            & .AND.(EQUATIONS_SET%specification(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+            IF(SOURCE_FIELD%variables(1)%COMPONENTS(1)%INTERPOLATION_TYPE==FIELD_NODE_BASED_INTERPOLATION)THEN
               NodeSourceValue1(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(1,1)
               NodeSourceValue2(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(2,1)
               NodeSourceValue3(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(3,1)
               NodeSourceValue4(K)=SOURCE_INTERPOLATED_POINT(FIELD_U_VARIABLE_TYPE)%ptr%VALUES(4,1)
             END IF
-          END IF
-
-        ELSE !default to FIELD_CONSTANT_INTERPOLATION
-          NodeMUValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(1)
-          NodeRHOValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
-
-          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE) THEN
-          NodeEValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
-          NodeH0Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(6)
-          NodeA0Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(9)
-          NodeA1Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(12)!39
-          NodeA2Value=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-            & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(15)!51
-          END IF
-
-          IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
-            IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
-              IF( (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
-              & .OR. (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
-                NodeKappaValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
-                  & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
-              END IF
-            END IF
-          END IF
-        END IF
-
+          END IF          
+        ENDIF
       END DO 
     END DO
 
     DN=.TRUE.
-    IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-      & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
-        & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) )THEN
+    IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+      & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+        & .OR.(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS) )THEN
       DN=.FALSE.
     END IF
-    IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS)THEN
+    IF(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_CLASSICAL_FIELD_CLASS)THEN
       DN=.FALSE.
     END IF
 
@@ -944,14 +957,19 @@ CONTAINS
 
     NumberOfFieldComponent(1)=NumberOfDimensions
     NumberOfFieldComponent(2)=NumberOfVariableComponents
-    NumberOfFieldComponent(3)=NumberOfMaterialComponents
+    FIELD_COMPONENT=2
+    IF(OUTPUT_MATERIAL) THEN
+      FIELD_COMPONENT=FIELD_COMPONENT+1
+      NumberOfFieldComponent(FIELD_COMPONENT)=NumberOfMaterialComponents
+    ENDIF
 
-    IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-      & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
-        & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
-        IF( OUTPUT_SOURCE ) THEN
-          NumberOfFieldComponent(4)=NumberOfSourceComponents
-        END IF
+    IF( OUTPUT_SOURCE ) THEN
+      IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+        & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+        & .AND.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+       FIELD_COMPONENT=FIELD_COMPONENT+1
+       NumberOfFieldComponent(FIELD_COMPONENT)=NumberOfSourceComponents
+      END IF
     END IF
 
     DO I=1,NumberOfElements
@@ -966,10 +984,9 @@ CONTAINS
     CALL FLUID_MECHANICS_IO_WRITE_NODES_CMGUI(NAME,EQUATIONS_SET)
     CALL FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI(NAME)
 
-    CALL EXITS("FLUID_MECHANICS_IO_WRITE_CMGUI")
+    EXITS("FLUID_MECHANICS_IO_WRITE_CMGUI")
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_CMGUI",ERR,ERROR)    
-    CALL EXITS("FLUID_MECHANICS_IO_WRITE_CMGUI")
+999 ERRORSEXITS("FLUID_MECHANICS_IO_WRITE_CMGUI",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_CMGUI
@@ -997,7 +1014,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field
     INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
 
-    CALL ENTERS("FLUID_MECHANICS_IO_WRITE_ENCAS",ERR,ERROR,*999)
+    ENTERS("FLUID_MECHANICS_IO_WRITE_ENCAS",ERR,ERROR,*999)
 
     IF (ALLOCATED(NodesPerElement)) DEALLOCATE(NodesPerElement)
     IF (ALLOCATED(NodesPerMeshComponent)) DEALLOCATE(NodesPerMeshComponent)
@@ -1069,11 +1086,11 @@ CONTAINS
 
     var_idx = 1
     FIELD_VAR_TYPE = FIELD_U_VARIABLE_TYPE
-    SELECT CASE(EQUATIONS_SET%CLASS)
+    SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
     CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
           var_idx = 3
@@ -1090,11 +1107,11 @@ CONTAINS
     END SELECT
 
     parameter_set_idx = 1 
-    SELECT CASE(EQUATIONS_SET%CLASS)
+    SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
     CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
 !          parameter_set_idx = 3  ! of shared dependent variable field
@@ -1126,7 +1143,7 @@ CONTAINS
     DO I=1,NumberOfMeshComponents
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(1)%basis%number_of_element_parameters
-      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%number_of_nodes
+      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%numberOfNodes
     END DO
 
 
@@ -1180,7 +1197,7 @@ CONTAINS
     IF(.NOT.ALLOCATED(NodeWValue_error)) ALLOCATE(NodeWValue_error(NodesPerMeshComponent(1)))
     IF(.NOT.ALLOCATED(NodePValue_error)) ALLOCATE(NodePValue_error(NodesPerMeshComponent(1)))
 
-    CALL ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
+    ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
 
     FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field
 
@@ -1253,11 +1270,11 @@ CONTAINS
 ! ! !       NodeVValue(K)=INTERPOLATED_POINT%VALUES(2,1)
 ! ! !       NodeWValue(K)=INTERPOLATED_POINT%VALUES(3,1)
 
-        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
-          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
-              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
+        IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+          & .OR.(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
           IF(NumberOfDimensions==3)THEN
             NodePValue(K)=INTERPOLATED_POINT(FIELD_VAR_TYPE)%ptr%VALUES(4,1)
           ELSE IF(NumberOfDimensions==2)THEN
@@ -1274,12 +1291,12 @@ CONTAINS
           NodeRHOValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+NodesPerMeshComponent(1))
 
-          IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
-            IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
-              IF( (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
-              & .OR. (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
+          IF(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS)THEN
+            IF(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
+              IF( (EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+              & .OR.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
+              & .OR.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
+              & .OR. (EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
                 NodeKappaValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
                   & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
               END IF
@@ -1290,11 +1307,11 @@ CONTAINS
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(1)
           NodeRHOValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(2)
-          IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
-            IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
-              IF( (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+          IF(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS)THEN
+            IF(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
+              IF( (EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+              & .OR.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
+              & .OR.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
                 NodeKappaValue=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%materials%materials_field% &
                   & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(3)
               END IF
@@ -1339,10 +1356,9 @@ CONTAINS
     CALL FLUID_MECHANICS_IO_WRITE_DATA_ENCAS(NAME,EQUATIONS_SET)
 
 
-    CALL EXITS("FLUID_MECHANICS_IO_WRITE_ENCAS")
+    EXITS("FLUID_MECHANICS_IO_WRITE_ENCAS")
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_ENCAS",ERR,ERROR)    
-    CALL EXITS("FLUID_MECHANICS_IO_WRITE_ENCAS")
+999 ERRORSEXITS("FLUID_MECHANICS_IO_WRITE_ENCAS",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_ENCAS
@@ -1519,11 +1535,11 @@ CONTAINS
     ENDIF
     CLOSE(80)
   !==================
-    IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
-      & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
-          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
-            & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-            & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
+    IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+      & .OR.(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS) & 
+          & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+            & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+            & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
       FILENAME="./output/"//NAME//".scl1"
       OPEN(UNIT=81, FILE=CHAR(FILENAME),STATUS='unknown')
       WRITE(81,*)'Absolute Pressure' 
@@ -1605,7 +1621,7 @@ CONTAINS
   !==================
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Encas data...",ERR,ERROR,*999)
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_DATA_ENCAS",ERR,ERROR)    
+999 ERRORSEXITS("FLUID_MECHANICS_IO_WRITE_DATA_ENCAS",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_DATA_ENCAS
@@ -1668,7 +1684,7 @@ CONTAINS
 
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Encas PPE master...",ERR,ERROR,*999)
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_PPE",ERR,ERROR)    
+999 ERRORSEXITS("FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_PPE",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS_PPE
@@ -1733,7 +1749,7 @@ CONTAINS
 
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Encas master...",ERR,ERROR,*999)
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS",ERR,ERROR)    
+999 ERRORSEXITS("FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_MASTER_ENCAS
@@ -1759,7 +1775,7 @@ CONTAINS
 !     TYPE(FIELD_TYPE), POINTER :: EQUATIONS_SET_FIELD_FIELD !<A pointer to the equations set field
 !     INTEGER(INTG), POINTER :: EQUATIONS_SET_FIELD_DATA(:)
 
-    CALL ENTERS("FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK",ERR,ERROR,*999)
+    ENTERS("FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK",ERR,ERROR,*999)
 
     IF (ALLOCATED(NodesPerElement)) DEALLOCATE(NodesPerElement)
     IF (ALLOCATED(NodesPerMeshComponent)) DEALLOCATE(NodesPerMeshComponent)
@@ -1811,11 +1827,11 @@ CONTAINS
 
     var_idx = 1
     FIELD_VAR_TYPE = FIELD_U_VARIABLE_TYPE
-    SELECT CASE(EQUATIONS_SET%CLASS)
+    SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
     CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
           var_idx = 3
@@ -1825,11 +1841,11 @@ CONTAINS
     END SELECT
 
     parameter_set_idx = 1 
-    SELECT CASE(EQUATIONS_SET%CLASS)
+    SELECT CASE(EQUATIONS_SET%SPECIFICATION(1))
     CASE(EQUATIONS_SET_FLUID_MECHANICS_CLASS)
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_DARCY_EQUATION_TYPE)
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_INCOMPRESSIBLE_FINITE_ELASTICITY_DARCY_SUBTYPE,EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE, &
           & EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE)
 !          parameter_set_idx = 3  ! of shared dependent variable field
@@ -1861,7 +1877,7 @@ CONTAINS
     DO I=1,NumberOfMeshComponents
       NodesPerElement(I)=REGION%fields%fields(1)%ptr%geometric_field%decomposition%domain(1) &
         & %ptr%topology%elements%elements(1)%basis%number_of_element_parameters
-      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%number_of_nodes
+      NodesPerMeshComponent(I)=REGION%meshes%meshes(1)%ptr%topology(I)%ptr%nodes%numberOfNodes
     END DO
 
 
@@ -1895,7 +1911,7 @@ CONTAINS
     IF(.NOT.ALLOCATED(ElementNodesScales)) ALLOCATE(ElementNodesScales(NumberOfElements,NodesPerElement(1)))
     IF(.NOT.ALLOCATED(ElementNodes)) ALLOCATE(ElementNodes(NumberOfElements,NodesPerElement(1)))
 
-    CALL ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
+    ENTERS("CMGUI OUTPUT",ERR,ERROR,*999)
 
     FIELD=>REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field
 
@@ -1948,9 +1964,9 @@ CONTAINS
             & variables(1)%parameter_sets%parameter_sets(1)%ptr%parameters%cmiss%data_dp(K+2*NodesPerMeshComponent(1))
         END IF
 
-        IF((EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
-          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
-          & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE))THEN 
+        IF((EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
+          & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
+          & .AND.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE))THEN 
           NodeUValue(K)=0.0_DP
           NodeVValue(K)=0.0_DP
         ELSE
@@ -1974,9 +1990,9 @@ CONTAINS
           NodeWValueORG(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
             & variables(var_idx)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
 
-          IF((EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
-              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE))THEN 
+          IF((EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE))THEN 
             NodeWValue(K)=0.0_DP
           ELSE! 
 ! !           NodeWValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%source%source_field%variables(1) &
@@ -1990,17 +2006,17 @@ CONTAINS
 ! ! !       NodeVValue(K)=INTERPOLATED_POINT%VALUES(2,1)
 ! ! !       NodeWValue(K)=INTERPOLATED_POINT%VALUES(3,1)
 
-        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
-          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
-              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)   &
-          & .OR. (EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
-              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
-              & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) &
-              & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE) &
-                & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
+        IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+          & .OR.(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE)   &
+          & .OR. (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
+              & .AND.((EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
+              & .OR.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) &
+              & .OR.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE) &
+                & .OR.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
           parameter_set_idx = 1 
           NodePValue(K)=REGION%equations_sets%equations_sets(EQUATIONS_SET_GLOBAL_NUMBER)%ptr%dependent%dependent_field% &
 !             & variables(1)%parameter_sets%parameter_sets(parameter_set_idx)%ptr%parameters%cmiss%data_dp(K)
@@ -2042,9 +2058,9 @@ CONTAINS
     IF(NumberOfVariableComponents==1)NumberOfVariableComponents=NumberOfDimensions+1
     IF(NumberOfMaterialComponents==5)NumberOfMaterialComponents=3
     IF(NumberOfMaterialComponents==4)NumberOfMaterialComponents=3
-    IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS &
-      & .AND.EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE &
-      & .AND.EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) THEN
+    IF(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_CLASSICAL_FIELD_CLASS &
+      & .AND.EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_POISSON_EQUATION_TYPE &
+      & .AND.EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) THEN
          NumberOfVariableComponents=NumberOfVariableComponents+NumberOfDimensions
     ENDIF 
 
@@ -2068,10 +2084,9 @@ CONTAINS
     CALL FLUID_MECHANICS_IO_WRITE_DATA_ENCAS_BLOCK(NAME)
 
 
-    CALL EXITS("FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK")
+    EXITS("FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK")
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK",ERR,ERROR)    
-    CALL EXITS("FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK")
+999 ERRORSEXITS("FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_ENCAS_BLOCK
@@ -2099,7 +2114,7 @@ CONTAINS
     TYPE(VARYING_STRING) :: FILENAME !<the prefix name of file.
     DOUBLE PRECISION:: fit
 
-    CALL ENTERS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD",ERR,ERROR,*999)
+    ENTERS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD",ERR,ERROR,*999)
 
     NODES_PER_COMPONENT=REGION%equations_sets%equations_sets(1)%ptr%dependent% &
       & dependent_field%variables(1)%components(1)%param_to_dof_map%node_param2dof_map%number_of_node_parameters
@@ -2158,10 +2173,9 @@ CONTAINS
     ENDDO
     CLOSE(81)
 
-    CALL EXITS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD")
+    EXITS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD")
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD",ERR,ERROR)    
-    CALL EXITS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD")
+999 ERRORSEXITS("FLUID_MECHANICS_IO_WRITE_FITTED_FIELD",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_FITTED_FIELD
@@ -2199,7 +2213,7 @@ CONTAINS
  
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Encas data...",ERR,ERROR,*999)
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_DATA_ENCAS_BLOCK",ERR,ERROR)    
+999 ERRORSEXITS("FLUID_MECHANICS_IO_WRITE_DATA_ENCAS_BLOCK",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_DATA_ENCAS_BLOCK
@@ -2267,13 +2281,14 @@ CONTAINS
       ValueIndex=ValueIndex+1
     END DO
 
-    WRITE(14,*) ' 3) material,  field,  rectangular cartesian, #Components=',TRIM(NMs(NumberOfMaterialComponents))
-
-    DO I=1,NumberOfMaterialComponents
-      WRITE(14,*)  '   ',TRIM(NMs(I)),'.  Value index= ',TRIM(NMs(ValueIndex)),',     #Derivatives= 0' 
-      ValueIndex=ValueIndex+1
-    END DO
-
+    IF( OUTPUT_MATERIAL) THEN
+      WRITE(14,*) ' 3) material,  field,  rectangular cartesian, #Components=',TRIM(NMs(NumberOfMaterialComponents))
+      
+      DO I=1,NumberOfMaterialComponents
+        WRITE(14,*)  '   ',TRIM(NMs(I)),'.  Value index= ',TRIM(NMs(ValueIndex)),',     #Derivatives= 0' 
+        ValueIndex=ValueIndex+1
+      END DO
+    ENDIF
 
     IF( OUTPUT_SOURCE ) THEN !Watch out that no numbering conflict occurs with Analytic: 4.)
       WRITE(14,*) ' 4) source,  field,  rectangular cartesian, #Components=',TRIM(NMs(NumberOfSourceComponents))
@@ -2323,71 +2338,72 @@ CONTAINS
       ENDIF
 
       IF(NumberOfDimensions==3) THEN
-      WRITE(14,'("    ", es25.16 )')NodeWValue(I)
+        WRITE(14,'("    ", es25.16 )')NodeWValue(I)
       END IF
 
       IF(NumberOfDimensions/=1) THEN
-        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
-          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
-              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
-                & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-                & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE))THEN
+        IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+          & .OR.(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+                & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+                & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE))THEN
             WRITE(14,'("    ", es25.16 )')NodePValue(I)
         END IF
-        IF((EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
-          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
-          & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE)) THEN
+        IF((EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
+          & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
+          & .AND.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE)) THEN
           WRITE(14,'("    ", es25.16 )')NodeUValueORG(I)
           WRITE(14,'("    ", es25.16 )')NodeVValueORG(I)
           WRITE(14,'("    ", es25.16 )')NodeWValueORG(I)
         END IF
-        IF((EQUATIONS_SET%CLASS==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
-          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
-          & .AND.((EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
-          & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) &
-          & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE) &
-          & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
+        IF((EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_CLASSICAL_FIELD_CLASS) &
+          & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_POISSON_EQUATION_TYPE) &
+          & .AND.((EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_LINEAR_PRESSURE_POISSON_SUBTYPE) &
+          & .OR.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_FITTED_PRESSURE_POISSON_SUBTYPE) &
+          & .OR.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ALE_PRESSURE_POISSON_SUBTYPE) &
+          & .OR.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_NONLINEAR_PRESSURE_POISSON_SUBTYPE))) THEN
           WRITE(14,'("    ", es25.16 )')NodePValue(I)
           WRITE(14,'("    ", es25.16 )')NodeLabelValue(I)
         END IF
       END IF
-
-!---tob: Mass increase for coupled elasticity Darcy INRIA model
-        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-          & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
-            & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
-              IF(NumberOfDimensions==3)THEN
-                WRITE(14,'("    ", es25.16 )')NodeMIValue(I)
-              END IF
+      
+      !---tob: Mass increase for coupled elasticity Darcy INRIA model
+      IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+        & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+        & .AND.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
+        IF(NumberOfDimensions==3)THEN
+          WRITE(14,'("    ", es25.16 )')NodeMIValue(I)
         END IF
-!---toe
-
-      WRITE(14,'("    ", es25.16 )')NodeMUValue(I)
-      WRITE(14,'("    ", es25.16 )')NodeRHOValue(I)
-
-      IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-        & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)) THEN
-        WRITE(14,'("    ", es25.16 )')NodeEValue(I)
-        WRITE(14,'("    ", es25.16 )')NodeH0Value(I)
-        WRITE(14,'("    ", es25.16 )')NodeA0Value(I)
-        WRITE(14,'("    ", es25.16 )')NodeA1Value(I)
-        WRITE(14,'("    ", es25.16 )')NodeA2Value(I)
       END IF
+      !---toe
+      
+      IF(OUTPUT_MATERIAL) THEN  
+        WRITE(14,'("    ", es25.16 )')NodeMUValue(I)
+        WRITE(14,'("    ", es25.16 )')NodeRHOValue(I)
 
-      IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS)THEN
-        IF(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
-          IF( (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-            & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
-            & .OR.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
-            & .OR. (EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
-            WRITE(14,'("    ", es25.16 )')NodeKappaValue(I)
+        IF( (EQUATIONS_SET%specification(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+          & .AND.(EQUATIONS_SET%specification(2)==EQUATIONS_SET_TRANSIENT1D_NAVIER_STOKES_SUBTYPE)) THEN
+          WRITE(14,'("    ", es25.16 )')NodeEValue(I)
+          WRITE(14,'("    ", es25.16 )')NodeH0Value(I)
+          WRITE(14,'("    ", es25.16 )')NodeA0Value(I)
+          WRITE(14,'("    ", es25.16 )')NodeA1Value(I)
+          WRITE(14,'("    ", es25.16 )')NodeA2Value(I)
+        END IF
+
+        IF(EQUATIONS_SET%specification(1)==EQUATIONS_SET_ELASTICITY_CLASS)THEN
+          IF(EQUATIONS_SET%specification(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE)THEN
+            IF( (EQUATIONS_SET%specification(3)==EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+              & .OR.(EQUATIONS_SET%specification(3)==EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) &
+              & .OR.(EQUATIONS_SET%specification(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) &
+              & .OR. (EQUATIONS_SET%specification(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELAST_MULTI_COMP_DARCY_SUBTYPE) )THEN
+              WRITE(14,'("    ", es25.16 )')NodeKappaValue(I)
+            END IF
           END IF
         END IF
-      END IF
 
-      IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
-        & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
-          & .AND.(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
+      IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) & 
+        & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_DARCY_EQUATION_TYPE) &
+          & .AND.(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INCOMPRESSIBLE_ELASTICITY_DRIVEN_DARCY_SUBTYPE) )THEN
           !--- Remaining tensor material data of permeability tensor
           WRITE(14,'("    ", es25.16 )')NodePerm2Value(I)
           WRITE(14,'("    ", es25.16 )')NodePerm3Value(I)
@@ -2402,6 +2418,7 @@ CONTAINS
             WRITE(14,'("    ", es25.16 )')NodeSourceValue3(I)
             WRITE(14,'("    ", es25.16 )')NodeSourceValue4(I)
           END IF
+        ENDIF
       END IF
 
 
@@ -2413,11 +2430,11 @@ CONTAINS
         IF(NumberOfDimensions==3) THEN
           WRITE(14,'("    ", es25.16 )')NodeWValue_analytic(I)
         END IF
-        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
-          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
-              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
+        IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+          & .OR.(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
           WRITE(14,'("    ", es25.16 )')NodePValue_analytic(I)
         END IF
 
@@ -2434,11 +2451,11 @@ CONTAINS
         IF(NumberOfDimensions==3) THEN
           WRITE(14,'("    ", es25.16 )')NodeWValue_error(I)
         END IF
-        IF( (EQUATIONS_SET%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
-          & .OR.(EQUATIONS_SET%CLASS==EQUATIONS_SET_ELASTICITY_CLASS) & 
-              & .AND.(EQUATIONS_SET%TYPE==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
-              & .AND.(EQUATIONS_SET%SUBTYPE.NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
+        IF( (EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_FLUID_MECHANICS_CLASS) &
+          & .OR.(EQUATIONS_SET%SPECIFICATION(1)==EQUATIONS_SET_ELASTICITY_CLASS) & 
+              & .AND.(EQUATIONS_SET%SPECIFICATION(2)==EQUATIONS_SET_FINITE_ELASTICITY_TYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE) &
+              & .AND.(EQUATIONS_SET%SPECIFICATION(3).NE.EQUATIONS_SET_ELASTICITY_DARCY_INRIA_MODEL_SUBTYPE) )THEN
           WRITE(14,'("    ", es25.16 )')NodePValue_error(I)
         END IF
       END IF
@@ -2488,7 +2505,7 @@ CONTAINS
 
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Nodes...",ERR,ERROR,*999)
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_NODES_CMGUI",ERR,ERROR)    
+999 ERRORSEXITS("FLUID_MECHANICS_IO_WRITE_NODES_CMGUI",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_NODES_CMGUI
@@ -2816,7 +2833,7 @@ CONTAINS
     CLOSE(UNIT=5)
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE,"Writing Elements...",ERR,ERROR,*999)
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI",ERR,ERROR)    
+999 ERRORSEXITS("FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_WRITE_ELEMENTS_CMGUI
@@ -2836,7 +2853,7 @@ CONTAINS
 !     TYPE (EXPORT_CONTAINER):: TMP  
     ! INTEGER(INTG):: test 
 
-    CALL ENTERS("FLUID_MECHANICS_IO_READ_CMHEART1",ERR,ERROR,*999)
+    ENTERS("FLUID_MECHANICS_IO_READ_CMHEART1",ERR,ERROR,*999)
     WRITE(*,*)' '
     WRITE(*,*)'Importing CMHEART information...'
     WRITE(*,*)' '
@@ -2878,7 +2895,7 @@ CONTAINS
 ! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
 
     IF(ALLOC_ERROR.NE.0) THEN
-      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+      CALL FlagError("Error during allocation.",ERR,ERROR,*999)
     END IF
 
     ALLOCATE(TMP%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
@@ -2923,13 +2940,12 @@ CONTAINS
     EXPORT=TMP
 
     IF(ALLOC_ERROR.NE.0) THEN
-      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+      CALL FlagError("Error during allocation.",ERR,ERROR,*999)
     END IF
 
-    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART1")
+    EXITS("FLUID_MECHANICS_IO_READ_CMHEART1")
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_READ_CMHEART1",ERR,ERROR)    
-    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART1")
+999 ERRORSEXITS("FLUID_MECHANICS_IO_READ_CMHEART1",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART1
@@ -2952,7 +2968,7 @@ CONTAINS
 !     TYPE (EXPORT_CONTAINER):: TMP  
     ! INTEGER(INTG):: test 
 
-    CALL ENTERS("FLUID_MECHANICS_IO_READ_CMHEART2",ERR,ERROR,*999)
+    ENTERS("FLUID_MECHANICS_IO_READ_CMHEART2",ERR,ERROR,*999)
     WRITE(*,*)' '
     WRITE(*,*)'Importing CMHEART information...'
     WRITE(*,*)' '
@@ -2994,7 +3010,7 @@ CONTAINS
 ! ! !     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
 
     IF(ALLOC_ERROR.NE.0) THEN
-      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+      CALL FlagError("Error during allocation.",ERR,ERROR,*999)
     END IF
 
     ALLOCATE(TMP%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
@@ -3039,7 +3055,7 @@ CONTAINS
     EXPORT=TMP
 
     IF(ALLOC_ERROR.NE.0) THEN
-      CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+      CALL FlagError("Error during allocation.",ERR,ERROR,*999)
     END IF
 
     !Now read boundary information from CMHEART
@@ -3048,10 +3064,9 @@ CONTAINS
       BC=BC_TMP
     CLOSE(42)
 
-    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART2")
+    EXITS("FLUID_MECHANICS_IO_READ_CMHEART2")
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_READ_CMHEART2",ERR,ERROR)    
-    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART2")
+999 ERRORSEXITS("FLUID_MECHANICS_IO_READ_CMHEART2",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART2
@@ -3075,7 +3090,7 @@ CONTAINS
 !     TYPE (EXPORT_CONTAINER):: TMP1  
     INTEGER(INTG):: I
 
-    CALL ENTERS("FLUID_MECHANICS_IO_READ_CMHEART3",ERR,ERROR,*999)
+    ENTERS("FLUID_MECHANICS_IO_READ_CMHEART3",ERR,ERROR,*999)
     WRITE(*,*)' '
     WRITE(*,*)'Importing CMHEART information...'
     WRITE(*,*)' '
@@ -3129,7 +3144,7 @@ CONTAINS
     CALL WRITE_STRING(GENERAL_OUTPUT_TYPE," ",ERR,ERROR,*999)
 
       IF(ALLOC_ERROR.NE.0) THEN
-        CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+        CALL FlagError("Error during allocation.",ERR,ERROR,*999)
       END IF
 
       ALLOCATE(TMP%M(NumberOfElementsDefined(1),NumberOfNodesPerElement(1)),STAT=ALLOC_ERROR)
@@ -3180,7 +3195,7 @@ CONTAINS
       ENDIF
 
       IF(ALLOC_ERROR.NE.0) THEN
-        CALL FLAG_ERROR("Error during allocation.",ERR,ERROR,*999)
+        CALL FlagError("Error during allocation.",ERR,ERROR,*999)
       END IF
 
     ENDDO
@@ -3200,10 +3215,9 @@ CONTAINS
     CLOSE(42)
 
 
-    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART3")
+    EXITS("FLUID_MECHANICS_IO_READ_CMHEART3")
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_READ_CMHEART3",ERR,ERROR)    
-    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART3")
+999 ERRORSEXITS("FLUID_MECHANICS_IO_READ_CMHEART3",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART3
@@ -3243,7 +3257,7 @@ CONTAINS
     DEALLOCATE(MESH_INFO(2)%T)
     DEALLOCATE(MESH_INFO(3)%T)
 
-    CALL EXITS("FLUID_MECHANICS_IO_READ_CMHEART_FINISH")
+    EXITS("FLUID_MECHANICS_IO_READ_CMHEART_FINISH")
 
   END SUBROUTINE FLUID_MECHANICS_IO_READ_CMHEART_FINISH
 
@@ -3337,7 +3351,7 @@ CONTAINS
       ENDIF
     ENDDO
 
-    CALL EXITS("FLUID_MECHANICS_IO_PPE_MASKING")
+    EXITS("FLUID_MECHANICS_IO_PPE_MASKING")
 
   END SUBROUTINE FLUID_MECHANICS_IO_PPE_MASKING
 
@@ -3485,7 +3499,7 @@ CONTAINS
       STOP 'Error during allocation'
     END IF
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_READ_AUX",ERR,ERROR)    
+999 ERRORSEXITS("FLUID_MECHANICS_IO_READ_AUX",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_READ_AUX
@@ -3730,7 +3744,7 @@ CONTAINS
       END IF
     END DO
 !     RETURN
-! 999 CALL ERRORS("FLUID_MECHANICS_IO_ORDER_NUMBERING",ERR,ERROR)    
+! 999 ERRORSEXITS("FLUID_MECHANICS_IO_ORDER_NUMBERING",ERR,ERROR)    
 !     RETURN
   END SUBROUTINE FLUID_MECHANICS_IO_ORDER_NUMBERING
 
@@ -3785,7 +3799,7 @@ CONTAINS
     END IF
 
 !     RETURN
-! 999 CALL ERRORS("FLUID_MECHANICS_IO_MAKE_UNIQUE",ERR,ERROR)    
+! 999 ERRORSEXITS("FLUID_MECHANICS_IO_MAKE_UNIQUE",ERR,ERROR)    
 !     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_MAKE_UNIQUE
@@ -3844,7 +3858,7 @@ CONTAINS
     END IF
 
     RETURN
-! 999 CALL ERRORS("FLUID_MECHANICS_IO_READ_NODES",ERR,ERROR)    
+! 999 ERRORSEXITS("FLUID_MECHANICS_IO_READ_NODES",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_READ_NODES
@@ -4286,8 +4300,8 @@ CONTAINS
       STOP "Not implemented."
     ENDIF
     
-    RETURN
-999 RETURN 1
+    RETURN 
+999 RETURN 
   END SUBROUTINE FluidMechanics_IO_UpdateBoundaryConditionUpdateNodes
    
   !
@@ -4431,7 +4445,7 @@ CONTAINS
         ENDIF
       ENDIF
     RETURN
-999 CALL ERRORS("FLUID_MECHANICS_IO_READ_DATA",ERR,ERROR)    
+999 ERRORSEXITS("FLUID_MECHANICS_IO_READ_DATA",ERR,ERROR)    
     RETURN
   END SUBROUTINE FLUID_MECHANICS_IO_READ_DATA
 
@@ -4475,7 +4489,7 @@ CONTAINS
     END IF
 
     RETURN
-! 999 CALL ERRORS("FLUID_MECHANICS_IO_READ_ELEMENTS",ERR,ERROR)    
+! 999 ERRORSEXITS("FLUID_MECHANICS_IO_READ_ELEMENTS",ERR,ERROR)    
     RETURN
 
   END SUBROUTINE FLUID_MECHANICS_IO_READ_ELEMENTS
@@ -4492,7 +4506,7 @@ CONTAINS
 !     TYPE(VARYING_STRING):: ERROR
 
     DO I = 1,TotalNumberOfNodes
-      WRITE(*,'("Node ",(I0,4x),1000( F5.3,2x ))')I,OPENCMISS_NODE_COORD(I,1:3)
+      WRITE(*,'("Node ",(I0,4x),1000( F6.3,2x ))')I,OPENCMISS_NODE_COORD(I,1:3)
     END DO
 
   ! where are the element nodes stored -> 3 MATRICES
@@ -4518,8 +4532,7 @@ CONTAINS
     WRITE(*,*)
 
 !     RETURN
-! 999 CALL ERRORS("FLUID_MECHANICS_IO_PRINT_ON_SCREEN",ERR,ERROR)    
-!     RETURN
+! 999 ERRORSEXITS("FLUID_MECHANICS_IO_PRINT_ON_SCREEN",ERR,ERROR)    
 
   END SUBROUTINE FLUID_MECHANICS_IO_PRINT_ON_SCREEN
 
@@ -4558,7 +4571,7 @@ CONTAINS
 
       IF (INDEX(IN_CHAR,'STAB:') == 1)          READ(37,*) DARCY%STAB
       IF (INDEX(IN_CHAR,'ANALYTIC:') == 1)      READ(37,*) DARCY%ANALYTIC
-      IF (INDEX(IN_CHAR,'DEBUG:') == 1)         READ(37,*) DARCY%DEBUG
+      IF (INDEX(IN_CHAR,'DEBUG:') == 1)         READ(37,*) DARCY%DEBUG_MODE
 
       IF (INDEX(IN_CHAR,'LENGTH:') == 1)        READ(37,*) DARCY%LENGTH
 
@@ -4580,7 +4593,7 @@ CONTAINS
 
 50 CLOSE(37)
 
-    IF( DARCY%DEBUG ) THEN
+    IF( DARCY%DEBUG_MODE ) THEN
       write(*,*)'Read Darcy parameters from the following file = ',DARCY_PARAM_FILE
       write(*,*)'Press ENTER to continue.'
       read(*,*)

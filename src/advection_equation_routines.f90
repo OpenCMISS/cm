@@ -68,12 +68,14 @@ MODULE ADVECTION_EQUATION_ROUTINES
   USE TIMER
   USE TYPES
 
+#include "macros.h"
+
   IMPLICIT NONE
 
-  PUBLIC ADVECTION_EQUATION_EQUATIONS_SET_SETUP
-  PUBLIC ADVECTION_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
-  PUBLIC ADVECTION_EQUATION_EQUATIONS_SET_SUBTYPE_SET
-  PUBLIC ADVECTION_EQUATION_PROBLEM_SUBTYPE_SET
+  PUBLIC Advection_EquationsSetSetup
+  PUBLIC Advection_EquationsSetSolutionMethodSet
+  PUBLIC Advection_EquationsSetSpecificationSet
+  PUBLIC Advection_ProblemSpecificationSet
   PUBLIC ADVECTION_EQUATION_PROBLEM_SETUP
   PUBLIC ADVECTION_EQUATION_FINITE_ELEMENT_CALCULATE
   PUBLIC ADVECTION_PRE_SOLVE
@@ -88,7 +90,7 @@ CONTAINS
   !
 
   !>Sets up the diffusion equation type of a classical field equations set class.
-  SUBROUTINE ADVECTION_EQUATION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
+  SUBROUTINE Advection_EquationsSetSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -98,34 +100,41 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ADVECTION_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
+    ENTERS("Advection_EquationsSetSetup",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Advection equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%specification(3))
       CASE(EQUATIONS_SET_ADVECTION_SUBTYPE)
-        CALL ADVECTION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL Advection_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for an advection-diffusion equation type of a classical field equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        LOCAL_ERROR="The third equations set specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%specification(3),"*",ERR,ERROR))// &
+          & " is not valid for an advection type of a classical field equation set."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ADVECTION_EQUATION_EQUATIONS_SET_SETUP")
+    EXITS("Advection_EquationsSetSetup")
     RETURN
-999 CALL ERRORS("ADVECTION_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR)
-    CALL EXITS("ADVECTION_EQUATION_EQUATIONS_SET_SETUP")
+999 ERRORSEXITS("Advection_EquationsSetSetup",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE ADVECTION_EQUATION_EQUATIONS_SET_SETUP
+    
+  END SUBROUTINE Advection_EquationsSetSetup
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the solution method for an advection equation type of an classical field equations set class.
-  SUBROUTINE ADVECTION_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE Advection_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -135,79 +144,99 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ADVECTION_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("Advection_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a advection type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_ADVECTION_SUBTYPE)
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for an advection equation type of an classical field equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        LOCAL_ERROR="The third equations set specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%specification(3),"*",ERR,ERROR))// &
+          & " is not valid for an advection type of an classical field equations set."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ADVECTION_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("Advection_EquationsSetSolutionMethodSet")
     RETURN
-999 CALL ERRORS("ADVECTION_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
-    CALL EXITS("ADVECTION_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+999 ERRORS("Advection_EquationsSetSolutionMethodSet",ERR,ERROR)
+    EXITS("Advection_EquationsSetSolutionMethodSet")
     RETURN 1
-  END SUBROUTINE ADVECTION_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
+    
+  END SUBROUTINE Advection_EquationsSetSolutionMethodSet
   
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for an advection equation type of a classical field equations set class.
-  SUBROUTINE ADVECTION_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the equation specification for an advection type of a classical field equations set.
+  SUBROUTINE Advection_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: subtype
     
-    CALL ENTERS("ADVECTION_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("Advection_EquationsSetSpecificationSet",ERR,ERROR,*999)
     
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET_SUBTYPE)
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Laplace type equations set.", &
+          & err,error,*999)
+      END IF
+      subtype=specification(3)
+      SELECT CASE(subtype)
       CASE(EQUATIONS_SET_ADVECTION_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_CLASSICAL_FIELD_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_ADVECTION_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_ADVECTION_SUBTYPE
+        !ok
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for an advection equation type of a classical field equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        localError="The third equations set specification of "//TRIM(NumberToVstring(subtype,"*",err,error))// &
+          & " is not valid for an advection type of a classical field equations set."
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_CLASSICAL_FIELD_CLASS,EQUATIONS_SET_ADVECTION_EQUATION_TYPE,subtype]
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("ADVECTION_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+     
+    EXITS("Advection_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("ADVECTION_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("ADVECTION_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+999 ERRORSEXITS("Advection_EquationsSetSpecificationSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE ADVECTION_EQUATION_EQUATIONS_SET_SUBTYPE_SET
+    
+  END SUBROUTINE Advection_EquationsSetSpecificationSet
   
   !
   !================================================================================================================================
   !
   
   !>Sets up the advection equation.
-  SUBROUTINE ADVECTION_EQUATION_EQUATIONS_SET_LINEAR_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
+  SUBROUTINE Advection_EquationsSetLinearSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -225,7 +254,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: EQUATIONS_MATERIALS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ADVECTION_EQUATION_EQUATIONS_SET_LINEAR_SETUP",ERR,ERROR,*999)
+    ENTERS("Advection_EquationsSetLinearSetup",ERR,ERROR,*999)
 
     NULLIFY(EQUATIONS)
     NULLIFY(EQUATIONS_MAPPING)
@@ -233,13 +262,19 @@ CONTAINS
     NULLIFY(GEOMETRIC_DECOMPOSITION)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for an advection equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_ADVECTION_SUBTYPE)
         SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
-            CALL ADVECTION_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET, &
+            CALL Advection_EquationsSetSolutionMethodSet(EQUATIONS_SET, &
               & EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             !Do nothing
@@ -247,11 +282,11 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an advection equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
 
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_ADVECTION_SUBTYPE)
             !Do nothing
           END SELECT
@@ -329,7 +364,7 @@ CONTAINS
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of " &
                   & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE 
               !Check the user specified field advection equations
@@ -360,7 +395,7 @@ CONTAINS
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD, &
                   & "*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           !Specify finish action       
@@ -374,7 +409,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an advection equation"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! M a t e r i a l s   f i e l d 
@@ -437,7 +472,7 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             END IF
           !Specify start action
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -451,13 +486,13 @@ CONTAINS
                   & FIELD_VALUES_SET_TYPE,1,1.0_DP,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*", & 
               & ERR,ERROR))//" for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*", & 
               & ERR,ERROR))//" is invalid for Navier-Stokes equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! I n d e p e n d e n t   f i e l d
@@ -522,7 +557,7 @@ CONTAINS
                 CASE DEFAULT
                   LOCAL_ERROR="The solution method of " &
                     & //TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// " is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT 
               ELSE
                 !Check the user specified field- Characteristic equation
@@ -540,7 +575,7 @@ CONTAINS
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a standard Navier-Stokes fluid"
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
         !-----------------------------------------------------------------
         ! E q u a t i o n s    t y p e
@@ -549,20 +584,20 @@ CONTAINS
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             IF(EQUATIONS_SET%DEPENDENT%DEPENDENT_FINISHED) THEN
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ADVECTION_SUBTYPE) THEN 
+              IF(EQUATIONS_SET%specification(3)==EQUATIONS_SET_ADVECTION_SUBTYPE) THEN 
                 CALL EQUATIONS_CREATE_START(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
                 CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
                 CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_FIRST_ORDER_DYNAMIC,ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Equations set subtype not valid.",ERR,ERROR,*999)
+                CALL FlagError("Equations set subtype not valid.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
             CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_ADVECTION_SUBTYPE) THEN 
+              IF(EQUATIONS_SET%specification(3)==EQUATIONS_SET_ADVECTION_SUBTYPE) THEN 
                 !Finish the equations
                 CALL EQUATIONS_SET_EQUATIONS_GET(EQUATIONS_SET,EQUATIONS,ERR,ERROR,*999)
                 CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
@@ -584,85 +619,97 @@ CONTAINS
                   CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                     & [DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE, & 
                     & DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE],ERR,ERROR,*999)
-                  CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                  CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
                     & [EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE],ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The equations matrices sparsity type of "// &
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
                 CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                 & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an advection equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for an advection equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The thrid equations set specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%specification(3),"*",ERR,ERROR))// &
           & " does not equal a advection equation set."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ADVECTION_EQUATION_EQUATIONS_SET_LINEAR_SETUP")
+    EXITS("Advection_EquationsSetLinearSetup")
     RETURN
-999 CALL ERRORS("ADVECTION_EQUATION_EQUATIONS_SET_LINEAR_SETUP",ERR,ERROR)
-    CALL EXITS("ADVECTION_EQUATION_EQUATIONS_SET_LINEAR_SETUP")
+999 ERRORSEXITS("Advection_EquationsSetLinearSetup",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE ADVECTION_EQUATION_EQUATIONS_SET_LINEAR_SETUP
+    
+  END SUBROUTINE Advection_EquationsSetLinearSetup
   
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the problem subtype for an advection equation type.
-  SUBROUTINE ADVECTION_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for an advection problem.
+  SUBROUTINE Advection_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE
-    INTEGER(INTG), INTENT(OUT) :: ERR
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
     
-    CALL ENTERS("ADVECTION_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("Advection_ProblemSpecificationSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_ADVECTION_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_CLASSICAL_FIELD_CLASS
-        PROBLEM%TYPE=PROBLEM_ADVECTION_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_ADVECTION_SUBTYPE  
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for an advection equation type of a classical field problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_ADVECTION_SUBTYPE)
+          !ok
+        CASE DEFAULT
+          localError="The third problem specification of "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a advection type of a classical field problem."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_CLASSICAL_FIELD_CLASS,PROBLEM_ADVECTION_EQUATION_TYPE,problemSubtype]
+      ELSE
+        CALL FlagError("Advection problem specification must have three entries.",err,error,*999)
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("ADVECTION_EQUATION_PROBLEM_SUBTYPE_SET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+        
+    EXITS("Advection_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("ADVECTION_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("ADVECTION_EQUATION_PROBLEM_SUBTYPE_SET")
+999 ERRORSEXITS("Advection_ProblemSpecificationSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE ADVECTION_EQUATION_PROBLEM_SUBTYPE_SET
+    
+  END SUBROUTINE Advection_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -679,26 +726,32 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ADVECTION_EQUATION_PROBLEM_SETUP",ERR,ERROR,*999)
+    ENTERS("ADVECTION_EQUATION_PROBLEM_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a Laplace problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
       CASE(PROBLEM_ADVECTION_SUBTYPE)
         CALL ADVECTION_EQUATION_PROBLEM_LINEAR_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for an advection equation type of a classical field problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        LOCAL_ERROR="The third problem specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
+          & " is not valid for an advection type of a classical field problem."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ADVECTION_EQUATION_PROBLEM_SETUP")
+    EXITS("ADVECTION_EQUATION_PROBLEM_SETUP")
     RETURN
-999 CALL ERRORS("ADVECTION_EQUATION_PROBLEM_SETUP",ERR,ERROR)
-    CALL EXITS("ADVECTION_EQUATION_PROBLEM_SETUP")
+999 ERRORSEXITS("ADVECTION_EQUATION_PROBLEM_SETUP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE ADVECTION_EQUATION_PROBLEM_SETUP
   
   !
@@ -720,14 +773,19 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ADVECTION_EQUATION_PROBLEM_LINEAR_SETUP",ERR,ERROR,*999)
+    ENTERS("ADVECTION_EQUATION_PROBLEM_LINEAR_SETUP",ERR,ERROR,*999)
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(SOLVER)
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVERS)
     IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%SUBTYPE==PROBLEM_ADVECTION_SUBTYPE) THEN
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for an advection problem.",err,error,*999)
+      END IF
+      IF(PROBLEM%specification(3)==PROBLEM_ADVECTION_SUBTYPE) THEN
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
         CASE(PROBLEM_SETUP_INITIAL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -739,7 +797,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an advection equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -756,7 +814,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an advection equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -783,7 +841,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an advection equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -813,27 +871,28 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an advection equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for an advection equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The third problem specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(PROBLEM%specification(3),"*",ERR,ERROR))// &
           & " does not equal an advection equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ADVECTION_EQUATION_PROBLEM_LINEAR_SETUP")
+    EXITS("ADVECTION_EQUATION_PROBLEM_LINEAR_SETUP")
     RETURN
-999 CALL ERRORS("ADVECTION_EQUATION_PROBLEM_LINEAR_SETUP",ERR,ERROR)
-    CALL EXITS("ADVECTION_EQUATION_PROBLEM_LINEAR_SETUP")
+999 ERRORSEXITS("ADVECTION_EQUATION_PROBLEM_LINEAR_SETUP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE ADVECTION_EQUATION_PROBLEM_LINEAR_SETUP
   
   !
@@ -868,12 +927,17 @@ CONTAINS
     UPDATE_DAMPING_MATRIX = .FALSE.
     UPDATE_STIFFNESS_MATRIX = .FALSE.
 
-    CALL ENTERS("ADVECTION_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+    ENTERS("ADVECTION_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+          CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<3) THEN
+          CALL FlagError("Equations set specification must have three entries for an advection problem.",err,error,*999)
+        END IF
+        SELECT CASE(EQUATIONS_SET%specification(3))
         CASE(EQUATIONS_SET_ADVECTION_SUBTYPE)
           !Store all these in equations matrices
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
@@ -897,7 +961,7 @@ CONTAINS
           IF(ASSOCIATED(DAMPING_MATRIX)) UPDATE_DAMPING_MATRIX=DAMPING_MATRIX%UPDATE_MATRIX
           IF(ASSOCIATED(STIFFNESS_MATRIX)) UPDATE_STIFFNESS_MATRIX=STIFFNESS_MATRIX%UPDATE_MATRIX
 
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%specification(3))
           CASE(EQUATIONS_SET_ADVECTION_SUBTYPE)
             CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
@@ -978,26 +1042,29 @@ CONTAINS
             ENDDO !ng
             
           CASE DEFAULT
-            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              & " is not valid for an advection equation type of a classical field equations set class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            LOCAL_ERROR="The third equations set specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%specification(3),"*",ERR,ERROR))// &
+              & " is not valid for an advection type of a classical field equations set."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The third equations set specification of "// &
+            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%specification(3),"*",ERR,ERROR))// &
             & " is not valid for an advection equation type of a classical field equations set class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
-    CALL EXITS("ADVECTION_EQUATION_FINITE_ELEMENT_CALCULATE")
+    
+    EXITS("ADVECTION_EQUATION_FINITE_ELEMENT_CALCULATE")
     RETURN
-999 CALL ERRORS("ADVECTION_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
-    CALL EXITS("ADVECTION_EQUATION_FINITE_ELEMENT_CALCULATE")
+999 ERRORSEXITS("ADVECTION_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE ADVECTION_EQUATION_FINITE_ELEMENT_CALCULATE
 
   !
@@ -1016,37 +1083,42 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ADVECTION_PRE_SOLVE",ERR,ERROR,*999)
+    ENTERS("ADVECTION_PRE_SOLVE",ERR,ERROR,*999)
  
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
       IF(ASSOCIATED(SOLVERS)) THEN
         CONTROL_LOOP=>SOLVERS%CONTROL_LOOP
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for an advection problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_ADVECTION_SUBTYPE, &
-             & PROBLEM_1dTransientAdv_NAVIER_STOKES_SUBTYPE, &
-             & PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
+             & PROBLEM_TRANSIENT1D_ADV_NAVIER_STOKES_SUBTYPE, &
+             & PROBLEM_COUPLED1D0D_ADV_NAVIER_STOKES_SUBTYPE)
             CALL ADVECTION_PRE_SOLVE_UPDATE_BC(SOLVER,ERR,ERROR,*999)
 !            CALL Advection_Couple1D0D(SOLVER,ERR,ERROR,*999)
           CASE DEFAULT
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solvers is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ADVECTION_PRE_SOLVE")
+    EXITS("ADVECTION_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("ADVECTION_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("ADVECTION_PRE_SOLVE")
+999 ERRORSEXITS("ADVECTION_PRE_SOLVE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE ADVECTION_PRE_SOLVE
   
   !
@@ -1061,10 +1133,7 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR
     !Local Variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP
-    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: BOUNDARY_CONDITIONS_VARIABLE
     TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES
-    TYPE(DOMAIN_TYPE), POINTER :: DOMAIN
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
@@ -1076,7 +1145,7 @@ CONTAINS
     REAL(DP) :: CONC,START_TIME,STOP_TIME,CURRENT_TIME,TIME_INCREMENT,period,delta(300),t(300),c(300),s
     INTEGER(INTG) :: CURRENT_LOOP_ITERATION,OUTPUT_ITERATION_NUMBER,i,j,n,m
 
-    CALL ENTERS("ADVECTION_PRE_SOLVE_UPDATE_BC",ERR,ERROR,*999)
+    ENTERS("ADVECTION_PRE_SOLVE_UPDATE_BC",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
@@ -1085,9 +1154,14 @@ CONTAINS
         CALL CONTROL_LOOP_TIMES_GET(CONTROL_LOOP,START_TIME,STOP_TIME,CURRENT_TIME,TIME_INCREMENT,CURRENT_LOOP_ITERATION, &
           & OUTPUT_ITERATION_NUMBER,ERR,ERROR,*999)
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-          CASE(PROBLEM_1dTransientAdv_NAVIER_STOKES_SUBTYPE, &
-             & PROBLEM_Coupled1D0DAdv_NAVIER_STOKES_SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for an advection problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%specification(3))
+          CASE(PROBLEM_TRANSIENT1D_ADV_NAVIER_STOKES_SUBTYPE, &
+             & PROBLEM_COUPLED1D0D_ADV_NAVIER_STOKES_SUBTYPE)
             SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
             IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
               SOLVER_MAPPING=>SOLVER_EQUATIONS%SOLVER_MAPPING
@@ -1099,7 +1173,6 @@ CONTAINS
                   BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
                   IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
                     
-
                     IF(CURRENT_TIME<100)THEN
 
                       t(1)=0.003228  ; c(1)=0.001513
@@ -1155,34 +1228,33 @@ CONTAINS
                     CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD, &
                       & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                   ELSE
-                    CALL FLAG_ERROR("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Dependent field and/or geometric field is/are not associated.",ERR,ERROR,*999)
                   END IF
                 ELSE
-                  CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                 END IF
               ELSE
-                CALL FLAG_ERROR("Solver mapping is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
             END IF
           CASE DEFAULT
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solvers is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ADVECTION_PRE_SOLVE_UPDATE_BC")
+    EXITS("ADVECTION_PRE_SOLVE_UPDATE_BC")
     RETURN
-999 CALL ERRORS("ADVECTION_PRE_SOLVE_UPDATE_BC",ERR,ERROR)
-    CALL EXITS("ADVECTION_PRE_SOLVE_UPDATE_BC")
+999 ERRORSEXITS("ADVECTION_PRE_SOLVE_UPDATE_BC",ERR,ERROR)
     RETURN 1
 
   END SUBROUTINE ADVECTION_PRE_SOLVE_UPDATE_BC
@@ -1202,36 +1274,42 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ADVECTION_POST_SOLVE",ERR,ERROR,*999)
+    ENTERS("ADVECTION_POST_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
       IF(ASSOCIATED(SOLVERS)) THEN
         CONTROL_LOOP=>SOLVERS%CONTROL_LOOP
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for an advection problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%specification(3))
           CASE(PROBLEM_ADVECTION_SUBTYPE)
             !Do nothing
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-              & " is not valid for an advection type of a classical field problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            LOCAL_ERROR="The third problem specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%specification(3),"*",ERR,ERROR))// &
+              & " is not valid for an advection type of a classical field problem."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solvers is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solvers is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ADVECTION_POST_SOLVE")
+    EXITS("ADVECTION_POST_SOLVE")
     RETURN
-999 CALL ERRORS("ADVECTION_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("ADVECTION_POST_SOLVE")
+999 ERRORSEXITS("ADVECTION_POST_SOLVE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE ADVECTION_POST_SOLVE
   
   !
@@ -1251,7 +1329,7 @@ CONTAINS
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: solverEquations  
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: solverMapping 
 
-    CALL ENTERS("Advection_Couple1D0D",ERR,ERROR,*999)
+    ENTERS("Advection_Couple1D0D",ERR,ERROR,*999)
 
     IF(ASSOCIATED(solver)) THEN
       solverEquations=>solver%SOLVER_EQUATIONS
@@ -1262,22 +1340,21 @@ CONTAINS
           IF(ASSOCIATED(equationsSet)) THEN
             dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
           ELSE
-            CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+            CALL FlagError("Equations set is not associated.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver mapping is not associated.",err,error,*999)
+          CALL FlagError("Solver mapping is not associated.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver equations is not associated.",err,error,*999)
+        CALL FlagError("Solver equations is not associated.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("Advection_Couple1D0D")
+    EXITS("Advection_Couple1D0D")
     RETURN
-999 CALL ERRORS("Advection_Couple1D0D",err,error)
-    CALL EXITS("Advection_Couple1D0D")
+999 ERRORSEXITS("Advection_Couple1D0D",err,error)
     RETURN 1
 
   END SUBROUTINE

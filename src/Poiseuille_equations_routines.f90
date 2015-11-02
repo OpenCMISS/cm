@@ -68,6 +68,8 @@ MODULE POISEUILLE_EQUATIONS_ROUTINES
 ! temporary input for vector-source
   USE FLUID_MECHANICS_IO_ROUTINES
 
+#include "macros.h"  
+
   IMPLICIT NONE
 
   PRIVATE
@@ -80,10 +82,21 @@ MODULE POISEUILLE_EQUATIONS_ROUTINES
 
   !Interfaces
 
-  PUBLIC POISEUILLE_EQUATION_EQUATIONS_SET_SETUP,POISEUILLE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET, &
-    & POISEUILLE_EQUATION_ANALYTIC_CALCULATE, &
-    & POISEUILLE_EQUATION_EQUATIONS_SET_SUBTYPE_SET,POISEUILLE_EQUATION_FINITE_ELEMENT_CALCULATE,POISEUILLE_PRE_SOLVE, &
-    & POISEUILLE_EQUATION_PROBLEM_SUBTYPE_SET,POISEUILLE_EQUATION_PROBLEM_SETUP,POISEUILLE_POST_SOLVE
+  PUBLIC POISEUILLE_EQUATION_EQUATIONS_SET_SETUP
+
+  PUBLIC Poiseuille_EquationsSetSolutionMethodSet
+
+  PUBLIC Poiseuille_BoundaryConditionsAnalyticCalculate
+
+  PUBLIC Poiseuille_EquationsSetSpecificationSet
+
+  PUBLIC Poiseuille_FiniteElementCalculate
+
+  PUBLIC POISEUILLE_EQUATION_PROBLEM_SETUP
+
+  PUBLIC POISEUILLE_PRE_SOLVE,POISEUILLE_POST_SOLVE
+
+  PUBLIC Poiseuille_ProblemSpecificationSet
   
 CONTAINS
 
@@ -92,7 +105,7 @@ CONTAINS
   !
 
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
-  SUBROUTINE POISEUILLE_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+  SUBROUTINE Poiseuille_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -110,7 +123,7 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
     TYPE(VARYING_STRING) :: LOCAL_ERROR    
     
-    CALL ENTERS("POISEUILLE_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
+    ENTERS("Poiseuille_BoundaryConditionsAnalyticCalculate",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -161,16 +174,16 @@ CONTAINS
                                     CASE(NO_GLOBAL_DERIV)
                                       VALUE=LOG(4.0_DP/((X(1)+X(2)+1.0_DP)**2))
                                     CASE(GLOBAL_DERIV_S1)
-                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                     CASE(GLOBAL_DERIV_S2)
-                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                     CASE(GLOBAL_DERIV_S1_S2)
-                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                       DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                         & ERR,ERROR))//" is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   CASE(FIELD_DELUDELN_VARIABLE_TYPE)
                                     SELECT CASE(DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX)
@@ -178,16 +191,16 @@ CONTAINS
                                       !This is believed to be incorrect, should be: VALUE=-2.0_DP/(X(1)+X(2)+1.0_DP)
                                       VALUE=-2.0_DP*(X(1)+X(2))/(X(1)+X(2)+1.0_DP)
                                     CASE(GLOBAL_DERIV_S1)
-                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                     CASE(GLOBAL_DERIV_S2)
-                                      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                      CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                     CASE(GLOBAL_DERIV_S1_S2)
-                                     CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                                     CALL FlagError("Not implemented.",ERR,ERROR,*999)
                                     CASE DEFAULT
                                       LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING( &
                                       DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX,"*", &
                                         & ERR,ERROR))//" is invalid."
-                                      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                                      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                                     END SELECT
                                   END SELECT
                                 CASE DEFAULT
@@ -209,16 +222,16 @@ CONTAINS
                               ENDDO !deriv_idx
                             ENDDO !node_idx
                           ELSE
-                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                      CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !component_idx
                   CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
@@ -226,33 +239,34 @@ CONTAINS
                   CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
                     & ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO
               CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Boundary conditions is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Boundary conditions is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
           ENDIF            
         ELSE
-          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("POISEUILLE_EQUATION_ANALYTIC_CALCULATE")
+    EXITS("Poiseuille_BoundaryConditionsAnalyticCalculate")
     RETURN
-999 CALL ERRORS("POISEUILLE_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR)
-    CALL EXITS("POISEUILLE_EQUATION_ANALYTIC_CALCULATE")
+999 ERRORS("Poiseuille_BoundaryConditionsAnalyticCalculate",ERR,ERROR)
+    EXITS("Poiseuille_BoundaryConditionsAnalyticCalculate")
     RETURN 1
-  END SUBROUTINE POISEUILLE_EQUATION_ANALYTIC_CALCULATE
+    
+  END SUBROUTINE Poiseuille_BoundaryConditionsAnalyticCalculate
   
   !
   !================================================================================================================================
@@ -269,27 +283,32 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("POISEUILLE_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
+    ENTERS("POISEUILLE_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Poiseuille type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE)
-        CALL POISEUILLE_EQUATION_EQUATIONS_SET_STATIC_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL Poiseuille_EquationsSetStaticSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE)
-        CALL POISEUILLE_EQUATION_EQUATIONS_SET_STATIC_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL Poiseuille_EquationsSetStaticSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Poiseuille equation type of a fluid mechanics equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("POISEUILLE_EQUATION_EQUATIONS_SET_SETUP")
+    EXITS("POISEUILLE_EQUATION_EQUATIONS_SET_SETUP")
     RETURN
-999 CALL ERRORS("POISEUILLE_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR)
-    CALL EXITS("POISEUILLE_EQUATION_EQUATIONS_SET_SETUP")
+999 ERRORSEXITS("POISEUILLE_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE POISEUILLE_EQUATION_EQUATIONS_SET_SETUP
 
@@ -298,7 +317,7 @@ CONTAINS
   !
 
   !>Sets/changes the solution method for a Poiseuille equation type of an fluid mechanics equations set class.
-  SUBROUTINE POISEUILLE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE Poiseuille_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -308,90 +327,102 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("POISEUILLE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("Poiseuille_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Poiseuille type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE,EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE)        
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Poiseuille equation type of an fluid mechanics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("POISEUILLE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("Poiseuille_EquationsSetSolutionMethodSet")
     RETURN
-999 CALL ERRORS("POISEUILLE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
-    CALL EXITS("POISEUILLE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+999 ERRORSEXITS("Poiseuille_EquationsSetSolutionMethodSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE POISEUILLE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
+    
+  END SUBROUTINE Poiseuille_EquationsSetSolutionMethodSet
 
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a Poiseuille equation type of a fluid mechanics equations set class.
-  SUBROUTINE POISEUILLE_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the equation specification for a Poiseuille fluid mechanics equations set.
+  SUBROUTINE Poiseuille_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: DUMMY_FIELD_USER_NUMBER
-    TYPE(FIELD_TYPE), POINTER :: DUMMY_FIELD
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("POISEUILLE_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      DUMMY_FIELD_USER_NUMBER=0
-      NULLIFY(DUMMY_FIELD)
-      SELECT CASE(EQUATIONS_SET_SUBTYPE)
-      CASE(EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_POISEUILLE_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE
-      CASE(EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_POISEUILLE_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: subtype
+
+    ENTERS("Poiseuille_EquationsSetSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Poiseuille equation type equations set.", &
+          & err,error,*999)
+      END IF
+      subtype=specification(3)
+      SELECT CASE(subtype)
+      CASE(EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE, &
+          & EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE)
+        !ok
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
+        localError="The third equations set specification of "//TRIM(NumberToVstring(subtype,"*",err,error))// &
           & " is not valid for a Poiseuille equation type of a fluid mechanics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_FLUID_MECHANICS_CLASS,EQUATIONS_SET_POISEUILLE_EQUATION_TYPE,subtype]
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("POISEUILLE_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+
+    EXITS("Poiseuille_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("POISEUILLE_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("POISEUILLE_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+999 ERRORS("Poiseuille_EquationsSetSpecificationSet",err,error)
+    EXITS("Poiseuille_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE POISEUILLE_EQUATION_EQUATIONS_SET_SUBTYPE_SET
+    
+  END SUBROUTINE Poiseuille_EquationsSetSpecificationSet
 
 
   !
@@ -399,7 +430,7 @@ CONTAINS
   !
 
   !>Sets up the standard Poiseuille equation for linear sources.
-  SUBROUTINE POISEUILLE_EQUATION_EQUATIONS_SET_STATIC_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
+  SUBROUTINE Poiseuille_EquationsSetStaticSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup
@@ -415,7 +446,7 @@ CONTAINS
     TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("POISEUILLE_EQUATION_EQUATIONS_SET_STATIC_SETUP",ERR,ERROR,*999)
+    ENTERS("Poiseuille_EquationsSetStaticSetup",ERR,ERROR,*999)
 
     NULLIFY(EQUATIONS)
     NULLIFY(EQUATIONS_MAPPING)
@@ -423,12 +454,18 @@ CONTAINS
     NULLIFY(GEOMETRIC_DECOMPOSITION)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Poiseuille type equations set.", &
+          & err,error,*999)
+      END IF
+      IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE) THEN
         SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
-            CALL POISEUILLE_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR, &
+            CALL Poiseuille_EquationsSetSolutionMethodSet(EQUATIONS_SET,EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR, &
               & ERROR,*999)
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
 !!TODO: Check valid setup
@@ -436,7 +473,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a static Poiseuille equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
           !Do nothing???
@@ -494,19 +531,19 @@ CONTAINS
                 CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                 CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
               !Check the user specified field
@@ -533,19 +570,19 @@ CONTAINS
                  CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,2, &
                   & FIELD_ELEMENT_BASED_INTERPOLATION,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -556,7 +593,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a static Poiseuille equation"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -608,7 +645,7 @@ CONTAINS
                 CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,3,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
 
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -629,16 +666,16 @@ CONTAINS
                   & FIELD_VALUES_SET_TYPE,3,1.0_DP,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a static Poiseuille equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE)
               SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
                !Set start action
@@ -651,13 +688,12 @@ CONTAINS
                   LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                   & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                   & " is invalid for a linear Poiseuille subtype"
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
-              LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-                & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is invalid for a linear Poiseuille equation."
-               CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_ANALYTIC_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -671,7 +707,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a static Poiseuille equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -682,7 +718,7 @@ CONTAINS
               CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_LINEAR,ERR,ERROR,*999)
               CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -692,8 +728,8 @@ CONTAINS
               CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
               !Create the equations mapping.
               CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,[FIELD_U_VARIABLE_TYPE], &
+              CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+              CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,[FIELD_U_VARIABLE_TYPE], &
                 & ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -706,55 +742,55 @@ CONTAINS
               CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
                 CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,[MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                   & ERR,ERROR,*999)
-                CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,[EQUATIONS_MATRIX_FEM_STRUCTURE], &
+                CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES,[EQUATIONS_MATRIX_FEM_STRUCTURE], &
                   & ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The equations matrices sparsity type of "// &
                   & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
             CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                 & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a static Poiseuille equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a static Poiseuille equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not a static Poiseuille equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("POISEUILLE_EQUATION_EQUATIONS_SET_STATIC_SETUP")
+    EXITS("Poiseuille_EquationsSetStaticSetup")
     RETURN
-999 CALL ERRORS("POISEUILLE_EQUATION_EQUATIONS_SET_STATIC_SETUP",ERR,ERROR)
-    CALL EXITS("POISEUILLE_EQUATION_EQUATIONS_SET_STATIC_SETUP")
+999 ERRORSEXITS("Poiseuille_EquationsSetStaticSetup",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE POISEUILLE_EQUATION_EQUATIONS_SET_STATIC_SETUP
+    
+  END SUBROUTINE Poiseuille_EquationsSetStaticSetup
 
   !
   !================================================================================================================================
@@ -771,27 +807,31 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("POISEUILLE_EQUATION_PROBLEM_SETUP",ERR,ERROR,*999)
+    ENTERS("POISEUILLE_EQUATION_PROBLEM_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(.NOT.ALLOCATED(problem%specification)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(problem%specification,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a Poiseuille problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
       CASE(PROBLEM_STATIC_POISEUILLE_SUBTYPE)
         CALL POISEUILLE_EQUATION_PROBLEM_STATIC_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE)
         CALL POISEUILLE_EQUATION_PROBLEM_STATIC_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Poiseuille equation type of a fluid mechanics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("POISEUILLE_EQUATION_PROBLEM_SETUP")
+    EXITS("POISEUILLE_EQUATION_PROBLEM_SETUP")
     RETURN
-999 CALL ERRORS("POISEUILLE_EQUATION_PROBLEM_SETUP",ERR,ERROR)
-    CALL EXITS("POISEUILLE_EQUATION_PROBLEM_SETUP")
+999 ERRORSEXITS("POISEUILLE_EQUATION_PROBLEM_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE POISEUILLE_EQUATION_PROBLEM_SETUP
   
@@ -800,7 +840,7 @@ CONTAINS
   !
 
   !>Calculates the element stiffness matrices and RHS for a Poiseuille equation finite element equations set.
-  SUBROUTINE POISEUILLE_EQUATION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE Poiseuille_FiniteElementCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
@@ -822,12 +862,18 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("POISEUILLE_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+    ENTERS("Poiseuille_FiniteElementCalculate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Poiseuille type equations set.", &
+          & err,error,*999)
+      END IF
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_STATIC_POISEUILLE_SUBTYPE,EQUATIONS_SET_DYNAMIC_POISEUILLE_SUBTYPE)
           !Store all these in equations matrices/somewhere else?????
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
@@ -864,66 +910,75 @@ CONTAINS
             
           ENDDO !ng
         CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
             & " is not valid for a Poiseuille equation type of a fluid mechanics equations set class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("POISEUILLE_EQUATION_FINITE_ELEMENT_CALCULATE")
+    EXITS("Poiseuille_FiniteElementCalculate")
     RETURN
-999 CALL ERRORS("POISEUILLE_EQUATION_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
-    CALL EXITS("POISEUILLE_EQUATION_FINITE_ELEMENT_CALCULATE")
+999 ERRORSEXITS("Poiseuille_FiniteElementCalculate",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE POISEUILLE_EQUATION_FINITE_ELEMENT_CALCULATE
+    
+  END SUBROUTINE Poiseuille_FiniteElementCalculate
 
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the problem subtype for a Poiseuille equation type.
-  SUBROUTINE POISEUILLE_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a Poiseuille problem.
+  SUBROUTINE Poiseuille_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("POISEUILLE_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_STATIC_POISEUILLE_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_POISEUILLE_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_STATIC_POISEUILLE_SUBTYPE     
-      CASE(PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_POISEUILLE_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE     
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Poiseuille equation type of a fluid mechanics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
+
+    ENTERS("Poiseuille_ProblemSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_STATIC_POISEUILLE_SUBTYPE, &
+            & PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE)
+          !ALl ok
+        CASE DEFAULT
+          localError="The third problem specification of "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a Poiseuille fluid mechanics problem."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_FLUID_MECHANICS_CLASS,PROBLEM_POISEUILLE_EQUATION_TYPE,problemSubtype]
+      ELSE
+        CALL FlagError("Poiseuille problem specification must have three entries.",err,error,*999)
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("POISEUILLE_EQUATION_PROBLEM_SUBTYPE_SET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    EXITS("Poiseuille_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("POISEUILLE_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("POISEUILLE_EQUATION_PROBLEM_SUBTYPE_SET")
+999 ERRORS("Poiseuille_ProblemSpecificationSet",err,error)
+    EXITS("Poiseuille_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE POISEUILLE_EQUATION_PROBLEM_SUBTYPE_SET
+    
+  END SUBROUTINE Poiseuille_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -944,14 +999,19 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
    
-    CALL ENTERS("POISEUILLE_EQUATION_PROBLEM_STATIC_SETUP",ERR,ERROR,*999)
+    ENTERS("POISEUILLE_EQUATION_PROBLEM_STATIC_SETUP",ERR,ERROR,*999)
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(SOLVER)
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVERS)
     IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%SUBTYPE==PROBLEM_STATIC_POISEUILLE_SUBTYPE) THEN
+      IF(.NOT.ALLOCATED(problem%specification)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(problem%specification,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a Poiseuille problem.",err,error,*999)
+      END IF
+      IF(PROBLEM%SPECIFICATION(3)==PROBLEM_STATIC_POISEUILLE_SUBTYPE) THEN
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
         CASE(PROBLEM_SETUP_INITIAL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -963,7 +1023,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a static Poiseuille equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -979,7 +1039,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a static Poiseuille equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -1005,7 +1065,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a static Poiseuille equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -1035,26 +1095,25 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a static Poiseuille equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a static Poiseuille equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a static Poiseuille equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("POISEUILLE_EQUATION_PROBLEM_STATIC_SETUP")
+    EXITS("POISEUILLE_EQUATION_PROBLEM_STATIC_SETUP")
     RETURN
-999 CALL ERRORS("POISEUILLE_EQUATION_PROBLEM_STATIC_SETUP",ERR,ERROR)
-    CALL EXITS("POISEUILLE_EQUATION_PROBLEM_STATIC_SETUP")
+999 ERRORSEXITS("POISEUILLE_EQUATION_PROBLEM_STATIC_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE POISEUILLE_EQUATION_PROBLEM_STATIC_SETUP
   
@@ -1074,35 +1133,39 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solver
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("POISEUILLE_POST_SOLVE",ERR,ERROR,*999)
+    ENTERS("POISEUILLE_POST_SOLVE",ERR,ERROR,*999)
     NULLIFY(SOLVER2)
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Poiseuille problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_POISEUILLE_SUBTYPE)
 !               do nothing
             CASE(PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE)
 !               do nothing
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Poiseuille type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("POISEUILLE_POST_SOLVE")
+    EXITS("POISEUILLE_POST_SOLVE")
     RETURN
-999 CALL ERRORS("POISEUILLE_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("POISEUILLE_POST_SOLVE")
+999 ERRORSEXITS("POISEUILLE_POST_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE POISEUILLE_POST_SOLVE
 
@@ -1123,36 +1186,40 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER2 !<A pointer to the solvers
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("POISEUILLE_PRE_SOLVE",ERR,ERROR,*999)
+    ENTERS("POISEUILLE_PRE_SOLVE",ERR,ERROR,*999)
     NULLIFY(SOLVER2)
  
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%problem%specification)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%problem%specification,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Poiseuille problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_POISEUILLE_SUBTYPE)
 !               do nothing
             CASE(PROBLEM_DYNAMIC_POISEUILLE_SUBTYPE)
 !               do nothing
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Poiseuille type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("POISEUILLE_PRE_SOLVE")
+    EXITS("POISEUILLE_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("POISEUILLE_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("POISEUILLE_PRE_SOLVE")
+999 ERRORSEXITS("POISEUILLE_PRE_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE POISEUILLE_PRE_SOLVE
 

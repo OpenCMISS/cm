@@ -63,21 +63,23 @@ MODULE FINITE_ELASTICITY_FLUID_PRESSURE_ROUTINES
   USE SOLVER_ROUTINES
   USE TYPES
 
+#include "macros.h"  
+
   IMPLICIT NONE
 
-  PUBLIC ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SETUP
-  PUBLIC ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SUBTYPE_SET
-  PUBLIC ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET
+  PUBLIC FinElasticityFluidPressure_EquationsSetSetup
+  PUBLIC FinElasticityFluidPressure_EquationsSetSolnMethodSet
+  PUBLIC FinElasticityFluidPressure_EquationsSetSpecificationSet
 
   PUBLIC ELASTICITY_FLUID_PRESSURE_PROBLEM_SETUP
-  PUBLIC ELASTICITY_FLUID_PRESSURE_PROBLEM_SUBTYPE_SET
+  PUBLIC FinElasticityFluidPressure_ProblemSpecificationSet
   
-  PUBLIC ELASTICITY_FLUID_PRESSURE_FINITE_ELEMENT_CALCULATE
+  PUBLIC FinElasticityFluidPressure_FiniteElementCalculate
 
   PUBLIC ELASTICITY_FLUID_PRESSURE_PRE_SOLVE
   PUBLIC ELASTICITY_FLUID_PRESSURE_POST_SOLVE
 
-  PUBLIC ELASTICITY_FLUID_PRESSURE_CONTROL_LOOP_PRE_LOOP
+  PUBLIC FinElasticityFluidPressure_ControlLoopPreLoop
 
 CONTAINS
 
@@ -86,7 +88,7 @@ CONTAINS
   !
 
   !>Sets/changes the solution method for a finite elasticity fluid pressure equation type of a multi physics equations set class.
-  SUBROUTINE ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE FinElasticityFluidPressure_EquationsSetSolnMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -96,51 +98,84 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("FinElasticityFluidPressure_EquationsSetSolnMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a "// &
+          & "finite elasticity-fluid pressure class equations set.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE, &
           & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE)
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a finite elasticity fluid pressure equation type of a multi physics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("FinElasticityFluidPressure_EquationsSetSolnMethodSet")
     RETURN
-999 CALL ERRORS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET")
+999 ERRORS("FinElasticityFluidPressure_EquationsSetSolnMethodSet",ERR,ERROR)
+    EXITS("FinElasticityFluidPressure_EquationsSetSolnMethodSet")
     RETURN 1
-  END SUBROUTINE ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET
+    
+  END SUBROUTINE FinElasticityFluidPressure_EquationsSetSolnMethodSet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Sets the equation specification for a finite elasticity fluid pressure equation type of a fluid mechanics equations set class.
+  SUBROUTINE FinElasticityFluidPressure_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
+
+    !Argument variables
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("FinElasticityFluidPressure_EquationsSetSpecificationSet",ERR,ERROR,*999)
+
+    CALL FlagError("FinElasticityFluidPressure_EquationsSetSpecificationSet is not implemented.",ERR,ERROR,*999)
+
+    EXITS("FinElasticityFluidPressure_EquationsSetSpecificationSet")
+    RETURN
+999 ERRORS("FinElasticityFluidPressure_EquationsSetSpecificationSet",ERR,ERROR)
+    EXITS("FinElasticityFluidPressure_EquationsSetSpecificationSet")
+    RETURN 1
+    
+  END SUBROUTINE FinElasticityFluidPressure_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
   !
 
   !>Sets up the finite elasticity fluid pressure equation.
-  SUBROUTINE ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
+  SUBROUTINE FinElasticityFluidPressure_EquationsSetSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to setup
@@ -149,23 +184,24 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
 
-    CALL ENTERS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
+    ENTERS("FinElasticityFluidPressure_EquationsSetSetup",ERR,ERROR,*999)
 
-    CALL FLAG_ERROR("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SETUP is not implemented.",ERR,ERROR,*999)
+    CALL FlagError("FinElasticityFluidPressure_EquationsSetSetup is not implemented.",ERR,ERROR,*999)
 
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SETUP")
+    EXITS("FinElasticityFluidPressure_EquationsSetSetup")
     RETURN
-999 CALL ERRORS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SETUP",ERR,ERROR)
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SETUP")
+999 ERRORS("FinElasticityFluidPressure_EquationsSetSetup",ERR,ERROR)
+    EXITS("FinElasticityFluidPressure_EquationsSetSetup")
     RETURN 1
-  END SUBROUTINE ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SETUP
+    
+  END SUBROUTINE FinElasticityFluidPressure_EquationsSetSetup
 
   !
   !================================================================================================================================
   !
 
   !>Calculates the element stiffness matrices and RHS for a finite elasticity fluid pressure equation finite element equations set.
-  SUBROUTINE ELASTICITY_FLUID_PRESSURE_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE FinElasticityFluidPressure_FiniteElementCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
@@ -173,80 +209,69 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
 
-    CALL ENTERS("ELASTICITY_FLUID_PRESSURE_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+    ENTERS("FinElasticityFluidPressure_FiniteElementCalculate",ERR,ERROR,*999)
 
-    CALL FLAG_ERROR("ELASTICITY_FLUID_PRESSURE_FINITE_ELEMENT_CALCULATE is not implemented.",ERR,ERROR,*999)
+    CALL FlagError("FinElasticityFluidPressure_FiniteElementCalculate is not implemented.",ERR,ERROR,*999)
 
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_FINITE_ELEMENT_CALCULATE")
+    EXITS("FinElasticityFluidPressure_FiniteElementCalculate")
     RETURN
-999 CALL ERRORS("ELASTICITY_FLUID_PRESSURE_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_FINITE_ELEMENT_CALCULATE")
+999 ERRORS("FinElasticityFluidPressure_FiniteElementCalculate",ERR,ERROR)
+    EXITS("FinElasticityFluidPressure_FiniteElementCalculate")
     RETURN 1
-  END SUBROUTINE ELASTICITY_FLUID_PRESSURE_FINITE_ELEMENT_CALCULATE
+    
+  END SUBROUTINE FinElasticityFluidPressure_FiniteElementCalculate
 
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a finite elasticity fluid pressure  equation type of a multi physics equations set class.
-  SUBROUTINE ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a finite elasticity fluid pressure equation type.
+  SUBROUTINE FinElasticityFluidPressure_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
 
-    CALL ENTERS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
+    ENTERS("FinElasticityFluidPressure_ProblemSpecificationSet",err,error,*999)
 
-    CALL FLAG_ERROR("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SUBTYPE_SET is not implemented.",ERR,ERROR,*999)
-
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SUBTYPE_SET")
-    RETURN
-999 CALL ERRORS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SUBTYPE_SET")
-    RETURN 1
-  END SUBROUTINE ELASTICITY_FLUID_PRESSURE_EQUATIONS_SET_SUBTYPE_SET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Sets/changes the problem subtype for a finite elasticity fluid pressure equation type .
-  SUBROUTINE ELASTICITY_FLUID_PRESSURE_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("ELASTICITY_FLUID_PRESSURE_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
-    
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_MULTI_PHYSICS_CLASS
-        PROBLEM%TYPE=PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a finite elasticity fluid pressure equation type of a multi physics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
+          !ok
+        CASE DEFAULT
+          localError="The third problem specification of "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a finite elasticity fluid pressure type of a multi physics problem."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_MULTI_PHYSICS_CLASS,PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE, &
+          & problemSubtype]
+      ELSE
+        CALL FlagError("Finite elasticity fluid pressure problem specificaion must have three entries.",err,error,*999)
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_PROBLEM_SUBTYPE_SET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    EXITS("FinElasticityFluidPressure_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("ELASTICITY_FLUID_PRESSURE_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_PROBLEM_SUBTYPE_SET")
+999 ERRORS("FinElasticityFluidPressure_ProblemSpecificationSet",err,error)
+    EXITS("FinElasticityFluidPressure_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE ELASTICITY_FLUID_PRESSURE_PROBLEM_SUBTYPE_SET
+    
+  END SUBROUTINE FinElasticityFluidPressure_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -267,14 +292,24 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ELASTICITY_FLUID_PRESSURE_PROBLEM_SETUP",ERR,ERROR,*999)
+    ENTERS("ELASTICITY_FLUID_PRESSURE_PROBLEM_SETUP",ERR,ERROR,*999)
 
     NULLIFY(CONTROL_LOOP)
     NULLIFY(SOLVER)
     NULLIFY(SOLVERS)
     NULLIFY(SOLVER_EQUATIONS)
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(ALLOCATED(problem%specification)) THEN
+        IF(.NOT.ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is not allocated.",err,error,*999)
+        ELSE IF(SIZE(problem%specification,1)<3) THEN
+          CALL FlagError("Problem specification must have three entries for a finite elasticity-Darcy problem.", &
+            & err,error,*999)
+        END IF
+      ELSE
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
 
       !--------------------------------------------------------------------
       !   Standard finite elasticity fluid pressure
@@ -291,7 +326,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for an finite elasticity ALE fluid pressure  equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -308,7 +343,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a finite elasticity fluid pressure equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -332,7 +367,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a finite elasticity fluid pressure equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -362,28 +397,27 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a finite elasticity fluid pressure equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a finite elasticity ALE fluid pressure equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
 
       CASE DEFAULT
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a standard finite elasticity fluid pressure equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
 
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_PROBLEM_SETUP")
+    EXITS("ELASTICITY_FLUID_PRESSURE_PROBLEM_SETUP")
     RETURN
-999 CALL ERRORS("ELASTICITY_FLUID_PRESSURE_PROBLEM_SETUP",ERR,ERROR)
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_PROBLEM_SETUP")
+999 ERRORSEXITS("ELASTICITY_FLUID_PRESSURE_PROBLEM_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ELASTICITY_FLUID_PRESSURE_PROBLEM_SETUP
 
@@ -403,35 +437,39 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ELASTICITY_FLUID_PRESSURE_PRE_SOLVE",ERR,ERROR,*999)
+    ENTERS("ELASTICITY_FLUID_PRESSURE_PRE_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for an elasticity fluid pressure problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
             IF(CONTROL_LOOP%LOOP_TYPE==PROBLEM_CONTROL_LOAD_INCREMENT_LOOP_TYPE) THEN
               CALL FINITE_ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a fluid pressure fluid type of a multi physics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_PRE_SOLVE")
+    EXITS("ELASTICITY_FLUID_PRESSURE_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("ELASTICITY_FLUID_PRESSURE_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_PRE_SOLVE")
+999 ERRORSEXITS("ELASTICITY_FLUID_PRESSURE_PRE_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ELASTICITY_FLUID_PRESSURE_PRE_SOLVE
       
@@ -451,33 +489,37 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("ELASTICITY_FLUID_PRESSURE_POST_SOLVE",ERR,ERROR,*999)
+    ENTERS("ELASTICITY_FLUID_PRESSURE_POST_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for an elasticity fluid pressure problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
             CALL FINITE_ELASTICITY_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a finite elasticity fluid pressure type of a multi physics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_POST_SOLVE")
+    EXITS("ELASTICITY_FLUID_PRESSURE_POST_SOLVE")
     RETURN
-999 CALL ERRORS("ELASTICITY_FLUID_PRESSURE_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_POST_SOLVE")
+999 ERRORSEXITS("ELASTICITY_FLUID_PRESSURE_POST_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE ELASTICITY_FLUID_PRESSURE_POST_SOLVE
 
@@ -486,7 +528,7 @@ CONTAINS
   !
 
   !>Runs before each control loop iteration
-  SUBROUTINE ELASTICITY_FLUID_PRESSURE_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*)
+  SUBROUTINE FinElasticityFluidPressure_ControlLoopPreLoop(CONTROL_LOOP,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -497,7 +539,7 @@ CONTAINS
     TYPE(SOLVER_TYPE), POINTER :: SOLVER_FLUID_PRESSURE
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP_FLUID_PRESSURE
 
-    CALL ENTERS("ELASTICITY_FLUID_PRESSURE_CONTROL_LOOP_PRE_LOOP",ERR,ERROR,*999)
+    ENTERS("FinElasticityFluidPressure_ControlLoopPreLoop",ERR,ERROR,*999)
 
     NULLIFY(CONTROL_LOOP_FLUID_PRESSURE)
     NULLIFY(SOLVER_FLUID_PRESSURE)
@@ -527,18 +569,19 @@ CONTAINS
           !do nothing
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_CONTROL_LOOP_PRE_LOOP")
+    EXITS("FinElasticityFluidPressure_ControlLoopPreLoop")
     RETURN
-999 CALL ERRORS("ELASTICITY_FLUID_PRESSURE_CONTROL_LOOP_PRE_LOOP",ERR,ERROR)
-    CALL EXITS("ELASTICITY_FLUID_PRESSURE_CONTROL_LOOP_PRE_LOOP")
+999 ERRORS("FinElasticityFluidPressure_ControlLoopPreLoop",ERR,ERROR)
+    EXITS("FinElasticityFluidPressure_ControlLoopPreLoop")
     RETURN 1
-  END SUBROUTINE ELASTICITY_FLUID_PRESSURE_CONTROL_LOOP_PRE_LOOP
+    
+  END SUBROUTINE FinElasticityFluidPressure_ControlLoopPreLoop
 
   !
   !================================================================================================================================

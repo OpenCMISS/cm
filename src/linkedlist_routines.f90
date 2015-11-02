@@ -1,5 +1,7 @@
 !> Only for integer data type for now
-Module LinkedList_routines
+MODULE LinkedList_routines
+
+#include "macros.h"  
 
   USE BASE_ROUTINES
   USE CONSTANTS
@@ -46,7 +48,7 @@ contains
     ! local variables
     TYPE(LinkedListItem),pointer :: current
 
-    CALL ENTERS("LinkedList_Add_Data",ERR,ERROR,*999)
+    ENTERS("LinkedList_Add_Data",ERR,ERROR,*999)
 
     if (associated(list%root)) then
       ! add to the tail end (for now)
@@ -60,10 +62,9 @@ contains
       list%last => list%root
     endif
 
-    CALL EXITS("LinkedList_Add_Data")
+    EXITS("LinkedList_Add_Data")
     RETURN
-999 CALL ERRORS("LinkedList_Add_Data",ERR,ERROR)
-    CALL EXITS("LinkedList_Add_Data")
+999 ERRORSEXITS("LinkedList_Add_Data",ERR,ERROR)
     RETURN 1
 
   End SUBROUTINE LinkedList_Add_Data
@@ -92,10 +93,9 @@ contains
       endif
     enddo
 
-    CALL EXITS("LinkedList_Add_List")
+    EXITS("LinkedList_Add_List")
     RETURN
-999 CALL ERRORS("LinkedList_Add_List",ERR,ERROR)
-    CALL EXITS("LinkedList_Add_List")
+999 ERRORSEXITS("LinkedList_Add_List",ERR,ERROR)
     RETURN 1
 
   End Subroutine LinkedList_Add_List

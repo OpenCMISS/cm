@@ -69,6 +69,8 @@ MODULE DARCY_PRESSURE_EQUATIONS_ROUTINES
   USE TIMER
   USE TYPES
 
+#include "macros.h"
+
   IMPLICIT NONE
 
   PRIVATE
@@ -81,8 +83,13 @@ MODULE DARCY_PRESSURE_EQUATIONS_ROUTINES
 
   !Interfaces
 
-  PUBLIC DARCY_PRESSURE_FINITE_ELEMENT_RESIDUAL_EVALUATE,DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SETUP, &
-    & DARCY_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET,DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SUBTYPE_SET
+  PUBLIC DarcyPressure_FiniteElementResidualEvaluate
+  
+  PUBLIC DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SETUP
+  
+  PUBLIC DarcyPressure_EquationsSetSolutionMethodSet
+  
+  PUBLIC DarcyPressure_EquationsSetSpecificationSet
 
 CONTAINS
 
@@ -91,7 +98,7 @@ CONTAINS
   !
 
   !>Calculates the element residual vector and RHS for a Darcy pressure equation finite element equations set.
-  SUBROUTINE DARCY_PRESSURE_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE DarcyPressure_FiniteElementResidualEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
@@ -119,11 +126,11 @@ CONTAINS
     REAL(DP), POINTER :: ELEMENT_RESIDUAL_VECTOR(:)
     REAL(DP) :: K(3,3),density
     REAL(DP) :: DZDNU(3,3),SIGMA(3,3),DNUDZ(3,3),DNUDZT(3,3),TEMP_MATRIX(3,3)
-    REAL(DP) :: Jznu,Jxxi
+    REAL(DP) :: Jznu
     INTEGER(INTG) :: SOLID_COMPONENT_NUMBER,SOLID_NUMBER_OF_XI,NUMBER_OF_DIMENSIONS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("DARCY_PRESSURE_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+    ENTERS("DarcyPressure_FiniteElementResidualEvaluate",ERR,ERROR,*999)
 
     NULLIFY(GEOMETRIC_INTERPOLATED_POINT)
     NULLIFY(GEOMETRIC_INTERPOLATED_POINT_METRICS)
@@ -138,9 +145,15 @@ CONTAINS
     NULLIFY(MATERIALS_INTERPOLATION_PARAMETERS)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Darcy pressure type equations set.", &
+          & err,error,*999)
+      END IF
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE, &
             & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE)
           DEPENDENT_FIELD=>EQUATIONS%INTERPOLATION%DEPENDENT_FIELD
@@ -188,7 +201,7 @@ CONTAINS
           NUMBER_OF_DIMENSIONS=GEOMETRIC_BASIS%NUMBER_OF_XI
 
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            CALL Field_InterpolationParametersScaleFactorsElementGet(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           ENDIF
 
@@ -224,8 +237,8 @@ CONTAINS
             density=MATERIALS_INTERPOLATED_POINT%VALUES(7,1)
 
             !Calculate F=dZ/dNU, the deformation gradient tensor at the gauss point
-            CALL FiniteElasticityGaussDeformationGradientTensor(SOLID_DEPENDENT_INTERPOLATED_POINT_METRICS, &
-              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,Jxxi,ERR,ERROR,*999)
+            CALL FiniteElasticity_GaussDeformationGradientTensor(SOLID_DEPENDENT_INTERPOLATED_POINT_METRICS, &
+              & GEOMETRIC_INTERPOLATED_POINT_METRICS,FIBRE_INTERPOLATED_POINT,DZDNU,ERR,ERROR,*999)
 
             CALL INVERT(DZDNU,DNUDZ,Jznu,ERR,ERROR,*999)
             CALL MATRIX_TRANSPOSE(DNUDZ,DNUDZT,ERR,ERROR,*999)
@@ -285,7 +298,7 @@ CONTAINS
           ENDDO !ng
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            CALL Field_InterpolationParametersScaleFactorsElementGet(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_V_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             mhs=0
             DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -298,23 +311,24 @@ CONTAINS
             ENDDO !mh
           ENDIF
         CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-            & " is not valid for a Laplace equation type of a fluid mechanics equations set class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          LOCAL_ERROR="The third equations set specification of "// &
+            & TRIM(NumberToVString(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+            & " is not valid for a coupled Darcy fluid pressure type of a fluid mechanicsequations set."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("DARCY_PRESSURE_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+    EXITS("DarcyPressure_FiniteElementResidualEvaluate")
     RETURN
-999 CALL ERRORS("DARCY_PRESSURE_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR)
-    CALL EXITS("DARCY_PRESSURE_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+999 ERRORSEXITS("DarcyPressure_FiniteElementResidualEvaluate",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE DARCY_PRESSURE_FINITE_ELEMENT_RESIDUAL_EVALUATE
+    
+  END SUBROUTINE DarcyPressure_FiniteElementResidualEvaluate
 
   !
   !================================================================================================================================
@@ -338,7 +352,7 @@ CONTAINS
     TYPE(EQUATIONS_SET_MATERIALS_TYPE), POINTER :: EQUATIONS_MATERIALS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
+    ENTERS("DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
     NULLIFY(GEOMETRIC_DECOMPOSITION)
     NULLIFY(EQUATIONS)
@@ -347,28 +361,34 @@ CONTAINS
     NULLIFY(EQUATIONS_MATERIALS)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Darcy pressure type equations set.", &
+          & err,error,*999)
+      END IF
       NUMBER_OF_DIMENSIONS = EQUATIONS_SET%REGION%COORDINATE_SYSTEM%NUMBER_OF_DIMENSIONS
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE, &
         & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE)
         SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
-            CALL DARCY_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET, &
+            CALL DarcyPressure_EquationsSetSolutionMethodSet(EQUATIONS_SET, &
                 & EQUATIONS_SET_FEM_SOLUTION_METHOD,ERR,ERROR,*999)
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             !Do nothing
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NumberToVString(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NumberToVString(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Darcy pressure equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
           !Do nothing
         CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE, &
               & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE)
             NUMBER_OF_COMPONENTS=NUMBER_OF_DIMENSIONS !Solid components
@@ -479,19 +499,19 @@ CONTAINS
                 CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                 CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The solution method of "//TRIM(NumberToVString(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
               !Check the user specified field
@@ -545,19 +565,19 @@ CONTAINS
                 ENDDO !component_idx
 
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
-                LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The solution method of "//TRIM(NumberToVString(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -565,23 +585,24 @@ CONTAINS
               CALL FIELD_CREATE_FINISH(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NumberToVString(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NumberToVString(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a finite elasticity equation"
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
           EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
           NUMBER_OF_COMPONENTS=8 !permeability tensor + density + original porosity
-          SELECT CASE(EQUATIONS_SET%SUBTYPE)
+          SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE)
             NUMBER_OF_SOLID_COMPONENTS=6
           CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE)
             NUMBER_OF_SOLID_COMPONENTS=4
           CASE DEFAULT
-            LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-              & " is not valid for a Darcy pressure equation type of a fluid mechanics equation set class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            LOCAL_ERROR="The third equations set specification of "// &
+              & TRIM(NumberToVString(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+              & " is not valid for a Darcy pressure type of a fluid mechanics equation set."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -696,13 +717,13 @@ CONTAINS
                   & FIELD_VALUES_SET_TYPE,7,1.0_DP,ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NumberToVString(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NumberToVString(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Darcy pressure equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_SOURCE_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -711,10 +732,10 @@ CONTAINS
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             !Do nothing
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NumberToVString(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NumberToVString(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a finite elasticity fluid pressure equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -724,7 +745,7 @@ CONTAINS
               CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_NONLINEAR,ERR,ERROR,*999)
               CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+              CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -734,9 +755,9 @@ CONTAINS
               CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
               !Create the equations mapping.
               CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,0,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLES_NUMBER_SET(EQUATIONS_MAPPING,2,ERR,ERROR,*999)
-              CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET(EQUATIONS_MAPPING, &
+              CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,0,ERR,ERROR,*999)
+              CALL EquationsMapping_ResidualVariablesNumberSet(EQUATIONS_MAPPING,2,ERR,ERROR,*999)
+              CALL EquationsMapping_ResidualVariableTypesSet(EQUATIONS_MAPPING, &
                   & [FIELD_V_VARIABLE_TYPE,FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELVDELN_VARIABLE_TYPE,ERR,ERROR,*999)
               CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -744,58 +765,59 @@ CONTAINS
               CALL EQUATIONS_MATRICES_CREATE_START(EQUATIONS,EQUATIONS_MATRICES,ERR,ERROR,*999)
               SELECT CASE(EQUATIONS%SPARSITY_TYPE)
               CASE(EQUATIONS_MATRICES_FULL_MATRICES)
-                CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,MATRIX_BLOCK_STORAGE_TYPE,ERR,ERROR,*999)
+                CALL EquationsMatrices_NonlinearStorageTypeSet(EQUATIONS_MATRICES,MATRIX_BLOCK_STORAGE_TYPE,ERR,ERROR,*999)
               CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
-                CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,MATRIX_COMPRESSED_ROW_STORAGE_TYPE, &
+                CALL EquationsMatrices_NonlinearStorageTypeSet(EQUATIONS_MATRICES,MATRIX_COMPRESSED_ROW_STORAGE_TYPE, &
                   & ERR,ERROR,*999)
-                CALL EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,EQUATIONS_MATRIX_FEM_STRUCTURE, &
+                CALL EquationsMatrices_NonlinearStructureTypeSet(EQUATIONS_MATRICES,EQUATIONS_MATRIX_FEM_STRUCTURE, &
                   & ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The equations matrices sparsity type of "// &
-                  & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  & TRIM(NumberToVString(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
               CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
             CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-              CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+              CALL FlagError("Not implemented.",ERR,ERROR,*999)
             CASE DEFAULT
-                LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The solution method of "//TRIM(NumberToVString(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                 & " is invalid."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
-              & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The action type of "//TRIM(NumberToVString(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
+              & " for a setup type of "//TRIM(NumberToVString(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a standard Darcy pressure equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
-          LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The setup type of "//TRIM(NumberToVString(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a standard Darcy pressure equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Darcy pressure equation type of a fluid mechanics equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        LOCAL_ERROR="The third equations set specification of "// &
+          & TRIM(NumberToVString(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+          & " is not valid for a Darcy pressure type of a fluid mechanics equation set."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SETUP")
+    EXITS("DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SETUP")
     RETURN
-999 CALL ERRORS("DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR)
-    CALL EXITS("DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SETUP")
+999 ERRORSEXITS("DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SETUP
 
   !
@@ -803,7 +825,7 @@ CONTAINS
   !
 
   !>Sets/changes the solution method for a Darcy pressure equation type of an fluid mechanics equations set class.
-  SUBROUTINE DARCY_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE DarcyPressure_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -813,84 +835,104 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("DARCY_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("DarcyPressure_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Darcy pressure type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE, &
         & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE)
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          LOCAL_ERROR="The specified solution method of "//TRIM(NumberToVString(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Darcy pressure equation type of a fluid mechanics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        LOCAL_ERROR="The third equations set specification of "// &
+          & TRIM(NumberToVString(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
+          & " is not valid for a Darcy pressure type of a fluid mechanics equations set."
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("DARCY_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("DarcyPressure_EquationsSetSolutionMethodSet")
     RETURN
-999 CALL ERRORS("DARCY_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
-    CALL EXITS("DARCY_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET")
+999 ERRORSEXITS("DarcyPressure_EquationsSetSolutionMethodSet",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE DARCY_PRESSURE_EQUATIONS_SET_SOLUTION_METHOD_SET
+    
+  END SUBROUTINE DarcyPressure_EquationsSetSolutionMethodSet
 
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a Darcy pressure equation type of a fluid mechanics equations set class.
-  SUBROUTINE DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets/changes the equation specification for a Darcy pressure type of a fluid mechanics equations set.
+  SUBROUTINE DarcyPressure_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET_SUBTYPE)
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: subtype
+
+    ENTERS("DarcyPressure_EquationsSetSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Darcy pressure type equations set.", &
+          & err,error,*999)
+      END IF
+      subtype=specification(3)
+      SELECT CASE(subtype)
       CASE(EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_STATIC_INRIA_SUBTYPE, &
-        & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_SUBTYPE
+          & EQUATIONS_SET_ELASTICITY_FLUID_PRESSURE_HOLMES_MOW_SUBTYPE)
+        !ok
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Darcy pressure type of a fluid mechanics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        localError="The third equations set specification of "//TRIM(NumberToVstring(specification(3),"*",err,error))// &
+          & " is not valid for a Darcy pressure type of a fluid mechanics equations set."
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_FLUID_MECHANICS_CLASS,EQUATIONS_SET_DARCY_PRESSURE_EQUATION_TYPE,subtype]
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+
+    EXITS("DarcyPressure_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+999 ERRORS("DarcyPressure_EquationsSetSpecificationSet",err,error)
+    EXITS("DarcyPressure_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE DARCY_PRESSURE_EQUATION_EQUATIONS_SET_SUBTYPE_SET
+    
+  END SUBROUTINE DarcyPressure_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
@@ -907,33 +949,40 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("DARCY_PRESSURE_POST_SOLVE",ERR,ERROR,*999)
+    ENTERS("DARCY_PRESSURE_POST_SOLVE",ERR,ERROR,*999)
+    
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-            CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
-              !nothing
-            CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a Darcy pressure type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Darcy pressure problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
+          CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
+            !nothing
+          CASE DEFAULT
+            LOCAL_ERROR="The third problem specification of "// &
+              & TRIM(NumberToVString(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
+              & " is not valid for a Darcy pressure type of a fluid mechanics problem."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("DARCY_PRESSURE_POST_SOLVE")
+    EXITS("DARCY_PRESSURE_POST_SOLVE")
     RETURN
-999 CALL ERRORS("DARCY_PRESSURE_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("DARCY_PRESSURE_POST_SOLVE")
+999 ERRORSEXITS("DARCY_PRESSURE_POST_SOLVE",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE DARCY_PRESSURE_POST_SOLVE
 
   !
@@ -951,32 +1000,38 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("DARCY_PRESSURE_PRE_SOLVE",ERR,ERROR,*999)
+    ENTERS("DARCY_PRESSURE_PRE_SOLVE",ERR,ERROR,*999)
+    
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
-            CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
-              !nothing
-            CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
-                & " is not valid for a Darcy pressure type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Darcy pressure problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
+          CASE(PROBLEM_STANDARD_ELASTICITY_FLUID_PRESSURE_SUBTYPE)
+            !nothing
+          CASE DEFAULT
+            LOCAL_ERROR="The third problem specification of "// &
+              & TRIM(NumberToVString(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
+              & " is not valid for a Darcy pressure type of a fluid mechanics problem."
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("DARCY_PRESSURE_PRE_SOLVE")
+    EXITS("DARCY_PRESSURE_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("DARCY_PRESSURE_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("DARCY_PRESSURE_PRE_SOLVE")
+999 ERRORSEXITS("DARCY_PRESSURE_PRE_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE DARCY_PRESSURE_PRE_SOLVE
 

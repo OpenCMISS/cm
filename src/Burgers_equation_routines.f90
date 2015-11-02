@@ -69,6 +69,8 @@ MODULE BURGERS_EQUATION_ROUTINES
 
   USE FLUID_MECHANICS_IO_ROUTINES
 
+#include "macros.h"
+
   IMPLICIT NONE
 
   PRIVATE
@@ -81,21 +83,21 @@ MODULE BURGERS_EQUATION_ROUTINES
 
   !Interfaces
 
-  PUBLIC BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE
+  PUBLIC Burgers_AnalyticFunctionsEvaluate
 
-  PUBLIC BURGERS_EQUATION_ANALYTIC_CALCULATE
+  PUBLIC Burgers_BoundaryConditionsAnalyticCalculate
 
   PUBLIC BURGERS_EQUATION_EQUATIONS_SET_SETUP
 
-  PUBLIC BURGERS_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
+  PUBLIC Burgers_EquationsSetSolutionMethodSet
   
-  PUBLIC BURGERS_EQUATION_EQUATIONS_SET_SUBTYPE_SET
+  PUBLIC Burgers_EquationsSetSpecificationSet
 
-  PUBLIC BURGERS_EQUATION_FINITE_ELEMENT_JACOBIAN_EVALUATE
+  PUBLIC Burgers_FiniteElementJacobianEvaluate
   
-  PUBLIC BURGERS_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE
+  PUBLIC Burgers_FiniteElementResidualEvaluate
   
-  PUBLIC BURGERS_EQUATION_PROBLEM_SUBTYPE_SET
+  PUBLIC Burgers_ProblemSpecificationSet
 
   PUBLIC BURGERS_EQUATION_PROBLEM_SETUP
 
@@ -110,7 +112,7 @@ CONTAINS
 
   !>Calculates the analytic solution and sets the boundary conditions for an analytic problem.
   !Calculates a one-dimensional dynamic solution to the burgers equation
-  SUBROUTINE BURGERS_EQUATION_ANALYTIC_CALCULATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+  SUBROUTINE Burgers_BoundaryConditionsAnalyticCalculate(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
@@ -130,7 +132,7 @@ CONTAINS
     REAL(DP) :: TIME,NORMAL(3),TANGENTS(3,3)
     !CURRENT_TIME = 1.2_DP
 
-    CALL ENTERS("BURGERS_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR,*999)
+    ENTERS("Burgers_BoundaryConditionsAnalyticCalculate",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
       IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
@@ -189,10 +191,10 @@ CONTAINS
                               !Loop over the derivatives
                               DO deriv_idx=1,DOMAIN_NODES%NODES(node_idx)%NUMBER_OF_DERIVATIVES
                                 GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%GLOBAL_DERIVATIVE_INDEX
-                                CALL BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE,ANALYTIC_FUNCTION_TYPE, &
+                                CALL Burgers_AnalyticFunctionsEvaluate(EQUATIONS_SET,ANALYTIC_FUNCTION_TYPE, &
                                   & X,TANGENTS,NORMAL,0.0_DP,variable_type,GLOBAL_DERIV_INDEX,component_idx, &
                                   & ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS,INITIAL_VALUE,ERR,ERROR,*999)
-                                CALL BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE,ANALYTIC_FUNCTION_TYPE, &
+                                CALL Burgers_AnalyticFunctionsEvaluate(EQUATIONS_SET,ANALYTIC_FUNCTION_TYPE, &
                                   & X,TANGENTS,NORMAL,TIME,variable_type,GLOBAL_DERIV_INDEX,component_idx, &
                                   & ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS,VALUE,ERR,ERROR,*999)
                                 DO version_idx=1,DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)%numberOfVersions
@@ -215,16 +217,16 @@ CONTAINS
                               ENDDO !deriv_idx
                             ENDDO !node_idx
                           ELSE
-                            CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                           ENDIF
                         ELSE
-                          CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                      CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                     ENDIF
                   ENDDO !component_idx
                   CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type,FIELD_ANALYTIC_VALUES_SET_TYPE, &
@@ -236,46 +238,45 @@ CONTAINS
                   CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type,FIELD_VALUES_SET_TYPE, &
                     & ERR,ERROR,*999)
                 ELSE
-                  CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
                 ENDIF
               ENDDO !variable_idx
               CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
                 & GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
             ELSE
-              CALL FLAG_ERROR("Boundary conditions are not associated.",ERR,ERROR,*999)
+              CALL FlagError("Boundary conditions are not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("BURGERS_EQUATION_ANALYTIC_CALCULATE")
+    EXITS("Burgers_BoundaryConditionsAnalyticCalculate")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_ANALYTIC_CALCULATE",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_ANALYTIC_CALCULATE")
+999 ERRORSEXITS("Burgers_BoundaryConditionsAnalyticCalculate",ERR,ERROR)
     RETURN 1
     
-  END SUBROUTINE BURGERS_EQUATION_ANALYTIC_CALCULATE
+  END SUBROUTINE Burgers_BoundaryConditionsAnalyticCalculate
 
 
   !
   !================================================================================================================================
   !
   !>Evaluate the analytic solutions for a Burgers equation
-  SUBROUTINE BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SUBTYPE,ANALYTIC_FUNCTION_TYPE,X, &
+  SUBROUTINE Burgers_AnalyticFunctionsEvaluate(EQUATIONS_SET,ANALYTIC_FUNCTION_TYPE,X, &
     & TANGENTS,NORMAL,TIME,VARIABLE_TYPE,GLOBAL_DERIVATIVE,COMPONENT_NUMBER,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
     & VALUE,ERR,ERROR,*)
 
     !Argument variables
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SUBTYPE !<The subtype of equation to evaluate
+    TYPE(EQUATIONS_SET_TYPE), POINTER, INTENT(IN) :: EQUATIONS_SET !<The equations set to evaluate
     INTEGER(INTG), INTENT(IN) :: ANALYTIC_FUNCTION_TYPE !<The type of analytic function to evaluate
     REAL(DP), INTENT(IN) :: X(:) !<X(dimention_idx). The geometric position to evaluate at
     REAL(DP), INTENT(IN) :: TANGENTS(:,:) !<TANGENTS(dimention_idx,xi_idx). The geometric tangents at the point to evaluate at.
@@ -291,10 +292,23 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local variables
     REAL(DP) :: A_PARAM,B_PARAM,C_PARAM,D_PARAM,E_PARAM,X0_PARAM
+    INTEGER(INTG) :: EQUATIONS_SUBTYPE
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR,*999)
+    ENTERS("Burgers_AnalyticFunctionsEvaluate",ERR,ERROR,*999)
 
+    IF(.NOT.ASSOCIATED(EQUATIONS_SET)) THEN
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    ELSE
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Burgers type equations set.", &
+          & err,error,*999)
+      ELSE
+        EQUATIONS_SUBTYPE=EQUATIONS_SET%SPECIFICATION(3)
+      END IF
+    END IF
     SELECT CASE(EQUATIONS_SUBTYPE)
     CASE(EQUATIONS_SET_BURGERS_SUBTYPE)
       SELECT CASE(ANALYTIC_FUNCTION_TYPE)
@@ -313,33 +327,33 @@ CONTAINS
           CASE(NO_GLOBAL_DERIV)
             VALUE=1.0_DP - TANH((X(1)-X0_PARAM-TIME)/(2.0_DP*B_PARAM)) 
           CASE(GLOBAL_DERIV_S1)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_DERIVATIVE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(FIELD_DELUDELN_VARIABLE_TYPE)
           SELECT CASE(GLOBAL_DERIVATIVE)
           CASE(NO_GLOBAL_DERIV)
             VALUE=0.0_DP
           CASE(GLOBAL_DERIV_S1)
-            CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+            CALL FlagError("Not implemented.",ERR,ERROR,*999)
           CASE DEFAULT
             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_DERIVATIVE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
             & " is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
         LOCAL_ERROR="The analytic function type of "// &
           & TRIM(NUMBER_TO_VSTRING(ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
           & " is invalid for a Burgers equation."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     CASE(EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE)
       !a.del u/del t + b.del^2 u/del x^2 + c.u.del u/del x = 0
@@ -361,7 +375,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_DERIVATIVE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(FIELD_DELUDELN_VARIABLE_TYPE)
           SELECT CASE(GLOBAL_DERIVATIVE)
@@ -372,12 +386,12 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_DERIVATIVE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
             & " is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE(EQUATIONS_SET_GENERALISED_BURGERS_EQUATION_ONE_DIM_2)
         !Analytic_solution=a.D+2.b/c(x-c.D.t+E)
@@ -393,7 +407,7 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_DERIVATIVE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(FIELD_DELUDELN_VARIABLE_TYPE)
           SELECT CASE(GLOBAL_DERIVATIVE)
@@ -404,42 +418,41 @@ CONTAINS
           CASE DEFAULT
             LOCAL_ERROR="The global derivative index of "//TRIM(NUMBER_TO_VSTRING(GLOBAL_DERIVATIVE,"*",ERR,ERROR))// &
               & " is invalid."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The variable type of "//TRIM(NUMBER_TO_VSTRING(VARIABLE_TYPE,"*",ERR,ERROR))// &
             & " is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
         LOCAL_ERROR="The analytic function type of "// &
           & TRIM(NUMBER_TO_VSTRING(ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
           & " is invalid for a generalised Burgers equation."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     CASE(EQUATIONS_SET_STATIC_BURGERS_SUBTYPE)
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     CASE(EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE)
-      CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+      CALL FlagError("Not implemented.",ERR,ERROR,*999)
     CASE DEFAULT
       LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SUBTYPE,"*",ERR,ERROR))// &
         & " is invalid."
-      CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+      CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
     END SELECT
     
-    CALL EXITS("BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE")
+    EXITS("Burgers_AnalyticFunctionsEvaluate")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE")
+999 ERRORSEXITS("Burgers_AnalyticFunctionsEvaluate",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE
+  END SUBROUTINE Burgers_AnalyticFunctionsEvaluate
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the solution method for a burgers equation type of an fluid mechanics equations set class.
-  SUBROUTINE BURGERS_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE Burgers_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -449,95 +462,106 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("BURGERS_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("Burgers_EquationsSetSolutionMethodSet",ERR,ERROR,*999)
     
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Burgers type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_BURGERS_SUBTYPE,EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE,EQUATIONS_SET_STATIC_BURGERS_SUBTYPE, &
         & EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE)     
         SELECT CASE(SOLUTION_METHOD)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
           EQUATIONS_SET%SOLUTION_METHOD=EQUATIONS_SET_FEM_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+          CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
           LOCAL_ERROR="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(SOLUTION_METHOD,"*",ERR,ERROR))//" is invalid."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT    
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not valid for a Burgers equation type of an classical field equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("BURGERS_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("Burgers_EquationsSetSolutionMethodSet")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET")
+999 ERRORS("Burgers_EquationsSetSolutionMethodSet",ERR,ERROR)
+    EXITS("Burgers_EquationsSetSolutionMethodSet")
     RETURN 1
-  END SUBROUTINE BURGERS_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET
+    
+  END SUBROUTINE Burgers_EquationsSetSolutionMethodSet
 
   !
   !================================================================================================================================
   !
 
-  !>Sets/changes the equation subtype for a BURGERS equation type of a fluid mechanics equations set class.
-  SUBROUTINE BURGERS_EQUATION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SET_SUBTYPE,ERR,ERROR,*)
+  !>Sets the equation specification for a Burgers type of a fluid mechanics equations set.
+  SUBROUTINE Burgers_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the equation subtype for
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SET_SUBTYPE !<The equation subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("BURGERS_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET_SUBTYPE)
-      CASE(EQUATIONS_SET_BURGERS_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_BURGERS_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_BURGERS_SUBTYPE
-      CASE(EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_BURGERS_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE
-      CASE(EQUATIONS_SET_STATIC_BURGERS_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_BURGERS_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_STATIC_BURGERS_SUBTYPE
-      CASE(EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE)
-        EQUATIONS_SET%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        EQUATIONS_SET%TYPE=EQUATIONS_SET_BURGERS_EQUATION_TYPE
-        EQUATIONS_SET%SUBTYPE=EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: subtype
+
+    ENTERS("Burgers_EquationsSetSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Burgers equation set.", &
+          & err,error,*999)
+      END IF
+      subtype=specification(3)
+      SELECT CASE(subtype)
+      CASE(EQUATIONS_SET_BURGERS_SUBTYPE, &
+          & EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE, &
+          & EQUATIONS_SET_STATIC_BURGERS_SUBTYPE, &
+          & EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE)
+        !ok
       CASE DEFAULT
-        LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a Burgers equation type of a classical field equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        localError="The third equations set specification of "//TRIM(NumberToVstring(specification(3),"*",err,error))// &
+          & " is not valid for a Burgers type of fluid mechanics equations set."
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_FLUID_MECHANICS_CLASS,EQUATIONS_SET_BURGERS_EQUATION_TYPE,subtype]
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-    
-    CALL EXITS("BURGERS_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+
+    EXITS("Burgers_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_EQUATIONS_SET_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_EQUATIONS_SET_SUBTYPE_SET")
+999 ERRORS("Burgers_EquationsSetSpecificationSet",err,error)
+    EXITS("Burgers_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE BURGERS_EQUATION_EQUATIONS_SET_SUBTYPE_SET
+    
+  END SUBROUTINE Burgers_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
@@ -563,7 +587,7 @@ CONTAINS
     TYPE(FIELD_TYPE), POINTER :: ANALYTIC_FIELD,DEPENDENT_FIELD,GEOMETRIC_FIELD
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("BURGERS_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
+    ENTERS("BURGERS_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
     NULLIFY(EQUATIONS)
     NULLIFY(EQUATIONS_MAPPING)
@@ -571,14 +595,20 @@ CONTAINS
     NULLIFY(GEOMETRIC_DECOMPOSITION)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%SUBTYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Burgers type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
       CASE(EQUATIONS_SET_BURGERS_SUBTYPE,EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE,EQUATIONS_SET_STATIC_BURGERS_SUBTYPE, &
         EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE)
         SELECT CASE(EQUATIONS_SET_SETUP%SETUP_TYPE)
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
           SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
-            CALL BURGERS_EQUATION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,EQUATIONS_SET_FEM_SOLUTION_METHOD, &
+            CALL Burgers_EquationsSetSolutionMethodSet(EQUATIONS_SET,EQUATIONS_SET_FEM_SOLUTION_METHOD, &
               & ERR,ERROR,*999)
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             !Do nothing
@@ -586,7 +616,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a nonlinear burgers equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
           !Do nothing
@@ -623,7 +653,7 @@ CONTAINS
                 & FIELD_DP_TYPE,ERR,ERROR,*999)
               CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_DELUDELN_VARIABLE_TYPE, &
                 & FIELD_DP_TYPE,ERR,ERROR,*999)
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE) THEN
+              IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE) THEN
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_GEOMETRIC_COMPONENTS,ERR,ERROR,*999)
                 NUMBER_OF_DEPENDENT_COMPONENTS=NUMBER_OF_GEOMETRIC_COMPONENTS
@@ -655,19 +685,19 @@ CONTAINS
                 CALL FIELD_SCALING_TYPE_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
                 CALL FIELD_SCALING_TYPE_SET(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,GEOMETRIC_SCALING_TYPE,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
               !Check the user specified field
@@ -678,7 +708,7 @@ CONTAINS
                 & FIELD_DELUDELN_VARIABLE_TYPE],ERR,ERROR,*999)
               CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
               CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_DELUDELN_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE) THEN
+              IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE) THEN
                 CALL FIELD_NUMBER_OF_COMPONENTS_GET(EQUATIONS_SET%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                   & NUMBER_OF_GEOMETRIC_COMPONENTS,ERR,ERROR,*999)
                 NUMBER_OF_DEPENDENT_COMPONENTS=NUMBER_OF_GEOMETRIC_COMPONENTS
@@ -709,19 +739,19 @@ CONTAINS
                     & component_idx,FIELD_NODE_BASED_INTERPOLATION,ERR,ERROR,*999)
                 ENDDO !component_idx
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
@@ -732,7 +762,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a nonlinear Burgers equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! M a t e r i a l s   f i e l d
@@ -742,7 +772,7 @@ CONTAINS
           CASE(EQUATIONS_SET_SETUP_START_ACTION)
             EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
             IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
-              IF(EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
+              IF(EQUATIONS_SET%SPECIFICATION(3)/=EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
                 !Not an inviscid Burgers equation
                 IF(EQUATIONS_MATERIALS%MATERIALS_FIELD_AUTO_CREATED) THEN
                   !Create the auto created materials field
@@ -765,7 +795,7 @@ CONTAINS
                     & FIELD_VECTOR_DIMENSION_TYPE,ERR,ERROR,*999)
                   CALL FIELD_DATA_TYPE_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
                     & FIELD_DP_TYPE,ERR,ERROR,*999)
-                  SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                  SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                   CASE(EQUATIONS_SET_BURGERS_SUBTYPE,EQUATIONS_SET_STATIC_BURGERS_SUBTYPE)
                     !1 materials field component
                     !i.e., k = viscosity*(-1) in du/dt + k*(d^2u/dx^2)+ u*(du/dx) = 0
@@ -778,7 +808,7 @@ CONTAINS
                     LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                       & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                       & " is invalid for a nonlinear Burgers equation."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   !Set the number of materials components
                   CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -802,7 +832,7 @@ CONTAINS
                   CALL FIELD_NUMBER_OF_VARIABLES_CHECK(EQUATIONS_SET_SETUP%FIELD,1,ERR,ERROR,*999)
                   CALL FIELD_VARIABLE_TYPES_CHECK(EQUATIONS_SET_SETUP%FIELD,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
                   CALL FIELD_DATA_TYPE_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE,FIELD_DP_TYPE,ERR,ERROR,*999)
-                  SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                  SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                   CASE(EQUATIONS_SET_BURGERS_SUBTYPE,EQUATIONS_SET_STATIC_BURGERS_SUBTYPE)
                     !1 materials field component
                     !i.e., k = viscosity*(-1) in du/dt + k*(d^2u/dx^2)+ u*(du/dx) = 0
@@ -819,25 +849,25 @@ CONTAINS
                     LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                       & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                       & " is invalid for a nonlinear Burgers equation."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                   CALL FIELD_NUMBER_OF_COMPONENTS_CHECK(EQUATIONS_SET_SETUP%FIELD,FIELD_U_VARIABLE_TYPE, &
                     & NUMBER_OF_MATERIALS_COMPONENTS,ERR,ERROR,*999)
                 ENDIF
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             EQUATIONS_MATERIALS=>EQUATIONS_SET%MATERIALS
             IF(ASSOCIATED(EQUATIONS_MATERIALS)) THEN
-              IF(EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
+              IF(EQUATIONS_SET%SPECIFICATION(3)/=EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
                 !Not an inviscid Burgers equation
                 IF(EQUATIONS_MATERIALS%MATERIALS_FIELD_AUTO_CREATED) THEN
                   !Finish creating the materials field
                   CALL FIELD_CREATE_FINISH(EQUATIONS_MATERIALS%MATERIALS_FIELD,ERR,ERROR,*999)
                   !Set the default values for the materials field
-                  SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                  SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                   CASE(EQUATIONS_SET_BURGERS_SUBTYPE,EQUATIONS_SET_STATIC_BURGERS_SUBTYPE)
                     !1 materials field component. Default to
                     !du/dt - d^2u/dx^2 + u*(du/dx) = 0
@@ -856,18 +886,18 @@ CONTAINS
                     LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                       & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                       & " is invalid for a nonlinear Burgers equation."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ENDIF
              ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a nonlinear Burgers equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! S o u r c e   f i e l d
@@ -882,7 +912,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a nonlinear Burgers equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! A n a l y t i c   t y p e
@@ -902,7 +932,7 @@ CONTAINS
                       IF(ASSOCIATED(GEOMETRIC_FIELD)) THEN
                         CALL FIELD_NUMBER_OF_COMPONENTS_GET(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                           & NUMBER_OF_GEOMETRIC_COMPONENTS,ERR,ERROR,*999)
-                        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                         CASE(EQUATIONS_SET_BURGERS_SUBTYPE)
                           SELECT CASE(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE)
                           CASE(EQUATIONS_SET_BURGERS_EQUATION_ONE_DIM_1)
@@ -913,7 +943,7 @@ CONTAINS
                                 & " is invalid. The analytic function type of "// &
                                 & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                                 & " requires that there be 1 geometric dimension."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                             !Check the materials values are constant
                             CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -925,7 +955,7 @@ CONTAINS
                             LOCAL_ERROR="The specified analytic function type of "// &
                               & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                               & " is invalid for a Burgers equation."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT
                         CASE(EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE)
                           SELECT CASE(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE)
@@ -938,7 +968,7 @@ CONTAINS
                                 & " is invalid. The analytic function type of "// &
                                 & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                                 & " requires that there be 1 geometric dimension."
-                              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                             ENDIF
                             !Check the materials values are constant
                             CALL FIELD_COMPONENT_INTERPOLATION_CHECK(EQUATIONS_MATERIALS%MATERIALS_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -954,17 +984,17 @@ CONTAINS
                             LOCAL_ERROR="The specified analytic function type of "// &
                               & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ANALYTIC_FUNCTION_TYPE,"*",ERR,ERROR))// &
                               & " is invalid for a generalised Burgers equation."
-                            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                           END SELECT
                         CASE(EQUATIONS_SET_STATIC_BURGERS_SUBTYPE)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                         CASE(EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE)
-                          CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                          CALL FlagError("Not implemented.",ERR,ERROR,*999)
                         CASE DEFAULT
                           LOCAL_ERROR="The equation set subtype of "// &
-                            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                            & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
                             & " is invalid for an analytical nonlinear Burgers equation."
-                          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         END SELECT
                         !Create analytic field if required
                         IF(NUMBER_OF_ANALYTIC_COMPONENTS>=1) THEN
@@ -1027,22 +1057,22 @@ CONTAINS
                           ENDIF
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations set materials is not finished.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set materials is not finished.",ERR,ERROR,*999)
                       ENDIF
                     ELSE
-                      CALL FLAG_ERROR("Equations set materials is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations set materials is not associated.",ERR,ERROR,*999)
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+                CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations analytic is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations analytic is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
             EQUATIONS_ANALYTIC=>EQUATIONS_SET%ANALYTIC
@@ -1053,7 +1083,7 @@ CONTAINS
                   !Finish creating the analytic field
                   CALL FIELD_CREATE_FINISH(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,ERR,ERROR,*999)
                   !Set the default values for the analytic field
-                  SELECT CASE(EQUATIONS_SET%SUBTYPE)
+                  SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
                   CASE(EQUATIONS_SET_BURGERS_SUBTYPE)
                     !Default the analytic parameter value to 0.0
                     CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
@@ -1065,31 +1095,31 @@ CONTAINS
                     CALL FIELD_COMPONENT_VALUES_INITIALISE(EQUATIONS_ANALYTIC%ANALYTIC_FIELD,FIELD_U_VARIABLE_TYPE, &
                       & FIELD_VALUES_SET_TYPE,2,1.0_DP,ERR,ERROR,*999)                    
                   CASE(EQUATIONS_SET_STATIC_BURGERS_SUBTYPE)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE(EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE)
-                    CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                    CALL FlagError("Not implemented.",ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The equation set subtype of "// &
-                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+                      & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
                       & " is invalid for an analytical nonlinear Burgers equation."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ENDIF
               ENDIF
             ELSE
-              CALL FLAG_ERROR("Equations set analytic is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations set analytic is not associated.",ERR,ERROR,*999)
             ENDIF
           CASE DEFAULT
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a nonlinear Burgers equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! E q u a t i o n s    t y p e
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
-          SELECT CASE (EQUATIONS_SET%SUBTYPE)
+          SELECT CASE (EQUATIONS_SET%SPECIFICATION(3))
           CASE(EQUATIONS_SET_BURGERS_SUBTYPE,EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE,EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -1098,7 +1128,7 @@ CONTAINS
                 CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_NONLINEAR,ERR,ERROR,*999)
                 CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_FIRST_ORDER_DYNAMIC,ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+                CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
               ENDIF
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -1108,12 +1138,12 @@ CONTAINS
                 CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
                 !Create the equations mapping.
                 CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-                IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
+                IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
                   CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.FALSE.,ERR,ERROR,*999)
                 ELSE
                   CALL EQUATIONS_MAPPING_DYNAMIC_MATRICES_SET(EQUATIONS_MAPPING,.TRUE.,.TRUE.,ERR,ERROR,*999)
                 ENDIF
-                CALL EQUATIONS_MAPPING_RESIDUAL_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
+                CALL EquationsMapping_ResidualVariableTypesSet(EQUATIONS_MAPPING,[FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_DYNAMIC_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_U_VARIABLE_TYPE,ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE,ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -1122,7 +1152,7 @@ CONTAINS
                 !Set up matrix storage and structure
                 IF(EQUATIONS%LUMPING_TYPE==EQUATIONS_LUMPED_MATRICES) THEN
                   !Set up lumping
-                  IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
+                  IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
                     CALL EQUATIONS_MATRICES_DYNAMIC_LUMPING_TYPE_SET(EQUATIONS_MATRICES, &
                       & [EQUATIONS_MATRIX_LUMPED],ERR,ERROR,*999)
                   ELSE
@@ -1131,74 +1161,74 @@ CONTAINS
                   ENDIF
                   SELECT CASE(EQUATIONS%SPARSITY_TYPE)
                   CASE(EQUATIONS_MATRICES_FULL_MATRICES) 
-                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
+                    IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
                       CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                         & [DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE],ERR,ERROR,*999)
-                      CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                      CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
                         [EQUATIONS_MATRIX_DIAGONAL_STRUCTURE],ERR,ERROR,*999)
                     ELSE
                       CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                         & [DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE,DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE],ERR,ERROR,*999)
-                      CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                      CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
                         [EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_DIAGONAL_STRUCTURE],ERR,ERROR,*999)
                     ENDIF
-                    CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE, &
+                    CALL EquationsMatrices_NonlinearStorageTypeSet(EQUATIONS_MATRICES,DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE, &
                       & ERR,ERROR,*999)                    
                   CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
-                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
+                    IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
                       CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                         & [DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE],ERR,ERROR,*999)
-                      CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                      CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
                         & [EQUATIONS_MATRIX_DIAGONAL_STRUCTURE],ERR,ERROR,*999)
                     ELSE
                       CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                         & [DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE],ERR,ERROR,*999)
-                      CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                      CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
                         & [EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_DIAGONAL_STRUCTURE],ERR,ERROR,*999)
                     ENDIF
-                    CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
+                    CALL EquationsMatrices_NonlinearStorageTypeSet(EQUATIONS_MATRICES, &
                       & DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,ERR,ERROR,*999)
-                    CALL EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES,EQUATIONS_MATRIX_FEM_STRUCTURE, &
+                    CALL EquationsMatrices_NonlinearStructureTypeSet(EQUATIONS_MATRICES,EQUATIONS_MATRIX_FEM_STRUCTURE, &
                       & ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The equations matrices sparsity type of "// &
                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ELSE
                   SELECT CASE(EQUATIONS%SPARSITY_TYPE)
                   CASE(EQUATIONS_MATRICES_FULL_MATRICES) 
-                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
+                    IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
                       CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                         & [DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE],ERR,ERROR,*999)
                     ELSE
                       CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                         & [DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE,DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE],ERR,ERROR,*999)
                     ENDIF
-                    CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE, &
+                    CALL EquationsMatrices_NonlinearStorageTypeSet(EQUATIONS_MATRICES,DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE, &
                       & ERR,ERROR,*999)
                   CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
-                    IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
+                    IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
                       CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                         & [DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                         & ERR,ERROR,*999)
-                      CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                      CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
                         [EQUATIONS_MATRIX_FEM_STRUCTURE],ERR,ERROR,*999)
                     ELSE
                       CALL EQUATIONS_MATRICES_DYNAMIC_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
                         & [DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE], &
                         & ERR,ERROR,*999)
-                      CALL EQUATIONS_MATRICES_DYNAMIC_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                      CALL EquationsMatrices_DynamicStructureTypeSet(EQUATIONS_MATRICES, &
                         [EQUATIONS_MATRIX_FEM_STRUCTURE,EQUATIONS_MATRIX_FEM_STRUCTURE],ERR,ERROR,*999)
                     ENDIF
-                    CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, &
+                    CALL EquationsMatrices_NonlinearStorageTypeSet(EQUATIONS_MATRICES, &
                       & DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE,ERR,ERROR,*999)
-                    CALL EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, &
+                    CALL EquationsMatrices_NonlinearStructureTypeSet(EQUATIONS_MATRICES, &
                       EQUATIONS_MATRIX_FEM_STRUCTURE,ERR,ERROR,*999)
                   CASE DEFAULT
                     LOCAL_ERROR="The equations matrices sparsity type of "// &
                       & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                    CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                    CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END SELECT
                 ENDIF
                 ! Use the analytic Jacobian calculation
@@ -1206,25 +1236,25 @@ CONTAINS
                   & ERR,ERROR,*999)
                 CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a nonlinear Burgers equation."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE(EQUATIONS_SET_STATIC_BURGERS_SUBTYPE)
             SELECT CASE(EQUATIONS_SET_SETUP%ACTION_TYPE)
@@ -1234,7 +1264,7 @@ CONTAINS
                 CALL EQUATIONS_LINEARITY_TYPE_SET(EQUATIONS,EQUATIONS_NONLINEAR,ERR,ERROR,*999)
                 CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(EQUATIONS,EQUATIONS_STATIC,ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Equations set dependent field has not been finished.",ERR,ERROR,*999)
+                CALL FlagError("Equations set dependent field has not been finished.",ERR,ERROR,*999)
               ENDIF
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               SELECT CASE(EQUATIONS_SET%SOLUTION_METHOD)
@@ -1244,9 +1274,8 @@ CONTAINS
                 CALL EQUATIONS_CREATE_FINISH(EQUATIONS,ERR,ERROR,*999)
                 !Create the equations mapping.
                 CALL EQUATIONS_MAPPING_CREATE_START(EQUATIONS,EQUATIONS_MAPPING,ERR,ERROR,*999)
-                CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
-                CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(EQUATIONS_MAPPING,[FIELD_U_VARIABLE_TYPE], &
-                  & ERR,ERROR,*999)
+                CALL EquationsMapping_LinearMatricesNumberSet(EQUATIONS_MAPPING,1,ERR,ERROR,*999)
+                CALL EquationsMapping_LinearMatricesVariableTypesSet(EQUATIONS_MAPPING,[FIELD_U_VARIABLE_TYPE], ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(EQUATIONS_MAPPING,FIELD_DELUDELN_VARIABLE_TYPE, & 
                   & ERR,ERROR,*999)
                 CALL EQUATIONS_MAPPING_CREATE_FINISH(EQUATIONS_MAPPING,ERR,ERROR,*999)
@@ -1256,71 +1285,70 @@ CONTAINS
                 CASE(EQUATIONS_MATRICES_FULL_MATRICES)
                   CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,[MATRIX_BLOCK_STORAGE_TYPE], &
                     & ERR,ERROR,*999)
-                  CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES,MATRIX_BLOCK_STORAGE_TYPE, &
+                  CALL EquationsMatrices_NonlinearStorageTypeSet(EQUATIONS_MATRICES,MATRIX_BLOCK_STORAGE_TYPE, &
                     & ERR,ERROR,*999)
                 CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
                   CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, & 
                     & [MATRIX_COMPRESSED_ROW_STORAGE_TYPE],ERR,ERROR,*999)
-                  CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, & 
+                  CALL EquationsMatrices_LinearStructureTypeSet(EQUATIONS_MATRICES, & 
                     & [EQUATIONS_MATRIX_FEM_STRUCTURE],ERR,ERROR,*999)
-                  CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(EQUATIONS_MATRICES, & 
+                  CALL EquationsMatrices_NonlinearStorageTypeSet(EQUATIONS_MATRICES, & 
                     & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,ERR,ERROR,*999)
-                  CALL EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(EQUATIONS_MATRICES, & 
+                  CALL EquationsMatrices_NonlinearStructureTypeSet(EQUATIONS_MATRICES, & 
                     & EQUATIONS_MATRIX_FEM_STRUCTURE,ERR,ERROR,*999)
                 CASE DEFAULT
                   LOCAL_ERROR="The equations matrices sparsity type of "// &
                     & TRIM(NUMBER_TO_VSTRING(EQUATIONS%SPARSITY_TYPE,"*",ERR,ERROR))//" is invalid."
-                  CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 END SELECT
                 ! Use the analytic Jacobian calculation
                 CALL EquationsMatrices_JacobianTypesSet(EQUATIONS_MATRICES,[EQUATIONS_JACOBIAN_ANALYTIC_CALCULATED], &
                   & ERR,ERROR,*999)
                 CALL EQUATIONS_MATRICES_CREATE_FINISH(EQUATIONS_MATRICES,ERR,ERROR,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+                CALL FlagError("Not implemented.",ERR,ERROR,*999)
               CASE DEFAULT
                 LOCAL_ERROR="The solution method of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SOLUTION_METHOD,"*",ERR,ERROR))// &
                   & " is invalid."
-                CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             CASE DEFAULT
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a nonlinear Burgers equation."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
             LOCAL_ERROR="The equation set subtype of "// &
-              & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+              & TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is invalid for an analytical nonlinear Burgers equation."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a nonlinear Burgers equation."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " is not a nonlinear Burgers equation subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("BURGERS_EQUATION_EQUATIONS_SET_SETUP")
+    EXITS("BURGERS_EQUATION_EQUATIONS_SET_SETUP")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_EQUATIONS_SET_SETUP")
+999 ERRORSEXITS("BURGERS_EQUATION_EQUATIONS_SET_SETUP",ERR,ERROR)
     RETURN 1
     
   END SUBROUTINE BURGERS_EQUATION_EQUATIONS_SET_SETUP
@@ -1342,7 +1370,7 @@ CONTAINS
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("BURGERS_EQUATION_PRE_SOLVE",ERR,ERROR,*999)
+    ENTERS("BURGERS_EQUATION_PRE_SOLVE",ERR,ERROR,*999)
     
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
@@ -1350,39 +1378,43 @@ CONTAINS
         CONTROL_LOOP=>SOLVERS%CONTROL_LOOP
         IF(ASSOCIATED(CONTROL_LOOP)) THEN
           IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+              CALL FlagError("Problem specification array is not allocated.",err,error,*999)
+            ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+              CALL FlagError("Problem specification must have three entries for a Burgers equation problem.",err,error,*999)
+            END IF
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_BURGERS_SUBTYPE)
               ! do nothing ???
             CASE(PROBLEM_DYNAMIC_BURGERS_SUBTYPE)
               DYNAMIC_SOLVER=>SOLVER%DYNAMIC_SOLVER
               IF(ASSOCIATED(DYNAMIC_SOLVER)) THEN
                 IF(DYNAMIC_SOLVER%SOLVER_INITIALISED) &
-                  & CALL BURGERS_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
+                  & CALL Burgers_PreSolveUpdateAnalyticValues(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
               ELSE
-                CALL FLAG_ERROR("Solver dynamic solver is not associated.",ERR,ERROR,*999)
+                CALL FlagError("Solver dynamic solver is not associated.",ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Burgers equation type of a fluid mechanics problem class."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ELSE
-            CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver solvers is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver solvers is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
  
-    CALL EXITS("BURGERS_EQUATION_PRE_SOLVE")
+    EXITS("BURGERS_EQUATION_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_PRE_SOLVE")
+999 ERRORSEXITS("BURGERS_EQUATION_PRE_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE BURGERS_EQUATION_PRE_SOLVE
       
@@ -1391,7 +1423,7 @@ CONTAINS
   !================================================================================================================================
   !
   !updates the boundary conditions and source term to the required analytic values
-  SUBROUTINE BURGERS_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE Burgers_PreSolveUpdateAnalyticValues(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -1419,13 +1451,18 @@ CONTAINS
     INTEGER(INTG) :: ANALYTIC_FUNCTION_TYPE
     INTEGER(INTG) :: GLOBAL_DERIV_INDEX
 
-    CALL ENTERS("BURGERS_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES",ERR,ERROR,*999)
+    ENTERS("Burgers_PreSolveUpdateAnalyticValues",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification array is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Burgers equation problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_STATIC_BURGERS_SUBTYPE,PROBLEM_DYNAMIC_BURGERS_SUBTYPE)
             SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
             IF(ASSOCIATED(SOLVER_EQUATIONS)) THEN
@@ -1493,7 +1530,7 @@ CONTAINS
                                           ANALYTIC_FUNCTION_TYPE=EQUATIONS_SET%ANALYTIC%ANALYTIC_FUNCTION_TYPE
                                           GLOBAL_DERIV_INDEX=DOMAIN_NODES%NODES(node_idx)%DERIVATIVES(deriv_idx)% &
                                             & GLOBAL_DERIVATIVE_INDEX
-                                          CALL BURGERS_EQUATION_ANALYTIC_FUNCTIONS_EVALUATE(EQUATIONS_SET%SUBTYPE, &
+                                          CALL Burgers_AnalyticFunctionsEvaluate(EQUATIONS_SET, &
                                             & ANALYTIC_FUNCTION_TYPE,X,TANGENTS,NORMAL,CURRENT_TIME,variable_type, &
                                             & GLOBAL_DERIV_INDEX,component_idx,ANALYTIC_PARAMETERS,MATERIALS_PARAMETERS, &
                                             & VALUE,ERR,ERROR,*999)
@@ -1513,21 +1550,21 @@ CONTAINS
                                                 & VALUE,ERR,ERROR,*999)
                                             ENDIF
                                           ELSE
-                                            CALL FLAG_ERROR("Boundary conditions variable is not associated",ERR,ERROR,*999)
+                                            CALL FlagError("Boundary conditions variable is not associated",ERR,ERROR,*999)
                                           ENDIF
                                         ENDDO !deriv_idx
                                       ENDDO !node_idx
                                     ELSE
-                                      CALL FLAG_ERROR("Domain topology nodes is not associated.",ERR,ERROR,*999)
+                                      CALL FlagError("Domain topology nodes is not associated.",ERR,ERROR,*999)
                                     ENDIF
                                   ELSE
-                                    CALL FLAG_ERROR("Domain topology is not associated.",ERR,ERROR,*999)
+                                    CALL FlagError("Domain topology is not associated.",ERR,ERROR,*999)
                                   ENDIF
                                 ELSE
-                                  CALL FLAG_ERROR("Domain is not associated.",ERR,ERROR,*999)
+                                  CALL FlagError("Domain is not associated.",ERR,ERROR,*999)
                                 ENDIF
                               ELSE
-                                CALL FLAG_ERROR("Only node based interpolation is implemented.",ERR,ERROR,*999)
+                                CALL FlagError("Only node based interpolation is implemented.",ERR,ERROR,*999)
                               ENDIF
                             ENDDO !component_idx
                             CALL FIELD_PARAMETER_SET_UPDATE_START(DEPENDENT_FIELD,variable_type, &
@@ -1539,24 +1576,24 @@ CONTAINS
                             CALL FIELD_PARAMETER_SET_UPDATE_FINISH(DEPENDENT_FIELD,variable_type, &
                               & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
                           ELSE
-                            CALL FLAG_ERROR("Field variable is not associated.",ERR,ERROR,*999)
+                            CALL FlagError("Field variable is not associated.",ERR,ERROR,*999)
                           ENDIF
                           
                         ENDDO !variable_idx
                           CALL FIELD_PARAMETER_SET_DATA_RESTORE(GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE,& 
                             & FIELD_VALUES_SET_TYPE,GEOMETRIC_PARAMETERS,ERR,ERROR,*999)
                         ELSE
-                          CALL FLAG_ERROR("Equations set geometric field is not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Equations set geometric field is not associated.",ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        CALL FLAG_ERROR("Equations set dependent field is not associated.",ERR,ERROR,*999)
+                        CALL FlagError("Equations set dependent field is not associated.",ERR,ERROR,*999)
                       ENDIF
                     ENDIF
                   ELSE
-                    CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
                   ENDIF
                 ELSE
-                  CALL FLAG_ERROR("Equations are not associated.",ERR,ERROR,*999)
+                  CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
                 END IF
                 CALL FIELD_PARAMETER_SET_UPDATE_START(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FIELD_U_VARIABLE_TYPE, & 
                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
@@ -1564,36 +1601,36 @@ CONTAINS
                   & FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
               ENDDO !eqnset_idx
             ELSE
-              CALL FLAG_ERROR("Solver equations are not associated.",ERR,ERROR,*999)
+              CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
             END IF
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a BURGERS equation type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("BURGERS_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES")
+    EXITS("Burgers_PreSolveUpdateAnalyticValues")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES")
+999 ERRORS("Burgers_PreSolveUpdateAnalyticValues",ERR,ERROR)
+    EXITS("Burgers_PreSolveUpdateAnalyticValues")
     RETURN 1
     
-  END SUBROUTINE BURGERS_EQUATION_PRE_SOLVE_UPDATE_ANALYTIC_VALUES
+  END SUBROUTINE Burgers_PreSolveUpdateAnalyticValues
 
 
   !   
   !================================================================================================================================
   !
-  SUBROUTINE BURGERS_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
+  SUBROUTINE Burgers_PreSolveStoreCurrentSolution(CONTROL_LOOP,SOLVER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(CONTROL_LOOP_TYPE), POINTER :: CONTROL_LOOP !<A pointer to the control loop to solve.
@@ -1603,39 +1640,44 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("BURGERS_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION",ERR,ERROR,*999)
+    ENTERS("Burgers_PreSolveStoreCurrentSolution",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
 
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification array is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Burgers equation problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_BURGERS_SUBTYPE)
               ! do nothing ???
             CASE(PROBLEM_DYNAMIC_BURGERS_SUBTYPE)
               ! do nothing ???
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a Burgers equation type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("BURGERS_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION")
+    EXITS("Burgers_PreSolveStoreCurrentSolution")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION")
+999 ERRORS("Burgers_PreSolveStoreCurrentSolution",ERR,ERROR)
+    EXITS("Burgers_PreSolveStoreCurrentSolution")
     RETURN 1
     
-  END SUBROUTINE BURGERS_EQUATION_PRE_SOLVE_STORE_CURRENT_SOLUTION
+  END SUBROUTINE Burgers_PreSolveStoreCurrentSolution
   
   !   
   !================================================================================================================================
@@ -1652,33 +1694,37 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("BURGERS_EQUATION_POST_SOLVE",ERR,ERROR,*999)
+    ENTERS("BURGERS_EQUATION_POST_SOLVE",ERR,ERROR,*999)
     
     IF(ASSOCIATED(CONTROL_LOOP)) THEN
       IF(ASSOCIATED(SOLVER)) THEN
         IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN 
-          SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+          IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+            CALL FlagError("Problem specification array is not allocated.",err,error,*999)
+          ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+            CALL FlagError("Problem specification must have three entries for a Burgers equation problem.",err,error,*999)
+          END IF
+          SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
           CASE(PROBLEM_STATIC_BURGERS_SUBTYPE,PROBLEM_DYNAMIC_BURGERS_SUBTYPE)
             !CALL BURGERS_EQUATION_POST_SOLVE_OUTPUT_DATA(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
               & " is not valid for a BURGERS type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("BURGERS_EQUATION_POST_SOLVE")
+    EXITS("BURGERS_EQUATION_POST_SOLVE")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_POST_SOLVE")
+999 ERRORSEXITS("BURGERS_EQUATION_POST_SOLVE",ERR,ERROR)
     RETURN 1
     
   END SUBROUTINE BURGERS_EQUATION_POST_SOLVE
@@ -1708,7 +1754,7 @@ CONTAINS
     CHARACTER(14) :: FILE
     CHARACTER(14) :: OUTPUT_FILE
 
-    CALL ENTERS("BURGERS_EQUATION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
+    ENTERS("BURGERS_EQUATION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR,*999)
 
     IF(ASSOCIATED(SOLVER)) THEN
       SOLVERS=>SOLVER%SOLVERS
@@ -1716,7 +1762,12 @@ CONTAINS
         CONTROL_LOOP=>SOLVERS%CONTROL_LOOP
         IF(ASSOCIATED(CONTROL_LOOP)) THEN
           IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-            SELECT CASE(CONTROL_LOOP%PROBLEM%SUBTYPE)
+            IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+              CALL FlagError("Problem specification array is not allocated.",err,error,*999)
+            ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<3) THEN
+              CALL FlagError("Problem specification must have three entries for a Burgers equation problem.",err,error,*999)
+            END IF
+            SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(3))
             CASE(PROBLEM_STATIC_BURGERS_SUBTYPE,PROBLEM_DYNAMIC_BURGERS_SUBTYPE)
               CALL CONTROL_LOOP_CURRENT_TIMES_GET(CONTROL_LOOP,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
               SOLVER_EQUATIONS=>SOLVER%SOLVER_EQUATIONS
@@ -1744,7 +1795,7 @@ CONTAINS
                         FILE=OUTPUT_FILE
  
                         IF(ASSOCIATED(EQUATIONS_SET%ANALYTIC)) THEN
-                          CALL ANALYTIC_ANALYSIS_OUTPUT(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
+                          CALL AnalyticAnalysis_Output(EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD,FILE,ERR,ERROR,*999)
                         ENDIF
                       ENDIF
                     ENDIF
@@ -1752,27 +1803,26 @@ CONTAINS
                 ENDIF
               ENDIF
             CASE DEFAULT
-              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
                 & " is not valid for a BURGERS equation type of a fluid mechanics problem class."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ELSE
-          CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Control loop is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Control loop is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver solvers is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Solver solvers is not associated.",ERR,ERROR,*999)
     ENDIF
   ELSE
-    CALL FLAG_ERROR("Solver is not associated.",ERR,ERROR,*999)
+    CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
   ENDIF
   
-    CALL EXITS("BURGERS_EQUATION_POST_SOLVE_OUTPUT_DATA")
+    EXITS("BURGERS_EQUATION_POST_SOLVE_OUTPUT_DATA")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_POST_SOLVE_OUTPUT_DATA")
+999 ERRORSEXITS("BURGERS_EQUATION_POST_SOLVE_OUTPUT_DATA",ERR,ERROR)
     RETURN 1
     
   END SUBROUTINE BURGERS_EQUATION_POST_SOLVE_OUTPUT_DATA
@@ -1781,44 +1831,53 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Sets/changes the problem subtype for a BURGERS equation type.
-  SUBROUTINE BURGERS_EQUATION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  !>Sets the problem specification for a Burgers problem.
+  SUBROUTINE Burgers_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem to set the problem subtype for
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The problem subtype to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem to set the problem specification for
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("BURGERS_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR,*999)
-    
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_SUBTYPE)
-      CASE(PROBLEM_STATIC_BURGERS_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_BURGERS_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_STATIC_BURGERS_SUBTYPE  
-      CASE(PROBLEM_DYNAMIC_BURGERS_SUBTYPE)        
-        PROBLEM%CLASS=PROBLEM_FLUID_MECHANICS_CLASS
-        PROBLEM%TYPE=PROBLEM_BURGERS_EQUATION_TYPE
-        PROBLEM%SUBTYPE=PROBLEM_DYNAMIC_BURGERS_SUBTYPE
-      CASE DEFAULT
-        LOCAL_ERROR="Problem subtype "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SUBTYPE,"*",ERR,ERROR))// &
-          & " is not valid for a BURGERS equation type of a fluid mechanics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemSubtype
+
+    ENTERS("Burgers_ProblemSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)==3) THEN
+        problemSubtype=problemSpecification(3)
+        SELECT CASE(problemSubtype)
+        CASE(PROBLEM_STATIC_BURGERS_SUBTYPE, &
+            & PROBLEM_DYNAMIC_BURGERS_SUBTYPE)
+          !ok
+        CASE DEFAULT
+          localError="The third problem specification of "//TRIM(NumberToVstring(problemSubtype,"*",err,error))// &
+            & " is not valid for a Burgers type of a fluid mechanics problem."
+          CALL FlagError(localError,err,error,*999)
+        END SELECT
+        IF(ALLOCATED(problem%specification)) THEN
+          CALL FlagError("Problem specification is already allocated.",err,error,*999)
+        ELSE
+          ALLOCATE(problem%specification(3),stat=err)
+          IF(err/=0) CALL FlagError("Could not allocate problem specification.",err,error,*999)
+        END IF
+        problem%specification(1:3)=[PROBLEM_FLUID_MECHANICS_CLASS,PROBLEM_BURGERS_EQUATION_TYPE,problemSubtype]
+      ELSE
+        CALL FlagError("Burgers equation problem specification must have three entries.",err,error,*999)
+      END IF
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("BURGERS_EQUATION_PROBLEM_SUBTYPE_SET")
+      CALL FlagError("Problem is not associated.",err,error,*999)
+    END IF
+
+    EXITS("Burgers_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_PROBLEM_SUBTYPE_SET",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_PROBLEM_SUBTYPE_SET")
+999 ERRORS("Burgers_ProblemSpecificationSet",err,error)
+    EXITS("Burgers_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE BURGERS_EQUATION_PROBLEM_SUBTYPE_SET
+    
+  END SUBROUTINE Burgers_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -1844,10 +1903,15 @@ CONTAINS
     NULLIFY(SOLVER_EQUATIONS)
     NULLIFY(SOLVERS)
     
-    CALL ENTERS("BURGERS_EQUATION_PROBLEM_SETUP",ERR,ERROR,*999)
+    ENTERS("BURGERS_EQUATION_PROBLEM_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%SUBTYPE)
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<3) THEN
+        CALL FlagError("Problem specification must have three entries for a Burgers equation problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(3))
       CASE(PROBLEM_STATIC_BURGERS_SUBTYPE)
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
         CASE(PROBLEM_SETUP_INITIAL_TYPE)
@@ -1860,7 +1924,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Burgers problem."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -1876,7 +1940,7 @@ CONTAINS
               LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
                 & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a Burgers problem."
-              CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+              CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -1901,7 +1965,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Burgers problem."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -1931,12 +1995,12 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Burgers problem."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a Burgers problem."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE(PROBLEM_DYNAMIC_BURGERS_SUBTYPE)
         SELECT CASE(PROBLEM_SETUP%SETUP_TYPE)
@@ -1950,7 +2014,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Burgers problem."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_CONTROL_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -1967,7 +2031,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Burgers problem."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVERS_TYPE)
           !Get the control loop
@@ -1997,7 +2061,7 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a nonlinear burgers problem."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(PROBLEM_SETUP_SOLVER_EQUATIONS_TYPE)
           SELECT CASE(PROBLEM_SETUP%ACTION_TYPE)
@@ -2028,26 +2092,25 @@ CONTAINS
             LOCAL_ERROR="The action type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%ACTION_TYPE,"*",ERR,ERROR))// &
               & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
               & " is invalid for a Burgers problem."
-            CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE DEFAULT
           LOCAL_ERROR="The setup type of "//TRIM(NUMBER_TO_VSTRING(PROBLEM_SETUP%SETUP_TYPE,"*",ERR,ERROR))// &
             & " is invalid for a Burgers problem."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       CASE DEFAULT
-        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SUBTYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="The problem subtype of "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(3),"*",ERR,ERROR))// &
           & " does not equal a Burgers problem subtype."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("BURGERS_EQUATION_PROBLEM_SETUP")
+    EXITS("BURGERS_EQUATION_PROBLEM_SETUP")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_PROBLEM_SETUP",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_PROBLEM_SETUP")
+999 ERRORSEXITS("BURGERS_EQUATION_PROBLEM_SETUP",ERR,ERROR)
     RETURN 1
     
   END SUBROUTINE BURGERS_EQUATION_PROBLEM_SETUP
@@ -2057,7 +2120,7 @@ CONTAINS
   !
 
   !>Evaluates the Jacobian element stiffness matrices for a BURGERS equation finite element equations set.
-  SUBROUTINE BURGERS_EQUATION_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE Burgers_FiniteElementJacobianEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
@@ -2079,9 +2142,15 @@ CONTAINS
     TYPE(FIELD_VARIABLE_TYPE), POINTER :: FIELD_VARIABLE,GEOMETRIC_VARIABLE
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
 
-    CALL ENTERS("BURGERS_EQUATION_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
+    ENTERS("Burgers_FiniteElementJacobianEvaluate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Burgers type equations set.", &
+          & err,error,*999)
+      END IF
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
         EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
@@ -2107,7 +2176,7 @@ CONTAINS
             & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & GEOMETRIC_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-          IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE) &
+          IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE) &
             & CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
           C_PARAM=1.0_DP
@@ -2119,7 +2188,7 @@ CONTAINS
               & GEOMETRIC_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT_METRICS(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
-            IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE) THEN
               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR,ERR,ERROR,*999)
               C_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
@@ -2179,26 +2248,26 @@ CONTAINS
           ENDDO !ng
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("BURGERS_EQUATION_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    EXITS("Burgers_FiniteElementJacobianEvaluate")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+999 ERRORS("Burgers_FiniteElementJacobianEvaluate",ERR,ERROR)
+    EXITS("Burgers_FiniteElementJacobianEvaluate")
     RETURN 1
     
-  END SUBROUTINE BURGERS_EQUATION_FINITE_ELEMENT_JACOBIAN_EVALUATE
+  END SUBROUTINE Burgers_FiniteElementJacobianEvaluate
 
   !
   !================================================================================================================================
   !
 
   !>Evaluates the residual element stiffness matrices and RHS for a Burgers equation finite element equations set.
-  SUBROUTINE BURGERS_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE Burgers_FiniteElementResidualEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to perform the finite element calculations on
@@ -2228,7 +2297,7 @@ CONTAINS
     TYPE(QUADRATURE_SCHEME_TYPE), POINTER :: QUADRATURE_SCHEME,QUADRATURE_SCHEME1,QUADRATURE_SCHEME2
     TYPE(VARYING_STRING) :: LOCAL_ERROR
      
-    CALL ENTERS("BURGERS_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+    ENTERS("Burgers_FiniteElementResidualEvaluate",ERR,ERROR,*999)
 
     NULLIFY(DAMPING_MATRIX)
     NULLIFY(DYNAMIC_MATRICES)
@@ -2243,6 +2312,12 @@ CONTAINS
     UPDATE_RESIDUAL=.FALSE.
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a Burgers type equations set.", &
+          & err,error,*999)
+      END IF
       EQUATIONS=>EQUATIONS_SET%EQUATIONS
       IF(ASSOCIATED(EQUATIONS)) THEN
         EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
@@ -2259,7 +2334,7 @@ CONTAINS
         DEPENDENT_BASIS=>DEPENDENT_FIELD%DECOMPOSITION%DOMAIN(DEPENDENT_FIELD%DECOMPOSITION%MESH_COMPONENT_NUMBER)%PTR% &
           & TOPOLOGY%ELEMENTS%ELEMENTS(ELEMENT_NUMBER)%BASIS
         QUADRATURE_SCHEME=>DEPENDENT_BASIS%QUADRATURE%QUADRATURE_SCHEME_MAP(BASIS_DEFAULT_QUADRATURE_SCHEME)%PTR
-        SELECT CASE(EQUATIONS_SET%SUBTYPE)
+        SELECT CASE(EQUATIONS_SET%SPECIFICATION(3))
         CASE(EQUATIONS_SET_BURGERS_SUBTYPE)
           DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
           STIFFNESS_MATRIX=>DYNAMIC_MATRICES%MATRICES(1)%PTR
@@ -2287,9 +2362,9 @@ CONTAINS
           FIELD_VARIABLE=>NONLINEAR_MAPPING%RESIDUAL_VARIABLES(1)%PTR
           FIELD_VAR_TYPE=FIELD_VARIABLE%VARIABLE_TYPE
         CASE DEFAULT
-          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SUBTYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(3),"*",ERR,ERROR))// &
             & " is not valid for a BURGERS equation type of a fluid mechanics equations set class."
-          CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+          CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         IF(ASSOCIATED(STIFFNESS_MATRIX)) THEN
           UPDATE_STIFFNESS=STIFFNESS_MATRIX%UPDATE_MATRIX
@@ -2315,7 +2390,7 @@ CONTAINS
             & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
           CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & GEOMETRIC_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-          IF(EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) &
+          IF(EQUATIONS_SET%SPECIFICATION(3)/=EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) &
             & CALL FIELD_INTERPOLATION_PARAMETERS_ELEMENT_GET(FIELD_VALUES_SET_TYPE,ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
             & MATERIALS_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
           A_PARAM=1.0_DP
@@ -2329,10 +2404,10 @@ CONTAINS
               & GEOMETRIC_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             CALL FIELD_INTERPOLATED_POINT_METRICS_CALCULATE(GEOMETRIC_BASIS%NUMBER_OF_XI,EQUATIONS%INTERPOLATION% &
               & GEOMETRIC_INTERP_POINT_METRICS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-            IF(EQUATIONS_SET%SUBTYPE/=EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
+            IF(EQUATIONS_SET%SPECIFICATION(3)/=EQUATIONS_SET_INVISCID_BURGERS_SUBTYPE) THEN
               CALL FIELD_INTERPOLATE_GAUSS(NO_PART_DERIV,BASIS_DEFAULT_QUADRATURE_SCHEME,ng,EQUATIONS%INTERPOLATION% &
                 & MATERIALS_INTERP_POINT(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
-              IF(EQUATIONS_SET%SUBTYPE==EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE) THEN
+              IF(EQUATIONS_SET%SPECIFICATION(3)==EQUATIONS_SET_GENERALISED_BURGERS_SUBTYPE) THEN
                 A_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(1,NO_PART_DERIV)
                 B_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(2,NO_PART_DERIV)
                 C_PARAM=EQUATIONS%INTERPOLATION%MATERIALS_INTERP_POINT(FIELD_U_VARIABLE_TYPE)%PTR%VALUES(3,NO_PART_DERIV)
@@ -2419,7 +2494,7 @@ CONTAINS
 
           !Scale factor adjustment
           IF(DEPENDENT_FIELD%SCALINGS%SCALING_TYPE/=FIELD_NO_SCALING) THEN
-            CALL FIELD_INTERPOLATION_PARAMETERS_SCALE_FACTORS_ELEM_GET(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
+            CALL Field_InterpolationParametersScaleFactorsElementGet(ELEMENT_NUMBER,EQUATIONS%INTERPOLATION% &
               & DEPENDENT_INTERP_PARAMETERS(FIELD_VAR_TYPE)%PTR,ERR,ERROR,*999)
             mhs=0          
             DO mh=1,FIELD_VARIABLE%NUMBER_OF_COMPONENTS
@@ -2456,18 +2531,19 @@ CONTAINS
         ENDIF !Evaluate any
         
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",ERR,ERROR,*999)
+        CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
     
-    CALL EXITS("BURGERS_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+    EXITS("Burgers_FiniteElementResidualEvaluate")
     RETURN
-999 CALL ERRORS("BURGERS_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR)
-    CALL EXITS("BURGERS_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+999 ERRORS("Burgers_FiniteElementResidualEvaluate",ERR,ERROR)
+    EXITS("Burgers_FiniteElementResidualEvaluate")
     RETURN 1
-  END SUBROUTINE BURGERS_EQUATION_FINITE_ELEMENT_RESIDUAL_EVALUATE
+    
+  END SUBROUTINE Burgers_FiniteElementResidualEvaluate
  
   !
   !================================================================================================================================

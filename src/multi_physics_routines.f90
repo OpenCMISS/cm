@@ -61,6 +61,8 @@ MODULE MULTI_PHYSICS_ROUTINES
   USE STRINGS
   USE TYPES
 
+#include "macros.h"  
+
 
   IMPLICIT NONE
 
@@ -73,14 +75,12 @@ MODULE MULTI_PHYSICS_ROUTINES
   !Module variables
 
   !Interfaces
-  
-  PUBLIC MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_GET,MULTI_PHYSICS_PROBLEM_CLASS_TYPE_GET
 
-  PUBLIC MULTI_PHYSICS_FINITE_ELEMENT_JACOBIAN_EVALUATE,MULTI_PHYSICS_FINITE_ELEMENT_RESIDUAL_EVALUATE
+  PUBLIC MultiPhysics_FiniteElementJacobianEvaluate,MultiPhysics_FiniteElementResidualEvaluate
   
-  PUBLIC MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET,MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE, &
-    & MULTI_PHYSICS_EQUATIONS_SET_SETUP,MULTI_PHYSICS_EQUATIONS_SET_SOLUTION_METHOD_SET, &
-    & MULTI_PHYSICS_PROBLEM_CLASS_TYPE_SET,MULTI_PHYSICS_PROBLEM_SETUP, &
+  PUBLIC MultiPhysics_EquationsSetSpecificationSet,MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE, &
+    & MULTI_PHYSICS_EQUATIONS_SET_SETUP,MultiPhysics_EquationsSetSolnMethodSet, &
+    & MultiPhysics_ProblemSpecificationSet,MULTI_PHYSICS_PROBLEM_SETUP, &
     & MULTI_PHYSICS_POST_SOLVE,MULTI_PHYSICS_PRE_SOLVE,MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP, &
     & MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP
   
@@ -90,84 +90,55 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Gets the problem type and subtype for a multi physics equation set class.
-  SUBROUTINE MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_GET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
-    & ERR,ERROR,*)
+  !>Sets the problem specification for a multi physics equation set class.
+  SUBROUTINE MultiPhysics_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_TYPE !<On return, the equation type
-    INTEGER(INTG), INTENT(OUT) :: EQUATIONS_SUBTYPE !<On return, the equation subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    
-    CALL ENTERS("MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR,*999)
+    TYPE(VARYING_STRING) :: localError
 
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(EQUATIONS_SET%CLASS==EQUATIONS_SET_MULTI_PHYSICS_CLASS) THEN
-        EQUATIONS_TYPE=EQUATIONS_SET%TYPE
-        EQUATIONS_SUBTYPE=EQUATIONS_SET%SUBTYPE
-      ELSE
-        CALL FLAG_ERROR("Equations set is not the multi physics type",ERR,ERROR,*999)
-      END IF
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_GET")
-    RETURN
-999 CALL ERRORS("MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_GET",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_GET")
-    RETURN 1
-  END SUBROUTINE MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_GET
+    ENTERS("MultiPhysics_EquationsSetSpecificationSet",err,error,*999)
 
-  !
-  !================================================================================================================================
-  !
+    !Not that in general, this routine is never used as most multi-physics problems
+    !use standard equations sets and couples them, rather than having a special
+    !multi-physics problem equations set
 
-  !>Sets/changes the problem type and subtype for a multi physics equation set class.
-  SUBROUTINE MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET(EQUATIONS_SET,EQUATIONS_TYPE,EQUATIONS_SUBTYPE, &
-    & ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_TYPE !<The equation type
-    INTEGER(INTG), INTENT(IN) :: EQUATIONS_SUBTYPE !<The equation subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("MULTI_PHYSICS_EQUATIONS_SET_CLASS_SET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_TYPE)
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(SIZE(specification,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a multiphysics equations set.", &
+          & err,error,*999)
+      ENDIF
+      SELECT CASE(specification(2))
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE)
-        CALL ELASTICITY_DARCY_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+        CALL FinElasticityFluidPressure_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE)
-        CALL DIFFUSION_DIFFUSION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+        CALL DiffusionDiffusion_EquationsSetSpecificationSet(equationsSet,specification,err,error,*999)
       CASE(EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE)
-        CALL DIFFUSION_ADVECTION_DIFFUSION_EQUATIONS_SET_SUBTYPE_SET(EQUATIONS_SET,EQUATIONS_SUBTYPE,ERR,ERROR,*999)
+        CALL DiffusionAdvectionDiffusion_EquationsSetSpecSet(equationsSet,specification,err,error,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set equation type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_TYPE,"*",ERR,ERROR))// &
-          & " is not valid for a multi physics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        localError="The second equations set specification of "//TRIM(NumberToVstring(specification(2),"*",err,error))// &
+          & " is not valid for a multi physics equations set."
+        CALL FlagError(localError,err,error,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",err,error,*999)
     ENDIF
-       
-    CALL EXITS("MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET")
+
+    EXITS("MultiPhysics_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET")
+999 ERRORS("MultiPhysics_EquationsSetSpecificationSet",err,error)
+    EXITS("MultiPhysics_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE MULTI_PHYSICS_EQUATIONS_SET_CLASS_TYPE_SET
+    
+  END SUBROUTINE MultiPhysics_EquationsSetSpecificationSet
 
   !
   !================================================================================================================================
@@ -184,33 +155,38 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
+    ENTERS("MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a "// &
+          & "multi-physics class equations set.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE)
-        CALL ELASTICITY_DARCY_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL FinElasticityFluidPressure_FiniteElementCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE)
-        CALL DIFFUSION_DIFFUSION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL DiffusionDiffusion_FiniteElementCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE)
-        CALL DIFFUSION_ADVECTION_DIFFUSION_FINITE_ELEMENT_CALCULATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
+        CALL DiffusionAdvectionDiffusion_FiniteElementCalculate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a multi physics equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE")
+    EXITS("MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE")
+999 ERRORSEXITS("MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE MULTI_PHYSICS_FINITE_ELEMENT_CALCULATE
 
@@ -219,7 +195,7 @@ CONTAINS
   !
 
   !>Evaluates the element Jacobian matrix for the given element number for a multi physics class finite element equation set.
-  SUBROUTINE MULTI_PHYSICS_FINITE_ELEMENT_JACOBIAN_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE MultiPhysics_FiniteElementJacobianEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
@@ -229,42 +205,48 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("MULTI_PHYSICS_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR,*999)
+    ENTERS("MultiPhysics_FiniteElementJacobianEvaluate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a "// &
+          & "multi-physics class equations set.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a multi physics equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("MULTI_PHYSICS_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+    EXITS("MultiPhysics_FiniteElementJacobianEvaluate")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_FINITE_ELEMENT_JACOBIAN_EVALUATE",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_FINITE_ELEMENT_JACOBIAN_EVALUATE")
+999 ERRORSEXITS("MultiPhysics_FiniteElementJacobianEvaluate",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE MULTI_PHYSICS_FINITE_ELEMENT_JACOBIAN_EVALUATE
+    
+  END SUBROUTINE MultiPhysics_FiniteElementJacobianEvaluate
 
   !
   !================================================================================================================================
   !
 
   !>Evaluates the element residual and rhs vectors for the given element number for a multi physics class finite element equation set.
-  SUBROUTINE MULTI_PHYSICS_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
+  SUBROUTINE MultiPhysics_FiniteElementResidualEvaluate(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
@@ -274,36 +256,42 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("MULTI_PHYSICS_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR,*999)
+    ENTERS("MultiPhysics_FiniteElementResidualEvaluate",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a "// &
+          & "multi-physics class equations set.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE)
 !         CALL ELASTICITY_DARCY_FINITE_ELEMENT_RESIDUAL_EVALUATE(EQUATIONS_SET,ELEMENT_NUMBER,ERR,ERROR,*999)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a multi physics equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("MULTI_PHYSICS_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+    EXITS("MultiPhysics_FiniteElementResidualEvaluate")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_FINITE_ELEMENT_RESIDUAL_EVALUATE",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_FINITE_ELEMENT_RESIDUAL_EVALUATE")
+999 ERRORSEXITS("MultiPhysics_FiniteElementResidualEvaluate",ERR,ERROR)
     RETURN 1
-  END SUBROUTINE MULTI_PHYSICS_FINITE_ELEMENT_RESIDUAL_EVALUATE
+    
+  END SUBROUTINE MultiPhysics_FiniteElementResidualEvaluate
 
   !
   !================================================================================================================================
@@ -320,33 +308,38 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("MULTI_PHYSICS_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
+    ENTERS("MULTI_PHYSICS_EQUATIONS_SET_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a "// &
+          & "multi-physics class equations set.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE)
         CALL ELASTICITY_DARCY_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE)
         CALL DIFFUSION_DIFFUSION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE)
-        CALL DIFFUSION_ADVECTION_DIFFUSION_EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
+        CALL DiffusionAdvectionDiffusion_EquationsSetSetup(EQUATIONS_SET,EQUATIONS_SET_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equation set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a multi physics equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("MULTI_PHYSICS_EQUATIONS_SET_SETUP")
+    EXITS("MULTI_PHYSICS_EQUATIONS_SET_SETUP")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_EQUATIONS_SET_SETUP",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_EQUATIONS_SET_SETUP")
+999 ERRORSEXITS("MULTI_PHYSICS_EQUATIONS_SET_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE MULTI_PHYSICS_EQUATIONS_SET_SETUP
   
@@ -356,7 +349,7 @@ CONTAINS
   !
 
   !>Sets/changes the solution method for a multi physics equation set class.
-  SUBROUTINE MULTI_PHYSICS_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
+  SUBROUTINE MultiPhysics_EquationsSetSolnMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to set the solution method for
@@ -366,123 +359,99 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("MULTI_PHYSICS_EQUATIONS_SOLUTION_METHOD_SET",ERR,ERROR,*999)
+    ENTERS("MultiPhysics_EquationsSetSolnMethodSet",ERR,ERROR,*999)
 
     IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
+      IF(.NOT.ALLOCATED(EQUATIONS_SET%SPECIFICATION)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(EQUATIONS_SET%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Equations set specification must have at least two entries for a "// &
+          & "multi-physics class equations set.",err,error,*999)
+      END IF
+      SELECT CASE(EQUATIONS_SET%SPECIFICATION(2))
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_DARCY_TYPE)
-        CALL ELASTICITY_DARCY_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL FinElasticityFluidPressure_EquationsSetSolnMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DIFFUSION_DIFFUSION_TYPE)
-        CALL DIFFUSION_DIFFUSION_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL DiffusionDiffusion_EquationsSetSolutionMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE(EQUATIONS_SET_DIFFUSION_ADVECTION_DIFFUSION_TYPE)
-        CALL DIFFUSION_ADVEC_DIFF_EQUATIONS_SET_SOLUTION_METHOD_SET(EQUATIONS_SET,&
-         & SOLUTION_METHOD,ERR,ERROR,*999)
+        CALL DiffusionAdvectionDiffusion_EquationsSetSolnMethodSet(EQUATIONS_SET,SOLUTION_METHOD,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Equations set equation type of "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a multi physics equations set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("MULTI_PHYSICS_EQUATIONS_SET_SOLUTION_METHOD_SET")
+    EXITS("MultiPhysics_EquationsSetSolnMethodSet")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_EQUATIONS_SET_SOLUTION_METHOD_SET",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_EQUATIONS_SET_SOLUTION_METHOD_SET")
+999 ERRORS("MultiPhysics_EquationsSetSolnMethodSet",ERR,ERROR)
+    EXITS("MultiPhysics_EquationsSetSolnMethodSet")
     RETURN 1
-  END SUBROUTINE MULTI_PHYSICS_EQUATIONS_SET_SOLUTION_METHOD_SET
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Gets the problem type and subtype for a multi physics problem class.
-  SUBROUTINE MULTI_PHYSICS_PROBLEM_CLASS_TYPE_GET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_EQUATION_TYPE !<On return, the problem type
-    INTEGER(INTG), INTENT(OUT) :: PROBLEM_SUBTYPE !<On return, the proboem subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
     
-    CALL ENTERS("MULTI_PHYSICS_PROBLEM_CLASS_TYPE_GET",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(PROBLEM)) THEN
-      IF(PROBLEM%CLASS==PROBLEM_MULTI_PHYSICS_CLASS) THEN
-        PROBLEM_EQUATION_TYPE=PROBLEM%TYPE
-        PROBLEM_SUBTYPE=PROBLEM%SUBTYPE
-      ELSE
-        CALL FLAG_ERROR("Problem is not multi physics class",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("MULTI_PHYSICS_PROBLEM_CLASS_TYPE_GET")
-    RETURN
-999 CALL ERRORS("MULTI_PHYSICS_PROBLEM_CLASS_TYPE_GET",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_PROBLEM_CLASS_TYPE_GET")
-    RETURN 1
-  END SUBROUTINE MULTI_PHYSICS_PROBLEM_CLASS_TYPE_GET
+  END SUBROUTINE MultiPhysics_EquationsSetSolnMethodSet
 
   !
   !================================================================================================================================
   !
 
   !>Sets/changes the problem type and subtype for a multi physics problem class.
-  SUBROUTINE MULTI_PHYSICS_PROBLEM_CLASS_TYPE_SET(PROBLEM,PROBLEM_EQUATION_TYPE,PROBLEM_SUBTYPE,ERR,ERROR,*)
+  SUBROUTINE MultiPhysics_ProblemSpecificationSet(problem,problemSpecification,err,error,*)
 
     !Argument variables
-    TYPE(PROBLEM_TYPE), POINTER :: PROBLEM !<A pointer to the problem
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_EQUATION_TYPE !<The problem type
-    INTEGER(INTG), INTENT(IN) :: PROBLEM_SUBTYPE !<The proboem subtype
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PROBLEM_TYPE), POINTER :: problem !<A pointer to the problem
+    INTEGER(INTG), INTENT(IN) :: problemSpecification(:) !<The problem specification to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-    
-    CALL ENTERS("MULTI_PHYSICS_PROBLEM_CLASS_SET",ERR,ERROR,*999)
+    TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: problemType
 
-    IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM_EQUATION_TYPE)
+    ENTERS("MultiPhysics_ProblemSpecificationSet",err,error,*999)
+
+    IF(ASSOCIATED(problem)) THEN
+      IF(SIZE(problemSpecification,1)<2) THEN
+        CALL FlagError("Multi physics problem specification requires at least two entries.",err,error,*999)
+      ENDIF
+      problemType=problemSpecification(2)
+      SELECT CASE(problemType)
       CASE(PROBLEM_FINITE_ELASTICITY_DARCY_TYPE)
-        CALL ELASTICITY_DARCY_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+        CALL FiniteElasticityDarcy_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE)
-        CALL ELASTICITY_FLUID_PRESSURE_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+        CALL FinElasticityFluidPressure_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
       CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
-        CALL BIOELECTRIC_FINITE_ELASTICITY_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+        CALL BioelectricFiniteElasticity_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",err,error,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-        CALL FSI_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+        CALL FSI_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
       CASE(PROBLEM_DIFFUSION_DIFFUSION_TYPE)
-        CALL DIFFUSION_DIFFUSION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+        CALL DiffusionDiffusion_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
       CASE(PROBLEM_DIFFUSION_ADVECTION_DIFFUSION_TYPE)
-        CALL DIFFUSION_ADVECTION_DIFFUSION_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+        CALL DiffusionAdvectionDiffusion_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
       CASE(PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE)
-        CALL MULTI_COMPARTMENT_TRANSPORT_PROBLEM_SUBTYPE_SET(PROBLEM,PROBLEM_SUBTYPE,ERR,ERROR,*999)
+        CALL MultiCompartmentTransport_ProblemSpecificationSet(problem,problemSpecification,err,error,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Problem equation type "//TRIM(NUMBER_TO_VSTRING(PROBLEM_EQUATION_TYPE,"*",ERR,ERROR))// &
-          & " is not valid for a multi physics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        localError="The second problem specification of "//TRIM(NumberToVstring(problemType,"*",err,error))// &
+          & " is not valid for a multi physics problem."
+        CALL FlagError(localError,err,error,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",err,error,*999)
     ENDIF
-       
-    CALL EXITS("MULTI_PHYSICS_PROBLEM_CLASS_TYPE_SET")
+
+    EXITS("MultiPhysics_ProblemSpecificationSet")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_PROBLEM_CLASS_TYPE_SET",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_PROBLEM_CLASS_TYPE_SET")
+999 ERRORS("MultiPhysics_ProblemSpecificationSet",err,error)
+    EXITS("MultiPhysics_ProblemSpecificationSet")
     RETURN 1
-  END SUBROUTINE MULTI_PHYSICS_PROBLEM_CLASS_TYPE_SET
+    
+  END SUBROUTINE MultiPhysics_ProblemSpecificationSet
 
   !
   !================================================================================================================================
@@ -499,10 +468,15 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("MULTI_PHYSICS_PROBLEM_SETUP",ERR,ERROR,*999)
+    ENTERS("MULTI_PHYSICS_PROBLEM_SETUP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(PROBLEM)) THEN
-      SELECT CASE(PROBLEM%TYPE)
+      IF(.NOT.ALLOCATED(PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(PROBLEM%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Problem specification must have at least two entries for a multi physics problem.",err,error,*999)
+      END IF
+      SELECT CASE(PROBLEM%SPECIFICATION(2))
       CASE(PROBLEM_FINITE_ELASTICITY_DARCY_TYPE)
         CALL ELASTICITY_DARCY_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE)
@@ -510,9 +484,9 @@ CONTAINS
       CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
         CALL BIOELECTRIC_FINITE_ELASTICITY_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999) 
       CASE(PROBLEM_FINITE_ELASTICITY_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
-        !CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        !CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CALL FSI_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE(PROBLEM_DIFFUSION_DIFFUSION_TYPE)
         CALL DIFFUSION_DIFFUSION_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
@@ -521,18 +495,17 @@ CONTAINS
       CASE(PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE)
         CALL MULTI_COMPARTMENT_TRANSPORT_PROBLEM_SETUP(PROBLEM,PROBLEM_SETUP,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a multi physics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("MULTI_PHYSICS_PROBLEM_SETUP")
+    EXITS("MULTI_PHYSICS_PROBLEM_SETUP")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_PROBLEM_SETUP",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_PROBLEM_SETUP")
+999 ERRORSEXITS("MULTI_PHYSICS_PROBLEM_SETUP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE MULTI_PHYSICS_PROBLEM_SETUP
 
@@ -551,10 +524,15 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("MULTI_PHYSICS_POST_SOLVE",ERR,ERROR,*999)
+    ENTERS("MULTI_PHYSICS_POST_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-      SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+      IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Problem specification must have at least two entries for a multi physics problem.",err,error,*999)
+      END IF
+      SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(2))
       CASE(PROBLEM_FINITE_ELASTICITY_DARCY_TYPE)
         CALL ELASTICITY_DARCY_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE)
@@ -562,7 +540,7 @@ CONTAINS
       CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
         CALL BIOELECTRIC_FINITE_ELASTICITY_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
         CALL FSI_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_DIFFUSION_DIFFUSION_TYPE)
@@ -572,18 +550,17 @@ CONTAINS
       CASE(PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE)
         CALL MULTI_COMPARTMENT_TRANSPORT_POST_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a multi physics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("MULTI_PHYSICS_POST_SOLVE")
+    EXITS("MULTI_PHYSICS_POST_SOLVE")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_POST_SOLVE",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_POST_SOLVE")
+999 ERRORSEXITS("MULTI_PHYSICS_POST_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE MULTI_PHYSICS_POST_SOLVE
 
@@ -602,10 +579,15 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
     
-    CALL ENTERS("MULTI_PHYSICS_PRE_SOLVE",ERR,ERROR,*999)
+    ENTERS("MULTI_PHYSICS_PRE_SOLVE",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-      SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+      IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Problem specification must have at least two entries for a multi physics problem.",err,error,*999)
+      END IF
+      SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(2))
       CASE(PROBLEM_FINITE_ELASTICITY_DARCY_TYPE)
         CALL ELASTICITY_DARCY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE)
@@ -613,7 +595,7 @@ CONTAINS
       CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
         CALL BIOELECTRIC_FINITE_ELASTICITY_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_STOKES_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
+        CALL FlagError("Not implemented.",ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
         CALL FSI_PRE_SOLVE(CONTROL_LOOP,SOLVER,Err,Error,*999)
       CASE(PROBLEM_DIFFUSION_DIFFUSION_TYPE)
@@ -623,18 +605,17 @@ CONTAINS
       CASE(PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE)
         CALL MULTI_COMPARTMENT_TRANSPORT_PRE_SOLVE(CONTROL_LOOP,SOLVER,ERR,ERROR,*999)
       CASE DEFAULT
-        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a multi physics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
        
-    CALL EXITS("MULTI_PHYSICS_PRE_SOLVE")
+    EXITS("MULTI_PHYSICS_PRE_SOLVE")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_PRE_SOLVE",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_PRE_SOLVE")
+999 ERRORSEXITS("MULTI_PHYSICS_PRE_SOLVE",ERR,ERROR)
     RETURN 1
   END SUBROUTINE MULTI_PHYSICS_PRE_SOLVE
 
@@ -652,16 +633,21 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP",ERR,ERROR,*999)
+    ENTERS("MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-      SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+      IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Problem specification must have at least two entries for a multi physics problem.",err,error,*999)
+      END IF
+      SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(2))
       CASE(PROBLEM_FINITE_ELASTICITY_DARCY_TYPE)
         CALL ELASTICITY_DARCY_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE)
         !do nothing
       CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
-        CALL BIOELECTRIC_FINITE_ELASTICITY_CONTROL_LOOP_PRE_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+        CALL BioelectricFiniteElasticity_ControlLoopPreLoop(CONTROL_LOOP,ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_STOKES_TYPE)
         !do nothing
       CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
@@ -673,18 +659,17 @@ CONTAINS
       CASE(PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE)
         !do nothing
       CASE DEFAULT
-        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a multi physics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP")
+    EXITS("MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP")
+999 ERRORSEXITS("MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE MULTI_PHYSICS_CONTROL_LOOP_PRE_LOOP
 
@@ -702,16 +687,21 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: LOCAL_ERROR
 
-    CALL ENTERS("MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
+    ENTERS("MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP",ERR,ERROR,*999)
 
     IF(ASSOCIATED(CONTROL_LOOP%PROBLEM)) THEN
-      SELECT CASE(CONTROL_LOOP%PROBLEM%TYPE)
+      IF(.NOT.ALLOCATED(CONTROL_LOOP%PROBLEM%SPECIFICATION)) THEN
+        CALL FlagError("Problem specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(CONTROL_LOOP%PROBLEM%SPECIFICATION,1)<2) THEN
+        CALL FlagError("Problem specification must have at least two entries for a multi physics problem.",err,error,*999)
+      END IF
+      SELECT CASE(CONTROL_LOOP%PROBLEM%SPECIFICATION(2))
       CASE(PROBLEM_FINITE_ELASTICITY_DARCY_TYPE)
         CALL ELASTICITY_DARCY_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_FLUID_PRESSURE_TYPE)
         !do nothing
       CASE(PROBLEM_BIOELECTRIC_FINITE_ELASTICITY_TYPE)
-        CALL BIOELECTRIC_FINITE_ELASTICITY_CONTROL_LOOP_POST_LOOP(CONTROL_LOOP,ERR,ERROR,*999)
+        CALL BioelectricFiniteElasticity_ControlLoopPostLoop(CONTROL_LOOP,ERR,ERROR,*999)
       CASE(PROBLEM_FINITE_ELASTICITY_STOKES_TYPE)
         !do nothing
       CASE(PROBLEM_FINITE_ELASTICITY_NAVIER_STOKES_TYPE)
@@ -723,18 +713,17 @@ CONTAINS
       CASE(PROBLEM_MULTI_COMPARTMENT_TRANSPORT_TYPE)
         !do nothing
       CASE DEFAULT
-        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%TYPE,"*",ERR,ERROR))// &
+        LOCAL_ERROR="Problem type "//TRIM(NUMBER_TO_VSTRING(CONTROL_LOOP%PROBLEM%SPECIFICATION(2),"*",ERR,ERROR))// &
           & " is not valid for a multi physics problem class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
+        CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Problem is not associated.",ERR,ERROR,*999)
+      CALL FlagError("Problem is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP")
+    EXITS("MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP")
     RETURN
-999 CALL ERRORS("MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP",ERR,ERROR)
-    CALL EXITS("MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP")
+999 ERRORSEXITS("MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP",ERR,ERROR)
     RETURN 1
   END SUBROUTINE MULTI_PHYSICS_CONTROL_LOOP_POST_LOOP
 

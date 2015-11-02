@@ -42,48 +42,81 @@
 !>
 
 !> This module is a CMISS buffer module to the PETSc library.
-MODULE CMISS_PETSC
+MODULE CmissPetsc
   
   USE BASE_ROUTINES
-  USE CMISS_PETSC_TYPES
-  USE KINDS
+  USE CmissPetscTypes
+  USE Kinds
   USE ISO_VARYING_STRING
+  USE STRINGS
   USE TYPES
   
+#include "macros.h"
+
   IMPLICIT NONE
  
   PRIVATE
 
-#include "include/petscversion.h"
-  
-#include "include/finclude/petsc.h"
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 1 )
-#include "include/finclude/petscis.h"
-#include "include/finclude/petscksp.h"
-#include "include/finclude/petscmat.h"
-#include "include/finclude/petscpc.h"
-#include "include/finclude/petscsnes.h"
-#include "include/finclude/petscvec.h"
-#include "include/finclude/petscviewer.h"
-#endif
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-#include "include/finclude/petscts.h"
-#endif
+#include "petscversion.h"
+#include "petsc/finclude/petsc.h"
   
   !Module parameters
 
   !Insert mode types
-  InsertMode, PARAMETER :: PETSC_INSERT_VALUES = INSERT_VALUES
-  InsertMode, PARAMETER :: PETSC_ADD_VALUES = ADD_VALUES
-
+  !> \addtogroup CmissPetsc_PetscMatInsertMode CmissPetsc::PetscMatInsertMode
+  !> \brief Types of PETSc matrix insert modes
+  !> \see CmissPetsc
+  !>@{
+  InsertMode, PARAMETER :: PETSC_INSERT_VALUES = INSERT_VALUES !<Values set in a matrix will overwrite any previous values
+  InsertMode, PARAMETER :: PETSC_ADD_VALUES = ADD_VALUES !<Values set in a matrix will add to any previous values
+  !>@}
+  
   !Scatter mode types
   ScatterMode, PARAMETER :: PETSC_SCATTER_FORWARD = SCATTER_FORWARD
   ScatterMode, PARAMETER :: PETSC_SCATTER_REVERSE = SCATTER_REVERSE
+  
+  !KSP types
+  !> \addtogroup CmissPetsc_PetscKSPTypes CmissPetsc::PetscKSPTypes
+  !> \brief Types of PETSc KSP (Krylov Subspace) solvers
+  !> \see CmissPetsc
+  !>@{
+  KSPType, PARAMETER :: PETSC_KSPRICHARDSON = KSPRICHARDSON !<Preconditioned Richardson iterative solver
+  KSPType, PARAMETER :: PETSC_KSPCHEBYSHEV = KSPCHEBYSHEV !<Preconditioned Chebyshev iterative solver
+  KSPType, PARAMETER :: PETSC_KSPCG = KSPCG !<Preconditioned conjugate gradient (PCG) solver
+  KSPType, PARAMETER :: PETSC_KSPCGNE = KSPCGNE !<Pipelined conjugate gradient to the normal equations with explicitly forming A^t.A
+  KSPType, PARAMETER :: PETSC_KSPNASH = KSPNASH
+  KSPType, PARAMETER :: PETSC_KSPSTCG = KSPSTCG
+  KSPType, PARAMETER :: PETSC_KSPGLTR = KSPGLTR
+  KSPType, PARAMETER :: PETSC_KSPGMRES = KSPGMRES !<Generalised Minimal Residual solver
+  KSPType, PARAMETER :: PETSC_KSPFGMRES = KSPFGMRES !<Flexible Generalised Minimal Residual solver
+  KSPType, PARAMETER :: PETSC_KSPLGMRES = KSPLGMRES
+  KSPType, PARAMETER :: PETSC_KSPDGMRES = KSPDGMRES
+  KSPType, PARAMETER :: PETSC_KSPPGMRES = KSPPGMRES
+  KSPType, PARAMETER :: PETSC_KSPTCQMR = KSPTCQMR !<Tony Chan's Quasi Minimal Residual solver
+  KSPType, PARAMETER :: PETSC_KSPBCGS = KSPBCGS !<Stablised BiConjugate Gradient Squared solver
+  KSPType, PARAMETER :: PETSC_KSPIBCGS = KSPIBCGS
+  KSPType, PARAMETER :: PETSC_KSPFBCGS = KSPFBCGS
+  KSPType, PARAMETER :: PETSC_KSPFBCGSR = KSPFBCGSR
+  KSPType, PARAMETER :: PETSC_KSPBCGSL = KSPBCGSL
+  KSPType, PARAMETER :: PETSC_KSPCGS = KSPCGS !<Conjugate Gradient Squared solver
+  KSPType, PARAMETER :: PETSC_KSPTFQMR = KSPTFQMR !<Transpose Free Quasi Minimum Residual solver
+  KSPType, PARAMETER :: PETSC_KSPCR = KSPCR !<Preconditioned Conjugate Residuals method
+  KSPType, PARAMETER :: PETSC_KSPLSQR = KSPLSQR
+  KSPType, PARAMETER :: PETSC_KSPPREONLY = KSPPREONLY !<Stub solver that only applies the preconditioner.
+  KSPType, PARAMETER :: PETSC_KSPQCG = KSPQCG
+  KSPType, PARAMETER :: PETSC_KSPBICG = KSPBICG !<BiConjugate Gradient solver
+  KSPType, PARAMETER :: PETSC_KSPMINRES = KSPMINRES !<Minimum Residual solver
+  KSPType, PARAMETER :: PETSC_KSPSYMMLQ = KSPSYMMLQ
+  KSPType, PARAMETER :: PETSC_KSPLCD = KSPLCD !<Left Conjugate Direction solver
+  KSPType, PARAMETER :: PETSC_KSPPYTHON = KSPPYTHON
+  KSPType, PARAMETER :: PETSC_KSPGCR = KSPGCR !<Preconditioned Generalised Conjugate Resdiuals solver
+  !>@}
   
   !KSPConvergedReason types
   KSPConvergedReason, PARAMETER :: PETSC_KSP_CONVERGED_RTOL = KSP_CONVERGED_RTOL
   KSPConvergedReason, PARAMETER :: PETSC_KSP_CONVERGED_ATOL = KSP_CONVERGED_ATOL
   KSPConvergedReason, PARAMETER :: PETSC_KSP_CONVERGED_ITS = KSP_CONVERGED_ITS
+  KSPConvergedReason, PARAMETER :: PETSC_KSP_CONVERGED_ITERATING = KSP_CONVERGED_ITERATING
   KSPConvergedReason, PARAMETER :: PETSC_KSP_CONVERGED_CG_NEG_CURVE = KSP_CONVERGED_CG_NEG_CURVE
   KSPConvergedReason, PARAMETER :: PETSC_KSP_CONVERGED_CG_CONSTRAINED = KSP_CONVERGED_CG_CONSTRAINED
   KSPConvergedReason, PARAMETER :: PETSC_KSP_CONVERGED_STEP_LENGTH = KSP_CONVERGED_STEP_LENGTH
@@ -95,36 +128,14 @@ MODULE CMISS_PETSC
   KSPConvergedReason, PARAMETER :: PETSC_KSP_DIVERGED_BREAKDOWN_BICG = KSP_DIVERGED_BREAKDOWN_BICG
   KSPConvergedReason, PARAMETER :: PETSC_KSP_DIVERGED_NONSYMMETRIC = KSP_DIVERGED_NONSYMMETRIC
   KSPConvergedReason, PARAMETER :: PETSC_KSP_DIVERGED_INDEFINITE_PC = KSP_DIVERGED_INDEFINITE_PC
-  KSPConvergedReason, PARAMETER :: PETSC_KSP_DIVERGED_NAN = KSP_DIVERGED_NAN
+  KSPConvergedReason, PARAMETER :: PETSC_KSP_DIVERGED_NANORINF = KSP_DIVERGED_NANORINF
   KSPConvergedReason, PARAMETER :: PETSC_KSP_DIVERGED_INDEFINITE_MAT = KSP_DIVERGED_INDEFINITE_MAT
-  KSPConvergedReason, PARAMETER :: PETSC_KSP_CONVERGED_ITERATING = KSP_CONVERGED_ITERATING  
-  
-  !KSP types
-  KSPType, PARAMETER :: PETSC_KSPRICHARDSON = KSPRICHARDSON
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  KSPType, PARAMETER :: PETSC_KSPCHEBYSHEV = KSPCHEBYSHEV
-#else
-  KSPType, PARAMETER :: PETSC_KSPCHEBYCHEV = KSPCHEBYCHEV
-#endif  
-  KSPType, PARAMETER :: PETSC_KSPCG = KSPCG
-  KSPType, PARAMETER :: PETSC_KSPCGNE = KSPCGNE
-  KSPType, PARAMETER :: PETSC_KSPSTCG = KSPSTCG
-  KSPType, PARAMETER :: PETSC_KSPGMRES = KSPGMRES
-  KSPType, PARAMETER :: PETSC_KSPFGMRES = KSPFGMRES
-  KSPType, PARAMETER :: PETSC_KSPLGMRES = KSPLGMRES
-  KSPType, PARAMETER :: PETSC_KSPTCQMR = KSPTCQMR
-  KSPType, PARAMETER :: PETSC_KSPBCGS = KSPBCGS
-  KSPType, PARAMETER :: PETSC_KSPBCGSL = KSPBCGSL
-  KSPType, PARAMETER :: PETSC_KSPCGS = KSPCGS
-  KSPType, PARAMETER :: PETSC_KSPTFQMR = KSPTFQMR
-  KSPType, PARAMETER :: PETSC_KSPCR = KSPCR
-  KSPType, PARAMETER :: PETSC_KSPLSQR = KSPLSQR
-  KSPType, PARAMETER :: PETSC_KSPPREONLY = KSPPREONLY
-  KSPType, PARAMETER :: PETSC_KSPQCG = KSPQCG
-  KSPType, PARAMETER :: PETSC_KSPBICG = KSPBICG
-  KSPType, PARAMETER :: PETSC_KSPMINRES = KSPMINRES
-  KSPType, PARAMETER :: PETSC_KSPSYMMLQ = KSPSYMMLQ
-  KSPType, PARAMETER :: PETSC_KSPLCD = KSPLCD
+
+  !KSPNorm types
+  KSPNormType, PARAMETER :: PETSC_KSP_NORM_NONE = KSP_NORM_NONE
+  KSPNormType, PARAMETER :: PETSC_KSP_NORM_PRECONDITIONED = KSP_NORM_PRECONDITIONED
+  KSPNormType, PARAMETER :: PETSC_KSP_NORM_UNPRECONDITIONED = KSP_NORM_UNPRECONDITIONED
+  KSPNormType, PARAMETER :: PETSC_KSP_NORM_NATURAL = KSP_NORM_NATURAL
 
   !MatAssembly types
   MatAssemblyType, PARAMETER :: PETSC_MAT_FLUSH_ASSEMBLY = MAT_FLUSH_ASSEMBLY
@@ -134,6 +145,13 @@ MODULE CMISS_PETSC
   MatDuplicateOption, PARAMETER :: PETSC_MAT_DO_NOT_COPY_VALUES = MAT_DO_NOT_COPY_VALUES
   MatDuplicateOption, PARAMETER :: PETSC_MAT_COPY_VALUES = MAT_COPY_VALUES
   MatDuplicateOption, PARAMETER :: PETSC_MAT_SHARE_NONZERO_PATTERN = MAT_SHARE_NONZERO_PATTERN
+
+  !MatFactor types
+  MatFactorType, PARAMETER :: PETSC_MAT_FACTOR_NONE = MAT_FACTOR_NONE
+  MatFactorType, PARAMETER :: PETSC_MAT_FACTOR_LU = MAT_FACTOR_LU
+  MatFactorType, PARAMETER :: PETSC_MAT_FACTOR_CHOLESKY = MAT_FACTOR_CHOLESKY
+  MatFactorType, PARAMETER :: PETSC_MAT_FACTOR_ILU = MAT_FACTOR_ILU
+  MatFactorType, PARAMETER :: PETSC_MAT_FACTOR_ICC = MAT_FACTOR_ICC
 
   !MatInfo types
   MatInfo, PARAMETER :: PETSC_MAT_INFO_SIZE = MAT_INFO_SIZE
@@ -154,57 +172,73 @@ MODULE CMISS_PETSC
   MatInfoType, PARAMETER :: PETSC_MAT_GLOBAL_SUM = MAT_GLOBAL_SUM
   
   !MatOption types
-  MatOption, PARAMETER :: PETSC_MAT_ROW_ORIENTED = MAT_ROW_ORIENTED
-  MatOption, PARAMETER :: PETSC_MAT_NEW_NONZERO_LOCATIONS = MAT_NEW_NONZERO_LOCATIONS
-  MatOption, PARAMETER :: PETSC_MAT_SYMMETRIC = MAT_SYMMETRIC
-  MatOption, PARAMETER :: PETSC_MAT_STRUCTURALLY_SYMMETRIC = MAT_STRUCTURALLY_SYMMETRIC
+  !> \addtogroup CmissPetsc_PetscMatOptionTypes CmissPetsc::PetscMatOption
+  !> \brief Types of matrix options for PETSc matrices
+  !> \see CmissPetsc
+  !>@{
+  MatOption, PARAMETER :: PETSC_MAT_ROW_ORIENTED = MAT_ROW_ORIENTED !<Matrix will be stored in a row orientated fashion.
+  MatOption, PARAMETER :: PETSC_MAT_NEW_NONZERO_LOCATIONS = MAT_NEW_NONZERO_LOCATIONS !<Any additions or insertions that would generate a new nonzero location are ignored.
+  MatOption, PARAMETER :: PETSC_MAT_SYMMETRIC = MAT_SYMMETRIC !<Matrix is symmetric in terms of both structure and values.
+  MatOption, PARAMETER :: PETSC_MAT_STRUCTURALLY_SYMMETRIC = MAT_STRUCTURALLY_SYMMETRIC !<Matrix has symmetric nonzero structure
   MatOption, PARAMETER :: PETSC_MAT_NEW_DIAGONALS = MAT_NEW_DIAGONALS
-  MatOption, PARAMETER :: PETSC_MAT_IGNORE_OFF_PROC_ENTRIES = MAT_IGNORE_OFF_PROC_ENTRIES
-  MatOption, PARAMETER :: PETSC_MAT_NEW_NONZERO_LOCATION_ERR = MAT_NEW_NONZERO_LOCATION_ERR
-  MatOption, PARAMETER :: PETSC_MAT_NEW_NONZERO_ALLOCATION_ERR = MAT_NEW_NONZERO_ALLOCATION_ERR
-  MatOption, PARAMETER :: PETSC_MAT_USE_HASH_TABLE = MAT_USE_HASH_TABLE
-  MatOption, PARAMETER :: PETSC_MAT_KEEP_NONZERO_PATTERN = MAT_KEEP_NONZERO_PATTERN
-  MatOption, PARAMETER :: PETSC_MAT_IGNORE_ZERO_ENTRIES = MAT_IGNORE_ZERO_ENTRIES
-  MatOption, PARAMETER :: PETSC_MAT_USE_INODES = MAT_USE_INODES
-  MatOption, PARAMETER :: PETSC_MAT_HERMITIAN = MAT_HERMITIAN
-  MatOption, PARAMETER :: PETSC_MAT_SYMMETRY_ETERNAL = MAT_SYMMETRY_ETERNAL
-  MatOption, PARAMETER :: PETSC_MAT_IGNORE_LOWER_TRIANGULAR = MAT_IGNORE_LOWER_TRIANGULAR
+  MatOption, PARAMETER :: PETSC_MAT_IGNORE_OFF_PROC_ENTRIES = MAT_IGNORE_OFF_PROC_ENTRIES !<Any entries that are for other processors will be dropped
+  MatOption, PARAMETER :: PETSC_MAT_NEW_NONZERO_LOCATION_ERR = MAT_NEW_NONZERO_LOCATION_ERR !<Any addition or insertion that will generate a new nonzero location will produce an error
+  MatOption, PARAMETER :: PETSC_MAT_NEW_NONZERO_ALLOCATION_ERR = MAT_NEW_NONZERO_ALLOCATION_ERR !<Any addition or insertion tat would generate a new entry that has not been preallocated will produce an error
+  MatOption, PARAMETER :: PETSC_MAT_USE_HASH_TABLE = MAT_USE_HASH_TABLE !<Use a hash table for matrix assembly in order to improve matrix searches
+  MatOption, PARAMETER :: PETSC_MAT_KEEP_NONZERO_PATTERN = MAT_KEEP_NONZERO_PATTERN !<When MatZeroRows is called the zeroed entries are kept in the nonzero strucutre
+  MatOption, PARAMETER :: PETSC_MAT_IGNORE_ZERO_ENTRIES = MAT_IGNORE_ZERO_ENTRIES !<Stop zero values from creating a zero location in the matrix 
+  MatOption, PARAMETER :: PETSC_MAT_USE_INODES = MAT_USE_INODES !<Matrix will using an inode version of code
+  MatOption, PARAMETER :: PETSC_MAT_HERMITIAN = MAT_HERMITIAN !<Hermitian matrix, the transpose is the complex conjugation
+  MatOption, PARAMETER :: PETSC_MAT_SYMMETRY_ETERNAL = MAT_SYMMETRY_ETERNAL !<Matrix will always be symmetric
+  MatOption, PARAMETER :: PETSC_MAT_DUMMY = MAT_DUMMY
+  MatOption, PARAMETER :: PETSC_MAT_IGNORE_LOWER_TRIANGULAR = MAT_IGNORE_LOWER_TRIANGULAR !<Ignore any additions or insertions in the lower triangular part of the matrix
   MatOption, PARAMETER :: PETSC_MAT_ERROR_LOWER_TRIANGULAR = MAT_ERROR_LOWER_TRIANGULAR
   MatOption, PARAMETER :: PETSC_MAT_GETROW_UPPERTRIANGULAR = MAT_GETROW_UPPERTRIANGULAR
   MatOption, PARAMETER :: PETSC_MAT_UNUSED_NONZERO_LOCATION_ERR = MAT_UNUSED_NONZERO_LOCATION_ERR
-  MatOption, PARAMETER :: PETSC_NUM_MAT_OPTIONS = NUM_MAT_OPTIONS
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  MatOption, PARAMETER :: PETSC_MAT_CHECK_COMPRESSED_ROW = MAT_CHECK_COMPRESSED_ROW
-  MatOption, PARAMETER :: PETSC_MAT_SPD = MAT_SPD
+  MatOption, PARAMETER :: PETSC_NUM_MAT_OPTIONS = MAT_OPTION_MAX
+  MatOption, PARAMETER :: PETSC_MAT_SPD = MAT_SPD !<Matrix is symmetric and positive definite
   MatOption, PARAMETER :: PETSC_MAT_NO_OFF_PROC_ENTRIES = MAT_NO_OFF_PROC_ENTRIES
   MatOption, PARAMETER :: PETSC_MAT_NO_OFF_PROC_ZERO_ROWS = MAT_NO_OFF_PROC_ZERO_ROWS
-#else
-  MatOption, PARAMETER :: PETSC_MAT_USE_COMPRESSEDROW = MAT_USE_COMPRESSEDROW
-#endif
+  !>@}
+  
+  !Matrix Solver Package types
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_SUPERLU = MATSOLVERSUPERLU
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_SUPERLU_DIST = MATSOLVERSUPERLU_DIST
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_UMFPACK = MATSOLVERUMFPACK
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_CHOLMOD = MATSOLVERCHOLMOD
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_ESSL = MATSOLVERESSL
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_LUSOL = MATSOLVERLUSOL
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_MUMPS = MATSOLVERMUMPS
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_PASTIX = MATSOLVERPASTIX
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_MATLAB = MATSOLVERMATLAB
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_PETSC = MATSOLVERPETSC
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_BAS = MATSOLVERBAS
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_CUSPARSE = MATSOLVERCUSPARSE
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_BSTRM = MATSOLVERBSTRM
+  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_SBSTRM = MATSOLVERSBSTRM
   
   !MatStructure types
-  MatStructure, PARAMETER :: PETSC_SAME_PRECONDITIONER = SAME_PRECONDITIONER
-  MatStructure, PARAMETER :: PETSC_SAME_NONZERO_PATTERN = SAME_NONZERO_PATTERN
   MatStructure, PARAMETER :: PETSC_DIFFERENT_NONZERO_PATTERN = DIFFERENT_NONZERO_PATTERN
   MatStructure, PARAMETER :: PETSC_SUBSET_NONZERO_PATTERN = SUBSET_NONZERO_PATTERN
+  MatStructure, PARAMETER :: PETSC_SAME_NONZERO_PATTERN = SAME_NONZERO_PATTERN
+
+  !MatReuse types
+  MatReuse, PARAMETER :: PETSC_MAT_INITIAL_MATRIX = MAT_INITIAL_MATRIX
+  MatReuse, PARAMETER :: PETSC_MAT_REUSE_MATRIX = MAT_REUSE_MATRIX
+  MatReuse, PARAMETER :: PETSC_MAT_IGNORE_MATRIX = MAT_IGNORE_MATRIX
 
   !MatColoring types
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
   MatColoringType, PARAMETER :: PETSC_MATCOLORING_NATURAL = MATCOLORINGNATURAL
   MatColoringType, PARAMETER :: PETSC_MATCOLORING_SL = MATCOLORINGSL
   MatColoringType, PARAMETER :: PETSC_MATCOLORING_LF = MATCOLORINGLF
   MatColoringType, PARAMETER :: PETSC_MATCOLORING_ID = MATCOLORINGID
-#else  
-  MatColoringType, PARAMETER :: PETSC_MATCOLORING_NATURAL = MATCOLORING_NATURAL
-  MatColoringType, PARAMETER :: PETSC_MATCOLORING_SL = MATCOLORING_SL
-  MatColoringType, PARAMETER :: PETSC_MATCOLORING_LF = MATCOLORING_LF
-  MatColoringType, PARAMETER :: PETSC_MATCOLORING_ID = MATCOLORING_ID
-#endif
-  
-  !Mat types
-#if ( PETSC_VERSION_MAJOR == 2 )
-  MatType, PARAMETER :: PETSC_AIJMUMPS = MATAIJMUMPS
-#endif
+  MatColoringType, PARAMETER :: PETSC_MATCOLORING_GREEDY = MATCOLORINGGREEDY
+  MatColoringType, PARAMETER :: PETSC_MATCOLORING_JP = MATCOLORINGJP
+
+  !Norm types
+  NormType, PARAMETER :: PETSC_NORM_1 = NORM_1
+  NormType, PARAMETER :: PETSC_NORM_2 = NORM_2
+  NormType, PARAMETER :: PETSC_NORM_INFINITY = NORM_INFINITY
   
   !PC types
   PCType, PARAMETER ::  PETSC_PCNONE = PCNONE
@@ -227,117 +261,60 @@ MODULE CMISS_PETSC
   PCType, PARAMETER ::  PETSC_PCPBJACOBI = PCPBJACOBI
   PCType, PARAMETER ::  PETSC_PCMAT = PCMAT
   PCType, PARAMETER ::  PETSC_PCHYPRE = PCHYPRE
-  PCType, PARAMETER ::  PETSC_PCFIELDSPLIT = PCFIELDSPLIT
-  PCType, PARAMETER ::  PETSC_PCML = PCML
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  PCType, PARAMETER ::  PETSC_PCGASM = PCGASM
   PCType, PARAMETER ::  PETSC_PCPARMS = PCPARMS
+  PCType, PARAMETER ::  PETSC_PCFIELDSPLIT = PCFIELDSPLIT
   PCType, PARAMETER ::  PETSC_PCTFS = PCTFS
-  PCType, PARAMETER ::  PETSC_PCPROMETHEUS = PCPROMETHEUS
+  PCType, PARAMETER ::  PETSC_PCML = PCML
   PCType, PARAMETER ::  PETSC_PCGALERKIN = PCGALERKIN
   PCType, PARAMETER ::  PETSC_PCEXOTIC = PCEXOTIC
-  PCType, PARAMETER ::  PETSC_PCHMPI = PCHMPI
   PCType, PARAMETER ::  PETSC_PCSUPPORTGRAPH = PCSUPPORTGRAPH
-  PCType, PARAMETER ::  PETSC_PCASA = PCASA
   PCType, PARAMETER ::  PETSC_PCCP = PCCP
-  PCType, PARAMETER ::  PETSC_PCVFVT = PCBFBT
+  PCType, PARAMETER ::  PETSC_PCBFBT = PCBFBT
   PCType, PARAMETER ::  PETSC_PCLSC = PCLSC
   PCType, PARAMETER ::  PETSC_PCPYTHON = PCPYTHON
   PCType, PARAMETER ::  PETSC_PCPFMG = PCPFMG
   PCType, PARAMETER ::  PETSC_PCSYSPFMG = PCSYSPFMG
   PCType, PARAMETER ::  PETSC_PCREDISTRIBUTE = PCREDISTRIBUTE
+  PCType, PARAMETER ::  PETSC_PCSVD = PCSVD
+  PCType, PARAMETER ::  PETSC_PCGAMG = PCGAMG
+  PCType, PARAMETER ::  PETSC_PCGASM = PCGASM
   PCType, PARAMETER ::  PETSC_PCSACUSP = PCSACUSP
   PCType, PARAMETER ::  PETSC_PCSACUSPPOLY = PCSACUSPPOLY
   PCType, PARAMETER ::  PETSC_PCBICGSTABCUSP = PCBICGSTABCUSP
-  PCType, PARAMETER ::  PETSC_PCSVD = PCSVD
   PCType, PARAMETER ::  PETSC_PCAINVCUSP = PCAINVCUSP
-#else
-  PCType, PARAMETER ::  PETSC_PCMILU = PCMILU
-#endif
+  PCType, PARAMETER ::  PETSC_PCBDDC = PCBDDC
 
-  !Matrix Solver Package types
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_SPOOLES = MATSOLVERSPOOLES
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_SUPERLU = MATSOLVERSUPERLU
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_SUPERLU_DIST = MATSOLVERSUPERLU_DIST
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_UMFPACK = MATSOLVERUMFPACK
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_ESSL = MATSOLVERESSL
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_LUSOL = MATSOLVERLUSOL
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_MUMPS = MATSOLVERMUMPS
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_MATLAB = MATSOLVERMATLAB
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_PASTIX = MATSOLVERPASTIX
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_PETSC = MATSOLVERPETSC
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_PLAPACK = MATSOLVERPLAPACK
-#else
-#if ( PETSC_VERSION_MAJOR == 3 )
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_SPOOLES = MAT_SOLVER_SPOOLES
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_SUPERLU = MAT_SOLVER_SUPERLU
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_SUPERLU_DIST = MAT_SOLVER_SUPERLU_DIST
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_UMFPACK = MAT_SOLVER_UMFPACK
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_ESSL = MAT_SOLVER_ESSL
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_LUSOL = MAT_SOLVER_LUSOL
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_MUMPS = MAT_SOLVER_MUMPS
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_DSCPACK = MAT_SOLVER_DSCPACK
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_MATLAB = MAT_SOLVER_MATLAB
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_PETSC = MAT_SOLVER_PETSC
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_PLAPACK = MAT_SOLVER_PLAPACK
-#if ( PETSC_VERSION_MINOR >= 1 )
-  MatSolverPackage, PARAMETER :: PETSC_MAT_SOLVER_PASTIX = MAT_SOLVER_PASTIX
-#endif
-#endif
-#endif
-  
-  !SNES converged types
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_FNORM_ABS = SNES_CONVERGED_FNORM_ABS
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_FNORM_RELATIVE = SNES_CONVERGED_FNORM_RELATIVE
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_PNORM_RELATIVE = SNES_CONVERGED_PNORM_RELATIVE
-#endif
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_ITS = SNES_CONVERGED_ITS
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_TR_DELTA = SNES_CONVERGED_TR_DELTA
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_FUNCTION_COUNT = SNES_DIVERGED_FUNCTION_COUNT
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_LINEAR_SOLVE = SNES_DIVERGED_LINEAR_SOLVE
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_FNORM_NAN = SNES_DIVERGED_FNORM_NAN
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_MAX_IT = SNES_DIVERGED_MAX_IT
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_LOCAL_MIN = SNES_DIVERGED_LOCAL_MIN
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_ITERATING = SNES_CONVERGED_ITERATING
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_FUNCTION_DOMAIN = SNES_DIVERGED_FUNCTION_DOMAIN
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_LS_FAILURE = SNES_DIVERGED_LINE_SEARCH
-#else
-  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_LS_FAILURE = SNES_DIVERGED_LS_FAILURE
-#endif
-  
   !SNES types
-  SNESType, PARAMETER :: PETSC_SNESLS = SNESLS
-  SNESType, PARAMETER :: PETSC_SNESTR = SNESTR
-  SNESType, PARAMETER :: PETSC_SNESTEST = SNESTEST
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
+  SNESType, PARAMETER :: PETSC_SNESNEWTONLS = SNESNEWTONLS
+  SNESType, PARAMETER :: PETSC_SNESNEWTONTR = SNESNEWTONTR
   SNESType, PARAMETER :: PETSC_SNESPYTHON = SNESPYTHON
-#endif
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  SNESType, PARAMETER :: PETSC_SNESTEST = SNESTEST
   SNESType, PARAMETER :: PETSC_SNESNRICHARDSON = SNESNRICHARDSON
   SNESType, PARAMETER :: PETSC_SNESKSPONLY = SNESKSPONLY
-  SNESType, PARAMETER :: PETSC_SNESVIRS = SNESVIRS
-  SNESType, PARAMETER :: PETSC_SNESVISS = SNESVISS
+  SNESType, PARAMETER :: PETSC_SNESVINEWTONRSLS = SNESVINEWTONRSLS
+  SNESType, PARAMETER :: PETSC_SNESVINEWTONSSLS = SNESVINEWTONSSLS
   SNESType, PARAMETER :: PETSC_SNESNGMRES = SNESNGMRES
   SNESType, PARAMETER :: PETSC_SNESQN = SNESQN
   SNESType, PARAMETER :: PETSC_SNESSHELL = SNESSHELL
   SNESType, PARAMETER :: PETSC_SNESNCG = SNESNCG
   SNESType, PARAMETER :: PETSC_SNESFAS = SNESFAS
   SNESType, PARAMETER :: PETSC_SNESMS = SNESMS
-#endif
 
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-
-  !SNES types
-  SNESNormType, PARAMETER :: PETSC_SNES_NORM_DEFAULT = SNES_NORM_DEFAULT
-  SNESNormType, PARAMETER :: PETSC_SNES_NORM_NONE = SNES_NORM_NONE
-  SNESNormType, PARAMETER :: PETSC_SNES_NORM_FUNCTION = SNES_NORM_FUNCTION
-  SNESNormType, PARAMETER :: PETSC_SNES_NORM_INITIAL_ONLY = SNES_NORM_INITIAL_ONLY
-  SNESNormType, PARAMETER :: PETSC_SNES_NORM_FINAL_ONLY = SNES_NORM_FINAL_ONLY
-  SNESNormType, PARAMETER :: PETSC_SNES_NORM_INITIAL_FINAL_ONLY = SNES_NORM_INITIAL_FINAL_ONLY
-
+  !SNES converged types
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_FNORM_ABS = SNES_CONVERGED_FNORM_ABS
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_FNORM_RELATIVE = SNES_CONVERGED_FNORM_RELATIVE
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_SNORM_RELATIVE = SNES_CONVERGED_SNORM_RELATIVE
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_ITS = SNES_CONVERGED_ITS
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_TR_DELTA = SNES_CONVERGED_TR_DELTA
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_FUNCTION_DOMAIN = SNES_DIVERGED_FUNCTION_DOMAIN
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_FUNCTION_COUNT = SNES_DIVERGED_FUNCTION_COUNT
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_LINEAR_SOLVE = SNES_DIVERGED_LINEAR_SOLVE
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_FNORM_NAN = SNES_DIVERGED_FNORM_NAN
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_MAX_IT = SNES_DIVERGED_MAX_IT
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_LINE_SEARCH = SNES_DIVERGED_LINE_SEARCH
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_DIVERGED_LOCAL_MIN = SNES_DIVERGED_LOCAL_MIN
+  SNESConvergedReason, PARAMETER :: PETSC_SNES_CONVERGED_ITERATING = SNES_CONVERGED_ITERATING
+  
   !SNES line search type
   SNESLineSearchType, PARAMETER :: PETSC_SNES_LINESEARCH_BASIC = SNESLINESEARCHBASIC
   SNESLineSearchType, PARAMETER :: PETSC_SNES_LINESEARCH_BT = SNESLINESEARCHBT
@@ -346,49 +323,58 @@ MODULE CMISS_PETSC
   SNESLineSearchType, PARAMETER :: PETSC_SNES_LINESEARCH_SHELL = SNESLINESEARCHSHELL
   
   !SNES line search order  
-  SNESLineSearchOrder, PARAMETER :: PETSC_SNES_LINESEARCH_LINEAR = SNES_LINESEARCH_ORDER_LINEAR
-  SNESLineSearchOrder, PARAMETER :: PETSC_SNES_LINESEARCH_QUADRATIC = SNES_LINESEARCH_ORDER_QUADRATIC
-  SNESLineSearchOrder, PARAMETER :: PETSC_SNES_LINESEARCH_CUBIC = SNES_LINESEARCH_ORDER_CUBIC
-#else
-  !SNES line search types
-  INTEGER(INTG), PARAMETER :: PETSC_SNES_LINESEARCH_NONORMS = 1
-  INTEGER(INTG), PARAMETER :: PETSC_SNES_LINESEARCH_NO = 2
-  INTEGER(INTG), PARAMETER :: PETSC_SNES_LINESEARCH_QUADRATIC = 3
-  INTEGER(INTG), PARAMETER :: PETSC_SNES_LINESEARCH_CUBIC = 4  
-#endif
+  SNESLineSearchOrder, PARAMETER :: PETSC_SNES_LINESEARCH_ORDER_LINEAR = SNES_LINESEARCH_ORDER_LINEAR
+  SNESLineSearchOrder, PARAMETER :: PETSC_SNES_LINESEARCH_ORDER_QUADRATIC = SNES_LINESEARCH_ORDER_QUADRATIC
+  SNESLineSearchOrder, PARAMETER :: PETSC_SNES_LINESEARCH_ORDER_CUBIC = SNES_LINESEARCH_ORDER_CUBIC
 
-   !TS types
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
+  !SNES norm schedules
+  SNESNormSchedule, PARAMETER :: PETSC_SNES_NORM_DEFAULT = SNES_NORM_DEFAULT
+  SNESNormSchedule, PARAMETER :: PETSC_SNES_NORM_NONE = SNES_NORM_NONE
+  SNESNormSchedule, PARAMETER :: PETSC_SNES_NORM_ALWAYS = SNES_NORM_ALWAYS
+  SNESNormSchedule, PARAMETER :: PETSC_SNES_NORM_INITIAL_ONLY = SNES_NORM_INITIAL_ONLY
+  SNESNormSchedule, PARAMETER :: PETSC_SNES_NORM_FINAL_ONLY = SNES_NORM_FINAL_ONLY
+  SNESNormSchedule, PARAMETER :: PETSC_SNES_NORM_INITIAL_FINAL_ONLY = SNES_NORM_INITIAL_FINAL_ONLY
+
+  !SNES QN types
+  SNESQNType, PARAMETER :: PETSC_SNES_QN_LBFGS = SNES_QN_LBFGS 
+  SNESQNType, PARAMETER :: PETSC_SNES_QN_BROYDEN = SNES_QN_BROYDEN
+  SNESQNType, PARAMETER :: PETSC_SNES_QN_BADBROYDEN = SNES_QN_BADBROYDEN
+  
+  !SNES QN restart types
+  SNESQNRestartType, PARAMETER :: PETSC_SNES_QN_RESTART_DEFAULT = SNES_QN_RESTART_DEFAULT
+  SNESQNRestartType, PARAMETER :: PETSC_SNES_QN_RESTART_NONE = SNES_QN_RESTART_NONE 
+  SNESQNRestartType, PARAMETER :: PETSC_SNES_QN_RESTART_POWELL = SNES_QN_RESTART_POWELL
+  SNESQNRestartType, PARAMETER :: PETSC_SNES_QN_RESTART_PERIODIC = SNES_QN_RESTART_PERIODIC 
+
+  !SNES QN scaling types
+  SNESQNScaleType, PARAMETER :: PETSC_SNES_QN_SCALE_DEFAULT = SNES_QN_SCALE_DEFAULT
+  SNESQNScaleType, PARAMETER :: PETSC_SNES_QN_SCALE_NONE = SNES_QN_SCALE_NONE 
+  SNESQNScaleType, PARAMETER :: PETSC_SNES_QN_SCALE_SHANNO = SNES_QN_SCALE_SHANNO 
+  SNESQNScaleType, PARAMETER :: PETSC_SNES_QN_SCALE_LINESEARCH = SNES_QN_SCALE_LINESEARCH  
+  SNESQNScaleType, PARAMETER :: PETSC_SNES_QN_SCALE_JACOBIAN = SNES_QN_SCALE_JACOBIAN   
+
+  !TS types
   TSType, PARAMETER :: PETSC_TS_EULER = TSEULER
   TSType, PARAMETER :: PETSC_TS_BEULER = TSBEULER
   TSType, PARAMETER :: PETSC_TS_PSEUDO = TSPSEUDO
-  TSType, PARAMETER :: PETSC_TS_CRANK_NICHOLSON = TSCN
+  TSType, PARAMETER :: PETSC_TS_CN = TSCN
   TSType, PARAMETER :: PETSC_TS_SUNDIALS = TSSUNDIALS
-  TSType, PARAMETER :: PETSC_TS_RUNGE_KUTTA = TSRK
+  TSType, PARAMETER :: PETSC_TS_RK = TSRK
   TSType, PARAMETER :: PETSC_TS_PYTHON = TSPYTHON
   TSType, PARAMETER :: PETSC_TS_THETA = TSTHETA
-  TSType, PARAMETER :: PETSC_TS_ALPHA = TSGL
+  TSType, PARAMETER :: PETSC_TS_ALPHA = TSALPHA
+  TSType, PARAMETER :: PETSC_TS_GL = TSGL
   TSType, PARAMETER :: PETSC_TS_SSP = TSSSP
   TSType, PARAMETER :: PETSC_TS_ARKIMEX = TSARKIMEX
-#else
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 1 )
-  TSType, PARAMETER :: PETSC_TS_EULER = TS_EULER
-  TSType, PARAMETER :: PETSC_TS_BEULER = TS_BEULER
-  TSType, PARAMETER :: PETSC_TS_PSEUDO = TS_PSEUDO
-  TSType, PARAMETER :: PETSC_TS_SUNDIALS = TS_SUNDIALS
-  TSType, PARAMETER :: PETSC_TS_CRANK_NICHOLSON = TS_CRANK_NICHOLSON
-  TSType, PARAMETER :: PETSC_TS_RUNGE_KUTTA = TS_RUNGE_KUTTA
-#else
-  TSType, PARAMETER :: PETSC_TS_EULER = TSEULER
-  TSType, PARAMETER :: PETSC_TS_BEULER = TSBEULER
-  TSType, PARAMETER :: PETSC_TS_PSEUDO = TSPSEUDO
-  TSType, PARAMETER :: PETSC_TS_SUNDIALS = TSSUNDIALS
-  TSType, PARAMETER :: PETSC_TS_CRANK_NICHOLSON = TSCRANK_NICHOLSON
-  TSType, PARAMETER :: PETSC_TS_RUNGE_KUTTA = TSRUNGE_KUTTA
-  TSType, PARAMETER :: PETSC_TS_THETA = TSTHETA
-  TSType, PARAMETER :: PETSC_TS_GL = TSGL
-#endif
-#endif
+  TSType, PARAMETER :: PETSC_TS_ROSW = TSROSW
+  TSType, PARAMETER :: PETSC_TS_EIMEX = TSEIMEX
+
+  !TS convergence flags
+  TSConvergedReason, PARAMETER :: PETSC_TS_CONVERGED_ITERATING = TS_CONVERGED_ITERATING
+  TSConvergedReason, PARAMETER :: PETSC_TS_CONVERGED_TIME = TS_CONVERGED_TIME
+  TSConvergedReason, PARAMETER :: PETSC_TS_CONVERGED_ITS = TS_CONVERGED_ITS
+  TSConvergedReason, PARAMETER :: PETSC_TS_DIVERGED_NONLINEAR_SOLVE = TS_DIVERGED_NONLINEAR_SOLVE
+  TSConvergedReason, PARAMETER :: PETSC_TS_DIVERGED_STEP_REJECTED = TS_DIVERGED_STEP_REJECTED
   
   !TS problem types
   TSProblemType, PARAMETER :: PETSC_TS_LINEAR = TS_LINEAR
@@ -399,67 +385,90 @@ MODULE CMISS_PETSC
   TSSundialsType, PARAMETER :: PETSC_SUNDIALS_BDF = SUNDIALS_BDF
 
   !TS Sundials Gram Schmidt Type
-#if ( PETSC_VERSION_MAJOR == 3 )
   TSSundialsGramSchmidtType, PARAMETER :: PETSC_SUNDIALS_MODIFIED_GS = SUNDIALS_MODIFIED_GS
   TSSundialsGramSchmidtType, PARAMETER :: PETSC_SUNDIALS_CLASSICAL_GS = SUNDIALS_CLASSICAL_GS
-#else
-  TSSundialsGramSchmitdType, PARAMETER :: PETSC_SUNDIALS_MODIFIED_GS = SUNDIALS_MODIFIED_GS
-  TSSundialsGramSchmitdType, PARAMETER :: PETSC_SUNDIALS_CLASSICAL_GS = SUNDIALS_CLASSICAL_GS
-#endif
   
   !Module types
 
   !Module variables
 
-  LOGICAL, SAVE :: PETSC_HANDLE_ERROR
+  LOGICAL, SAVE :: petscHandleError
 
   !Interfaces
 
   INTERFACE
 
+    !PETSc miscellanous routines
+
+    SUBROUTINE PetscFinalize(ierr)
+      PetscInt ierr
+    END SUBROUTINE PetscFinalize
+
+    SUBROUTINE PetscInitialize(file,ierr)
+      CHARACTER(LEN=*) file
+      PetscInt ierr
+    END SUBROUTINE PetscInitialize
+
+    SUBROUTINE PetscPopSignalHandler(ierr)
+      PetscInt ierr
+    END SUBROUTINE PetscPopSignalHandler
+    
+    SUBROUTINE PetscLogView(viewer,ierr)
+      PetscViewer viewer
+      PetscInt ierr
+    END SUBROUTINE PetscLogView
+
+    !IS routines
+    
     SUBROUTINE ISDestroy(indexset,ierr)
       IS indexset
       PetscInt ierr
     END SUBROUTINE ISDestroy
-    
+
+    !IS coloring routines
+
     SUBROUTINE ISColoringDestroy(iscoloring,ierr)
       ISColoring iscoloring
       PetscInt ierr
     END SUBROUTINE ISColoringDestroy
+
+    !IS local to global mapping routines
     
-    SUBROUTINE ISLocalToGlobalMappingApply(ctx,type,nin,idxin,nout,idxout,ierr)
-      ISLocalToGlobalMapping ctx
-      ISGlobalToLocalMappingType type
-      PetscInt nin
+    SUBROUTINE ISLocalToGlobalMappingApply(islocaltoglobalmapping,n,idxin,idxout,ierr)
+      ISLocalToGlobalMapping islocaltoglobalmapping
+      PetscInt n
       PetscInt idxin(*)
-      PetscInt nout
       PetscInt idxout(*)
       PetscInt ierr
     END SUBROUTINE ISLocalToGlobalMappingApply
     
-    SUBROUTINE ISLocalToGlobalMappingApplyIS(ctx,isin,isout,ierr)
-      ISLocalToGlobalMapping ctx
+    SUBROUTINE ISLocalToGlobalMappingApplyIS(islocaltoglobalmapping,isin,isout,ierr)
+      ISLocalToGlobalMapping islocaltoglobalmapping
       IS isin
       IS isout
       PetscInt ierr
     END SUBROUTINE ISLocalToGlobalMappingApplyIS
     
-    SUBROUTINE ISLocalToGlobalMappingCreate(comm,N,globalnum,ctx,ierr)
+    SUBROUTINE ISLocalToGlobalMappingCreate(comm,blockSize,n,indices,mode,islocaltoglobalmapping,ierr)
       MPI_Comm comm
-      PetscInt N
-      PetscInt globalnum(*)
-      ISLocalToGlobalMapping ctx
+      PetscInt blockSize
+      PetscInt n
+      PetscInt indices(*)
+      PetscCopyMode mode
+      ISLocalToGlobalMapping islocaltoglobalmapping
       PetscInt ierr
     END SUBROUTINE ISLocalToGlobalMappingCreate
     
-    SUBROUTINE ISLocalToGlobalMappingDestroy(ctx,ierr)
-      ISLocalToGlobalMapping ctx
+    SUBROUTINE ISLocalToGlobalMappingDestroy(islocaltoglobalmapping,ierr)
+      ISLocalToGlobalMapping islocaltoglobalmapping
       PetscInt ierr
     END SUBROUTINE ISLocalToGlobalMappingDestroy
+
+    !KSP routines
     
     SUBROUTINE KSPCreate(comm,ksp,ierr)
       MPI_Comm comm
-          KSP ksp
+      KSP ksp
       PetscInt ierr
     END SUBROUTINE KSPCreate
     
@@ -505,21 +514,22 @@ MODULE CMISS_PETSC
     
     SUBROUTINE KSPSetInitialGuessNonzero(ksp,flg,ierr)
       KSP ksp
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
       PetscBool flg
-#else
-      PetscTruth flg
-#endif
       PetscInt ierr
     END SUBROUTINE KSPSetInitialGuessNonzero
     
-    SUBROUTINE KSPSetOperators(ksp,Amat,Pmat,flag,ierr)
+    SUBROUTINE KSPSetOperators(ksp,amat,pmat,ierr)
       KSP ksp
-      Mat Amat
-      Mat Pmat
-      MatStructure flag
+      Mat amat
+      Mat pmat
       PetscInt ierr
     END SUBROUTINE KSPSetOperators
+    
+    SUBROUTINE KSPSetReusePreconditioner(ksp,flag,ierr)
+      KSP ksp
+      PetscBool flag
+      PetscInt ierr
+    END SUBROUTINE KSPSetReusePreconditioner
     
     SUBROUTINE KSPSetTolerances(ksp,rtol,atol,dtol,maxits,ierr)
       KSP ksp
@@ -547,6 +557,8 @@ MODULE CMISS_PETSC
       Vec x
       PetscInt ierr
     END SUBROUTINE KSPSolve
+
+    !Matrix routines
     
     SUBROUTINE MatAssemblyBegin(A,assemblytype,ierr)
       Mat A
@@ -559,14 +571,13 @@ MODULE CMISS_PETSC
       MatAssemblyType assemblytype
       PetscInt ierr
     END SUBROUTINE MatAssemblyEnd
-    
+
     SUBROUTINE MatCreate(comm,A,ierr)
       MPI_Comm comm
       Mat A
       PetscInt ierr
     END SUBROUTINE MatCreate
 
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
     SUBROUTINE MatCreateAIJ(comm,localm,localn,globalm,globaln,diagnumbernzperrow,diagnumbernzeachrow,offdiagnumbernzperrow, &
       & offdiagnumbernzeachrow,A,ierr)
       MPI_Comm comm
@@ -581,24 +592,7 @@ MODULE CMISS_PETSC
       Mat A
       PetscInt ierr
     END SUBROUTINE MatCreateAIJ
-#else
-    SUBROUTINE MatCreateMPIAIJ(comm,localm,localn,globalm,globaln,diagnumbernzperrow,diagnumbernzeachrow,offdiagnumbernzperrow, &
-      & offdiagnumbernzeachrow,A,ierr)
-      MPI_Comm comm
-      PetscInt localm
-      PetscInt localn
-      PetscInt globalm
-      PetscInt globaln
-      PetscInt diagnumbernzperrow
-      PetscInt diagnumbernzeachrow(*)
-      PetscInt offdiagnumbernzperrow
-      PetscInt offdiagnumbernzeachrow(*)
-      Mat A
-      PetscInt ierr
-    END SUBROUTINE MatCreateMPIAIJ
-#endif    
         
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
     SUBROUTINE MatCreateDense(comm,localm,localn,globalm,globaln,matrixdata,A,ierr)
       MPI_Comm comm
       PetscInt localm
@@ -609,18 +603,6 @@ MODULE CMISS_PETSC
       Mat A
       PetscInt ierr
     END SUBROUTINE MatCreateDense
-#else
-    SUBROUTINE MatCreateMPIDense(comm,localm,localn,globalm,globaln,matrixdata,A,ierr)
-      MPI_Comm comm
-      PetscInt localm
-      PetscInt localn
-      PetscInt globalm
-      PetscInt globaln
-      PetscScalar matrixdata(*)
-      Mat A
-      PetscInt ierr
-    END SUBROUTINE MatCreateMPIDense
-#endif    
         
     SUBROUTINE MatCreateSeqAIJ(comm,m,n,numbernzperrow,numbernzeachrow,A,ierr)
       MPI_Comm comm
@@ -641,76 +623,22 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatCreateSeqDense
 
-    SUBROUTINE MatSetType(A,matrixtype,ierr)
+    SUBROUTINE MatDenseGetArrayF90(A,array,ierr)
       Mat A
-      MatType matrixtype
+      PetscScalar, POINTER :: array(:,:)
       PetscInt ierr
-    END SUBROUTINE MatSetType
+    END SUBROUTINE MatDenseGetArrayF90
+
+    SUBROUTINE MatDenseRestoreArrayF90(A,array,ierr)
+      Mat A
+      PetscScalar, POINTER :: array(:,:)
+      PetscInt ierr
+    END SUBROUTINE MatDenseRestoreArrayF90
 
     SUBROUTINE MatDestroy(A,ierr)
       Mat A
       PetscInt ierr
     END SUBROUTINE MatDestroy
-    
-    SUBROUTINE MatFDColoringCreate(A,iscoloring,fdcoloring,ierr)
-      Mat A
-      ISColoring iscoloring
-      MatFDColoring fdcoloring
-      PetscInt ierr
-    END SUBROUTINE MatFDColoringCreate
-    
-    SUBROUTINE MatFDColoringDestroy(fdcoloring,ierr)
-      MatFDColoring fdcoloring
-      PetscInt ierr
-    END SUBROUTINE MatFDColoringDestroy
-    
-    SUBROUTINE MatFDColoringSetFromOptions(fdcoloring,ierr)
-      MatFDColoring fdcoloring
-      PetscInt ierr
-    END SUBROUTINE MatFDColoringSetFromOptions
-
-    SUBROUTINE MatFDColoringSetParameters(fdcoloring,rerror,umin,ierr)
-      MatFDColoring fdcoloring
-      PetscScalar rerror
-      PetscScalar umin
-      PetscInt ierr
-    END SUBROUTINE MatFDColoringSetParameters
-    
-    SUBROUTINE MatFDColoringSetFunction(fdcoloring,ffunction,ctx,ierr)
-      USE TYPES
-      MatFDColoring fdcoloring
-      EXTERNAL ffunction
-      TYPE(SOLVER_TYPE), POINTER :: ctx
-      PetscInt ierr
-    END SUBROUTINE MatFDColoringSetFunction
-    
-    SUBROUTINE MatFDColoringSetFunctionSNES(fdcoloring,ffunction,ctx,ierr)
-      USE TYPES
-      MatFDColoring fdcoloring
-      EXTERNAL ffunction
-      TYPE(SOLVER_TYPE), POINTER :: ctx
-      PetscInt ierr
-    END SUBROUTINE MatFDColoringSetFunctionSNES
-    
-    SUBROUTINE MatGetArray(A,mat_data,mat_offset,ierr)
-      Mat A
-      PetscScalar mat_data(1)
-      PetscOffset mat_offset
-      PetscInt ierr
-    END SUBROUTINE MatGetArray
-    
-    SUBROUTINE MatGetArrayF90(A,mat_data,ierr)
-      Mat A
-      PetscScalar, POINTER :: mat_data(:,:)
-      PetscInt ierr
-    END SUBROUTINE MatGetArrayF90
-    
-    SUBROUTINE MatGetColoring(A,coloring_type,iscoloring,ierr)
-      Mat A
-      MatColoringType coloring_type
-      ISColoring iscoloring 
-      PetscInt ierr
-    END SUBROUTINE MatGetColoring
     
     SUBROUTINE MatGetInfo(A,flag,info,ierr)
       Mat A
@@ -745,20 +673,21 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatGetValues
     
-    SUBROUTINE MatRestoreArray(A,mat_data,mat_offset,ierr)
+    SUBROUTINE MatMumpsSetIcntl(A,icntl,ival,ierr)
       Mat A
-      PetscScalar mat_data(1)
-      PetscOffset mat_offset
+      PetscInt icntl
+      PetscInt ival
       PetscInt ierr
-    END SUBROUTINE MatRestoreArray
-        
-    SUBROUTINE MatRestoreArrayF90(A,mat_data,ierr)
+    END SUBROUTINE MatMumpsSetIcntl
+
+    SUBROUTINE MatMumpsSetCntl(A,icntl,val,ierr)
       Mat A
-      PetscScalar, POINTER :: mat_data(:,:)
+      PetscInt icntl
+      PetscReal val
       PetscInt ierr
-    END SUBROUTINE MatRestoreArrayF90
-    
-   SUBROUTINE MatRestoreRow(A,row,ncols,cols,values,ierr)
+    END SUBROUTINE MatMumpsSetCntl
+
+    SUBROUTINE MatRestoreRow(A,row,ncols,cols,values,ierr)
       Mat A
       PetscInt row
       PetscInt ncols
@@ -767,6 +696,24 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatRestoreRow
     
+    SUBROUTINE MatSeqAIJGetArrayF90(A,array,ierr)
+      Mat A
+      PetscScalar, POINTER :: array(:,:)
+      PetscInt ierr
+    END SUBROUTINE MatSeqAIJGetArrayF90
+
+    SUBROUTINE MatSeqAIJGetMaxRowNonzeros(A,maxNumberNonZeros,ierr)
+      Mat A
+      PetscInt maxNumberNonZeros
+      PetscInt ierr
+    END SUBROUTINE MatSeqAIJGetMaxRowNonzeros
+
+    SUBROUTINE MatSeqAIJRestoreArrayF90(A,array,ierr)
+      Mat A
+      PetscScalar, POINTER :: array(:,:)
+      PetscInt ierr
+    END SUBROUTINE MatSeqAIJRestoreArrayF90
+
     SUBROUTINE MatSetLocalToGlobalMapping(A,ctx,ierr)
       Mat A
       ISLocalToGlobalMapping ctx
@@ -776,11 +723,7 @@ MODULE CMISS_PETSC
     SUBROUTINE MatSetOption(A,option,flag,ierr)
       Mat A
       MatOption option
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
       PetscBool flag
-#else
-      PetscTruth flag
-#endif
       PetscInt ierr
     END SUBROUTINE MatSetOption
 
@@ -793,6 +736,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatSetSizes
     
+    SUBROUTINE MatSetType(A,matrixtype,ierr)
+      Mat A
+      MatType matrixtype
+      PetscInt ierr
+    END SUBROUTINE MatSetType
+
     SUBROUTINE MatSetValue(A,row,col,value,insertmode,ierr)
       Mat A
       PetscInt row
@@ -813,6 +762,15 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatSetValues
     
+    SUBROUTINE MatSetValueLocal(A,row,col,value,insertmode,ierr)
+      Mat A
+      PetscInt row
+      PetscInt col
+      PetscScalar value
+      InsertMode insertmode
+      PetscInt ierr
+    END SUBROUTINE MatSetValueLocal
+    
     SUBROUTINE MatSetValuesLocal(A,m,mindices,n,nindices,values,insertmode,ierr)
       Mat A
       PetscInt m
@@ -823,15 +781,6 @@ MODULE CMISS_PETSC
       InsertMode insertmode
       PetscInt ierr
     END SUBROUTINE MatSetValuesLocal
-    
-    SUBROUTINE MatSetValueLocal(A,row,col,value,insertmode,ierr)
-      Mat A
-      PetscInt row
-      PetscInt col
-      PetscScalar value
-      InsertMode insertmode
-      PetscInt ierr
-    END SUBROUTINE MatSetValueLocal
     
     SUBROUTINE MatView(A,v,ierr)
       Mat A
@@ -844,7 +793,85 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE MatZeroEntries
 
-#if ( PETSC_MAJOR_VERSION >= 3 ) 
+    !Mat coloring routines
+
+    SUBROUTINE MatColoringApply(coloring,isColoring,ierr)
+      MatColoring coloring
+      ISColoring isColoring
+      PetscInt ierr
+    END SUBROUTINE MatColoringApply
+    
+    SUBROUTINE MatColoringCreate(A,coloring,ierr)
+      Mat A
+      MatColoring coloring
+      PetscInt ierr
+    END SUBROUTINE MatColoringCreate
+    
+    SUBROUTINE MatColoringDestroy(coloring,ierr)
+      MatColoring coloring
+      PetscInt ierr
+    END SUBROUTINE MatColoringDestroy
+    
+    SUBROUTINE MatColoringSetFromOptions(coloring,ierr)
+      MatColoring coloring
+      PetscInt ierr
+    END SUBROUTINE MatColoringSetFromOptions
+    
+    SUBROUTINE MatColoringSetType(coloring,coloringType,ierr)
+      MatColoring coloring
+      MatColoringType coloringType
+      PetscInt ierr
+    END SUBROUTINE MatColoringSetType
+
+    !Mat FD coloring routines
+
+    SUBROUTINE MatFDColoringCreate(A,iscoloring,fdcoloring,ierr)
+      Mat A
+      ISColoring iscoloring
+      MatFDColoring fdcoloring
+      PetscInt ierr
+    END SUBROUTINE MatFDColoringCreate
+    
+    SUBROUTINE MatFDColoringDestroy(fdcoloring,ierr)
+      MatFDColoring fdcoloring
+      PetscInt ierr
+    END SUBROUTINE MatFDColoringDestroy
+    
+    SUBROUTINE MatFDColoringSetFromOptions(fdcoloring,ierr)
+      MatFDColoring fdcoloring
+      PetscInt ierr
+    END SUBROUTINE MatFDColoringSetFromOptions
+
+    SUBROUTINE MatFDColoringSetFunction(fdcoloring,ffunction,ctx,ierr)
+      USE TYPES
+      MatFDColoring fdcoloring
+      EXTERNAL ffunction
+      TYPE(SOLVER_TYPE), POINTER :: ctx
+      PetscInt ierr
+    END SUBROUTINE MatFDColoringSetFunction
+    
+    SUBROUTINE MatFDColoringSetParameters(fdcoloring,rerror,umin,ierr)
+      MatFDColoring fdcoloring
+      PetscScalar rerror
+      PetscScalar umin
+      PetscInt ierr
+    END SUBROUTINE MatFDColoringSetParameters
+    
+    SUBROUTINE MatFDColoringSetUp(A,iscoloring,fdcoloring,ierr)
+      Mat A
+      ISColoring iscoloring
+      MatFDColoring fdcoloring
+      PetscInt ierr
+    END SUBROUTINE MatFDColoringSetUp
+    
+    !Pre-conditioner routines
+
+    SUBROUTINE PCFactorGetMatrix(pc,A,ierr)
+      PC pc
+      Mat A
+      PetscInt ierr
+    END SUBROUTINE PCFactorGetMatrix
+
     SUBROUTINE PCFactorSetMatSolverPackage(pc,solverpackage,ierr)
       PC pc
       MatSolverPackage solverpackage
@@ -856,28 +883,16 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE PCFactorSetUpMatSolverPackage
 
-    SUBROUTINE PCFactorGetMatrix(pc,A,ierr)
+    SUBROUTINE PCSetFromOptions(pc,ierr)
       PC pc
-      Mat A
       PetscInt ierr
-    END SUBROUTINE PCFactorGetMatrix
-
-    SUBROUTINE MatMumpsSetIcntl(A,icntl,ival,ierr)
-      Mat A
-      PetscInt icntl
-      PetscInt ival
+    END SUBROUTINE PCSetFromOptions
+    
+    SUBROUTINE PCSetReusePreconditioner(pc,flag,ierr)
+      PC pc
+      PetscBool flag
       PetscInt ierr
-    END SUBROUTINE MatMumpsSetIcntl
-
-#if ( PETSC_VERSION_MINOR >= 4 )
-    SUBROUTINE MatMumpsSetCntl(A,icntl,val,ierr)
-      Mat A
-      PetscInt icntl
-      PetscReal val
-      PetscInt ierr
-    END SUBROUTINE MatMumpsSetCntl
-#endif
-#endif
+    END SUBROUTINE PCSetReusePreconditioner
     
     SUBROUTINE PCSetType(pc,method,ierr)
       PC pc
@@ -885,31 +900,7 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE PCSetType
     
-    SUBROUTINE PetscFinalize(ierr)
-      PetscInt ierr
-    END SUBROUTINE PetscFinalize
-    
-    SUBROUTINE PetscInitialize(file,ierr)
-      PetscChar(*) file
-      PetscInt ierr
-    END SUBROUTINE PetscInitialize
-
-    SUBROUTINE PetscPopSignalHandler(ierr)
-      PetscInt ierr
-    END SUBROUTINE PetscPopSignalHandler
-
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-    SUBROUTINE PetscLogView(viewer,ierr)
-      PetscViewer viewer
-      PetscInt ierr
-    END SUBROUTINE PetscLogView
-#else
-    SUBROUTINE PetscLogPrintSummary(comm,file,ierr)
-      MPI_Comm comm
-      PetscChar(*) file
-      PetscInt ierr
-    END SUBROUTINE PetscLogPrintSummary
-#endif
+    !SNES routines
 
     SUBROUTINE SNESCreate(comm,snes,ierr)
       MPI_Comm comm
@@ -922,14 +913,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESDestroy
 
-    SUBROUTINE SNESSetConvergenceTest(snes,cfunction,ctx,destroy,ierr)
+    SUBROUTINE SNESGetApplicationContext(snes,ctx,ierr)
       USE TYPES
       SNES snes
-      EXTERNAL cfunction
       TYPE(SOLVER_TYPE), POINTER :: ctx
-      EXTERNAL destroy
       PetscInt ierr
-    END SUBROUTINE SNESSetConvergenceTest
+    END SUBROUTINE SNESGetApplicationContext
 
     SUBROUTINE SNESGetConvergedReason(snes,reason,ierr)
       SNES snes
@@ -937,39 +926,14 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESGetConvergedReason
     
-    SUBROUTINE SNESGetFunctionNorm(snes,fnorm,ierr)
+    SUBROUTINE SNESGetFunction(snes,f,ffunction,ctx,ierr)
+      USE TYPES
       SNES snes
-      PetscReal fnorm
+      Vec f
+      EXTERNAL ffunction
+      PetscInt ctx
       PetscInt ierr
-    END SUBROUTINE SNESGetFunctionNorm
-
-    SUBROUTINE SNESGetSolutionUpdate(snes,solutionUpdate,ierr)
-      SNES snes
-      Vec solutionUpdate
-      PetscInt ierr
-    END SUBROUTINE SNESGetSolutionUpdate
-
-    SUBROUTINE SNESSetFunctionNorm(snes,fnorm,ierr)
-      SNES snes
-      PetscReal fnorm
-      PetscInt ierr
-    END SUBROUTINE SNESSetFunctionNorm
-
-    SUBROUTINE SnesLineSearchSetNorms(snes,xnorm,fnorm,ynorm,ierr)
-      SNES snes
-      PetscReal xnorm
-      PetscReal fnorm
-      PetscReal ynorm
-      PetscInt ierr
-    END SUBROUTINE SnesLineSearchSetNorms
-
-    SUBROUTINE SnesLineSearchGetNorms(linesearch,xnorm,fnorm,ynorm,ierr)
-      SNESLineSearch linesearch
-      PetscReal xnorm
-      PetscReal fnorm
-      PetscReal ynorm
-      PetscInt ierr
-    END SUBROUTINE SnesLineSearchGetNorms
+    END SUBROUTINE SNESGetFunction
 
     SUBROUTINE SNESGetIterationNumber(snes,iter,ierr)
       SNES snes
@@ -977,87 +941,34 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESGetIterationNumber
 
+    SUBROUTINE SNESGetJacobian(snes,A,B,Jfunction,ctx,ierr)
+      USE TYPES
+      SNES snes
+      Mat A
+      Mat B      
+      EXTERNAL Jfunction
+      PetscInt ctx
+      PetscInt ierr
+    END SUBROUTINE SNESGetJacobian
+
     SUBROUTINE SNESGetKSP(snes,ksp,ierr)
       SNES snes
       KSP ksp
       PetscInt ierr
     END SUBROUTINE SNESGetKSP
 
-    SUBROUTINE SNESLineSearchSet(snes,func,lsctx,ierr)
-      SNES snes
-      EXTERNAL func
-      PetscFortranAddr lsctx
-      PetscInt ierr
-    END SUBROUTINE SNESLineSearchSet
-    
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-    SUBROUTINE SnesLineSearchSetMonitor(linesearch,flag,ierr)
-      SNESLineSearch linesearch
-      PetscBool flag
-      PetscInt ierr
-    END SUBROUTINE SnesLineSearchSetMonitor
-#endif
-
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-    SUBROUTINE SNESLineSearchSetComputeNorms(linesearch,flag,ierr)
-      SNESLineSearch linesearch
-      PetscBool flag
-      PetscInt ierr
-    END SUBROUTINE SNESLineSearchSetComputeNorms
-
-    SUBROUTINE SnesLineSearchComputeNorms(linesearch,ierr)
-      SNESLineSearch linesearch
-      PetscInt ierr
-    END SUBROUTINE SnesLineSearchComputeNorms
-
-    SUBROUTINE SNESLineSearchSetOrder(linesearch,linesearchorder,ierr)
-      SNESLineSearch linesearch
-      SNESLineSearchOrder linesearchorder
-      PetscInt ierr
-    END SUBROUTINE SNESLineSearchSetOrder
-
-    SUBROUTINE SNESLineSearchBTSetAlpha(linesearch,alpha,ierr)
-      SNESLineSearch linesearch
-      PetscReal alpha
-      PetscInt ierr
-    END SUBROUTINE SNESLineSearchBTSetAlpha
-
-    SUBROUTINE SNESLineSearchSetTolerances(linesearch,steptol,maxstep,rtol,atol,ltol,maxIt,ierr)
-      SNESLineSearch linesearch
-      PetscReal steptol
-      PetscReal maxstep
-      PetscReal rtol
-      PetscReal atol
-      PetscReal ltol
-      PetscInt maxIt
-      PetscInt ierr
-    END SUBROUTINE SNESLineSearchSetTolerances
-#endif
-    
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-    SUBROUTINE SNESLineSearchSetParams(snes,alpha,maxstep,steptol,ierr)
-      SNES snes
-      PetscReal alpha
-      PetscReal maxstep
-      PetscReal steptol
-      PetscInt ierr
-    END SUBROUTINE SNESLineSearchSetParams
-#endif    
-    
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-    SUBROUTINE SNESGetSNESLineSearch(snes,linesearch,ierr)
+    SUBROUTINE SNESGetLineSearch(snes,linesearch,ierr)
       SNES snes
       SNESLineSearch linesearch
       PetscInt ierr
-    END SUBROUTINE SNESGetSNESLineSearch
+    END SUBROUTINE SNESGetLineSearch
 
-    SUBROUTINE SNESLineSearchSetType(linesearch,linesearchtype,ierr)
-      SNESLineSearch linesearch
-      SNESLineSearchType linesearchtype
+    SUBROUTINE SNESGetSolutionUpdate(snes,solutionUpdate,ierr)
+      SNES snes
+      Vec solutionUpdate
       PetscInt ierr
-    END SUBROUTINE SNESLineSearchSetType
-#endif
-    
+    END SUBROUTINE SNESGetSolutionUpdate
+
     SUBROUTINE SNESMonitorSet(snes,mfunction,mctx,monitordestroy,ierr)
       USE TYPES
       SNES snes
@@ -1067,7 +978,41 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESMonitorSet
 
-     SUBROUTINE SNESSetFromOptions(snes,ierr)
+    SUBROUTINE SNESQNSetRestartType(snes,rtype,ierr)
+      SNES snes
+      SNESQNRestartType rtype
+      PetscInt ierr
+    END SUBROUTINE SNESQNSetRestartType
+
+    SUBROUTINE SNESQNSetScaleType(snes,stype,ierr)
+      SNES snes
+      SNESQNScaleType stype
+      PetscInt ierr
+    END SUBROUTINE SNESQNSetScaleType
+
+    SUBROUTINE SNESQNSetType(snes,qtype,ierr)
+      SNES snes
+      SNESQNType qtype
+      PetscInt ierr
+    END SUBROUTINE SNESQNSetType
+
+    SUBROUTINE SNESSetApplicationContext(snes,ctx,ierr)
+      USE TYPES
+      SNES snes
+      TYPE(SOLVER_TYPE), POINTER :: ctx
+      PetscInt ierr
+    END SUBROUTINE SNESSetApplicationContext
+
+    SUBROUTINE SNESSetConvergenceTest(snes,cfunction,ctx,destroyFunction,ierr)
+      USE TYPES
+      SNES snes
+      EXTERNAL cfunction
+      TYPE(SOLVER_TYPE), POINTER :: ctx
+      EXTERNAL destroyFunction
+      PetscInt ierr
+    END SUBROUTINE SNESSetConvergenceTest
+
+    SUBROUTINE SNESSetFromOptions(snes,ierr)
       SNES snes
       PetscInt ierr
     END SUBROUTINE SNESSetFromOptions
@@ -1080,18 +1025,6 @@ MODULE CMISS_PETSC
       TYPE(SOLVER_TYPE), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE SNESSetFunction
-
-    SUBROUTINE SNESGetJacobian(snes,A,B,Jfunction,ctx,ierr)
-      USE TYPES
-      SNES snes
-      Mat A
-      Mat B      
-      EXTERNAL Jfunction
-!       ISLocalToGlobalMapping ctx
-!       TYPE(SOLVER_TYPE), POINTER :: ctx
-      PetscInt ctx
-      PetscInt ierr
-    END SUBROUTINE SNESGetJacobian
 
     SUBROUTINE SNESSetJacobian(snes,A,B,Jfunction,ctx,ierr)
       USE TYPES
@@ -1108,6 +1041,12 @@ MODULE CMISS_PETSC
       KSP ksp
       PetscInt ierr
     END SUBROUTINE SNESSetKSP
+
+    SUBROUTINE SNESSetNormSchedule(snes,normschedule,ierr)
+      SNES snes
+      SNESNormSchedule normschedule
+      PetscInt ierr
+    END SUBROUTINE SNESSetNormSchedule
 
     SUBROUTINE SNESSetTolerances(snes,abstol,rtol,stol,maxit,maxf,ierr)
       SNES snes
@@ -1131,6 +1070,34 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESSetType
 
+    SUBROUTINE SNESSolve(snes,b,x,ierr)
+      SNES snes
+      Vec b
+      Vec x
+      PetscInt ierr
+    END SUBROUTINE SNESSolve
+
+    !SNES line search routines
+    
+    SUBROUTINE SNESLineSearchBTSetAlpha(linesearch,alpha,ierr)
+      SNESLineSearch linesearch
+      PetscReal alpha
+      PetscInt ierr
+    END SUBROUTINE SNESLineSearchBTSetAlpha
+
+     SUBROUTINE SnesLineSearchComputeNorms(linesearch,ierr)
+      SNESLineSearch linesearch
+      PetscInt ierr
+    END SUBROUTINE SnesLineSearchComputeNorms
+
+    SUBROUTINE SnesLineSearchGetNorms(linesearch,xnorm,fnorm,ynorm,ierr)
+      SNESLineSearch linesearch
+      PetscReal xnorm
+      PetscReal fnorm
+      PetscReal ynorm
+      PetscInt ierr
+    END SUBROUTINE SnesLineSearchGetNorms
+
     SUBROUTINE SNESLineSearchGetVecs(linesearch,x,f,y,w,g,ierr)
       SNESLineSearch linesearch
       Vec x
@@ -1141,19 +1108,51 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE SNESLineSearchGetVecs
 
-    SUBROUTINE SNESSetNormType(snes,normtype,ierr)
-      SNES snes
-      SNESNormType normtype
+    SUBROUTINE SNESLineSearchSetComputeNorms(linesearch,flag,ierr)
+      SNESLineSearch linesearch
+      PetscBool flag
       PetscInt ierr
-    END SUBROUTINE SNESSetNormType
+    END SUBROUTINE SNESLineSearchSetComputeNorms
 
-    SUBROUTINE SNESSolve(snes,b,x,ierr)
-      SNES snes
-      Vec b
-      Vec x
+    SUBROUTINE SnesLineSearchSetMonitor(linesearch,flag,ierr)
+      SNESLineSearch linesearch
+      PetscBool flag
       PetscInt ierr
-    END SUBROUTINE SNESSolve
+    END SUBROUTINE SnesLineSearchSetMonitor
 
+    SUBROUTINE SnesLineSearchSetNorms(snes,xnorm,fnorm,ynorm,ierr)
+      SNES snes
+      PetscReal xnorm
+      PetscReal fnorm
+      PetscReal ynorm
+      PetscInt ierr
+    END SUBROUTINE SnesLineSearchSetNorms
+
+    SUBROUTINE SNESLineSearchSetOrder(linesearch,linesearchorder,ierr)
+      SNESLineSearch linesearch
+      SNESLineSearchOrder linesearchorder
+      PetscInt ierr
+    END SUBROUTINE SNESLineSearchSetOrder
+
+    SUBROUTINE SNESLineSearchSetTolerances(linesearch,steptol,maxstep,rtol,atol,ltol,maxIt,ierr)
+      SNESLineSearch linesearch
+      PetscReal steptol
+      PetscReal maxstep
+      PetscReal rtol
+      PetscReal atol
+      PetscReal ltol
+      PetscInt maxIt
+      PetscInt ierr
+    END SUBROUTINE SNESLineSearchSetTolerances
+    
+    SUBROUTINE SNESLineSearchSetType(linesearch,linesearchtype,ierr)
+      SNESLineSearch linesearch
+      SNESLineSearchType linesearchtype
+      PetscInt ierr
+    END SUBROUTINE SNESLineSearchSetType
+    
+    !Time stepping routines
+    
     SUBROUTINE TSCreate(comm,ts,ierr)
       MPI_Comm comm
       TS ts
@@ -1165,13 +1164,12 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE TSDestroy
 
-    SUBROUTINE TSGetApplicationContext(ts,userP,ierr)
-      USE TYPES
+    SUBROUTINE TSGetSolution(ts,currentsolution,ierr)
       TS ts
-      TYPE(SOLVER_TYPE), POINTER :: userP
+      Vec currentsolution
       PetscInt ierr
-    END SUBROUTINE TSGetApplicationContext
-
+    END SUBROUTINE TSGetSolution
+    
     SUBROUTINE TSMonitorSet(ts,mfunction,mctx,monitordestroy,ierr)
       USE TYPES
       TS ts
@@ -1181,19 +1179,18 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE TSMonitorSet
 
-    SUBROUTINE TSSetApplicationContext(ts,userP,ierr)
-      USE TYPES
-      TS ts
-      TYPE(SOLVER_TYPE), POINTER :: userP
-      PetscInt ierr
-    END SUBROUTINE TSSetApplicationContext
-
     SUBROUTINE TSSetDuration(ts,maxsteps,maxtime,ierr)
       TS ts
       PetscInt maxsteps
       PetscReal maxtime
       PetscInt ierr
     END SUBROUTINE TSSetDuration
+
+    SUBROUTINE TSSetExactFinalTime(ts,eftopt,ierr)
+      TS ts
+      PetscBool eftopt
+      PetscInt ierr
+    END SUBROUTINE TSSetExactFinalTime
 
     SUBROUTINE TSSetFromOptions(ts,ierr)
       TS ts
@@ -1213,14 +1210,21 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE TSSetProblemType
     
-    SUBROUTINE TSSetRHSFunction(ts,rhsfunc,ctx,ierr)
+    SUBROUTINE TSSetRHSFunction(ts,r,rhsfunc,ctx,ierr)
       USE TYPES
       TS ts
+      Vec r
       EXTERNAL rhsfunc
-      TYPE(SOLVER_TYPE), POINTER :: ctx
+      TYPE(CellMLPETScContextType), POINTER :: ctx
       PetscInt ierr
     END SUBROUTINE TSSetRHSFunction
-    
+
+    SUBROUTINE TSSetSolution(ts,initialsolution,ierr)
+      TS ts
+      Vec initialsolution
+      PetscInt ierr
+    END SUBROUTINE TSSetSolution
+
     SUBROUTINE TSSetTimeStep(ts,time_step,ierr)
       TS ts
       PetscReal time_step
@@ -1233,9 +1237,10 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE TSSetType
     
-    SUBROUTINE TSSolve(ts,x,ierr)
+    SUBROUTINE TSSolve(ts,x,ftime,ierr)
       TS ts
       Vec x
+      PetscReal ftime
       PetscInt ierr
     END SUBROUTINE TSSolve
 
@@ -1245,6 +1250,21 @@ MODULE CMISS_PETSC
       PetscReal ptime
       PetscInt ierr
     END SUBROUTINE TSStep
+
+    SUBROUTINE TSSundialsSetTolerance(ts,abstol,reltol,ierr)
+      TS ts
+      PetscReal abstol
+      PetscReal reltol
+      PetscInt ierr
+    END SUBROUTINE TSSundialsSetTolerance
+
+    SUBROUTINE TSSundialsSetType(ts,sundialstype,ierr)
+      TS ts
+      TSSundialsType sundialstype
+      PetscInt ierr
+    END SUBROUTINE TSSundialsSetType
+
+    !Vector routines
 
     SUBROUTINE VecAssemblyBegin(x,ierr)
       Vec x
@@ -1335,20 +1355,20 @@ MODULE CMISS_PETSC
       Vec x
       Vec y
       PetscScalar val
+      PetscInt ierr
     END SUBROUTINE VecDot
 
-    SUBROUTINE VecGetArray(x,vec_data,vec_offset,ierr)
-      Vec x
-      PetscScalar vec_data(1)
-      PetscOffset vec_offset
-      PetscInt ierr
-    END SUBROUTINE VecGetArray
-    
     SUBROUTINE VecGetArrayF90(x,vec_data,ierr)
       Vec x
       PetscScalar, POINTER :: vec_data(:)
       PetscInt ierr
     END SUBROUTINE VecGetArrayF90
+
+    SUBROUTINE VecGetArrayReadF90(x,vec_data,ierr)
+      Vec x
+      PetscScalar, POINTER :: vec_data(:)
+      PetscInt ierr
+    END SUBROUTINE VecGetArrayReadF90
 
     SUBROUTINE VecGetLocalSize(x,size,ierr)
       Vec x
@@ -1403,19 +1423,25 @@ MODULE CMISS_PETSC
       PetscInt ierr
     END SUBROUTINE VecGhostUpdateEnd
 
-    SUBROUTINE VecRestoreArray(x,vec_data,vec_offset,ierr)
+    SUBROUTINE VecNorm(x,ntype,val,ierr)
       Vec x
-      PetscScalar vec_data(1)
-      PetscOffset vec_offset
+      NormType ntype
+      PetscReal val
       PetscInt ierr
-    END SUBROUTINE VecRestoreArray
-
+    END SUBROUTINE VecNorm
+    
     SUBROUTINE VecRestoreArrayF90(x,vec_data,ierr)
       Vec x
       PetscScalar, POINTER :: vec_data(:)
       PetscInt ierr
     END SUBROUTINE VecRestoreArrayF90
-
+    
+    SUBROUTINE VecRestoreArrayReadF90(x,vec_data,ierr)
+      Vec x
+      PetscScalar, POINTER :: vec_data(:)
+      PetscInt ierr
+    END SUBROUTINE VecRestoreArrayReadF90
+    
     SUBROUTINE VecScale(x,alpha,ierr)
       Vec x
       PetscScalar alpha
@@ -1471,79 +1497,88 @@ MODULE CMISS_PETSC
 
   END INTERFACE
 
-  INTERFACE PETSC_SNESSETJACOBIAN
-    MODULE PROCEDURE PETSC_SNESSETJACOBIAN_SOLVER  
-    MODULE PROCEDURE PETSC_SNESSETJACOBIAN_MATFDCOLORING
-  END INTERFACE !PETSC_SNESSETJACOBIAN
+  INTERFACE Petsc_SnesGetJacobian
+    MODULE PROCEDURE Petsc_SnesGetJacobianSolver
+    MODULE PROCEDURE Petsc_SnesGetJacobianSpecial
+  END INTERFACE Petsc_SnesGetJacobian
 
-  INTERFACE PETSC_SNESGETJACOBIAN
-    MODULE PROCEDURE PETSC_SNESGETJACOBIAN_SOLVER  
-    MODULE PROCEDURE PETSC_SNESGETJACOBIAN_SPECIAL
-  END INTERFACE !PETSC_SNESSETJACOBIAN
+  INTERFACE Petsc_SnesSetJacobian
+    MODULE PROCEDURE Petsc_SnesSetJacobianSolver
+  END INTERFACE Petsc_SnesSetJacobian
+
+  !Miscelaneous routines and constants
 
   PUBLIC PETSC_TRUE,PETSC_FALSE
   
-  PUBLIC PETSC_NULL_CHARACTER,PETSC_NULL_INTEGER,PETSC_NULL_DOUBLE,PETSC_NULL,PETSC_NULL_OBJECT, &
-    & PETSC_NULL_FUNCTION,PETSC_NULL_SCALAR,PETSC_NULL_REAL
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-  PUBLIC PETSC_NULL_TRUTH
-#else
-  PUBLIC PETSC_NULL_BOOL
-#endif
+  PUBLIC PETSC_NULL_BOOL,PETSC_NULL_CHARACTER,PETSC_NULL_FUNCTION,PETSC_NULL_INTEGER,PETSC_NULL_DOUBLE,PETSC_NULL_OBJECT, &
+    & PETSC_NULL_SCALAR,PETSC_NULL_REAL
 
-  PUBLIC PETSC_ADD_VALUES,PETSC_INSERT_VALUES,PETSC_COMM_WORLD,PETSC_COMM_SELF,PETSC_DECIDE,PETSC_DEFAULT_INTEGER, &
-    & PETSC_DEFAULT_DOUBLE_PRECISION,PETSC_SCATTER_FORWARD,PETSC_SCATTER_REVERSE
+  PUBLIC PETSC_DEFAULT_INTEGER,PETSC_DEFAULT_REAL
+
+  PUBLIC PETSC_DECIDE
+
+  PUBLIC PETSC_COMM_WORLD,PETSC_COMM_SELF
+
+  PUBLIC PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_DRAW_WORLD,PETSC_VIEWER_DRAW_SELF
+
+  PUBLIC Petsc_Initialise,Petsc_Finalise
+
+  PUBLIC Petsc_ErrorHandlingSetOn,Petsc_ErrorHandlingSetOff
+
+  PUBLIC Petsc_LogView
   
-  PUBLIC PETSC_KSPRICHARDSON,PETSC_KSPCG,PETSC_KSPCGNE,PETSC_KSPSTCG,PETSC_KSPGMRES,PETSC_KSPFGMRES, &
-    & PETSC_KSPLGMRES,PETSC_KSPTCQMR,PETSC_KSPBCGS,PETSC_KSPBCGSL,PETSC_KSPCGS,PETSC_KSPTFQMR,PETSC_KSPCR,PETSC_KSPLSQR, &
-    & PETSC_KSPPREONLY,PETSC_KSPQCG,PETSC_KSPBICG,PETSC_KSPMINRES,PETSC_KSPSYMMLQ,PETSC_KSPLCD
+  !Value insert constants
 
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-  PUBLIC PETSC_KSPCHEBYCHEV
-#else
-  PUBLIC PETSC_KSPCHEBYSHEV
-#endif
+  PUBLIC PETSC_ADD_VALUES,PETSC_INSERT_VALUES
 
-#if ( PETSC_VERSION_MAJOR == 2 )
-  PUBLIC PETSC_AIJMUMPS
-#endif
+  PUBLIC PETSC_SCATTER_FORWARD,PETSC_SCATTER_REVERSE
+
+  !Norm constants
+
+  PUBLIC PETSC_NORM_1,PETSC_NORM_2,PETSC_NORM_INFINITY
   
-  PUBLIC PETSC_PCNONE,PETSC_PCJACOBI,PETSC_PCSOR,PETSC_PCLU,PETSC_PCSHELL,PETSC_PCBJACOBI,PETSC_PCMG,PETSC_PCEISENSTAT, &
-    & PETSC_PCILU,PETSC_PCICC,PETSC_PCASM,PETSC_PCKSP,PETSC_PCCOMPOSITE,PETSC_PCREDUNDANT,PETSC_PCSPAI, &
-    & PETSC_PCNN,PETSC_PCCHOLESKY,PETSC_PCPBJACOBI,PETSC_PCMAT,PETSC_PCHYPRE,PETSC_PCFIELDSPLIT,PETSC_PCML
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  PUBLIC PETSC_PCGASM,PETSC_PCPARMS,PETSC_PCTFS,PETSC_PCPROMETHEUS,PETSC_PCGALERKIN,PETSC_PCEXOTIC,PETSC_PCHMPI, &
-    & PETSC_PCSUPPORTGRAPH,PETSC_PCASA,PETSC_PCCP,PETSC_PCVFVT,PETSC_PCLSC,PETSC_PCPYTHON,PETSC_PCPFMG,PETSC_PCSYSPFMG, &
-    & PETSC_PCREDISTRIBUTE,PETSC_PCSACUSP,PETSC_PCSACUSPPOLY,PETSC_PCBICGSTABCUSP,PETSC_PCSVD,PETSC_PCAINVCUSP
-#else
-  PUBLIC PETSC_PCMILU
-#endif
+  !IS routines
+
+  PUBLIC Petsc_ISInitialise,Petsc_ISFinalise
+
+  PUBLIC Petsc_ISDestroy
   
-  PUBLIC PETSC_SAME_PRECONDITIONER,PETSC_SAME_NONZERO_PATTERN,PETSC_DIFFERENT_NONZERO_PATTERN, &
-    & PETSC_SUBSET_NONZERO_PATTERN
+  !IS coloring routines
 
-  PUBLIC PETSC_ISINITIALISE,PETSC_ISFINALISE,PETSC_ISDESTROY
+  PUBLIC Petsc_ISColoringInitialise,Petsc_ISColoringFinalise
 
-  PUBLIC PETSC_ISCOLORINGINITIALISE,PETSC_ISCOLORINGFINALISE,PETSC_ISCOLORINGDESTROY
-  
-  PUBLIC PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE,PETSC_ISLOCALTOGLOBALMAPPINGFINALISE,PETSC_ISLOCALTOGLOBALMAPPINGAPPLY, &
-    & PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS,PETSC_ISLOCALTOGLOBALMAPPINGCREATE,PETSC_ISLOCALTOGLOBALMAPPINGDESTROY
+  PUBLIC Petsc_ISColoringDestroy
 
-  PUBLIC PETSC_KSP_CONVERGED_RTOL,PETSC_KSP_CONVERGED_ATOL,PETSC_KSP_CONVERGED_ITS,PETSC_KSP_CONVERGED_CG_NEG_CURVE, &
-    & PETSC_KSP_CONVERGED_CG_CONSTRAINED,PETSC_KSP_CONVERGED_STEP_LENGTH,PETSC_KSP_CONVERGED_HAPPY_BREAKDOWN, &
-    & PETSC_KSP_DIVERGED_NULL,PETSC_KSP_DIVERGED_ITS,PETSC_KSP_DIVERGED_DTOL,PETSC_KSP_DIVERGED_BREAKDOWN, &
-    & PETSC_KSP_DIVERGED_BREAKDOWN_BICG,PETSC_KSP_DIVERGED_NONSYMMETRIC,PETSC_KSP_DIVERGED_INDEFINITE_PC, &
-    & PETSC_KSP_DIVERGED_NAN,PETSC_KSP_DIVERGED_INDEFINITE_MAT,PETSC_KSP_CONVERGED_ITERATING
-  
-  PUBLIC PETSC_KSPCREATE,PETSC_KSPDESTROY,PETSC_KSPGETCONVERGEDREASON,PETSC_KSPGETITERATIONNUMBER,PETSC_KSPGETPC, &
-    & PETSC_KSPGETRESIDUALNORM,PETSC_KSPGMRESSETRESTART,PETSC_KSPFINALISE,PETSC_KSPINITIALISE,PETSC_KSPSETFROMOPTIONS, &
-    & PETSC_KSPSETINITIALGUESSNONZERO,PETSC_KSPSETOPERATORS,PETSC_KSPSETTYPE,PETSC_KSPSETUP,PETSC_KSPSETTOLERANCES, &
-    & PETSC_KSPSOLVE
+  !IS local to global mapping routines
 
-#if ( PETSC_VERSION_MAJOR < 3 )
-  PUBLIC MAT_COLUMN_ORIENTED,MAT_COLUMNS_SORTED,MAT_ROWS_SORTED,MAT_FINAL_ASSEMBLY,MAT_FLUSH_ASSEMBLY, &
-    & MAT_NO_NEW_NONZERO_LOCATIONS
-#endif
+  PUBLIC Petsc_ISLocalToGlobalMappingInitialise,Petsc_ISLocalToGlobalMappingFinalise
+
+  PUBLIC Petsc_ISLocalToGlobalMappingApply,Petsc_ISLocalToGlobalMappingApplyIS,Petsc_ISLocalToGlobalMappingCreate, &
+    & Petsc_ISLocalToGlobalMappingDestroy
+    
+  !KSP routines and constants
+ 
+  PUBLIC PETSC_KSPRICHARDSON,PETSC_KSPCHEBYSHEV,PETSC_KSPCG,PETSC_KSPCGNE,PETSC_KSPNASH,PETSC_KSPSTCG,PETSC_KSPGLTR, &
+    & PETSC_KSPGMRES,PETSC_KSPFGMRES,PETSC_KSPLGMRES,PETSC_KSPDGMRES,PETSC_KSPPGMRES,PETSC_KSPTCQMR,PETSC_KSPBCGS, &
+    & PETSC_KSPIBCGS,PETSC_KSPFBCGS,PETSC_KSPFBCGSR,PETSC_KSPBCGSL,PETSC_KSPCGS,PETSC_KSPTFQMR,PETSC_KSPCR,PETSC_KSPLSQR, &
+    & PETSC_KSPPREONLY,PETSC_KSPQCG,PETSC_KSPBICG,PETSC_KSPMINRES,PETSC_KSPSYMMLQ,PETSC_KSPLCD,PETSC_KSPPYTHON,PETSC_KSPGCR
+
+  PUBLIC PETSC_KSP_CONVERGED_RTOL,PETSC_KSP_CONVERGED_ATOL,PETSC_KSP_CONVERGED_ITS,PETSC_KSP_CONVERGED_ITERATING, &
+    & PETSC_KSP_CONVERGED_CG_NEG_CURVE,PETSC_KSP_CONVERGED_CG_CONSTRAINED,PETSC_KSP_CONVERGED_STEP_LENGTH, &
+    & PETSC_KSP_CONVERGED_HAPPY_BREAKDOWN,PETSC_KSP_DIVERGED_NULL,PETSC_KSP_DIVERGED_ITS,PETSC_KSP_DIVERGED_DTOL, &
+    & PETSC_KSP_DIVERGED_BREAKDOWN,PETSC_KSP_DIVERGED_BREAKDOWN_BICG,PETSC_KSP_DIVERGED_NONSYMMETRIC, &
+    & PETSC_KSP_DIVERGED_INDEFINITE_PC,PETSC_KSP_DIVERGED_NANORINF,PETSC_KSP_DIVERGED_INDEFINITE_MAT
+
+  PUBLIC PETSC_KSP_NORM_NONE,PETSC_KSP_NORM_PRECONDITIONED,PETSC_KSP_NORM_UNPRECONDITIONED,PETSC_KSP_NORM_NATURAL
+
+  PUBLIC Petsc_KSPInitialise,Petsc_KSPFinalise
+
+  PUBLIC Petsc_KSPCreate,Petsc_KSPDestroy,Petsc_KSPGetConvergedReason,Petsc_KSPGetIterationNumber,Petsc_KSPGetPC, &
+    & Petsc_KSPGetResidualNorm,Petsc_KSPGMRESSetRestart,Petsc_KSPSetFromOptions,Petsc_KSPSetInitialGuessNonZero, &
+    & Petsc_KSPSetOperators,Petsc_KSPSetReusePreconditioner,Petsc_KSPSetTolerances,Petsc_KSPSetType,Petsc_KSPSetUp, &
+    & Petsc_KSPSolve
+
+  !Matrix routines and constants
 
   PUBLIC PETSC_MAT_FLUSH_ASSEMBLY,PETSC_MAT_FINAL_ASSEMBLY
 
@@ -1559,144 +1594,134 @@ MODULE CMISS_PETSC
     & PETSC_MAT_NEW_DIAGONALS,PETSC_MAT_IGNORE_OFF_PROC_ENTRIES,PETSC_MAT_NEW_NONZERO_LOCATION_ERR, &
     & PETSC_MAT_NEW_NONZERO_ALLOCATION_ERR,PETSC_MAT_USE_HASH_TABLE,PETSC_MAT_KEEP_NONZERO_PATTERN, &
     & PETSC_MAT_IGNORE_ZERO_ENTRIES,PETSC_MAT_USE_INODES,PETSC_MAT_HERMITIAN,PETSC_MAT_SYMMETRY_ETERNAL, &
-    & PETSC_MAT_IGNORE_LOWER_TRIANGULAR,PETSC_MAT_GETROW_UPPERTRIANGULAR, &
-    & PETSC_MAT_UNUSED_NONZERO_LOCATION_ERR,PETSC_NUM_MAT_OPTIONS
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  PUBLIC PETSC_MAT_CHECK_COMPRESSED_ROW,PETSC_MAT_SPD,PETSC_MAT_NO_OFF_PROC_ENTRIES,PETSC_MAT_NO_OFF_PROC_ZERO_ROWS
-#else
-  PUBLIC PETSC_MAT_USE_COMPRESSEDROW
-#endif
-  
-  PUBLIC PETSC_MATCOLORING_NATURAL,PETSC_MATCOLORING_SL,PETSC_MATCOLORING_LF,PETSC_MATCOLORING_ID
+    & PETSC_MAT_DUMMY,PETSC_MAT_IGNORE_LOWER_TRIANGULAR,PETSC_MAT_ERROR_LOWER_TRIANGULAR,PETSC_MAT_GETROW_UPPERTRIANGULAR, &
+    & PETSC_MAT_UNUSED_NONZERO_LOCATION_ERR,PETSC_MAT_SPD,PETSC_MAT_NO_OFF_PROC_ENTRIES,PETSC_MAT_NO_OFF_PROC_ZERO_ROWS
 
-  PUBLIC PETSC_MATINITIALISE,PETSC_MATFINALISE,PETSC_MATASSEMBLYBEGIN,PETSC_MATASSEMBLYEND,PETSC_MATCREATE, &
-    & PETSC_MATCREATESEQAIJ,PETSC_MATCREATESEQDENSE,PETSC_MATDESTROY, &
-    & PETSC_MATFDCOLORINGCREATE,PETSC_MATFDCOLORINGDESTROY,PETSC_MATFDCOLORINGFINALISE,PETSC_MATFDCOLORINGINITIALISE, &
-    & PETSC_MATFDCOLORINGSETFROMOPTIONS,PETSC_MATFDCOLORINGSETFUNCTION,PETSC_MATFDCOLORINGSETFUNCTIONSNES, &
-    & PETSC_MATFDCOLORINGSETPARAMETERS, &
-    & PETSC_MATGETARRAY,PETSC_MATGETARRAYF90,PETSC_MATGETCOLORING,PETSC_MATGETINFO,PETSC_MATGETOWNERSHIPRANGE, &
-    & PETSC_MATGETROW,PETSC_MATGETVALUES,PETSC_MATRESTOREARRAY,PETSC_MATRESTOREARRAYF90,PETSC_MATRESTOREROW, &
-    & PETSC_MATSETLOCALTOGLOBALMAPPING,PETSC_MATSETOPTION,PETSC_MATSETSIZES,PETSC_MATSETVALUE,PETSC_MATSETVALUES, &
-    & PETSC_MATSETVALUELOCAL,PETSC_MATSETVALUESLOCAL,PETSC_MATVIEW,PETSC_MATZEROENTRIES,PETSC_MATSETTYPE
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  PUBLIC PETSC_MATCREATEAIJ,PETSC_MATCREATEDENSE
-#else
-  PUBLIC PETSC_MATCREATEMPIAIJ,PETSC_MATCREATEMPIDENSE
-#endif
-  
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  PUBLIC PETSC_MAT_SOLVER_SPOOLES,PETSC_MAT_SOLVER_SUPERLU,PETSC_MAT_SOLVER_SUPERLU_DIST,PETSC_MAT_SOLVER_UMFPACK, &
-    & PETSC_MAT_SOLVER_ESSL,PETSC_MAT_SOLVER_LUSOL,PETSC_MAT_SOLVER_MUMPS,PETSC_MAT_SOLVER_MATLAB,PETSC_MAT_SOLVER_PASTIX, &
-    & PETSC_MAT_SOLVER_PETSC,PETSC_MAT_SOLVER_PLAPACK
-#else
-#if ( PETSC_VERSION_MAJOR == 3 )
-  PUBLIC PETSC_MAT_SOLVER_SPOOLES,PETSC_MAT_SOLVER_SUPERLU,PETSC_MAT_SOLVER_SUPERLU_DIST,PETSC_MAT_SOLVER_UMFPACK, &
-    & PETSC_MAT_SOLVER_ESSL,PETSC_MAT_SOLVER_LUSOL,PETSC_MAT_SOLVER_MUMPS,PETSC_MAT_SOLVER_DSCPACK,PETSC_MAT_SOLVER_MATLAB, &
-    & PETSC_MAT_SOLVER_PETSC,PETSC_MAT_SOLVER_PLAPACK
-#if ( PETSC_VERSION_MINOR >= 1 )
-  PUBLIC PETSC_MAT_SOLVER_PASTIX
-#endif
-#endif
-#endif
-  
-  PUBLIC PETSC_PCINITIALISE,PETSC_PCFINALISE,PETSC_PCSETTYPE
+  PUBLIC PETSC_MAT_SOLVER_SUPERLU,PETSC_MAT_SOLVER_SUPERLU_DIST,PETSC_MAT_SOLVER_UMFPACK,PETSC_MAT_SOLVER_CHOLMOD, &
+    & PETSC_MAT_SOLVER_ESSL,PETSC_MAT_SOLVER_LUSOL,PETSC_MAT_SOLVER_MUMPS,PETSC_MAT_SOLVER_PASTIX,PETSC_MAT_SOLVER_MATLAB, &
+    & PETSC_MAT_SOLVER_PETSC,PETSC_MAT_SOLVER_BAS,PETSC_MAT_SOLVER_CUSPARSE,PETSC_MAT_SOLVER_BSTRM,PETSC_MAT_SOLVER_SBSTRM
 
-#if ( PETSC_VERSION_MAJOR == 3 )
-  PUBLIC PETSC_PCFACTORSETMATSOLVERPACKAGE
-  PUBLIC Petsc_PCFactorSetUpMatSolverPackage
-  PUBLIC Petsc_PCFactorGetMatrix
-  PUBLIC Petsc_MatMumpsSetIcntl
-#if ( PETSC_VERSION_MINOR >= 4 )
-  PUBLIC Petsc_MatMumpsSetCntl
-#endif
-#endif
-  
-  PUBLIC PETSC_TS_EULER,PETSC_TS_BEULER,PETSC_TS_PSEUDO,PETSC_TS_SUNDIALS,PETSC_TS_CRANK_NICHOLSON,PETSC_TS_RUNGE_KUTTA
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  PUBLIC PETSC_TS_PYTHON,PETSC_TS_THETA,PETSC_TS_ALPHA,PETSC_TS_SSP,PETSC_TS_ARKIMEX
-#else
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 1 )
-  PUBLIC PETSC_TS_THETA,PETSC_TS_GL
-#endif
-#endif
+  PUBLIC PETSC_DIFFERENT_NONZERO_PATTERN,PETSC_SUBSET_NONZERO_PATTERN,PETSC_SAME_NONZERO_PATTERN
 
-  PUBLIC PETSC_TS_LINEAR,PETSC_TS_NONLINEAR
+  PUBLIC PETSC_MAT_INITIAL_MATRIX,PETSC_MAT_REUSE_MATRIX,PETSC_MAT_IGNORE_MATRIX
+ 
+  PUBLIC Petsc_MatInitialise,Petsc_MatFinalise
 
-  PUBLIC PETSC_SUNDIALS_ADAMS,PETSC_SUNDIALS_BDF,PETSC_SUNDIALS_MODIFIED_GS,PETSC_SUNDIALS_CLASSICAL_GS
+  PUBLIC Petsc_MatAssemblyBegin,Petsc_MatAssemblyEnd,Petsc_MatCreate,Petsc_MatCreateAIJ,Petsc_MatCreateDense, &
+    & Petsc_MatCreateSeqAIJ,Petsc_MatCreateSeqDense,Petsc_MatDenseGetArrayF90,Petsc_MatDenseRestoreArrayF90, &
+    & Petsc_MatDestroy,Petsc_MatGetInfo,Petsc_MatGetOwnershipRange,Petsc_MatGetRow,Petsc_MatGetValues, &
+    & Petsc_MatMumpsSetIcntl,Petsc_MatMumpsSetCntl,Petsc_MatRestoreRow,Petsc_MatSeqAIJGetArrayF90, &
+    & Petsc_MatSeqAIJGetMaxRowNonzeros,Petsc_MatSeqAIJRestoreArrayF90,Petsc_MatSetLocalToGlobalMapping, &
+    & Petsc_MatSetOption,Petsc_MatSetSizes,Petsc_MatSetValue,Petsc_MatSetValues,Petsc_MatSetValueLocal, &
+    & Petsc_MatSetValuesLocal,Petsc_MatView,Petsc_MatZeroEntries
 
-  PUBLIC PETSC_TSCREATE,PETSC_TSDESTROY,PETSC_TSFINALISE,PETSC_TSINITIALISE,PETSC_TSMONITORSET, &
-    & PETSC_TSSETDURATION,PETSC_TSSETFROMOPTIONS,PETSC_TSSETINITIALTIMESTEP, &
-    & PETSC_TSSETPROBLEMTYPE,PETSC_TSSETRHSFUNCTION,PETSC_TSSETTIMESTEP,PETSC_TSSETTYPE,PETSC_TSSOLVE,PETSC_TSSTEP
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 2 )
-  PUBLIC PETSC_TSSETMATRICES
-#endif
+  !Matrix coloring routines and constants
   
-  PUBLIC PETSC_ERRORHANDLING_SET_OFF,PETSC_ERRORHANDLING_SET_ON
+  PUBLIC PETSC_MATCOLORING_NATURAL,PETSC_MATCOLORING_SL,PETSC_MATCOLORING_LF,PETSC_MATCOLORING_ID,PETSC_MATCOLORING_GREEDY, &
+    & PETSC_MATCOLORING_JP
+
+  PUBLIC Petsc_MatColoringInitialise,Petsc_MatColoringFinalise
   
-  PUBLIC PETSC_FINALIZE,PETSC_INITIALIZE
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  PUBLIC PETSC_LOGVIEW
-#else
-  PUBLIC PETSC_LOGPRINTSUMMARY
-#endif
+  PUBLIC Petsc_MatColoringApply,Petsc_MatColoringCreate,Petsc_MatColoringDestroy,Petsc_MatColoringSetFromOptions, &
+    & Petsc_MatColoringSetType
+
+  !Matrix FD coloring routines and constants
+
+  PUBLIC Petsc_MatFDColoringInitialise,Petsc_MatFDColoringFinalise
   
-  PUBLIC PETSC_SNESLS,PETSC_SNESTR,PETSC_SNESTEST
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  PUBLIC PETSC_SNESPYTHON
-#endif
+  PUBLIC Petsc_MatFDColoringCreate,Petsc_MatFDColoringDestroy,Petsc_MatFDColoringSetFromOptions,Petsc_MatFDColoringSetFunction, &
+    & Petsc_MatFDColoringSetParameters,Petsc_MatFDColoringSetup
+
+  !Pre-conditioner routines and constants
   
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  PUBLIC PETSC_PCNONE,PETSC_PCJACOBI,PETSC_PCSOR,PETSC_PCLU,PETSC_PCSHELL,PETSC_PCBJACOBI,PETSC_PCMG,PETSC_PCEISENSTAT, &
+    & PETSC_PCILU,PETSC_PCICC,PETSC_PCASM,PETSC_PCKSP,PETSC_PCCOMPOSITE,PETSC_PCREDUNDANT,PETSC_PCSPAI,PETSC_PCNN, &
+    & PETSC_PCCHOLESKY,PETSC_PCPBJACOBI,PETSC_PCMAT,PETSC_PCHYPRE,PETSC_PCPARMS,PETSC_PCFIELDSPLIT,PETSC_PCTFS,PETSC_PCML, &
+    & PETSC_PCGALERKIN,PETSC_PCEXOTIC,PETSC_PCSUPPORTGRAPH,PETSC_PCCP,PETSC_PCBFBT,PETSC_PCLSC,PETSC_PCPYTHON,PETSC_PCPFMG, &
+    & PETSC_PCSYSPFMG,PETSC_PCREDISTRIBUTE,PETSC_PCSVD,PETSC_PCGAMG,PETSC_PCGASM,PETSC_PCSACUSP,PETSC_PCSACUSPPOLY, &
+    & PETSC_PCBICGSTABCUSP,PETSC_PCAINVCUSP,PETSC_PCBDDC
+  
+  PUBLIC Petsc_PCInitialise,Petsc_PCFinalise
+
+  PUBLIC Petsc_PCFactorGetMatrix,Petsc_PCFactorSetMatSolverPackage,Petsc_PCFactorSetUpMatSolverPackage,Petsc_PCSetFromOptions, &
+    & Petsc_PCSetReusePreconditioner,Petsc_PCSetType
+
+  !SNES routines and constants
+  
+  PUBLIC PETSC_SNESNEWTONLS,PETSC_SNESNEWTONTR,PETSC_SNESPYTHON,PETSC_SNESTEST,PETSC_SNESNRICHARDSON,PETSC_SNESKSPONLY, &
+    & PETSC_SNESVINEWTONRSLS,PETSC_SNESVINEWTONSSLS,PETSC_SNESNGMRES,PETSC_SNESQN,PETSC_SNESSHELL,PETSC_SNESNCG,PETSC_SNESFAS, &
+    & PETSC_SNESMS
+  
+  PUBLIC PETSC_SNES_CONVERGED_FNORM_ABS,PETSC_SNES_CONVERGED_FNORM_RELATIVE,PETSC_SNES_CONVERGED_SNORM_RELATIVE, &
+    & PETSC_SNES_CONVERGED_ITS,PETSC_SNES_CONVERGED_TR_DELTA,PETSC_SNES_DIVERGED_FUNCTION_DOMAIN, &
+    & PETSC_SNES_DIVERGED_FUNCTION_COUNT,PETSC_SNES_DIVERGED_LINEAR_SOLVE,PETSC_SNES_DIVERGED_FNORM_NAN, &
+    & PETSC_SNES_DIVERGED_MAX_IT,PETSC_SNES_DIVERGED_LINE_SEARCH,PETSC_SNES_DIVERGED_LOCAL_MIN,PETSC_SNES_CONVERGED_ITERATING
+
+  PUBLIC PETSC_SNES_NORM_DEFAULT,PETSC_SNES_NORM_NONE,PETSC_SNES_NORM_ALWAYS,PETSC_SNES_NORM_INITIAL_ONLY, &
+    & PETSC_SNES_NORM_FINAL_ONLY,PETSC_SNES_NORM_INITIAL_FINAL_ONLY
+
+  PUBLIC PETSC_SNES_QN_LBFGS,PETSC_SNES_QN_BROYDEN,PETSC_SNES_QN_BADBROYDEN
+  
+  PUBLIC PETSC_SNES_QN_RESTART_NONE,PETSC_SNES_QN_RESTART_POWELL,PETSC_SNES_QN_RESTART_PERIODIC
+  
+  PUBLIC PETSC_SNES_QN_SCALE_DEFAULT,PETSC_SNES_QN_SCALE_NONE,PETSC_SNES_QN_SCALE_SHANNO,PETSC_SNES_QN_SCALE_LINESEARCH, &
+    & PETSC_SNES_QN_SCALE_JACOBIAN
+
+  PUBLIC Petsc_SnesInitialise,Petsc_SnesFinalise
+
+  PUBLIC Petsc_SnesComputeJacobianDefault,Petsc_SnesComputeJacobianDefaultColor
+
+  PUBLIC Petsc_SnesCreate,Petsc_SnesDestroy,Petsc_SnesGetApplicationContext,Petsc_SnesGetConvergedReason,Petsc_SnesGetFunction, &
+    & Petsc_SnesGetIterationNumber,Petsc_SnesGetJacobian,Petsc_SnesGetKSP,Petsc_SnesGetLineSearch,Petsc_SnesGetSolutionUpdate, &
+    & Petsc_SnesMonitorSet,Petsc_SnesQNSetRestartType,Petsc_SnesQNSetScaleType,Petsc_SnesQNSetType, &
+    & Petsc_SnesSetApplicationContext,Petsc_SnesSetConvergenceTest,Petsc_SnesSetFromOptions,Petsc_SnesSetFunction, &
+    & Petsc_SnesSetJacobian,Petsc_SnesSetKSP,Petsc_SnesSetNormSchedule,Petsc_SnesSetTolerances,Petsc_SnesSetTrustRegionTolerance, &
+    & Petsc_SnesSetType,Petsc_SnesSolve
+
+  !SNES line search routines and constants
+
   PUBLIC PETSC_SNES_LINESEARCH_BASIC,PETSC_SNES_LINESEARCH_BT,PETSC_SNES_LINESEARCH_L2,PETSC_SNES_LINESEARCH_CP, &
     & PETSC_SNES_LINESEARCH_SHELL
   
-  PUBLIC PETSC_SNES_LINESEARCH_LINEAR,PETSC_SNES_LINESEARCH_QUADRATIC,PETSC_SNES_LINESEARCH_CUBIC
-#else
-  PUBLIC PETSC_SNES_LINESEARCH_NONORMS,PETSC_SNES_LINESEARCH_NO,PETSC_SNES_LINESEARCH_QUADRATIC,PETSC_SNES_LINESEARCH_CUBIC
-#endif
+  PUBLIC PETSC_SNES_LINESEARCH_ORDER_LINEAR,PETSC_SNES_LINESEARCH_ORDER_QUADRATIC,PETSC_SNES_LINESEARCH_ORDER_CUBIC
 
-  PUBLIC PETSC_SNES_NORM_DEFAULT,PETSC_SNES_NORM_NONE,PETSC_SNES_NORM_FUNCTION,PETSC_SNES_NORM_INITIAL_ONLY, &
-    & PETSC_SNES_NORM_FINAL_ONLY,PETSC_SNES_NORM_INITIAL_FINAL_ONLY
-  
-  PUBLIC PETSC_SNES_CONVERGED_FNORM_ABS,PETSC_SNES_CONVERGED_FNORM_RELATIVE, &
-    & PETSC_SNES_CONVERGED_ITS,PETSC_SNES_CONVERGED_TR_DELTA,PETSC_SNES_DIVERGED_FUNCTION_COUNT,PETSC_SNES_DIVERGED_LINEAR_SOLVE, &
-    & PETSC_SNES_DIVERGED_FNORM_NAN,PETSC_SNES_DIVERGED_MAX_IT,PETSC_SNES_DIVERGED_LOCAL_MIN,PETSC_SNES_CONVERGED_ITERATING
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  PUBLIC PETSC_SNES_DIVERGED_FUNCTION_DOMAIN,PETSC_SNES_DIVERGED_LS_FAILURE
-#else
-  PUBLIC PETSC_SNES_DIVERGED_LS_FAILURE
-#endif
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR <= 2 )
-  PUBLIC PETSC_SNES_CONVERGED_PNORM_RELATIVE
-#endif
-  
-  PUBLIC PETSC_SNESFINALISE,PETSC_SNESINITIALISE,PETSC_SNESCREATE,PETSC_SNESDESTROY,PETSC_SNESGETCONVERGEDREASON, &
-    & PETSC_SNESGETFUNCTIONNORM,PETSC_SNESSETFUNCTIONNORM,petsc_sneslinesearchsetnorms,petsc_sneslinesearchgetnorms, &
-    & PETSC_SNESGETITERATIONNUMBER,PETSC_SNESGETKSP,PETSC_SNESMONITORSET,PETSC_SNESSETFROMOPTIONS,PETSC_SNESSETFUNCTION, &
-    & PETSC_SNESSETJACOBIAN,PETSC_SNESSETTOLERANCES,PETSC_SNESSETTRUSTREGIONTOLERANCE,PETSC_SNESSETTYPE,PETSC_SNESSOLVE, &
-    & PETSC_SNESSETKSP,PETSC_SNESGETJACOBIAN,PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR,PETSC_SNESDEFAULTCOMPUTEJACOBIAN, &
-    & PETSC_SNESSETCONVERGENCETEST,Petsc_SnesLineSearchGetVecs,PETSC_SNESSETNORMTYPE,Petsc_SnesGetSolutionUpdate
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  PUBLIC Petsc_SnesLineSearchSetMonitor
-#endif
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  PUBLIC Petsc_SnesLineSearchFinalise,Petsc_SnesLineSearchInitialise
-  PUBLIC Petsc_SnesGetSnesLineSearch,Petsc_SnesLineSearchSetComputeNorms,Petsc_SnesLineSearchComputeNorms, &
-    & Petsc_SnesLineSearchSetOrder,Petsc_SnesLineSearchSetType, &
-    & Petsc_SnesLineSearchBTSetAlpha,Petsc_SnesLineSearchSetTolerances
-#else
-  PUBLIC PETSC_SNESLINESEARCHSET,PETSC_SNESLINESEARCHSETPARAMS
-#endif
-  
-  PUBLIC PETSC_VECINITIALISE,PETSC_VECFINALISE,PETSC_VECASSEMBLYBEGIN,PETSC_VECASSEMBLYEND,PETSC_VECCOPY,PETSC_VECCREATE, &
-    & PETSC_VECCREATEGHOST,PETSC_VECCREATEGHOSTWITHARRAY,PETSC_VECCREATEMPI,PETSC_VECCREATEMPIWITHARRAY,PETSC_VECCREATESEQ, &
-    & PETSC_VECCREATESEQWITHARRAY,PETSC_VECDESTROY,PETSC_VECDUPLICATE,PETSC_VECGETARRAYF90, &
-    & PETSC_VECGETLOCALSIZE,PETSC_VECGETOWNERSHIPRANGE,PETSC_VECGETSIZE,PETSC_VECGETVALUES,PETSC_VECGHOSTGETLOCALFORM, &
-    & PETSC_VECGHOSTRESTORELOCALFORM,PETSC_VECGHOSTUPDATEBEGIN,PETSC_VECGHOSTUPDATEEND, &
-    & PETSC_VECRESTOREARRAYF90,PETSC_VECSCALE,PETSC_VECSET,PETSC_VECSETFROMOPTIONS,PETSC_VECSETLOCALTOGLOBALMAPPING, &
-    & PETSC_VECSETSIZES,PETSC_VECSETVALUES,PETSC_VECSETVALUESLOCAL,PETSC_VECVIEW,Petsc_VecDot
+  PUBLIC Petsc_SnesLineSearchInitialise,Petsc_SnesLineSearchFinalise
 
-  PUBLIC PETSC_VIEWER_STDOUT_WORLD,PETSC_VIEWER_STDOUT_SELF,PETSC_VIEWER_DRAW_WORLD,PETSC_VIEWER_DRAW_SELF
+  PUBLIC Petsc_SnesLineSearchBTSetAlpha,Petsc_SnesLineSearchComputeNorms,Petsc_SnesLineSearchGetNorms,Petsc_SnesLineSearchGetVecs, &
+    & Petsc_SnesLineSearchSetComputeNorms,Petsc_SnesLineSearchSetMonitor,Petsc_SnesLineSearchSetNorms, &
+    & Petsc_SnesLineSearchSetOrder,Petsc_SnesLineSearchSetTolerances,Petsc_SnesLineSearchSetType
+  
+  !TS routines and constants
+  
+  PUBLIC PETSC_TS_EULER,PETSC_TS_BEULER,PETSC_TS_PSEUDO,PETSC_TS_CN,PETSC_TS_SUNDIALS,PETSC_TS_RK,PETSC_TS_PYTHON, &
+    & PETSC_TS_THETA,PETSC_TS_ALPHA,PETSC_TS_GL,PETSC_TS_SSP,PETSC_TS_ARKIMEX,PETSC_TS_ROSW,PETSC_TS_EIMEX
 
+  PUBLIC PETSC_TS_CONVERGED_ITERATING,PETSC_TS_CONVERGED_TIME,PETSC_TS_CONVERGED_ITS,PETSC_TS_DIVERGED_NONLINEAR_SOLVE, &
+    & PETSC_TS_DIVERGED_STEP_REJECTED
+
+  PUBLIC PETSC_TS_LINEAR,PETSC_TS_NONLINEAR
+
+  PUBLIC PETSC_SUNDIALS_ADAMS,PETSC_SUNDIALS_BDF
+
+  PUBLIC PETSC_SUNDIALS_MODIFIED_GS,PETSC_SUNDIALS_CLASSICAL_GS
+
+  PUBLIC Petsc_TSInitialise,Petsc_TSFinalise
+
+  PUBLIC Petsc_TSCreate,Petsc_TSDestroy,Petsc_TSGetSolution,Petsc_TSMonitorSet,Petsc_TSSetDuration,Petsc_TSSetExactFinalTime, &
+    & Petsc_TSSetFromOptions,Petsc_TSSetInitialTimeStep,Petsc_TSSetProblemType,Petsc_TSSetRHSFunction,Petsc_TSSetSolution, &
+    & Petsc_TSSetTimeStep,Petsc_TSSetType,Petsc_TSSolve,Petsc_TSStep,Petsc_TSSundialsSetTolerance,Petsc_TSSundialsSetType
+
+  !Vector routines and constants
+
+  PUBLIC Petsc_VecInitialise,Petsc_VecFinalise
+
+  PUBLIC Petsc_VecAssemblyBegin,Petsc_VecAssemblyEnd,Petsc_VecCopy,Petsc_VecCreate,Petsc_VecCreateGhost, &
+    & Petsc_VecCreateGhostWithArray,Petsc_VecCreateMPI,Petsc_VecCreateMPIWithArray,Petsc_VecCreateSeq, &
+    & Petsc_VecCreateSeqWithArray,Petsc_VecDestroy,Petsc_VecDuplicate,Petsc_VecDot,Petsc_VecGetArrayF90, &
+    & Petsc_VecGetArrayReadF90,Petsc_VecGetLocalSize,Petsc_VecGetOwnershipRange,Petsc_VecGetSize,Petsc_VecGetValues, &
+    & Petsc_VecNorm,Petsc_VecRestoreArrayF90,Petsc_VecRestoreArrayReadF90,Petsc_VecScale,Petsc_VecSet,Petsc_VecSetFromOptions, &
+    & Petsc_VecSetLocalToGlobalMapping,Petsc_VecSetSizes,Petsc_VecSetValues,Petsc_VecView
+  
 CONTAINS
 
   !
@@ -1704,196 +1729,224 @@ CONTAINS
   !
 
   !>Set PETSc error handling on
-  SUBROUTINE PETSC_ERRORHANDLING_SET_OFF(ERR,ERROR,*)
+  SUBROUTINE Petsc_ErrorHandlingSetOff(err,error,*)
 
     !Argument Variables
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ERRORHANDLING_SET_OFF",ERR,ERROR,*999)
+    ENTERS("Petsc_ErrorHandlingSetOff",err,error,*999)
 
-    PETSC_HANDLE_ERROR=.FALSE.
+    petscHandleError=.FALSE.
     
-!    CALL EXITS("PETSC_ERRORHANDLING_SET_OFF")
+    EXITS("Petsc_ErrorHandlingSetOff")
     RETURN
-999 CALL ERRORS("PETSC_ERRORHANDLING_SET_OFF",ERR,ERROR)
-!    CALL EXITS("PETSC_ERRORHANDLING_SET_OFF")
+999 ERRORSEXITS("Petsc_ErrorHandlingSetOff",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_ERRORHANDLING_SET_OFF
+    
+  END SUBROUTINE Petsc_ErrorHandlingSetOff
     
   !
   !================================================================================================================================
   !
 
   !>Set PETSc error handling on
-  SUBROUTINE PETSC_ERRORHANDLING_SET_ON(ERR,ERROR,*)
+  SUBROUTINE Petsc_ErrorHandlingSetOn(err,error,*)
 
     !Argument Variables
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ERRORHANDLING_SET_ON",ERR,ERROR,*999)
+    ENTERS("Petsc_ErrorHandlingSetOn",err,error,*999)
 
-    PETSC_HANDLE_ERROR=.TRUE.
+    petscHandleError=.TRUE.
     
-!    CALL EXITS("PETSC_ERRORHANDLING_SET_ON")
+    EXITS("Petsc_ErrorHandlingSetOn")
     RETURN
-999 CALL ERRORS("PETSC_ERRORHANDLING_SET_ON",ERR,ERROR)
-!    CALL EXITS("PETSC_ERRORHANDLING_SET_ON")
+999 ERRORSEXITS("Petsc_ErrorHandlingSetOn",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_ERRORHANDLING_SET_ON
+  END SUBROUTINE Petsc_ErrorHandlingSetOn
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc PetscFinalize routine
-  SUBROUTINE PETSC_FINALIZE(ERR,ERROR,*)
+  SUBROUTINE Petsc_Finalise(err,error,*)
 
     !Argument Variables
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_FINALIZE",ERR,ERROR,*999)
+    ENTERS("Petsc_Finalise",err,error,*999)
 
-    CALL PetscFinalize(ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL PetscFinalize(err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in PetscFinalize",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in PetscFinalize.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_FINALIZE")
+    EXITS("Petsc_Finalise")
     RETURN
-999 CALL ERRORS("PETSC_FINALIZE",ERR,ERROR)
-!    CALL EXITS("PETSC_FINALIZE")
+999 ERRORSEXITS("Petsc_Finalise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_FINALIZE
+    
+  END SUBROUTINE Petsc_Finalise
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc PetscInitialize routine.
-  SUBROUTINE PETSC_INITIALIZE(FILE,ERR,ERROR,*)
+  SUBROUTINE Petsc_Initialise(file,err,error,*)
 
     !Argument Variables
-    CHARACTER(LEN=*), INTENT(IN) :: FILE !<Filename for PETSc options file
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    CHARACTER(LEN=*), INTENT(IN) :: file !<Filename for PETSc options file
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_INITIALIZE",ERR,ERROR,*999)
+    ENTERS("Petsc_Initialise",err,error,*999)
 
-    PETSC_HANDLE_ERROR=.TRUE.
-    CALL PetscInitialize(FILE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    petscHandleError=.TRUE.
+    CALL PetscInitialize(file,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in PetscInitialize",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in PetscInitialize.",err,error,*999)
     ENDIF
     ! Disable PETSc's signal handler as we have our own OpenCMISS signal handlers in cmiss_c.c
-    CALL PetscPopSignalHandler(ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL PetscPopSignalHandler(err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in PetscPopSignalHandler",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in PetscPopSignalHandler.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_INITIALIZE")
+    EXITS("Petsc_Initialise")
     RETURN
-999 CALL ERRORS("PETSC_INITIALIZE",ERR,ERROR)
-!    CALL EXITS("PETSC_INITIALIZE")
+999 ERRORSEXITS("Petsc_Initialise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_INITIALIZE
+    
+  END SUBROUTINE Petsc_Initialise
     
   !
   !================================================================================================================================
   !
 
-  !Finalise the PETSc IS structure and destroy the IS
-  SUBROUTINE PETSC_ISFINALISE(IS_,ERR,ERROR,*)
+  !>Buffer routine to the PETSc PetscLogView routine.
+  SUBROUTINE Petsc_LogView(viewer,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_IS_TYPE), INTENT(INOUT) :: IS_ !<The IS to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    PetscViewer, INTENT(IN) :: viewer !<The viewer to print the log to
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISFINALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_LogView",err,error,*999)
 
-    IF(IS_%IS_/=PETSC_NULL) THEN
-      CALL PETSC_ISDESTROY(IS_,ERR,ERROR,*999)
+    CALL PetscLogView(viewer,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in PetscLogView.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_ISFINALISE")
+    EXITS("Petsc_LogView")
     RETURN
-999 CALL ERRORS("PETSC_ISFINALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_ISFINALISE")
+999 ERRORSEXITS("Petsc_LogView",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_ISFINALISE
+    
+  END SUBROUTINE Petsc_LogView
+  
+  !
+  !================================================================================================================================
+  !
+
+  !Finalise the PETSc IS structure and destroy the IS
+  SUBROUTINE Petsc_ISFinalise(is,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscISType), INTENT(INOUT) :: is !<The IS to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_ISFinalise",err,error,*999)
+
+    IF(is%is/=PETSC_NULL_OBJECT) THEN
+      CALL Petsc_ISDestroy(is,err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_ISFinalise")
+    RETURN
+999 ERRORSEXITS("Petsc_ISFinalise",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_ISFinalise
     
   !
   !================================================================================================================================
   !
   
   !Initialise the PETSc IS structure
-  SUBROUTINE PETSC_ISINITIALISE(IS_,ERR,ERROR,*)
+  SUBROUTINE Petsc_ISInitialise(is,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_IS_TYPE), INTENT(INOUT) :: IS_ !<The IS to initialise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscISType), INTENT(INOUT) :: is !<The IS to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISINITIALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_ISInitialise",err,error,*999)
 
-    IS_%IS_=PETSC_NULL
+    is%is=PETSC_NULL_OBJECT
     
-!    CALL EXITS("PETSC_ISINITIALISE")
+    EXITS("Petsc_ISInitialise")
     RETURN
-999 CALL ERRORS("PETSC_ISINITIALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_ISINITIALISE")
+999 ERRORSEXITS("Petsc_ISInitialise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_ISINITIALISE
+    
+  END SUBROUTINE Petsc_ISInitialise
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc ISDestroy routine.
-  SUBROUTINE PETSC_ISDESTROY(IS_,ERR,ERROR,*)
+  SUBROUTINE Petsc_ISDestroy(is,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_IS_TYPE), INTENT(INOUT) :: IS_ !<The index set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscISType), INTENT(INOUT) :: is !<The index set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISDESTROY",ERR,ERROR,*999)
+    ENTERS("Petsc_ISDestroy",err,error,*999)
 
-    CALL ISDestroy(IS_%IS_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL ISDestroy(is%is,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in ISDestroy",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in ISDestroy.",err,error,*999)
     ENDIF
-    IS_%IS_=PETSC_NULL
+    is%is=PETSC_NULL_OBJECT
         
-!    CALL EXITS("PETSC_ISDESTROY")
+    EXITS("Petsc_ISDestroy")
     RETURN
-999 CALL ERRORS("PETSC_ISDESTROY",ERR,ERROR)
-!    CALL EXITS("PETSC_ISDESTROY")
+999 ERRORSEXITS("Petsc_ISDestroy",err,error)
     RETURN 1
     
-  END SUBROUTINE PETSC_ISDESTROY
+  END SUBROUTINE Petsc_ISDestroy
     
   !
   !
@@ -1901,2779 +1954,3497 @@ CONTAINS
   !
 
   !Finalise the PETSc ISColoring structure and destroy the ISColoring
-  SUBROUTINE PETSC_ISCOLORINGFINALISE(ISCOLORING,ERR,ERROR,*)
+  SUBROUTINE Petsc_ISColoringFinalise(iscoloring,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_ISCOLORING_TYPE), INTENT(INOUT) :: ISCOLORING !<The ISColoring to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscISColoringType), INTENT(INOUT) :: iscoloring !<The ISColoring to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISCOLORINGFINALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_ISColoringFinalise",err,error,*999)
 
-    IF(ISCOLORING%ISCOLORING/=PETSC_NULL) THEN
-      CALL PETSC_ISCOLORINGDESTROY(ISCOLORING,ERR,ERROR,*999)
+    IF(iscoloring%iscoloring/=PETSC_NULL_OBJECT) THEN
+      CALL Petsc_ISColoringDestroy(iscoloring,err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_ISCOLORINGFINALISE")
+    EXITS("Petsc_ISColoringFinalise")
     RETURN
-999 CALL ERRORS("PETSC_ISCOLORINGFINALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_ISCOLORINGFINALISE")
+999 ERRORSEXITS("Petsc_ISColoringFinalise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_ISCOLORINGFINALISE
+    
+  END SUBROUTINE Petsc_ISColoringFinalise
     
   !
   !================================================================================================================================
   !
   
   !Initialise the PETSc ISColoring structure
-  SUBROUTINE PETSC_ISCOLORINGINITIALISE(ISCOLORING,ERR,ERROR,*)
+  SUBROUTINE Petsc_ISColoringInitialise(iscoloring,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_ISCOLORING_TYPE), INTENT(INOUT) :: ISCOLORING !<The ISColoring to initialise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscISColoringType), INTENT(INOUT) :: iscoloring !<The ISColoring to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISCOLORINGINITIALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_ISColoringInitialise",err,error,*999)
 
-    ISCOLORING%ISCOLORING=PETSC_NULL
+    iscoloring%iscoloring=PETSC_NULL_OBJECT
     
-!    CALL EXITS("PETSC_ISCOLORINGINITIALISE")
+    EXITS("Petsc_ISColoringInitialise")
     RETURN
-999 CALL ERRORS("PETSC_ISCOLORINGINITIALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_ISCOLORINGINITIALISE")
+999 ERRORSEXITS("Petsc_ISColoringInitialise",err,error)
     RETURN 1
     
-  END SUBROUTINE PETSC_ISCOLORINGINITIALISE
+  END SUBROUTINE Petsc_ISColoringInitialise
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc ISColoringDestroy routine.
-  SUBROUTINE PETSC_ISCOLORINGDESTROY(ISCOLORING,ERR,ERROR,*)
+  SUBROUTINE Petsc_ISColoringDestroy(iscoloring,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_ISCOLORING_TYPE), INTENT(INOUT) :: ISCOLORING !<The index set coloring
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscISColoringType), INTENT(INOUT) :: iscoloring !<The index set coloring
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISCOLORINGDESTROY",ERR,ERROR,*999)
+    ENTERS("Petsc_ISColoringDestroy",err,error,*999)
 
-    CALL ISColoringDestroy(ISCOLORING%ISCOLORING,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL ISColoringDestroy(iscoloring%iscoloring,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in ISColoringDestroy",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in ISColoringDestroy.",err,error,*999)
     ENDIF
-    ISCOLORING%ISCOLORING=PETSC_NULL
+    iscoloring%iscoloring=PETSC_NULL_OBJECT
     
-!    CALL EXITS("PETSC_ISCOLORINGDESTROY")
+    EXITS("Petsc_ISColoringDestroy")
     RETURN
-999 CALL ERRORS("PETSC_ISCOLORINGDESTROY",ERR,ERROR)
-!    CALL EXITS("PETSC_ISCOLORINGDESTROY")
+999 ERRORSEXITS("Petsc_ISColoringDestroy",err,error)
     RETURN 1
     
-  END SUBROUTINE PETSC_ISCOLORINGDESTROY
+  END SUBROUTINE Petsc_ISColoringDestroy
   
   !  
   !================================================================================================================================
   !
 
   !Finalise the PETSc ISLocalToGlobalMapping structure and destroy the ISLocalToGlobalMapping
-  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGFINALISE(ISLOCALTOGLOBALMAPPING,ERR,ERROR,*)
+  SUBROUTINE Petsc_ISLocalToGlobalMappingFinalise(isLocalToGlobalMapping,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: ISLOCALTOGLOBALMAPPING !<The ISLocalToGlobalMapping to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscISLocalToGloabalMappingType), INTENT(INOUT) :: isLocalToGlobalMapping !<The ISLocalToGlobalMapping to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGFINALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_ISLocalToGlobalMappingFinalise",err,error,*999)
 
-    IF(ISLOCALTOGLOBALMAPPING%ISLOCALTOGLOBALMAPPING/=PETSC_NULL) THEN
-      CALL PETSC_ISLOCALTOGLOBALMAPPINGDESTROY(ISLOCALTOGLOBALMAPPING,ERR,ERROR,*999)
+    IF(isLocalToGlobalMapping%isLocalToGlobalMapping/=PETSC_NULL_OBJECT) THEN
+      CALL Petsc_ISLocalToGlobalMappingDestroy(isLocalToGlobalMapping,err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGFINALISE")
+    EXITS("Petsc_ISLocalToGlobalMappingFinalise")
     RETURN
-999 CALL ERRORS("PETSC_ISLOCALTOGLOBALMAPPINGFINALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGFINALISE")
+999 ERRORSEXITS("Petsc_ISLocalToGlobalMappingFinalise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGFINALISE
+    
+  END SUBROUTINE Petsc_ISLocalToGlobalMappingFinalise
     
   !
   !================================================================================================================================
   !
   
   !Initialise the PETSc ISLocalToGlobalMapping structure
-  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE(ISLOCALTOGLOBALMAPPING,ERR,ERROR,*)
+  SUBROUTINE Petsc_ISLocalToGlobalMappingInitialise(isLocalToGlobalMapping,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: ISLOCALTOGLOBALMAPPING !<The ISLocalToGlobalMapping to initialise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscISLocalToGloabalMappingType), INTENT(INOUT) :: isLocalToGlobalMapping !<The ISLocalToGlobalMapping to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_ISLocalToGlobalMappingInitialise",err,error,*999)
 
-    ISLOCALTOGLOBALMAPPING%ISLOCALTOGLOBALMAPPING=PETSC_NULL
+    isLocalToGlobalMapping%isLocalToGlobalMapping=PETSC_NULL_OBJECT
     
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE")
+    EXITS("Petsc_ISLocalToGlobalMappingInitialise")
     RETURN
-999 CALL ERRORS("PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE")
+999 ERRORSEXITS("Petsc_ISLocalToGlobalMappingInitialise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGINITIALISE
+    
+  END SUBROUTINE Petsc_ISLocalToGlobalMappingInitialise
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc ISLocalToGlobalMappingApply routine.
-  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGAPPLY(CTX,TYPE,NIN,IDXIN,NOUT,IDXOUT,ERR,ERROR,*)
+  SUBROUTINE Petsc_ISLocalToGlobalMappingApply(isLocalToGlobalMapping,n,idxIn,idxOut,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: CTX !<The local to global mapping context
-    INTEGER(INTG), INTENT(IN) :: TYPE !<The type of local to global mapping
-    INTEGER(INTG), INTENT(IN) :: NIN !<The number of local indicies
-    INTEGER(INTG), INTENT(IN) :: IDXIN(*)
-    INTEGER(INTG), INTENT(OUT) :: NOUT
-    INTEGER(INTG), INTENT(OUT) :: IDXOUT(*)
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscISLocalToGloabalMappingType), INTENT(INOUT) :: isLocalToGlobalMapping !<The local to global mapping to apply
+    INTEGER(INTG), INTENT(IN) :: n !<The number of indicies
+    INTEGER(INTG), INTENT(IN) :: idxIn(:)
+    INTEGER(INTG), INTENT(OUT) :: idxOut(:)
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLY",ERR,ERROR,*999)
+    ENTERS("Petsc_ISLocalToGlobalMappingApply",err,error,*999)
 
-    CALL ISLocalToGlobalMappingApply(CTX%ISLOCALTOGLOBALMAPPING,TYPE,NIN,IDXIN,NOUT,IDXOUT,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL ISLocalToGlobalMappingApply(isLocalToGlobalMapping%isLocalToGlobalMapping,n,idxIn,idxOut,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in ISLocalToGlobalMappingApply",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in ISLocalToGlobalMappingApply.",err,error,*999)
     ENDIF
-    CTX%ISLOCALTOGLOBALMAPPING=PETSC_NULL
+    isLocalToGlobalMapping%isLocalToGlobalMapping=PETSC_NULL_OBJECT
     
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLY")
+    EXITS("Petsc_ISLocalToGlobalMappingApply")
     RETURN
-999 CALL ERRORS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLY",ERR,ERROR)
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLY")
+999 ERRORSEXITS("Petsc_ISLocalToGlobalMappingApply",err,error)
     RETURN 1
     
-  END SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGAPPLY
+  END SUBROUTINE Petsc_ISLocalToGlobalMappingApply
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc ISLocalToGlobalMappingApplyIS routine.
-  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS(CTX,ISIN,ISOUT,ERR,ERROR,*)
+  SUBROUTINE Petsc_ISLocalToGlobalMappingApplyIS(isLocalToGlobalMapping,isIn,isOut,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(IN) :: CTX !<The local to global mapping context
-    TYPE(PETSC_IS_TYPE), INTENT(IN) :: ISIN
-    TYPE(PETSC_IS_TYPE), INTENT(OUT) :: ISOUT
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscISLocalToGloabalMappingType), INTENT(IN) :: isLocalToGlobalMapping !<The local to global mapping to apply
+    TYPE(PetscISType), INTENT(IN) :: isIn
+    TYPE(PetscISType), INTENT(OUT) :: isOut
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS",ERR,ERROR,*999)
+    ENTERS("Petsc_ISLocalToGlobalMappingApplyIS",err,error,*999)
 
-    CALL ISLocalToGlobalMappingApplyIS(CTX%ISLOCALTOGLOBALMAPPING,ISIN%IS_,ISOUT%IS_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL ISLocalToGlobalMappingApplyIS(isLocalToGlobalMapping%isLocalToGlobalMapping,isIn%is,isOut%is,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in ISLocalToGlobalMappingApplyIS",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in ISLocalToGlobalMappingApplyIS.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS")
+    EXITS("Petsc_ISLocalToGlobalMappingApplyIS")
     RETURN
-999 CALL ERRORS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS",ERR,ERROR)
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS")
+999 ERRORSEXITS("Petsc_ISLocalToGlobalMappingApplyIS",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGAPPLYIS
+    
+  END SUBROUTINE Petsc_ISLocalToGlobalMappingApplyIS
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc ISLocalToGlobalMappingCreate routine.
-  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGCREATE(COMMUNICATOR,N,GLOBALNUM,CTX,ERR,ERROR,*)
+  SUBROUTINE Petsc_ISLocalToGlobalMappingCreate(communicator,blockSize,n,indices,mode,isLocalToGlobalMapping,err,error,*)
 
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: N !<The number of local indices
-    INTEGER(INTG), INTENT(IN) :: GLOBALNUM(*) !<The global number for each local index
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: CTX !<The local to global mapping context
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: blockSize !<The block size
+    INTEGER(INTG), INTENT(IN) :: n !<The number of local indices divided by the block size (or the number of block indices)
+    INTEGER(INTG), INTENT(IN) :: indices(:) !<The global index for each local element
+    PetscCopyMode, INTENT(IN) :: mode !<The copy mode
+    TYPE(PetscISLocalToGloabalMappingType), INTENT(INOUT) :: isLocalToGlobalMapping !<On exit, the local to global mapping context
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGCREATE",ERR,ERROR,*999)
+    ENTERS("Petsc_ISLocalToGlobalMappingCreate",err,error,*999)
 
-    CALL ISLocalToGlobalMappingCreate(COMMUNICATOR,N,GLOBALNUM,CTX%ISLOCALTOGLOBALMAPPING,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL ISLocalToGlobalMappingCreate(communicator,blockSize,n,indices,mode,isLocalToGlobalMapping%isLocalToGlobalMapping,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in ISLocalToGlobalMappingCreate",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in ISLocalToGlobalMappingCreate.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGCREATE")
+    EXITS("Petsc_ISLocalToGlobalMappingCreate")
     RETURN
-999 CALL ERRORS("PETSC_ISLOCALTOGLOBALMAPPINGCREATE",ERR,ERROR)
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGCREATE")
+999 ERRORSEXITS("Petsc_ISLocalToGlobalMappingCreate",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGCREATE
+    
+  END SUBROUTINE Petsc_ISLocalToGlobalMappingCreate
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc ISLocalToGlobalMappingDestroy routine.
-  SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGDESTROY(CTX,ERR,ERROR,*)
+  SUBROUTINE Petsc_ISLocalToGlobalMappingDestroy(isLocalToGlobalMapping,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(INOUT) :: CTX !<The local to global mapping context
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscISLocalToGloabalMappingType), INTENT(INOUT) :: isLocalToGlobalMapping !<The local to global mapping context
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_ISLOCALTOGLOBALMAPPINGDESTROY",ERR,ERROR,*999)
+    ENTERS("Petsc_ISLocalToGlobalMappingDestroy",err,error,*999)
 
-    CALL ISLocalToGlobalMappingDestroy(CTX%ISLOCALTOGLOBALMAPPING,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL ISLocalToGlobalMappingDestroy(isLocalToGlobalMapping%isLocalToGlobalMapping,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in ISLocalToGlobalMappingDestroy",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in ISLocalToGlobalMappingDestroy.",err,error,*999)
     ENDIF
-    CTX%ISLOCALTOGLOBALMAPPING=PETSC_NULL
+    isLocalToGlobalMapping%isLocalToGlobalMapping=PETSC_NULL_OBJECT
     
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGDESTROY")
+    EXITS("Petsc_ISLocalToGlobalMappingDestroy")
     RETURN
-999 CALL ERRORS("PETSC_ISLOCALTOGLOBALMAPPINGDESTROY",ERR,ERROR)
-!    CALL EXITS("PETSC_ISLOCALTOGLOBALMAPPINGDESTROY")
+999 ERRORSEXITS("Petsc_ISLocalToGlobalMappingDestroy",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_ISLOCALTOGLOBALMAPPINGDESTROY
+    
+  END SUBROUTINE Petsc_ISLocalToGlobalMappingDestroy
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Finalise the PETSc KSP structure and destroy the KSP
+  SUBROUTINE Petsc_KSPFinalise(ksp,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_KSPFinalise",err,error,*999)
+
+    IF(ksp%ksp/=PETSC_NULL_OBJECT) THEN
+      CALL Petsc_KSPDestroy(ksp,err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_KSPFinalise")
+    RETURN
+999 ERRORSEXITS("Petsc_KSPFinalise",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_KSPFinalise
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Initialise the PETSc KSP structure
+  SUBROUTINE Petsc_KSPInitialise(ksp,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_KSPInitialise",err,error,*999)
+
+    ksp%ksp=PETSC_NULL_OBJECT
+    
+    EXITS("Petsc_KSPInitialise")
+    RETURN
+999 ERRORSEXITS("Petsc_KSPInitialise",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_KSPInitialise
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPCreate routine
-  SUBROUTINE PETSC_KSPCREATE(COMMUNICATOR,KSP_,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPCreate(communicator,ksp,err,error,*)
 
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator for the KSP creation
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<On exit, the Ksp information
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator for the KSP creation
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<On exit, the KSP object
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPCREATE",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPCreate",err,error,*999)
 
-    CALL KSPCreate(COMMUNICATOR,KSP_%KSP_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPCreate(communicator,ksp%ksp,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPCreate",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPCreate.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPCREATE")
+    EXITS("Petsc_KSPCreate")
     RETURN
-999 CALL ERRORS("PETSC_KSPCREATE",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPCREATE")
+999 ERRORSEXITS("Petsc_KSPCreate",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPCREATE
+    
+  END SUBROUTINE Petsc_KSPCreate
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPDestroy routine
-  SUBROUTINE PETSC_KSPDESTROY(KSP_,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPDestroy(ksp,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to destroy
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to destroy
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPDESTROY",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPDestroy",err,error,*999)
 
-    CALL KSPDestroy(KSP_%KSP_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPDestroy(ksp%ksp,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPDestroy",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPDestroy.",err,error,*999)
     ENDIF
-    KSP_%KSP_=PETSC_NULL
+    ksp%ksp=PETSC_NULL_OBJECT
     
-!    CALL EXITS("PETSC_KSPDESTROY")
+    EXITS("Petsc_KSPDestroy")
     RETURN
-999 CALL ERRORS("PETSC_KSPDESTROY",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPDESTROY")
+999 ERRORSEXITS("Petsc_KSPDestroy",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPDESTROY
+    
+  END SUBROUTINE Petsc_KSPDestroy
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPGetConvergedReason routine
-  SUBROUTINE PETSC_KSPGETCONVERGEDREASON(KSP_,REASON,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPGetConvergedReason(ksp,reason,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The KSP information
-    INTEGER(INTG), INTENT(OUT) :: REASON !<On exit, the converged reason
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP information
+    INTEGER(INTG), INTENT(OUT) :: reason !<On exit, the converged reason
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPGETCONVERGEDREASON",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPGetConvergedReason",err,error,*999)
 
-    CALL KSPGetConvergedReason(KSP_%KSP_,REASON,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPGetConvergedReason(ksp%ksp,reason,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPGetConvergedReason",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPGetConvergedReason.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPGETCONVERGEDREASON")
+    EXITS("Petsc_KSPGetConvergedReason")
     RETURN
-999 CALL ERRORS("PETSC_KSPGETCONVERGEDREASON",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPGETCONVERGEDREASON")
+999 ERRORSEXITS("Petsc_KSPGetConvergedReason",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPGETCONVERGEDREASON
+  END SUBROUTINE Petsc_KSPGetConvergedReason
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPGetIterationNumber routine
-  SUBROUTINE PETSC_KSPGETITERATIONNUMBER(KSP_,ITERATION_NUMBER,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPGetIterationNumber(ksp,iterationNumber,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The KSP information
-    INTEGER(INTG), INTENT(OUT) :: ITERATION_NUMBER !<On exit, the number of iterations
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP information
+    INTEGER(INTG), INTENT(OUT) :: iterationNumber !<On exit, the number of iterations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPGETITERATIONNUMBER",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPGetIterationNumber",err,error,*999)
 
-    CALL KSPGetIterationNumber(KSP_%KSP_,ITERATION_NUMBER,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPGetIterationNumber(ksp%ksp,iterationNumber,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPGetIterationNumber",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPGetIterationNumber.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPGETITERATIONNUMBER")
+    EXITS("Petsc_KSPGetIterationNumber")
     RETURN
-999 CALL ERRORS("PETSC_KSPGETITERATIONNUMBER",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPGETITERATIONNUMBER")
+999 ERRORSEXITS("Petsc_KSPGetIterationNumber",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPGETITERATIONNUMBER
+    
+  END SUBROUTINE Petsc_KSPGetIterationNumber
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPGetPC routine
-  SUBROUTINE PETSC_KSPGETPC(KSP_,PC_,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPGetPC(ksp,pc,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to get the PC for
-    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<On exit, the PC associated with the Ksp
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to get the PC for
+    TYPE(PetscPCType), INTENT(INOUT) :: pc !<On exit, the PC associated with the KSP
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPGETPC",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPGetPC",err,error,*999)
 
-    CALL KSPGetPC(KSP_%KSP_,PC_%PC_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPGetPC(ksp%ksp,pc%pc,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPGetPC",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPGetPC.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPGETPC")
+    EXITS("Petsc_KSPGetPC")
     RETURN
-999 CALL ERRORS("PETSC_KSPGETPC",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPGETPC")
+999 ERRORSEXITS("Petsc_KSPGetPC",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPGETPC
+    
+  END SUBROUTINE Petsc_KSPGetPC
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPGetResidualNorm routine
-  SUBROUTINE PETSC_KSPGETRESIDUALNORM(KSP_,RESIDUAL_NORM,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPGetResidualNorm(ksp,residualNorm,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to get the PC for
-    REAL(DP), INTENT(OUT) :: RESIDUAL_NORM !<On exit, the residual norm for the KSP
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to get the PC for
+    REAL(DP), INTENT(OUT) :: residualNorm !<On exit, the residual norm for the KSP
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPGETRESIDUALNORM",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPGetResidualNorm",err,error,*999)
 
-    CALL KSPGetResidualNorm(KSP_%KSP_,RESIDUAL_NORM,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPGetResidualNorm(ksp%ksp,residualNorm,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPGetResidualNorm.",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPGetResidualNorm.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPGETRESIDUALNORM")
+    EXITS("Petsc_KSPGetResidualNorm")
     RETURN
-999 CALL ERRORS("PETSC_KSPGETRESIDUALNORM",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPGETRESIDUALNORM")
+999 ERRORSEXITS("Petsc_KSPGetResidualNorm",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPGETRESIDUALNORM
     
-  !
-  !================================================================================================================================
-  !
-
-  !Finalise the PETSc KSP structure and destroy the KSP
-  SUBROUTINE PETSC_KSPFINALISE(KSP_,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_KSPFINALISE",ERR,ERROR,*999)
-
-    IF(KSP_%KSP_/=PETSC_NULL) THEN
-      CALL PETSC_KSPDESTROY(KSP_,ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_KSPFINALISE")
-    RETURN
-999 CALL ERRORS("PETSC_KSPFINALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPFINALISE")
-    RETURN 1
-  END SUBROUTINE PETSC_KSPFINALISE
+  END SUBROUTINE Petsc_KSPGetResidualNorm
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPGMRESSetRestart routine
-  SUBROUTINE PETSC_KSPGMRESSETRESTART(KSP_,RESTART,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPGMRESSetRestart(ksp,restart,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the GMRES restart for
-    INTEGER(INTG), INTENT(OUT) :: RESTART !<The restart value to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to set the GMRES restart for
+    INTEGER(INTG), INTENT(OUT) :: restart !<The restart value to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPGMRESSETRESTART",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPGMRESSetRestart",err,error,*999)
 
-    CALL KSPGMRESSetRestart(KSP_%KSP_,RESTART,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPGMRESSetRestart(ksp%ksp,restart,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPGMRESSetRestart.",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPGMRESSetRestart.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPGMRESSETRESTART")
+    EXITS("Petsc_KSPGMRESSetRestart")
     RETURN
-999 CALL ERRORS("PETSC_KSPGMRESSETRESTART",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPGMRESSETRESTART")
+999 ERRORSEXITS("Petsc_KSPGMRESSetRestart",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPGMRESSETRESTART
     
-  !
-  !================================================================================================================================
-  !
-
-  !Initialise the PETSc KSP structure
-  SUBROUTINE PETSC_KSPINITIALISE(KSP_,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to initialise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_KSPINITIALISE",ERR,ERROR,*999)
-
-    KSP_%KSP_=PETSC_NULL
-    
-!    CALL EXITS("PETSC_KSPINITIALISE")
-    RETURN
-999 CALL ERRORS("PETSC_KSPINITIALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPINITIALISE")
-    RETURN 1
-  END SUBROUTINE PETSC_KSPINITIALISE
+  END SUBROUTINE Petsc_KSPGMRESSetRestart
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPSetFromOptions routine
-  SUBROUTINE PETSC_KSPSETFROMOPTIONS(KSP_,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPSetFromOptions(ksp,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the options for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The Ksp to set the options for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPSETFROMOPTIONS",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPSetFromOptions",err,error,*999)
 
-    CALL KSPSetFromOptions(KSP_%KSP_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPSetFromOptions(ksp%ksp,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPSetFromOptions",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPSetFromOptions.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPSETFROMOPTIONS")
+    EXITS("Petsc_KSPSetFromOptions")
     RETURN
-999 CALL ERRORS("PETSC_KSPSETFROMOPTIONS",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPSETFROMOPTIONS")
+999 ERRORSEXITS("Petsc_KSPSetFromOptions",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPSETFROMOPTIONS
+    
+  END SUBROUTINE Petsc_KSPSetFromOptions
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPSetInitialGuessNonzero routine
-  SUBROUTINE PETSC_KSPSETINITIALGUESSNONZERO(KSP_,FLAG,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPSetInitialGuessNonZero(ksp,flag,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the initial guess non zero for
-    LOGICAL, INTENT(IN) :: FLAG
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to set the initial guess non zero for
+    LOGICAL, INTENT(IN) :: flag !<If flag is .TRUE. the initial guess is non-zero, if flag is .FALSE. the initial guess is zero.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPSETINITIALGUESSNONZERO",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPSetInitialGuessNonZero",err,error,*999)
 
     IF(FLAG) THEN
-      CALL KSPSetInitialGuessNonzero(KSP_%KSP_,PETSC_TRUE,ERR)
+      CALL KSPSetInitialGuessNonzero(ksp%ksp,PETSC_TRUE,err)
     ELSE
-      CALL KSPSetInitialGuessNonzero(KSP_%KSP_,PETSC_FALSE,ERR)
+      CALL KSPSetInitialGuessNonzero(ksp%ksp,PETSC_FALSE,err)
     ENDIF
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPSetInitialGuessNonzero",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPSetInitialGuessNonzero.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPSETINITIALGUESSNONZERO")
+    EXITS("Petsc_KSPSetInitialGuessNonZero")
     RETURN
-999 CALL ERRORS("PETSC_KSPSETINITIALGUESSNONZERO",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPSETINITIALGUESSNONZERO")
+999 ERRORSEXITS("Petsc_KSPSetInitialGuessNonZero",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPSETINITIALGUESSNONZERO
+    
+  END SUBROUTINE Petsc_KSPSetInitialGuessNonZero
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPSetOperators routine
-  SUBROUTINE PETSC_KSPSETOPERATORS(KSP_,AMAT,PMAT,FLAG,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPSetOperators(ksp,amat,pmat,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the operators for
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: AMAT !<The matrix associated with the linear system
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: PMAT !<The matrix to be used in constructing the preconditioner
-    MatStructure, INTENT(IN) :: FLAG !<Preconditioner matrix structure flag
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The Ksp to set the operators for
+    TYPE(PetscMatType), INTENT(INOUT) :: amat !<The matrix associated with the linear system
+    TYPE(PetscMatType), INTENT(INOUT) :: pmat !<The matrix to be used in constructing the preconditioner
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPSETOPERATORS",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPSetOperators",err,error,*999)
 
-    CALL KSPSetOperators(KSP_%KSP_,AMAT%MAT,PMAT%MAT,FLAG,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPSetOperators(ksp%ksp,amat%mat,pmat%mat,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPSetFromOperators",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPSetFromOperators.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPSETOPERATORS")
+    EXITS("Petsc_KSPSetOperators")
     RETURN
-999 CALL ERRORS("PETSC_KSPSETOPERATORS",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPSETOPERATORS")
+999 ERRORSEXITS("Petsc_KSPSetOperators",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPSETOPERATORS
+    
+  END SUBROUTINE Petsc_KSPSetOperators
     
   !
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc KSPSetTolerances routine
-  SUBROUTINE PETSC_KSPSETTOLERANCES(KSP_,RTOL,ATOL,DTOL,MAXITS,ERR,ERROR,*)
+  !>Buffer routine to the PETSc KSPSetReusePreconditioner routine
+  SUBROUTINE Petsc_KSPSetReusePreconditioner(ksp,flag,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the tolerances for
-    REAL(DP), INTENT(IN) :: RTOL !<The relative tolerance to set
-    REAL(DP), INTENT(IN) :: ATOL !<The absolution tolerance to set
-    REAL(DP), INTENT(IN) :: DTOL !<The divergence tolerance to set
-    INTEGER(INTG), INTENT(IN) :: MAXITS !<The maximum number of iterations
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to set the options for
+    LOGICAL, INTENT(IN) :: flag !<If flag is .TRUE. then the current precondition is reused, if flag is .FALSE. it is not
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPSETTOLERANCES",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPSetReusePreconditioner",err,error,*999)
 
-    CALL KSPSetTolerances(KSP_%KSP_,RTOL,ATOL,DTOL,MAXITS,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    IF(flag) THEN
+      CALL KSPSetReusePreconditioner(ksp%ksp,PETSC_TRUE,err)
+    ELSE
+      CALL KSPSetReusePreconditioner(ksp%ksp,PETSC_FALSE,err)
+    ENDIF
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPSetTolerances",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPSetReusePreconditioner.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPSETTOLERANCES")
+    EXITS("Petsc_KSPSetReusePreconditioner")
     RETURN
-999 CALL ERRORS("PETSC_KSPSETTOLERANCES",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPSETTOLERANCES")
+999 ERRORSEXITS("Petsc_KSPSetReusePreconditioner",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPSETTOLERANCES
+    
+  END SUBROUTINE Petsc_KSPSetReusePreconditioner
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc KSPSetTolerances routine
+  SUBROUTINE Petsc_KSPSetTolerances(ksp,rTol,aTol,dTol,maxIterations,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to set the tolerances for
+    REAL(DP), INTENT(IN) :: rTol !<The relative tolerance to set
+    REAL(DP), INTENT(IN) :: aTol !<The absolution tolerance to set
+    REAL(DP), INTENT(IN) :: dTol !<The divergence tolerance to set
+    INTEGER(INTG), INTENT(IN) :: maxIterations !<The maximum number of iterations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_KSPSetTolerances",err,error,*999)
+
+    CALL KSPSetTolerances(ksp%ksp,rTol,aTol,dTol,maxIterations,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in KSPSetTolerances.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_KSPSetTolerances")
+    RETURN
+999 ERRORSEXITS("Petsc_KSPSetTolerances",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_KSPSetTolerances
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPSetType routine
-  SUBROUTINE PETSC_KSPSETTYPE(KSP_,METHOD,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPSetType(ksp,method,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set the type for
-    KSPType, INTENT(IN) :: METHOD !<The Ksp method
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to set the type for
+    KSPType, INTENT(IN) :: method !<The KSP method
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPSETTYPE",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPSetType",err,error,*999)
 
-    CALL KSPSetType(KSP_%KSP_,METHOD,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPSetType(ksp%ksp,method,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPSetType",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPSetType.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPSETTYPE")
+    EXITS("Petsc_KSPSetType")
     RETURN
-999 CALL ERRORS("PETSC_KSPSETTYPE",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPSETTYPE")
+999 ERRORSEXITS("Petsc_KSPSetType",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPSETTYPE
+    
+  END SUBROUTINE Petsc_KSPSetType
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPSetUp routine
-  SUBROUTINE PETSC_KSPSETUP(KSP_,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPSetUp(ksp,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set up
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to set up
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPSETUP",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPSetUp",err,error,*999)
 
-    CALL KSPSetUp(KSP_%KSP_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPSetUp(ksp%ksp,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPSetUp",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPSetUp.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPSETUP")
+    EXITS("Petsc_KSPSetUp")
     RETURN
-999 CALL ERRORS("PETSC_KSPSETUP",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPSETUP")
+999 ERRORSEXITS("Petsc_KSPSetUp",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPSETUP
+    
+  END SUBROUTINE Petsc_KSPSetUp
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc KSPSolve routine
-  SUBROUTINE PETSC_KSPSOLVE(KSP_,B,X,ERR,ERROR,*)
+  SUBROUTINE Petsc_KSPSolve(ksp,b,x,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The Ksp to set up
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: B !<The RHS vector
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT)  :: X !<The solution vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The Ksp to set up
+    TYPE(PetscVecType), INTENT(INOUT) :: b !<The RHS vector
+    TYPE(PetscVecType), INTENT(INOUT)  :: x !<The solution vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_KSPSOLVE",ERR,ERROR,*999)
+    ENTERS("Petsc_KSPSolve",err,error,*999)
 
-    CALL KSPSolve(KSP_%KSP_,B%VEC,X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL KSPSolve(ksp%ksp,b%vec,x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in KSPSolve",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in KSPSolve.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_KSPSOLVE")
+    EXITS("Petsc_KSPSolve")
     RETURN
-999 CALL ERRORS("PETSC_KSPSOLVE",ERR,ERROR)
-!    CALL EXITS("PETSC_KSPSOLVE")
+999 ERRORSEXITS("Petsc_KSPSolve",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_KSPSOLVE
     
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc PetscLogView routine.
-  SUBROUTINE PETSC_LOGVIEW(VIEWER,ERR,ERROR,*)
-
-    !Argument Variables
-    PetscViewer, INTENT(IN) :: VIEWER !<The viewer to print the log to
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_LOGVIEW",ERR,ERROR,*999)
-
-    CALL PetscLogView(VIEWER,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in PetscLogView.",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_LOGVIEW")
-    RETURN
-999 CALL ERRORS("PETSC_LOGVIEW",ERR,ERROR)
-!    CALL EXITS("PETSC_LOGVIEW")
-    RETURN 1
-  END SUBROUTINE PETSC_LOGVIEW
-  
-#else
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc PetscLogPrintSummary routine.
-  SUBROUTINE PETSC_LOGPRINTSUMMARY(COMMUNICATOR,FILE,ERR,ERROR,*)
-
-    !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    CHARACTER(LEN=*), INTENT(IN) :: FILE !<Filename for the log summary
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_LOGPRINTSUMMARY",ERR,ERROR,*999)
-
-    CALL PetscLogPrintSummary(COMMUNICATOR,FILE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in PetscLogPrintSummary",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_LOGPRINTSUMMARY")
-    RETURN
-999 CALL ERRORS("PETSC_LOGPRINTSUMMARY",ERR,ERROR)
-!    CALL EXITS("PETSC_LOGPRINTSUMMARY")
-    RETURN 1
-  END SUBROUTINE PETSC_LOGPRINTSUMMARY
-    
-  !
-  !================================================================================================================================
-  !
-  
-#endif
-  
-  !>Buffer routine to the PETSc MatAssemblyBegin routine.
-  SUBROUTINE PETSC_MATASSEMBLYBEGIN(A,ASSEMBLY_TYPE,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !The matrix to assemble
-    MatAssemblyType, INTENT(IN) :: ASSEMBLY_TYPE !<The assembly type 
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATASSEMBLYBEGIN",ERR,ERROR,*999)
-
-    CALL MatAssemblyBegin(A%MAT,ASSEMBLY_TYPE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatAssemblyBegin",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATASSEMBLYBEGIN")
-    RETURN
-999 CALL ERRORS("PETSC_MATASSEMBLYBEGIN",ERR,ERROR)
-!    CALL EXITS("PETSC_MATASSEMBLYBEGIN")
-    RETURN 1
-  END SUBROUTINE PETSC_MATASSEMBLYBEGIN
+  END SUBROUTINE Petsc_KSPSolve
     
   !
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc MatAssemblyEnd routine.
-  SUBROUTINE PETSC_MATASSEMBLYEND(A,ASSEMBLY_TYPE,ERR,ERROR,*)
+  !Finalise the PETSc Mat structure
+  SUBROUTINE Petsc_MatFinalise(a,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to assemble
-    MatAssemblyType, INTENT(IN) :: ASSEMBLY_TYPE !<The assembly type
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_MATASSEMBLYEND",ERR,ERROR,*999)
+    ENTERS("Petsc_MatFinalise",err,error,*999)
 
-    CALL MatAssemblyEnd(A%MAT,ASSEMBLY_TYPE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatAssemblyEnd",ERR,ERROR,*999)
+    IF(a%mat/=PETSC_NULL_OBJECT) THEN
+      CALL Petsc_MatDestroy(a,err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_MATASSEMBLYEND")
+    EXITS("Petsc_MatFinalise")
     RETURN
-999 CALL ERRORS("PETSC_MATASSEMBLYEND",ERR,ERROR)
-!    CALL EXITS("PETSC_MATASSEMBLYEND")
+999 ERRORSEXITS("Petsc_MatFinalise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_MATASSEMBLYEND
     
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatCreate routine.
-  SUBROUTINE PETSC_MATCREATE(COMMUNICATOR,A,ERR,ERROR,*)
-
-    !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI Communicator
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the created matrix
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATCREATE",ERR,ERROR,*999)
-
-    CALL MatCreate(COMMUNICATOR,A%MAT,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatCreate",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATCREATE")
-    RETURN
-999 CALL ERRORS("PETSC_MATCREATE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATCREATE")
-    RETURN 1
-  END SUBROUTINE PETSC_MATCREATE    
-    
-  !
-  !================================================================================================================================
-  !
-
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  !>Buffer routine to the PETSc MatCreateAIJ routine.
-  SUBROUTINE PETSC_MATCREATEAIJ(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,DIAG_NUMBER_NZ_PERROW,DIAG_NUMBER_NZ_EACHROW, &
-    & OFFDIAG_NUMBER_NZ_PERROW,OFFDIAG_NUMBER_NZ_EACHROW,A,ERR,ERROR,*)
-
-    !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: LOCAL_M !<The number of local rows
-    INTEGER(INTG), INTENT(IN) :: LOCAL_N !<The number of local columns
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_M !<The number of global rows
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_N !<The number of global columns
-    INTEGER(INTG), INTENT(IN) :: DIAG_NUMBER_NZ_PERROW !<The maximum number of non-zeros per row in the diagonal part of the matrix
-    INTEGER(INTG), INTENT(IN) :: DIAG_NUMBER_NZ_EACHROW(*) !<The number of non-zeros per row in the diagonal part of the matrix
-    INTEGER(INTG), INTENT(IN) :: OFFDIAG_NUMBER_NZ_PERROW !<The maximum number of non-zeros per row in the off-diagonal part of the matrix
-    INTEGER(INTG), INTENT(IN) :: OFFDIAG_NUMBER_NZ_EACHROW(*) !<The number of non-zeros per row in the off-diagonal part of the matrix
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the matrix to create
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATCREATEAIJ",ERR,ERROR,*999)
-
-    CALL MatCreateAIJ(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,DIAG_NUMBER_NZ_PERROW,DIAG_NUMBER_NZ_EACHROW, &
-      & OFFDIAG_NUMBER_NZ_PERROW,OFFDIAG_NUMBER_NZ_EACHROW,A%MAT,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatCreateAIJ",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATCREATEAIJ")
-    RETURN
-999 CALL ERRORS("PETSC_MATCREATEAIJ",ERR,ERROR)
-!    CALL EXITS("PETSC_MATCREATEAIJ")
-    RETURN 1
-  END SUBROUTINE PETSC_MATCREATEAIJ
-#else  
-  !>Buffer routine to the PETSc MatCreateMPIAIJ routine.
-  SUBROUTINE PETSC_MATCREATEMPIAIJ(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,DIAG_NUMBER_NZ_PERROW,DIAG_NUMBER_NZ_EACHROW, &
-    & OFFDIAG_NUMBER_NZ_PERROW,OFFDIAG_NUMBER_NZ_EACHROW,A,ERR,ERROR,*)
-
-    !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: LOCAL_M !<The number of local rows
-    INTEGER(INTG), INTENT(IN) :: LOCAL_N !<The number of local columns
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_M !<The number of global rows
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_N !<The number of global columns
-    INTEGER(INTG), INTENT(IN) :: DIAG_NUMBER_NZ_PERROW !<The maximum number of non-zeros per row in the diagonal part of the matrix
-    INTEGER(INTG), INTENT(IN) :: DIAG_NUMBER_NZ_EACHROW(*) !<The number of non-zeros per row in the diagonal part of the matrix
-    INTEGER(INTG), INTENT(IN) :: OFFDIAG_NUMBER_NZ_PERROW !<The maximum number of non-zeros per row in the off-diagonal part of the matrix
-    INTEGER(INTG), INTENT(IN) :: OFFDIAG_NUMBER_NZ_EACHROW(*) !<The number of non-zeros per row in the off-diagonal part of the matrix
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the matrix to create
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATCREATEMPIAIJ",ERR,ERROR,*999)
-
-    CALL MatCreateMPIAIJ(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,DIAG_NUMBER_NZ_PERROW,DIAG_NUMBER_NZ_EACHROW, &
-      & OFFDIAG_NUMBER_NZ_PERROW,OFFDIAG_NUMBER_NZ_EACHROW,A%MAT,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatCreateMPIAIJ",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATCREATEMPIAIJ")
-    RETURN
-999 CALL ERRORS("PETSC_MATCREATEMPIAIJ",ERR,ERROR)
-!    CALL EXITS("PETSC_MATCREATEMPIAIJ")
-    RETURN 1
-  END SUBROUTINE PETSC_MATCREATEMPIAIJ
-#endif  
-    
-  !
-  !================================================================================================================================
-  !
-
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  !>Buffer routine to the PETSc MatCreateDense routine.
-  SUBROUTINE PETSC_MATCREATEDENSE(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,MATRIX_DATA,A,ERR,ERROR,*)
-
-    !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: LOCAL_M !<The number of local rows
-    INTEGER(INTG), INTENT(IN) :: LOCAL_N !<The number of local columns
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_M !<The number of global columns
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_N !<The number of global rows
-    REAL(DP), INTENT(IN) :: MATRIX_DATA(*) !<Optional, the allocated matrix data.
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the matrix to create
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATCREATEDENSE",ERR,ERROR,*999)
-
-    CALL MatCreateDense(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,MATRIX_DATA,A%MAT,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatCreateDense",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATCREATEDENSE")
-    RETURN
-999 CALL ERRORS("PETSC_MATCREATEDENSE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATCREATEDENSE")
-    RETURN 1
-  END SUBROUTINE PETSC_MATCREATEDENSE
-#else  
-  !>Buffer routine to the PETSc MatCreateMPIDense routine.
-  SUBROUTINE PETSC_MATCREATEMPIDENSE(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,MATRIX_DATA,A,ERR,ERROR,*)
-
-    !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: LOCAL_M !<The number of local rows
-    INTEGER(INTG), INTENT(IN) :: LOCAL_N !<The number of local columns
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_M !<The number of global columns
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_N !<The number of global rows
-    REAL(DP), INTENT(IN) :: MATRIX_DATA(*) !<Optional, the allocated matrix data.
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the matrix to create
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATCREATEMPIDENSE",ERR,ERROR,*999)
-
-    CALL MatCreateMPIDense(COMMUNICATOR,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,MATRIX_DATA,A%MAT,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatCreateMPIDense",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATCREATEMPIDENSE")
-    RETURN
-999 CALL ERRORS("PETSC_MATCREATEMPIDENSE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATCREATEMPIDENSE")
-    RETURN 1
-  END SUBROUTINE PETSC_MATCREATEMPIDENSE
-#endif
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatCreateSeqAIJ routine.
-  SUBROUTINE PETSC_MATCREATESEQAIJ(COMMUNICATOR,M,N,NUMBER_NZ_PERROW,NUMBER_NZ_EACHROW,A,ERR,ERROR,*)
-
-    !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: M !<The number of rows
-    INTEGER(INTG), INTENT(IN) :: N !<The number of columns
-    INTEGER(INTG), INTENT(IN) :: NUMBER_NZ_PERROW !<The maximum number of non-zeros per row
-    INTEGER(INTG), INTENT(IN) :: NUMBER_NZ_EACHROW(*) !<The number of non-zeros in each row
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the created matrix
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATCREATESEQAIJ",ERR,ERROR,*999)
-
-    CALL MatCreateSeqAIJ(COMMUNICATOR,M,N,NUMBER_NZ_PERROW,NUMBER_NZ_EACHROW,A%MAT,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatCreateSeqAIJ",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATCREATESEQAIJ")
-    RETURN
-999 CALL ERRORS("PETSC_MATCREATESEQAIJ",ERR,ERROR)
-!    CALL EXITS("PETSC_MATCREATESEQAIJ")
-    RETURN 1
-  END SUBROUTINE PETSC_MATCREATESEQAIJ
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatCreateSeqDense routine.
-  SUBROUTINE PETSC_MATCREATESEQDENSE(COMMUNICATOR,M,N,MATRIX_DATA,A,ERR,ERROR,*)
-
-    !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI Communicator
-    INTEGER(INTG), INTENT(IN) :: M !<The number of rows
-    INTEGER(INTG), INTENT(IN) :: N !<The number of columns
-    REAL(DP), INTENT(IN) :: MATRIX_DATA(*) !<Optional, the allocated matrix data
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<On exit, the created matrix
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATCREATESEQDENSE",ERR,ERROR,*999)
-
-    CALL MatCreateSeqDense(COMMUNICATOR,M,N,MATRIX_DATA,A%MAT,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatCreateSeqDense",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATCREATESEQDENSE")
-    RETURN
-999 CALL ERRORS("PETSC_MATCREATESEQDENSE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATCREATESEQDENSE")
-    RETURN 1
-  END SUBROUTINE PETSC_MATCREATESEQDENSE
-
-  !
-  !================================================================================================================================
-  !
-  
-  !>Buffer routine to the PETSc MatSetType routine.
-  SUBROUTINE PETSC_MATSETTYPE(A,MATRIXTYPE,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix
-    MatType, INTENT(IN) :: MATRIXTYPE !<The matrix type 
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATSETTYPE",ERR,ERROR,*999)
-
-    CALL MatSetType(A%MAT,MATRIXTYPE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatSetType",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATSETTYPE")
-    RETURN
-999 CALL ERRORS("PETSC_MATSETTYPE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATSETTYPE")
-    RETURN 1
-  END SUBROUTINE PETSC_MATSETTYPE
-
-  !
-  !================================================================================================================================
-  !    
-
-  !>Buffer routine to the PETSc MatDestroy routine.
-  SUBROUTINE PETSC_MATDESTROY(A,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to destroy
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATDESTROY",ERR,ERROR,*999)
-
-    CALL MatDestroy(A%MAT,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatDestroy",ERR,ERROR,*999)
-    ENDIF
-    A%MAT=PETSC_NULL
-     
-!    CALL EXITS("PETSC_MATDESTROY")
-    RETURN
-999 CALL ERRORS("PETSC_MATDESTROY",ERR,ERROR)
-!    CALL EXITS("PETSC_MATDESTROY")
-    RETURN 1
-  END SUBROUTINE PETSC_MATDESTROY
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatFDColoringCreate routine.
-  SUBROUTINE PETSC_MATFDCOLORINGCREATE(A,ISCOLORING,FDCOLORING,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The PETSc matrix to create the FD coloring for
-    TYPE(PETSC_ISCOLORING_TYPE), INTENT(IN) :: ISCOLORING !<The index set coloring to create the finite difference coloring for
-    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(OUT) :: FDCOLORING !<On exit, the matrix finite difference coloring
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATFDCOLORINGCREATE",ERR,ERROR,*999)
-
-    CALL MatFDColoringCreate(A%MAT,ISCOLORING%ISCOLORING,FDCOLORING%MATFDCOLORING,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringCreate",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATFDCOLORINGCREATE")
-    RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGCREATE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATFDCOLORINGCREATE")
-    RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGCREATE
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatFDColoringDestroy routine.
-  SUBROUTINE PETSC_MATFDCOLORINGDESTROY(MATFDCOLORING,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The matrix finite difference coloring to destroy
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATFDCOLORINGDESTROY",ERR,ERROR,*999)
-
-    CALL MatFDColoringDestroy(MATFDCOLORING%MATFDCOLORING,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringDestroy",ERR,ERROR,*999)
-    ENDIF
-    MATFDCOLORING%MATFDCOLORING=PETSC_NULL
-     
-!    CALL EXITS("PETSC_MATFDCOLORINGDESTROY")
-    RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGDESTROY",ERR,ERROR)
-!    CALL EXITS("PETSC_MATFDCOLORINGDESTROY")
-    RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGDESTROY
-    
-  !
-  !================================================================================================================================
-  !
-
-  !Finalise the PETSc MatFDColoring structure and destroy the MatFDColoring
-  SUBROUTINE PETSC_MATFDCOLORINGFINALISE(MATFDCOLORING,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The MatFDColoring to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATFDCOLORINGFINALISE",ERR,ERROR,*999)
-
-    IF(MATFDCOLORING%MATFDCOLORING/=PETSC_NULL) THEN
-      CALL PETSC_MATFDCOLORINGDESTROY(MATFDCOLORING,ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATFDCOLORINGFINALISE")
-    RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGFINALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATFDCOLORINGFINALISE")
-    RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGFINALISE
-    
-  !
-  !================================================================================================================================
-  !
-  
-  !Initialise the PETSc MatFDColoring structure
-  SUBROUTINE PETSC_MATFDCOLORINGINITIALISE(MATFDCOLORING,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The MatFDColoring to initialise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATFDCOLORINGINITIALISE",ERR,ERROR,*999)
-
-    MATFDCOLORING%MATFDCOLORING=PETSC_NULL
-    
-!    CALL EXITS("PETSC_MATFDCOLORINGINITIALISE")
-    RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGINITIALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATFDCOLORINGINITIALISE")
-    RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGINITIALISE
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatFDColoringSetFromOptions routine.
-  SUBROUTINE PETSC_MATFDCOLORINGSETFROMOPTIONS(MATFDCOLORING,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The matrix finite difference coloring to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATFDCOLORINGSETFROMOPTIONS",ERR,ERROR,*999)
-
-    CALL MatFDColoringSetFromOptions(MATFDCOLORING%MATFDCOLORING,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringSetFromOptions",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATFDCOLORINGSETFROMOPTIONS")
-    RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGSETFROMOPTIONS",ERR,ERROR)
-!    CALL EXITS("PETSC_MATFDCOLORINGSETFROMOPTIONS")
-    RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGSETFROMOPTIONS
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatFDColoringSetParameters routine.
-  SUBROUTINE PETSC_MATFDCOLORINGSETPARAMETERS(MATFDCOLORING,RERROR,UMIN,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The matrix finite difference coloring to set
-    REAL(DP) :: RERROR !<The square root of the relative error
-    REAL(DP) :: UMIN !<MatFDColoring umin option
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATFDCOLORINGSETPARAMETERS",ERR,ERROR,*999)
-
-    CALL MatFDColoringSetParameters(MATFDCOLORING%MATFDCOLORING,RERROR,UMIN,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringSetParameters",ERR,ERROR,*999)
-    ENDIF
-
-!    CALL EXITS("PETSC_MATFDCOLORINGSETPARAMETERS")
-    RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGSETPARAMETERS",ERR,ERROR)
-!    CALL EXITS("PETSC_MATFDCOLORINGSETPARAMETERS")
-    RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGSETPARAMETERS
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatFDColoringSetFunction routine.
-  SUBROUTINE PETSC_MATFDCOLORINGSETFUNCTION(MATFDCOLORING,FFUNCTION,CTX,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The matrix finite difference coloring to set
-    EXTERNAL FFUNCTION !<The external function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATFDCOLORINGSETFUNCTION",ERR,ERROR,*999)
-
-!!Temporary until we move over to PETSc 3.
-#if ( PETSC_VERSION_MAJOR == 3 )
-    CALL MatFDColoringSetFunction(MATFDCOLORING%MATFDCOLORING,FFUNCTION,CTX,ERR)
-#endif
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringSetFunction",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATFDCOLORINGSETFUNCTION")
-    RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGSETFUNCTION",ERR,ERROR)
-!    CALL EXITS("PETSC_MATFDCOLORINGSETFUNCTION")
-    RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGSETFUNCTION
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatFDColoringSetFunctionSNES routine.
-  SUBROUTINE PETSC_MATFDCOLORINGSETFUNCTIONSNES(MATFDCOLORING,FFUNCTION,CTX,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MATFDCOLORING_TYPE), INTENT(INOUT) :: MATFDCOLORING !<The matrix finite difference coloring to set
-    EXTERNAL FFUNCTION !<The external function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATFDCOLORINGSETFUNCTIONSNES",ERR,ERROR,*999)
-
-#if ( PETSC_VERSION_MAJOR == 2 )
-    CALL MatFDColoringSetFunctionSNES(MATFDCOLORING%MATFDCOLORING,FFUNCTION,CTX,ERR)
-#endif
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatFDColoringSetFunctionSNES",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATFDCOLORINGSETFUNCTIONSNES")
-    RETURN
-999 CALL ERRORS("PETSC_MATFDCOLORINGSETFUNCTIONSNES",ERR,ERROR)
-!    CALL EXITS("PETSC_MATFDCOLORINGSETFUNCTIONSNES")
-    RETURN 1
-  END SUBROUTINE PETSC_MATFDCOLORINGSETFUNCTIONSNES
-        
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatGetArray routine.
-  SUBROUTINE PETSC_MATGETARRAY(A,ARRAY,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT), TARGET :: A !<The matrix to get the array for
-    REAL(DP), POINTER :: ARRAY(:) !<On exit, a pointer to the matrix array
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATGETARRAY",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(ARRAY)) THEN
-      CALL FLAG_ERROR("Array is already associated",ERR,ERROR,*999)
-    ELSE
-      CALL FLAG_ERROR("PETSC_MATGETARRAY not implemented",ERR,ERROR,*999)
-      !CALL MatGetArray(A%MAT,A%MAT_DATA,A%MAT_OFFSET,ERR)
-      !IF(ERR/=0) THEN
-      !  IF(PETSC_HANDLE_ERROR) THEN
-      !    CHKERRQ(ERR)
-      !  ENDIF
-      !  CALL FLAG_ERROR("PETSc error in MatGetArray",ERR,ERROR,*999)
-      !ENDIF
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATGETARRAY")
-    RETURN
-999 CALL ERRORS("PETSC_MATGETARRAY",ERR,ERROR)
-!    CALL EXITS("PETSC_MATGETARRAY")
-    RETURN 1
-  END SUBROUTINE PETSC_MATGETARRAY
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatGetArrayF90 routine.
-  SUBROUTINE PETSC_MATGETARRAYF90(A,ARRAY,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT), TARGET :: A !<The matrix to get the array for
-    REAL(DP), POINTER :: ARRAY(:,:) !<On exit, a pointer to the matrix array
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATGETARRAYF90",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(ARRAY)) THEN
-      CALL FLAG_ERROR("Array is already associated",ERR,ERROR,*999)
-    ELSE
-      CALL MatGetArrayF90(A%MAT,ARRAY,ERR)
-      IF(ERR/=0) THEN
-        IF(PETSC_HANDLE_ERROR) THEN
-          CHKERRQ(ERR)
-        ENDIF
-        CALL FLAG_ERROR("PETSc error in MatGetArrayF90",ERR,ERROR,*999)
-      ENDIF
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATGETARRAYF90")
-    RETURN
-999 CALL ERRORS("PETSC_MATGETARRAYF90",ERR,ERROR)
-!    CALL EXITS("PETSC_MATGETARRAYF90")
-    RETURN 1
-  END SUBROUTINE PETSC_MATGETARRAYF90
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatGetColoring routine.
-  SUBROUTINE PETSC_MATGETCOLORING(A,COLORING_TYPE,ISCOLORING,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to get the ownership range of
-    MatColoringType, INTENT(IN) :: COLORING_TYPE !<The coloring type
-    TYPE(PETSC_ISCOLORING_TYPE), INTENT(OUT) :: ISCOLORING !<On exit, the index set coloring
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATGETCOLORING",ERR,ERROR,*999)
-
-    CALL MatGetColoring(A%MAT,COLORING_TYPE,ISCOLORING%ISCOLORING,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatGetColoring",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATGETCOLORING")
-    RETURN
-999 CALL ERRORS("PETSC_MATGETCOLORING",ERR,ERROR)
-!    CALL EXITS("PETSC_MATGETCOLORING")
-    RETURN 1
-  END SUBROUTINE PETSC_MATGETCOLORING
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatGetInfo routine.
-  SUBROUTINE PETSC_MATGETINFO(A,FLAG,INFO,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to get the information of
-    MatInfoType, INTENT(IN) :: FLAG !<The matrix information collective to return
-    MatInfo, INTENT(OUT) :: INFO(MAT_INFO_SIZE) !<On return, the matrix information
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATGETINFO",ERR,ERROR,*999)
-
-    CALL MatGetInfo(A%MAT,FLAG,INFO,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatGetInfo",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATGETINFO")
-    RETURN
-999 CALL ERRORS("PETSC_MATGETINFO",ERR,ERROR)
-!    CALL EXITS("PETSC_MATGETINFO")
-    RETURN 1
-  END SUBROUTINE PETSC_MATGETINFO
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatGetOwnershipRange routine.
-  SUBROUTINE PETSC_MATGETOWNERSHIPRANGE(A,FIRST_ROW,LAST_ROW,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to get the ownership range of
-    INTEGER(INTG), INTENT(OUT) :: FIRST_ROW !<On exit, the first row for the matrix
-    INTEGER(INTG), INTENT(OUT) :: LAST_ROW !<On exit, the last row for the matrix
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATGETOWNERSHIPRANGE",ERR,ERROR,*999)
-
-    CALL MatGetOwnershipRange(A%MAT,FIRST_ROW,LAST_ROW,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatGetOwnershipRange",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATGETOWNERSHIPRANGE")
-    RETURN
-999 CALL ERRORS("PETSC_MATGETOWNERSHIPRANGE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATGETOWNERSHIPRANGE")
-    RETURN 1
-  END SUBROUTINE PETSC_MATGETOWNERSHIPRANGE
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatGetRow routine.
-  SUBROUTINE PETSC_MATGETROW(A,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to get the array for
-    INTEGER(INTG), INTENT(IN) :: ROW_NUMBER !<The row number to get the row values for
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_COLUMNS !<On return, the number of nonzero columns in the row
-    INTEGER(INTG), INTENT(OUT) :: COLUMNS(:) !<On return, the column numbers for the nonzero columns in the row
-    REAL(DP), INTENT(OUT) :: VALUES(:) !<On exit, the nonzero values in the row.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATGETROW",ERR,ERROR,*999)
-
-    CALL MatGetRow(A%MAT,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatGetRow",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATGETROW")
-    RETURN
-999 CALL ERRORS("PETSC_MATGETROW",ERR,ERROR)
-!    CALL EXITS("PETSC_MATGETROW")
-    RETURN 1
-  END SUBROUTINE PETSC_MATGETROW
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatGetValues routine.
-  SUBROUTINE PETSC_MATGETVALUES(A,M,M_INDICES,N,N_INDICES,VALUES,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to get the values of
-    INTEGER(INTG), INTENT(IN) :: M !<The number of row indices
-    INTEGER(INTG), INTENT(IN) :: M_INDICES(*) !<The row indices
-    INTEGER(INTG), INTENT(IN) :: N !<The number of column indices
-    INTEGER(INTG), INTENT(IN) :: N_INDICES(*) !<The column indices
-    REAL(DP), INTENT(OUT) :: VALUES(*) !<The values to get
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATGETVALUES",ERR,ERROR,*999)
-
-    CALL MatGetValues(A%MAT,M,M_INDICES,N,N_INDICES,VALUES,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatGetValues",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATGETVALUES")
-    RETURN
-999 CALL ERRORS("PETSC_MATGETVALUES",ERR,ERROR)
-!    CALL EXITS("PETSC_MATGETVALUES")
-    RETURN 1
-  END SUBROUTINE PETSC_MATGETVALUES
-    
-  !
-  !================================================================================================================================
-  !
-
-  !Finalise the PETSc Mat structure and destroy the KSP
-  SUBROUTINE PETSC_MATFINALISE(MAT_,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: MAT_ !<The MAT to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATFINALISE",ERR,ERROR,*999)
-
-    IF(MAT_%MAT/=PETSC_NULL) THEN
-      CALL PETSC_MATDESTROY(MAT_,ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATFINALISE")
-    RETURN
-999 CALL ERRORS("PETSC_MATFINALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATFINALISE")
-    RETURN 1
-  END SUBROUTINE PETSC_MATFINALISE
+  END SUBROUTINE Petsc_MatFinalise
     
   !
   !================================================================================================================================
   !
 
   !Initialise the PETSc Mat structure
-  SUBROUTINE PETSC_MATINITIALISE(MAT_,ERR,ERROR,*)
+  SUBROUTINE Petsc_MatInitialise(a,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: MAT_ !<The MAT to initialise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_MATINITIALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_MatInitialise",err,error,*999)
 
-    MAT_%MAT=PETSC_NULL
-    !MAT_%MAT_DATA(1)=0
-    !MAT_%MAT_OFFSET=0
-    
-!    CALL EXITS("PETSC_MATINITIALISE")
+    a%mat=PETSC_NULL_OBJECT
+     
+    EXITS("Petsc_MatInitialise")
     RETURN
-999 CALL ERRORS("PETSC_MATINITIALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATINITIALISE")
+999 ERRORSEXITS("Petsc_MatInitialise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_MATINITIALISE
+    
+  END SUBROUTINE Petsc_MatInitialise
     
   !
   !================================================================================================================================
   !
-
-  !>Buffer routine to the PETSc MatRestoreArray routine.
-  SUBROUTINE PETSC_MATRESTOREARRAY(A,ARRAY,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the array for
-    REAL(DP), POINTER :: ARRAY(:) !<A pointer to the matrix array to restore
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATRESTOREARRAY",ERR,ERROR,*999)
-
-    CALL FLAG_ERROR("PETSC_MATRESTOREARRAY not implemented",ERR,ERROR,*999)
-    !CALL MatRestoreArray(A%MAT,A%MAT_DATA,A%MAT_OFFSET,ERR)
-    !IF(ERR/=0) THEN
-    !  IF(PETSC_HANDLE_ERROR) THEN
-    !    CHKERRQ(ERR)
-    !  ENDIF
-    !  CALL FLAG_ERROR("PETSc error in MatRestoreArray",ERR,ERROR,*999)
-    !ENDIF
-    
-!    CALL EXITS("PETSC_MATRESTOREARRAY")
-    RETURN
-999 CALL ERRORS("PETSC_MATRESTOREARRAY",ERR,ERROR)
-!    CALL EXITS("PETSC_MATRESTOREARRAY")
-    RETURN 1
-  END SUBROUTINE PETSC_MATRESTOREARRAY
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatRestoreArrayF90 routine.
-  SUBROUTINE PETSC_MATRESTOREARRAYF90(A,ARRAY,ERR,ERROR,*)
+  
+  !>Buffer routine to the PETSc MatAssemblyBegin routine.
+  SUBROUTINE Petsc_MatAssemblyBegin(A,assemblyType,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the array for
-    REAL(DP), POINTER :: ARRAY(:,:) !<A pointer to the matrix array to restore
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscMatType), INTENT(INOUT) :: A !The matrix to assemble
+    MatAssemblyType, INTENT(IN) :: assemblyType !<The assembly type 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_MATRESTOREARRAYF90",ERR,ERROR,*999)
+    ENTERS("Petsc_MatAssemblyBegin",err,error,*999)
 
-    CALL MatRestoreArrayF90(A%MAT,ARRAY,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL MatAssemblyBegin(A%mat,assemblyType,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatRestoreArrayF90",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in MatAssemblyBegin.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_MATRESTOREARRAYF90")
+    EXITS("Petsc_MatAssemblyBegin")
     RETURN
-999 CALL ERRORS("PETSC_MATRESTOREARRAYF90",ERR,ERROR)
-!    CALL EXITS("PETSC_MATRESTOREARRAYF90")
+999 ERRORSEXITS("Petsc_MatAssemblyBegin",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_MATRESTOREARRAYF90
+    
+  END SUBROUTINE Petsc_MatAssemblyBegin
     
   !
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc MatRestoreRow routine.
-  SUBROUTINE PETSC_MATRESTOREROW(A,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR,ERROR,*)
+  !>Buffer routine to the PETSc MatAssemblyEnd routine.
+  SUBROUTINE Petsc_MatAssemblyEnd(A,assemblyType,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to restore the row for
-    INTEGER(INTG), INTENT(IN) :: ROW_NUMBER !<The row number to restore the row values for
-    INTEGER(INTG), INTENT(OUT) :: NUMBER_OF_COLUMNS !<The number of nonzero columns in the row
-    INTEGER(INTG), INTENT(OUT) :: COLUMNS(:) !<The column numbers for the nonzero columns in the row
-    REAL(DP), INTENT(OUT) :: VALUES(:) !<The nonzero values in the row to restore.
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscMatType), INTENT(INOUT) :: A !<The matrix to assemble
+    MatAssemblyType, INTENT(IN) :: assemblyType !<The assembly type
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_MATRESTOREROW",ERR,ERROR,*999)
+    ENTERS("Petsc_MatAssemblyEnd",err,error,*999)
 
-    CALL MatRestoreRow(A%MAT,ROW_NUMBER,NUMBER_OF_COLUMNS,COLUMNS,VALUES,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL MatAssemblyEnd(A%mat,assemblyType,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatRestoreRow.",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in MatAssemblyEnd.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_MATRESTOREROW")
+    EXITS("Petsc_MatAssemblyEnd")
     RETURN
-999 CALL ERRORS("PETSC_MATRESTOREROW",ERR,ERROR)
-!    CALL EXITS("PETSC_MATRESTOREROW")
+999 ERRORSEXITS("Petsc_MatAssemblyEnd",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_MATRESTOREROW
+    
+  END SUBROUTINE Petsc_MatAssemblyEnd
+       
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatCreate routine.
+  SUBROUTINE Petsc_MatCreate(communicator,A,err,error,*)
+
+    !Argument Variables
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI Communicator
+    TYPE(PetscMatType), INTENT(INOUT) :: A !<On exit, the created matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatCreate",err,error,*999)
+
+    CALL MatCreate(communicator,A%mat,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatCreate.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatCreate")
+    RETURN
+999 ERRORSEXITS("Petsc_MatCreate",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatCreate
     
   !
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc MatSetLocalToGlobalMapping routine.
-  SUBROUTINE PETSC_MATSETLOCALTOGLOBALMAPPING(A,CTX,ERR,ERROR,*)
+ !>Buffer routine to the PETSc MatCreateAIJ routine.
+  SUBROUTINE Petsc_MatCreateAIJ(communicator,localM,localN,globalM,globalN,diagNumberNonZerosPerRow,diagNumberNonZerosEachRow, &
+    & offDiagNumberNonZerosPerRow,offDiagNumberNonZerosEachRow,a,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the local to global mapping for
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(IN) :: CTX !<The local to global mapping context
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: localM !<The number of local rows
+    INTEGER(INTG), INTENT(IN) :: localN !<The number of local columns
+    INTEGER(INTG), INTENT(IN) :: globalM !<The number of global rows
+    INTEGER(INTG), INTENT(IN) :: globalN !<The number of global columns
+    INTEGER(INTG), INTENT(IN) :: diagNumberNonZerosPerRow !<The maximum number of non-zeros per row in the diagonal part of the matrix
+    INTEGER(INTG), INTENT(IN) :: diagNumberNonZerosEachRow(:) !<The number of non-zeros per row in the diagonal part of the matrix
+    INTEGER(INTG), INTENT(IN) :: offDiagNumberNonZerosPerRow !<The maximum number of non-zeros per row in the off-diagonal part of the matrix
+    INTEGER(INTG), INTENT(IN) :: offDiagNumberNonZerosEachRow(:) !<The number of non-zeros per row in the off-diagonal part of the matrix
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<On exit, the created matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_MATSETLOCALTOGLOBALMAPPING",ERR,ERROR,*999)
+    ENTERS("Petsc_MatCreateAIJ",err,error,*999)
 
-    CALL MatSetLocalToGlobalMapping(A%MAT,CTX%ISLOCALTOGLOBALMAPPING,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL MatCreateAIJ(communicator,localM,localN,globalM,globalN,diagNumberNonZerosPerRow,diagNumberNonZerosEachRow, &
+      & offDiagNumberNonZerosPerRow,offDiagNumberNonZerosEachRow,a%mat,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatSetLocalToGlobalMapping",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in MatCreateAIJ.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_MATSETLOCALTOGLOBALMAPPING")
+    EXITS("Petsc_MatCreateAIJ")
     RETURN
-999 CALL ERRORS("PETSC_MATSETLOCALTOGLOBALMAPPING",ERR,ERROR)
-!    CALL EXITS("PETSC_MATSETLOCALTOGLOBALMAPPING")
+999 ERRORSEXITS("Petsc_MatCreateAIJ",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_MATSETLOCALTOGLOBALMAPPING
+    
+  END SUBROUTINE Petsc_MatCreateAIJ
     
   !
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc MatSetOption routine.
-  SUBROUTINE PETSC_MATSETOPTION(A,OPTION,FLAG,ERR,ERROR,*)
+  !>Buffer routine to the PETSc MatCreateDense routine.
+  SUBROUTINE Petsc_MatCreateDense(communicator,localM,localN,globalM,globalN,matrixData,a,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the option for
-    MatOption, INTENT(IN) :: OPTION !<The option to set
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-    PetscBool, INTENT(IN) :: FLAG !<The option flag to set
-#else
-    PetscTruth, INTENT(IN) :: FLAG !<The option flag to set
-#endif    
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: localM !<The number of local rows
+    INTEGER(INTG), INTENT(IN) :: localN !<The number of local columns
+    INTEGER(INTG), INTENT(IN) :: globalM !<The number of global columns
+    INTEGER(INTG), INTENT(IN) :: globalN !<The number of global rows
+    REAL(DP), INTENT(IN) :: matrixData(:) !<Optional, the allocated matrix data.
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<On exit, the created matrix 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_MATSETOPTION",ERR,ERROR,*999)
+    ENTERS("Petsc_MatCreateDense",err,error,*999)
 
-    CALL MatSetOption(A%MAT,OPTION,FLAG,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL MatCreateDense(communicator,localM,localN,globalM,globalN,matrixData,a%mat,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatSetOption",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in MatCreateDense.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_MATSETOPTION")
+    EXITS("Petsc_MatCreateDense")
     RETURN
-999 CALL ERRORS("PETSC_MATSETOPTION",ERR,ERROR)
-!    CALL EXITS("PETSC_MATSETOPTION")
+999 ERRORSEXITS("Petsc_MatCreateDense",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_MATSETOPTION
     
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatSetSizes routine.
-  SUBROUTINE PETSC_MATSETSIZES(A,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the size of
-    INTEGER(INTG), INTENT(IN) :: LOCAL_M !<Number of local rows
-    INTEGER(INTG), INTENT(IN) :: LOCAL_N !<Number of local columns
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_M !<Number of global rows
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_N !<Number of global columns
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATSETSIZES",ERR,ERROR,*999)
-
-    CALL MatSetSizes(A%MAT,LOCAL_M,LOCAL_N,GLOBAL_M,GLOBAL_N,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatSetSizes",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATSETSIZES")
-    RETURN
-999 CALL ERRORS("PETSC_MATSETSIZES",ERR,ERROR)
-!    CALL EXITS("PETSC_MATSETSIZES")
-    RETURN 1
-  END SUBROUTINE PETSC_MATSETSIZES
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatSetValue routine.
-  SUBROUTINE PETSC_MATSETVALUE(A,ROW,COL,VALUE,INSERT_MODE,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the values of
-    INTEGER(INTG), INTENT(IN) :: ROW !<The row index
-    INTEGER(INTG), INTENT(IN) :: COL !<The column index
-    REAL(DP), INTENT(IN) :: VALUE !<The value to set
-    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATSETVALUE",ERR,ERROR,*999)
-
-    CALL MatSetValue(A%MAT,ROW,COL,VALUE,INSERT_MODE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatSetValue",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATSETVALUE")
-    RETURN
-999 CALL ERRORS("PETSC_MATSETVALUE",ERR,ERROR)
-!    CALL EXITS("PETSC_MATSETVALUE")
-    RETURN 1
-  END SUBROUTINE PETSC_MATSETVALUE
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatSetValues routine.
-  SUBROUTINE PETSC_MATSETVALUES(A,M,M_INDICES,N,N_INDICES,VALUES,INSERT_MODE,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the values of
-    INTEGER(INTG), INTENT(IN) :: M !<The number of row indices
-    INTEGER(INTG), INTENT(IN) :: M_INDICES(*) !<The row indices
-    INTEGER(INTG), INTENT(IN) :: N !<The number of column indices
-    INTEGER(INTG), INTENT(IN) :: N_INDICES(*) !<The column indices
-    REAL(DP), INTENT(IN) :: VALUES(*) !<The values to set
-    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATSETVALUES",ERR,ERROR,*999)
-
-    CALL MatSetValues(A%MAT,M,M_INDICES,N,N_INDICES,VALUES,INSERT_MODE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatSetValues",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATSETVALUES")
-    RETURN
-999 CALL ERRORS("PETSC_MATSETVALUES",ERR,ERROR)
-!    CALL EXITS("PETSC_MATSETVALUES")
-    RETURN 1
-  END SUBROUTINE PETSC_MATSETVALUES
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatSetValueLocal routine.
-  SUBROUTINE PETSC_MATSETVALUELOCAL(A,ROW,COL,VALUE,INSERT_MODE,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the values of
-    INTEGER(INTG), INTENT(IN) :: ROW !<The row index
-    INTEGER(INTG), INTENT(IN) :: COL !<The column index
-    REAL(DP), INTENT(IN) :: VALUE !<The value to set
-    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATSETVALUELOCAL",ERR,ERROR,*999)
-
-    CALL MatSetValueLocal(A%MAT,ROW,COL,VALUE,INSERT_MODE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatSetValueLocal",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATSETVALUELOCAL")
-    RETURN
-999 CALL ERRORS("PETSC_MATSETVALUELOCAL",ERR,ERROR)
-!    CALL EXITS("PETSC_MATSETVALUELOCAL")
-    RETURN 1
-  END SUBROUTINE PETSC_MATSETVALUELOCAL
+  END SUBROUTINE Petsc_MatCreateDense
   
   !
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc MatSetValuesLocal routine.
-  SUBROUTINE PETSC_MATSETVALUESLOCAL(A,M,M_INDICES,N,N_INDICES,VALUES,INSERT_MODE,ERR,ERROR,*)
+  !>Buffer routine to the PETSc MatCreateSeqAIJ routine.
+  SUBROUTINE Petsc_MatCreateSeqAIJ(communicator,m,n,numberNonZerosPerRow,numberNonZerosEachRow,a,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to set the values of
-    INTEGER(INTG), INTENT(IN) :: M !<The number of row indices
-    INTEGER(INTG), INTENT(IN) :: M_INDICES(*) !<The row indices
-    INTEGER(INTG), INTENT(IN) :: N !<The number of column indices
-    INTEGER(INTG), INTENT(IN) :: N_INDICES(*) !<The column indices
-    REAL(DP), INTENT(IN) :: VALUES(*) !<The values to set
-    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATSETVALUESLOCAL",ERR,ERROR,*999)
-
-    CALL MatSetValuesLocal(A%MAT,M,M_INDICES,N,N_INDICES,VALUES,INSERT_MODE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatSetValuesLocal",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATSETVALUESLOCAL")
-    RETURN
-999 CALL ERRORS("PETSC_MATSETVALUESLOCAL",ERR,ERROR)
-!    CALL EXITS("PETSC_MATSETVALUESLOCAL")
-    RETURN 1
-  END SUBROUTINE PETSC_MATSETVALUESLOCAL
-  
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatView routine.
-  SUBROUTINE PETSC_MATVIEW(A,V,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to view
-    PetscViewer, INTENT(IN) :: V !<The viewer
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATVIEW",ERR,ERROR,*999)
-
-    CALL MatView(A%MAT,V,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatView",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATVIEW")
-    RETURN
-999 CALL ERRORS("PETSC_MATVIEW",ERR,ERROR)
-!    CALL EXITS("PETSC_MATVIEW")
-    RETURN 1
-  END SUBROUTINE PETSC_MATVIEW
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc MatZeroEntries routine.
-  SUBROUTINE PETSC_MATZEROENTRIES(A,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The matrix to zero the entries of
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_MATZEROENTRIES",ERR,ERROR,*999)
-
-    CALL MatZeroEntries(A%MAT,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in MatZeroEntries",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_MATZEROENTRIES")
-    RETURN
-999 CALL ERRORS("PETSC_MATZEROENTRIES",ERR,ERROR)
-!    CALL EXITS("PETSC_MATZEROENTRIES")
-    RETURN 1
-  END SUBROUTINE PETSC_MATZEROENTRIES
-    
-  !
-  !================================================================================================================================
-  !
-
-  !Finalise the PETSc PC structure and destroy the KSP
-  SUBROUTINE PETSC_PCFINALISE(PC_,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<The PC to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_PCFINALISE",ERR,ERROR,*999)
-
-    IF(PC_%PC_/=PETSC_NULL) THEN
-      !Do nothing - should be destroyed when the KSP is destroyed.
-    ENDIF
-    
-!    CALL EXITS("PETSC_PCFINALISE")
-    RETURN
-999 CALL ERRORS("PETSC_PCFINALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_PCFINALISE")
-    RETURN 1
-  END SUBROUTINE PETSC_PCFINALISE
-    
-  !
-  !================================================================================================================================
-  !
-
-  !Initialise the PETSc PC structure
-  SUBROUTINE PETSC_PCINITIALISE(PC_,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<The PC to initialise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_PCINITIALISE",ERR,ERROR,*999)
-
-    PC_%PC_=PETSC_NULL
-    
-!    CALL EXITS("PETSC_PCINITIALISE")
-    RETURN
-999 CALL ERRORS("PETSC_PCINITIALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_PCINITIALISE")
-    RETURN 1
-  END SUBROUTINE PETSC_PCINITIALISE
-    
-  !
-  !================================================================================================================================
-  !
-
-#if ( PETSC_VERSION_MAJOR == 3 )
-  !>Buffer routine to the PETSc PCFactoSetMatSolverPackage routine.
-  SUBROUTINE PETSC_PCFACTORSETMATSOLVERPACKAGE(PC_,SOLVER_PACKAGE,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<The preconditioner to set the solver package for
-    MatSolverPackage, INTENT(IN) :: SOLVER_PACKAGE !<The solver package to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_PCFACTORSETMATSOLVERPACKAGE",ERR,ERROR,*999)
-
-    CALL PCFactorSetMatSolverPackage(PC_%PC_,SOLVER_PACKAGE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in PCFactorSetMatSolverPackage",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_PCFACTORSETMATSOLVERPACKAGE")
-    RETURN
-999 CALL ERRORS("PETSC_PCFACTORSETMATSOLVERPACKAGE",ERR,ERROR)
-!    CALL EXITS("PETSC_PCFACTORSETMATSOLVERPACKAGE")
-    RETURN 1
-  END SUBROUTINE PETSC_PCFACTORSETMATSOLVERPACKAGE
-#endif
-
-  !
-  !================================================================================================================================
-  !
-
-#if ( PETSC_VERSION_MAJOR == 3 )
-  !>Buffer routine to the PETSc PCFactorSetUpMatSolverPackage routine.
-  SUBROUTINE Petsc_PCFactorSetUpMatSolverPackage(PC_,err,error,*)
-
-    !Argument Variables
-    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<The preconditioner to set the solver package for
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: m !<The number of rows
+    INTEGER(INTG), INTENT(IN) :: n !<The number of columns
+    INTEGER(INTG), INTENT(IN) :: numberNonZerosPerRow !<The maximum number of non-zeros per row
+    INTEGER(INTG), INTENT(IN) :: numberNonZerosEachRow(:) !<The number of non-zeros in each row
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<On exit, the created matrix
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("Petsc_PCFactorSetUpMatSolverPackage",err,error,*999)
+    ENTERS("Petsc_MatCreateSeqAIJ",err,error,*999)
 
-    CALL PCFactorSetUpMatSolverPackage(PC_%PC_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL MatCreateSeqAIJ(communicator,m,n,numberNonZerosPerRow,numberNonZerosEachRow,a%mat,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in PCFactorSetUpMatSolverPackage",err,error,*999)
+      CALL FlagError("PETSc error in MatCreateSeqAIJ.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("Petsc_PCFactorSetUpMatSolverPackage")
+    EXITS("Petsc_MatCreateSeqAIJ")
     RETURN
-999 CALL ERRORS("Petsc_PCFactorSetUpMatSolverPackage",err,error)
-!    CALL EXITS("Petsc_PCFactorSetUpMatSolverPackage")
+999 ERRORSEXITS("Petsc_MatCreateSeqAIJ",err,error)
     RETURN 1
-  END SUBROUTINE Petsc_PCFactorSetUpMatSolverPackage
-#endif
-
+    
+  END SUBROUTINE Petsc_MatCreateSeqAIJ
+    
   !
   !================================================================================================================================
   !
 
-#if ( PETSC_VERSION_MAJOR == 3 )
-  !>Buffer routine to the PETSc PCFactorGetMatrix routine.
-  SUBROUTINE Petsc_PCFactorGetMatrix(PC_,factoredMatrix,err,error,*)
+  !>Buffer routine to the PETSc MatCreateSeqDense routine.
+  SUBROUTINE Petsc_MatCreateSeqDense(communicator,m,n,matrixData,a,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<The preconditioner to set the solver package for
-    TYPE(PETSC_MAT_TYPE), INTENT(OUT) :: factoredMatrix !<The factored matrix to get from preconditioner context
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI Communicator
+    INTEGER(INTG), INTENT(IN) :: m !<The number of rows
+    INTEGER(INTG), INTENT(IN) :: n !<The number of columns
+    REAL(DP), INTENT(IN) :: matrixData(*) !<Optional, the allocated matrix data
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<On exit, the created matrix
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("Petsc_PCFactorGetMatrix",err,error,*999)
+    ENTERS("Petsc_MatCreateSeqDense",err,error,*999)
 
-    CALL PCFactorGetMatrix(PC_%PC_,factoredMatrix,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL MatCreateSeqDense(communicator,m,n,matrixData,a%mat,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in PCFactorGetMatrix",err,error,*999)
+      CALL FlagError("PETSc error in MatCreateSeqDense.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("Petsc_PCFactorGetMatrix")
+    EXITS("Petsc_MatCreateSeqDense")
     RETURN
-999 CALL ERRORS("Petsc_PCFactorGetMatrix",err,error)
-!    CALL EXITS("Petsc_PCFactorGetMatrix")
+999 ERRORSEXITS("Petsc_MatCreateSeqDense",err,error)
     RETURN 1
-  END SUBROUTINE Petsc_PCFactorGetMatrix
-#endif
+    
+  END SUBROUTINE Petsc_MatCreateSeqDense
 
   !
   !================================================================================================================================
   !
 
-#if ( PETSC_VERSION_MAJOR >= 3 )
+  !>Buffer routine to the PETSc MatDenseGetArrayF90 routine.
+  SUBROUTINE Petsc_MatDenseGetArrayF90(a,array,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT), TARGET :: a !<The matrix to get the array for
+    REAL(DP), POINTER :: array(:,:) !<On exit, a pointer to the matrix array
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatDenseGetArrayF90",err,error,*999)
+
+    IF(ASSOCIATED(array)) THEN
+      CALL FlagError("Array is already associated.",err,error,*999)
+    ELSE
+      CALL MatDenseGetArrayF90(a%mat,array,err)
+      IF(err/=0) THEN
+        IF(petscHandleError) THEN
+          CHKERRQ(err)
+        ENDIF
+        CALL FlagError("PETSc error in MatDenseGetArrayF90.",err,error,*999)
+      ENDIF
+    ENDIF
+    
+    EXITS("Petsc_MatDenseGetArrayF90")
+    RETURN
+999 ERRORSEXITS("Petsc_MatDenseGetArrayF90",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatDenseGetArrayF90
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatDenseRestoreArrayF90 routine.
+  SUBROUTINE Petsc_MatDenseRestoreArrayF90(a,array,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to restore the array for
+    REAL(DP), POINTER :: array(:,:) !<A pointer to the matrix array to restore
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatDenseRestoreArrayF90",err,error,*999)
+
+    CALL MatDenseRestoreArrayF90(a%mat,array,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatDenseRestoreArrayF90.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatDenseRestoreArrayF90")
+    RETURN
+999 ERRORSEXITS("Petsc_MatDenseRestoreArrayF90",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatDenseRestoreArrayF90
+    
+  !
+  !================================================================================================================================
+  !    
+
+  !>Buffer routine to the PETSc MatDestroy routine.
+  SUBROUTINE Petsc_MatDestroy(a,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to destroy
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatDestroy",err,error,*999)
+
+    CALL MatDestroy(a%mat,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatDestroy.",err,error,*999)
+    ENDIF
+    a%mat=PETSC_NULL_OBJECT
+     
+    EXITS("Petsc_MatDestroy")
+    RETURN
+999 ERRORSEXITS("Petsc_MatDestroy",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatDestroy
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatGetInfo routine.
+  SUBROUTINE Petsc_MatGetInfo(a,flag,info,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to get the information of
+    MatInfoType, INTENT(IN) :: flag !<The matrix information collective to return
+    MatInfo, INTENT(OUT) :: info(MAT_INFO_SIZE) !<On return, the matrix information
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatGetInfo",err,error,*999)
+
+    CALL MatGetInfo(a%mat,flag,info,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatGetInfo.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatGetInfo")
+    RETURN
+999 ERRORSEXITS("Petsc_MatGetInfo",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatGetInfo
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatGetOwnershipRange routine.
+  SUBROUTINE Petsc_MatGetOwnershipRange(a,firstRow,lastRow,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to get the ownership range of
+    INTEGER(INTG), INTENT(OUT) :: firstRow !<On exit, the first row for the matrix
+    INTEGER(INTG), INTENT(OUT) :: lastRow !<On exit, the last row for the matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatGetOwnershipRange",err,error,*999)
+
+    CALL MatGetOwnershipRange(a%mat,firstRow,lastRow,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatGetOwnershipRange.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatGetOwnershipRange")
+    RETURN
+999 ERRORSEXITS("Petsc_MatGetOwnershipRange",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatGetOwnershipRange
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatGetRow routine.
+  SUBROUTINE Petsc_MatGetRow(A,rowNumber,numberOfColumns,columns,values,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: A !<The matrix to get the array for
+    INTEGER(INTG), INTENT(IN) :: rowNumber !<The row number to get the row values for
+    INTEGER(INTG), INTENT(OUT) :: numberOfColumns !<On return, the number of nonzero columns in the row
+    INTEGER(INTG), INTENT(OUT) :: columns(:) !<On return, the column numbers for the nonzero columns in the row
+    REAL(DP), INTENT(OUT) :: values(:) !<On exit, the nonzero values in the row.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatGetRow",err,error,*999)
+
+    CALL MatGetRow(A%mat,rowNumber,numberOfColumns,columns,values,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatGetRow.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatGetRow")
+    RETURN
+999 ERRORSEXITS("Petsc_MatGetRow",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatGetRow
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatGetValues routine.
+  SUBROUTINE Petsc_MatGetValues(a,m,mIndices,n,nIndices,values,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to get the values of
+    INTEGER(INTG), INTENT(IN) :: m !<The number of row indices
+    INTEGER(INTG), INTENT(IN) :: mIndices(*) !<The row indices
+    INTEGER(INTG), INTENT(IN) :: n !<The number of column indices
+    INTEGER(INTG), INTENT(IN) :: nIndices(*) !<The column indices
+    REAL(DP), INTENT(OUT) :: values(*) !<The values to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatGetValues",err,error,*999)
+
+    CALL MatGetValues(a%mat,m,mIndices,n,nIndices,values,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatGetValues.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatGetValues")
+    RETURN
+999 ERRORSEXITS("Petsc_MatGetValues",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatGetValues
+    
+  !
+  !================================================================================================================================
+  !
+
   !>Buffer routine to the PETSc MatMumpsSetIcntl routine.
   SUBROUTINE Petsc_MatMumpsSetIcntl(factoredMatrix,icntl,ival,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: factoredMatrix !<The factored matrix from PETSc-MUMPS interface
+    TYPE(PetscMatType), INTENT(INOUT) :: factoredMatrix !<The factored matrix from PETSc-MUMPS interface
     INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS ICNTL integer control parameter
     INTEGER(INTG), INTENT(IN) :: ival !<The MUMPS ICNTL integer value to set: ICNTL(icntl)=ival
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("Petsc_MatMumpsSetIcntl",err,error,*999)
+    ENTERS("Petsc_MatMumpsSetIcntl",err,error,*999)
 
-    CALL MatMumpsSetIcntl(factoredMatrix,icntl,ival,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL MatMumpsSetIcntl(factoredMatrix%mat,icntl,ival,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatMumpsSetIcntl",err,error,*999)
+      CALL FlagError("PETSc error in MatMumpsSetIcntl.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("Petsc_MatMumpsSetIcntl")
+    EXITS("Petsc_MatMumpsSetIcntl")
     RETURN
-999 CALL ERRORS("Petsc_MatMumpsSetIcntl",err,error)
-!    CALL EXITS("Petsc_MatMumpsSetIcntl")
+999 ERRORSEXITS("Petsc_MatMumpsSetIcntl",err,error)
     RETURN 1
+    
   END SUBROUTINE Petsc_MatMumpsSetIcntl
-#endif
 
   !
   !================================================================================================================================
   !
 
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 4 )
   !>Buffer routine to the PETSc MatMumpsSetCntl routine.
   SUBROUTINE Petsc_MatMumpsSetCntl(factoredMatrix,icntl,val,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: factoredMatrix !<The factored matrix from PETSc-MUMPS interface
+    TYPE(PetscMatType), INTENT(INOUT) :: factoredMatrix !<The factored matrix from PETSc-MUMPS interface
     INTEGER(INTG), INTENT(IN) :: icntl !<The MUMPS CNTL integer control parameter
     REAL(DP), INTENT(IN) :: val !<The MUMPS CNTL real value to set: CNTL(icntl)=val
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("Petsc_MatMumpsSetCntl",err,error,*999)
+    ENTERS("Petsc_MatMumpsSetCntl",err,error,*999)
 
-    CALL MatMumpsSetCntl(factoredMatrix,icntl,val,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL MatMumpsSetCntl(factoredMatrix%mat,icntl,val,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in MatMumpsSetCntl",err,error,*999)
+      CALL FlagError("PETSc error in MatMumpsSetCntl.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("Petsc_MatMumpsSetCntl")
+    EXITS("Petsc_MatMumpsSetCntl")
     RETURN
-999 CALL ERRORS("Petsc_MatMumpsSetCntl",err,error)
-!    CALL EXITS("Petsc_MatMumpsSetCntl")
+999 ERRORSEXITS("Petsc_MatMumpsSetCntl",err,error)
     RETURN 1
+    
   END SUBROUTINE Petsc_MatMumpsSetCntl
-#endif
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatRestoreRow routine.
+  SUBROUTINE Petsc_MatRestoreRow(A,rowNumber,numberOfColumns,columns,values,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: A !<The matrix to restore the row for
+    INTEGER(INTG), INTENT(IN) :: rowNumber !<The row number to restore the row values for
+    INTEGER(INTG), INTENT(OUT) :: numberOfColumns !<The number of nonzero columns in the row
+    INTEGER(INTG), INTENT(OUT) :: columns(:) !<The column numbers for the nonzero columns in the row
+    REAL(DP), INTENT(OUT) :: values(:) !<The nonzero values in the row to restore.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatRestoreRow",err,error,*999)
+
+    CALL MatRestoreRow(A%mat,rowNumber,numberOfColumns,columns,values,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatRestoreRow.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatRestoreRow")
+    RETURN
+999 ERRORSEXITS("Petsc_MatRestoreRow",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatRestoreRow
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatSeqAIJGetArrayF90 routine.
+  SUBROUTINE Petsc_MatSeqAIJGetArrayF90(a,array,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT), TARGET :: a !<The matrix to get the array for
+    REAL(DP), POINTER :: array(:,:) !<On exit, a pointer to the matrix array
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatSeqAIJGetArrayF90",err,error,*999)
+
+    IF(ASSOCIATED(ARRAY)) THEN
+      CALL FlagError("Array is already associated.",err,error,*999)
+    ELSE
+      CALL MatSeqAIJGetArrayF90(a%mat,array,err)
+      IF(err/=0) THEN
+        IF(petscHandleError) THEN
+          CHKERRQ(err)
+        ENDIF
+        CALL FlagError("PETSc error in MatSeqAIJGetArrayF90.",err,error,*999)
+      ENDIF
+    ENDIF
+    
+    EXITS("Petsc_MatSeqAIJGetArrayF90")
+    RETURN
+999 ERRORSEXITS("Petsc_MatSeqAIJGetArrayF90",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatSeqAIJGetArrayF90
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatSeqAIJGetMaxRowNonzeros routine.
+  SUBROUTINE Petsc_MatSeqAIJGetMaxRowNonzeros(a,maxNumberNonZeros,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to get the maximum number of non zeros for
+    INTEGER(INTG), INTENT(OUT) :: maxNumberNonZeros!<On exit, the maximum number of non zeros in any row of the matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatSeqAIJGetMaxRowNonzeros",err,error,*999)
+
+    !CALL MatSeqAIJGetMaxRowNonzeros(A%mat,maxNumberNonZeros,err)
+    maxNumberNonZeros=0
+    CALL FlagError("Not implemented.",err,error,*999)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatSeqAIJGetMaxRowNonzeros.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatSeqAIJGetMaxRowNonzeros")
+    RETURN
+999 ERRORSEXITS("Petsc_MatSeqAIJGetMaxRowNonzeros",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatSeqAIJGetMaxRowNonzeros
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !>Buffer routine to the PETSc MatSeqAIJRestoreArrayF90 routine.
+  SUBROUTINE Petsc_MatSeqAIJRestoreArrayF90(a,array,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to restore the array for
+    REAL(DP), POINTER :: array(:,:) !<A pointer to the matrix array to restore
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("MatSeqAIJRestoreArrayF90",err,error,*999)
+
+    CALL MatSeqAIJRestoreArrayF90(a%mat,array,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatSeqAIJRestoreArrayF90.",err,error,*999)
+    ENDIF
+    
+    EXITS("MatSeqAIJRestoreArrayF90")
+    RETURN
+999 ERRORSEXITS("MatSeqAIJRestoreArrayF90",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatSeqAIJRestoreArrayF90
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatSetLocalToGlobalMapping routine.
+  SUBROUTINE Petsc_MatSetLocalToGlobalMapping(a,isLocalToGlobalMapping,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to set the local to global mapping for
+    TYPE(PetscISLocalToGloabalMappingType), INTENT(IN) :: isLocalToGlobalMapping !<The local to global mapping context
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatSetLocalToGlobalMapping",err,error,*999)
+
+    CALL MatSetLocalToGlobalMapping(a%mat,isLocalToGlobalMapping%isLocalToGlobalMapping,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatSetLocalToGlobalMapping.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatSetLocalToGlobalMapping")
+    RETURN
+999 ERRORSEXITS("Petsc_MatSetLocalToGlobalMapping",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatSetLocalToGlobalMapping
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatSetOption routine.
+  SUBROUTINE Petsc_MatSetOption(a,option,flag,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to set the option for
+    MatOption, INTENT(IN) :: option !<The option to set \see CmissPetsc_PetscMatOptionTypes,CmissPetsc
+    LOGICAL, INTENT(IN) :: flag !<The option flag to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatSetOption",err,error,*999)
+
+    IF(flag) THEN
+      CALL MatSetOption(a%mat,option,PETSC_TRUE,err)
+    ELSE
+      CALL MatSetOption(a%mat,option,PETSC_FALSE,err)
+    ENDIF
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatSetOption.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatSetOption")
+    RETURN
+999 ERRORSEXITS("Petsc_MatSetOption",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatSetOption
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatSetSizes routine.
+  SUBROUTINE Petsc_MatSetSizes(a,localM,localN,globalM,globalN,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to set the size of
+    INTEGER(INTG), INTENT(IN) :: localM !<Number of local rows
+    INTEGER(INTG), INTENT(IN) :: localN !<Number of local columns
+    INTEGER(INTG), INTENT(IN) :: globalM !<Number of global rows
+    INTEGER(INTG), INTENT(IN) :: globalN !<Number of global columns
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatSetSizes",err,error,*999)
+
+    CALL MatSetSizes(a%mat,localM,localN,globalM,globalN,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatSetSizes.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatSetSizes")
+    RETURN
+999 ERRORSEXITS("Petsc_MatSetSizes",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatSetSizes
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !>Buffer routine to the PETSc MatSetType routine.
+  SUBROUTINE Petsc_MatSetType(a,matrixType,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to set the type of
+    MatType, INTENT(IN) :: matrixType !<The matrix type 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatSetType",err,error,*999)
+
+    CALL MatSetType(a%mat,matrixType,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatSetType.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatSetType")
+    RETURN
+999 ERRORSEXITS("Petsc_MatSetType",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatSetType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatSetValue routine.
+  SUBROUTINE Petsc_MatSetValue(a,row,col,value,insertMode,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to set the values of
+    INTEGER(INTG), INTENT(IN) :: row !<The row index
+    INTEGER(INTG), INTENT(IN) :: col !<The column index
+    REAL(DP), INTENT(IN) :: value !<The value to set
+    InsertMode, INTENT(IN) :: insertMode !<The insert mode \see CmissPetsc_PetscMatInsertMode
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatSetValue",err,error,*999)
+
+    CALL MatSetValue(a%mat,row,col,value,insertMode,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatSetValue.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatSetValue")
+    RETURN
+999 ERRORSEXITS("Petsc_MatSetValue",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatSetValue
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatSetValues routine.
+  SUBROUTINE Petsc_MatSetValues(a,m,mIndices,n,nIndices,values,insertMode,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to set the values of
+    INTEGER(INTG), INTENT(IN) :: m !<The number of row indices
+    INTEGER(INTG), INTENT(IN) :: mIndices(*) !<The row indices
+    INTEGER(INTG), INTENT(IN) :: n !<The number of column indices
+    INTEGER(INTG), INTENT(IN) :: nIndices(*) !<The column indices
+    REAL(DP), INTENT(IN) :: values(*) !<The values to set
+    InsertMode, INTENT(IN) :: insertMode !<The insert mode \see CmissPetsc_PetscMatInsertMode
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatSetValues",err,error,*999)
+
+    CALL MatSetValues(a%mat,m,mIndices,n,nIndices,values,insertMode,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatSetValues.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatSetValues")
+    RETURN
+999 ERRORSEXITS("Petsc_MatSetValues",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatSetValues
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatSetValueLocal routine.
+  SUBROUTINE Petsc_MatSetValueLocal(a,row,col,VALUE,insertMode,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to set the values of
+    INTEGER(INTG), INTENT(IN) :: row !<The row index
+    INTEGER(INTG), INTENT(IN) :: col !<The column index
+    REAL(DP), INTENT(IN) :: value !<The value to set
+    InsertMode, INTENT(IN) :: insertMode !<The insert mode \see CmissPetsc_PetscMatInsertMode
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatSetValueLocal",err,error,*999)
+
+    CALL MatSetValueLocal(a%mat,row,col,value,insertMode,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatSetValueLocal.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatSetValueLocal")
+    RETURN
+999 ERRORSEXITS("Petsc_MatSetValueLocal",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatSetValueLocal
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatSetValuesLocal routine.
+  SUBROUTINE Petsc_MatSetValuesLocal(a,m,mIndices,n,nIndices,values,insertMode,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to set the values of
+    INTEGER(INTG), INTENT(IN) :: m !<The number of row indices
+    INTEGER(INTG), INTENT(IN) :: mIndices(:) !<The row indices
+    INTEGER(INTG), INTENT(IN) :: n !<The number of column indices
+    INTEGER(INTG), INTENT(IN) :: nIndices(:) !<The column indices
+    REAL(DP), INTENT(IN) :: values(:) !<The values to set
+    InsertMode, INTENT(IN) :: insertMode !<The insert mode
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatSetValuesLocal",err,error,*999)
+
+    CALL MatSetValuesLocal(a%mat,m,mIndices,n,nIndices,values,insertMode,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatSetValuesLocal.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatSetValuesLocal")
+    RETURN
+999 ERRORSEXITS("Petsc_MatSetValuesLocal",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatSetValuesLocal
+  
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatView routine.
+  SUBROUTINE Petsc_MatView(a,viewer,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to view
+    PetscViewer, INTENT(IN) :: viewer !<The viewer
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatView",err,error,*999)
+
+    CALL MatView(a%mat,viewer,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatView.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatView")
+    RETURN
+999 ERRORSEXITS("Petsc_MatView",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatView
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatZeroEntries routine.
+  SUBROUTINE Petsc_MatZeroEntries(a,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to zero the entries of
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatZeroEntries",err,error,*999)
+
+    CALL MatZeroEntries(a%mat,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatZeroEntries.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatZeroEntries")
+    RETURN
+999 ERRORSEXITS("Petsc_MatZeroEntries",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatZeroEntries
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !Finalise the PETSc MatColoring structure and destroy the MatColoring
+  SUBROUTINE Petsc_MatColoringFinalise(matColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatColoringType), INTENT(INOUT) :: matColoring !<The matColoring to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatColoringFinalise",err,error,*999)
+
+    IF(matColoring%matColoring/=PETSC_NULL_OBJECT) THEN
+      CALL Petsc_MatColoringDestroy(matColoring,err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatColoringFinalise")
+    RETURN
+999 ERRORSEXITS("Petsc_MatColoringFinalise",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatColoringFinalise
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !Initialise the PETSc MatColoring structure
+  SUBROUTINE Petsc_MatColoringInitialise(matColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatColoringType), INTENT(INOUT) :: matColoring !<The matColoring to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatColoringInitialise",err,error,*999)
+
+    matColoring%matColoring=PETSC_NULL_OBJECT
+    
+    EXITS("Petsc_MatColoringInitialise")
+    RETURN
+999 ERRORSEXITS("Petsc_MatColoringInitialise",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatColoringInitialise
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !>Buffer routine to the PETSc MatColoringApply routine.
+  SUBROUTINE Petsc_MatColoringApply(matColoring,isColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatColoringType), INTENT(INOUT) :: matColoring !<The coloring to apply
+    TYPE(PetscISColoringType), INTENT(INOUT) :: isColoring !<The index set coloring to apply to
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatColoringApply",err,error,*999)
+
+    CALL MatColoringApply(matColoring%matColoring,isColoring%isColoring,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatColoringApply.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatColoringApply")
+    RETURN
+999 ERRORSEXITS("Petsc_MatColoringApply",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatColoringApply
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !>Buffer routine to the PETSc MatColoringCreate routine.
+  SUBROUTINE Petsc_MatColoringCreate(a,matColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The matrix to create the coloring for
+    TYPE(PetscMatColoringType), INTENT(INOUT) :: matColoring !<On exit, the created coloring
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatColoringCreate",err,error,*999)
+
+    CALL MatColoringCreate(a%mat,matColoring%matColoring,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatColoringCreate.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatColoringCreate")
+    RETURN
+999 ERRORSEXITS("Petsc_MatColoringCreate",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatColoringCreate
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !>Buffer routine to the PETSc MatColoringDestroy routine.
+  SUBROUTINE Petsc_MatColoringDestroy(matColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatColoringType), INTENT(INOUT) :: matColoring !<The coloring to destroy
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatColoringDestroy",err,error,*999)
+
+    CALL MatColoringDestroy(matColoring%matColoring,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatColoringDestroy.",err,error,*999)
+    ENDIF
+    matColoring%matColoring=PETSC_NULL_OBJECT
+    
+    EXITS("Petsc_MatColoringDestroy")
+    RETURN
+999 ERRORSEXITS("Petsc_MatColoringDestroy",err,error)
+    EXITS("Petsc_MatColoringDestroy")
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatColoringDestroy
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !>Buffer routine to the PETSc MatColoringSetFromOptions routine.
+  SUBROUTINE Petsc_MatColoringSetFromOptions(matColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatColoringType), INTENT(INOUT) :: matColoring !<The coloring to set the options for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatColoringSetFromOptions",err,error,*999)
+
+    CALL MatColoringSetFromOptions(matColoring%matColoring,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatColoringSetFromOptions.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatColoringSetFromOptions")
+    RETURN
+999 ERRORSEXITS("Petsc_MatColoringSetFromOptions",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatColoringSetFromOptions
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !>Buffer routine to the PETSc MatColoringSetType routine.
+  SUBROUTINE Petsc_MatColoringSetType(matColoring,coloringType,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatColoringType), INTENT(INOUT) :: matColoring !<The coloring to set the type for
+    MatColoringType, INTENT(IN) :: coloringType !<The type of coloring to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatColoringSetType",err,error,*999)
+
+    CALL MatColoringSetType(matColoring%matColoring,coloringType,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatColoringSetType.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatColoringSetType")
+    RETURN
+999 ERRORSEXITS("Petsc_MatColoringSetType",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatColoringSetType
+    
+  !
+  !================================================================================================================================
+  !
+
+  !Finalise the PETSc MatFDColoring structure and destroy the MatFDColoring
+  SUBROUTINE Petsc_MatFDColoringFinalise(matFDColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The MatFDColoring to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatFDColoringFinalise",err,error,*999)
+
+    IF(matFDColoring%matFDColoring/=PETSC_NULL_OBJECT) THEN
+      CALL Petsc_MatFDColoringDestroy(matFDColoring,err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatFDColoringFinalise")
+    RETURN
+999 ERRORSEXITS("Petsc_MatFDColoringFinalise",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatFDColoringFinalise
+    
+  !
+  !================================================================================================================================
+  !
+  
+  !Initialise the PETSc MatFDColoring structure
+  SUBROUTINE Petsc_MatFDColoringInitialise(matFDColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The MatFDColoring to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatFDColoringInitialise",err,error,*999)
+
+    matFDColoring%matFDColoring=PETSC_NULL_OBJECT
+    
+    EXITS("Petsc_MatFDColoringInitialise")
+    RETURN
+999 ERRORSEXITS("Petsc_MatFDColoringInitialise",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatFDColoringInitialise
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatFDColoringCreate routine.
+  SUBROUTINE Petsc_MatFDColoringCreate(a,isColoring,matFDColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The PETSc matrix to create the FD coloring for
+    TYPE(PetscISColoringType), INTENT(IN) :: isColoring !<The index set coloring to create the finite difference coloring for
+    TYPE(PetscMatFDColoringType), INTENT(OUT) :: matFDColoring !<On exit, the matrix finite difference coloring
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatFDColoringCreate",err,error,*999)
+
+    CALL MatFDColoringCreate(a%mat,isColoring%isColoring,matFDColoring%matFDColoring,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatFDColoringCreate.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatFDColoringCreate")
+    RETURN
+999 ERRORSEXITS("Petsc_MatFDColoringCreate",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatFDColoringCreate
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatFDColoringDestroy routine.
+  SUBROUTINE Petsc_MatFDColoringDestroy(matFDColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The matrix finite difference coloring to destroy
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatFDColoringDestroy",err,error,*999)
+
+    CALL MatFDColoringDestroy(matFDColoring%matFDColoring,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatFDColoringDestroy.",err,error,*999)
+    ENDIF
+    matFDColoring%matFDColoring=PETSC_NULL_OBJECT
+     
+    EXITS("Petsc_MatFDColoringDestroy")
+    RETURN
+999 ERRORSEXITS("Petsc_MatFDColoringDestroy",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatFDColoringDestroy
+    
+  !
+  !================================================================================================================================2
+  !
+
+  !>Buffer routine to the PETSc MatFDColoringSetFromOptions routine.
+  SUBROUTINE Petsc_MatFDColoringSetFromOptions(matFDColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The matrix finite difference coloring to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatFDColoringSetFromOptions",err,error,*999)
+
+    CALL MatFDColoringSetFromOptions(matFDColoring%matFDColoring,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatFDColoringSetFromOptions.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatFDColoringSetFromOptions")
+    RETURN
+999 ERRORSEXITS("Petsc_MatFDColoringSetFromOptions",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatFDColoringSetFromOptions
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatFDColoringSetParameters routine.
+  SUBROUTINE Petsc_MatFDColoringSetParameters(matFDColoring,rError,uMin,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The matrix finite difference coloring to set
+    REAL(DP) :: rError !<The square root of the relative error
+    REAL(DP) :: uMin !<MatFDColoring umin option
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatFDColoringSetParameters",err,error,*999)
+
+    CALL MatFDColoringSetParameters(matFDColoring%matFDColoring,rError,uMin,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatFDColoringSetParameters.",err,error,*999)
+    ENDIF
+
+    EXITS("Petsc_MatFDColoringSetParameters")
+    RETURN
+999 ERRORSEXITS("Petsc_MatFDColoringSetParameters",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatFDColoringSetParameters
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatFDColoringSetFunction routine.
+  SUBROUTINE Petsc_MatFDColoringSetFunction(matFDColoring,fFunction,ctx,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The matrix finite difference coloring to set
+    EXTERNAL fFunction !<The external function to call
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The solver data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatFDColoringSetFunction",err,error,*999)
+
+    CALL MatFDColoringSetFunction(matFDColoring%matFDColoring,fFunction,ctx,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatFDColoringSetFunction.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatFDColoringSetFunction")
+    RETURN
+999 ERRORSEXITS("Petsc_MatFDColoringSetFunction",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatFDColoringSetFunction
+        
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc MatFDColoringSetup routine.
+  SUBROUTINE Petsc_MatFDColoringSetup(a,isColoring,matFDColoring,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The PETSc matrix to setup the FD coloring for
+    TYPE(PetscISColoringType), INTENT(INOUT) :: isColoring !<The index set coloring to setup the finite difference coloring for
+    TYPE(PetscMatFDColoringType), INTENT(INOUT) :: matFDColoring !<The matrix finite difference coloring to setup
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_MatFDColoringSetup",err,error,*999)
+
+    CALL MatFDColoringSetup(A%mat,isColoring%isColoring,matFDColoring%matFDColoring,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in MatFDColoringSetup.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_MatFDColoringSetup")
+    RETURN
+999 ERRORSEXITS("Petsc_MatFDColoringSetup",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_MatFDColoringSetup
+    
+  !
+  !================================================================================================================================
+  !
+
+  !Finalise the PETSc PC structure 
+  SUBROUTINE Petsc_PCFinalise(pc,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscPCType), INTENT(INOUT) :: pc !<The PC to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_PCFinalise",err,error,*999)
+
+    IF(pc%pc/=PETSC_NULL_OBJECT) THEN
+      !Do nothing - should be destroyed when the KSP is destroyed.
+    ENDIF
+    
+    EXITS("Petsc_PCFinalise")
+    RETURN
+999 ERRORSEXITS("Petsc_PCFinalise",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_PCFinalise
+    
+  !
+  !================================================================================================================================
+  !
+
+  !Initialise the PETSc PC structure
+  SUBROUTINE Petsc_PCInitialise(pc,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscPCType), INTENT(INOUT) :: pc !<The PC to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_PCInitialise",err,error,*999)
+
+    pc%pc=PETSC_NULL_OBJECT
+    
+    EXITS("Petsc_PCInitialise")
+    RETURN
+999 ERRORSEXITS("Petsc_PCInitialise",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_PCInitialise
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc PCFactorGetMatrix routine.
+  SUBROUTINE Petsc_PCFactorGetMatrix(pc,factoredMatrix,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscPCType), INTENT(INOUT) :: pc !<The preconditioner to set the solver package for
+    TYPE(PetscMatType), INTENT(OUT) :: factoredMatrix !<The factored matrix to get from preconditioner context
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_PCFactorGetMatrix",err,error,*999)
+
+    CALL PCFactorGetMatrix(pc%pc,factoredMatrix%mat,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in PCFactorGetMatrix",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_PCFactorGetMatrix")
+    RETURN
+999 ERRORSEXITS("Petsc_PCFactorGetMatrix",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_PCFactorGetMatrix
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc PCFactoSetMatSolverPackage routine.
+  SUBROUTINE Petsc_PCFactorSetMatSolverPackage(pc,solverPackage,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscPCType), INTENT(INOUT) :: pc !<The preconditioner to set the solver package for
+    MatSolverPackage, INTENT(IN) :: solverPackage !<The solver package to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_PCFactorSetMatSolverPackage",err,error,*999)
+
+    CALL PCFactorSetMatSolverPackage(pc%pc,solverPackage,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in PCFactorSetMatSolverPackage.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_PCFactorSetMatSolverPackage")
+    RETURN
+999 ERRORSEXITS("Petsc_PCFactorSetMatSolverPackage",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_PCFactorSetMatSolverPackage
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc PCFactorSetUpMatSolverPackage routine.
+  SUBROUTINE Petsc_PCFactorSetUpMatSolverPackage(pc,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscPCType), INTENT(INOUT) :: pc !<The preconditioner to set the solver package for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_PCFactorSetUpMatSolverPackage",err,error,*999)
+
+    CALL PCFactorSetUpMatSolverPackage(pc%pc,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in PCFactorSetUpMatSolverPackage.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_PCFactorSetUpMatSolverPackage")
+    RETURN
+999 ERRORSEXITS("Petsc_PCFactorSetUpMatSolverPackage",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_PCFactorSetUpMatSolverPackage
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc PCSetReusePreconditioner routine.
+  SUBROUTINE Petsc_PCSetReusePreconditioner(pc,flag,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscPCType), INTENT(INOUT) :: pc !<The preconditioner to set the reuse for
+    LOGICAL, INTENT(IN) :: flag !<True/false
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_PCSetReusePreconditioner",err,error,*999)
+
+    IF(flag) THEN
+      CALL PCSetReusePreconditioner(pc%pc,PETSC_TRUE,err)
+    ELSE
+      CALL PCSetReusePreconditioner(pc%pc,PETSC_FALSE,err)
+    ENDIF
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in PCSetReusePreconditioner.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_PCSetReusePreconditioner")
+    RETURN
+999 ERRORSEXITS("Petsc_PCSetReusePreconditioner",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_PCSetReusePreconditioner
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc PCSetFromOptions routine.
+  SUBROUTINE Petsc_PCSetFromOptions(pc,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscPCType), INTENT(INOUT) :: pc !<The preconditioner to set the options for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_PCSetFromOptions",err,error,*999)
+
+    CALL PCSetFromOptions(pc%pc,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in PCSetFromOptions.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_PCSetFromOptions")
+    RETURN
+999 ERRORSEXITS("Petsc_PCSetFromOptions",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_PCSetFromOptions
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc PCSetType routine.
-  SUBROUTINE PETSC_PCSETTYPE(PC_,METHOD,ERR,ERROR,*)
+  SUBROUTINE Petsc_PCSetType(pc,method,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_PC_TYPE), INTENT(INOUT) :: PC_ !<The preconditioner to set the type of
-    PCType, INTENT(IN) :: METHOD !<The preconditioning method to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscPCType), INTENT(INOUT) :: pc !<The preconditioner to set the type of
+    PCType, INTENT(IN) :: method !<The preconditioning method to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_PCSETTYPE",ERR,ERROR,*999)
+    ENTERS("Petsc_PCSetType",err,error,*999)
 
-    CALL PCSetType(PC_%PC_,METHOD,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL PCSetType(pc%pc,method,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in PCSetType",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in PCSetType.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_PCSETTYPE")
+    EXITS("Petsc_PCSetType")
     RETURN
-999 CALL ERRORS("PETSC_PCSETTYPE",ERR,ERROR)
-!    CALL EXITS("PETSC_PCSETTYPE")
+999 ERRORSEXITS("Petsc_PCSetType",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_PCSETTYPE
+    
+  END SUBROUTINE Petsc_PCSetType
     
   !
   !================================================================================================================================
   !
 
   !Finalise the PETSc SNES structure and destroy the SNES
-  SUBROUTINE PETSC_SNESFINALISE(SNES_,ERR,ERROR,*)
+  SUBROUTINE Petsc_SnesFinalise(snes,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_SNESFINALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_SnesFinalise",err,error,*999)
 
-    IF(SNES_%SNES_/=PETSC_NULL) THEN
-      CALL PETSC_SNESDESTROY(SNES_,ERR,ERROR,*999)
+    IF(snes%snes/=PETSC_NULL_OBJECT) THEN
+      CALL Petsc_SnesDestroy(snes,err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_SNESFINALISE")
+    EXITS("Petsc_SnesFinalise")
     RETURN
-999 CALL ERRORS("PETSC_SNESFINALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESFINALISE")
+999 ERRORSEXITS("Petsc_SnesFinalise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_SNESFINALISE
+    
+  END SUBROUTINE Petsc_SnesFinalise
     
   !
   !================================================================================================================================
   !
 
   !Initialise the PETSc SNES structure
-  SUBROUTINE PETSC_SNESINITIALISE(SNES_,ERR,ERROR,*)
+  SUBROUTINE Petsc_SnesInitialise(snes,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The snes to 
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The snes to 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_SNESINITIALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_SnesInitialise",err,error,*999)
 
-    SNES_%SNES_=PETSC_NULL
+    snes%snes=PETSC_NULL_OBJECT
      
-!    CALL EXITS("PETSC_SNESINITIALISE")
+    EXITS("Petsc_SnesInitialise")
     RETURN
-999 CALL ERRORS("PETSC_SNESINITIALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESINITIALISE")
+999 ERRORSEXITS("Petsc_SnesInitialise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_SNESINITIALISE
     
+  END SUBROUTINE Petsc_SnesInitialise
+    
+!
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESComputeJacobianDefault routine.
+  SUBROUTINE Petsc_SnesComputeJacobianDefault(snes,x,j,b,ctx,err,error,*)
+
+    !Argument variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The PETSc SNES
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The PETSc x Vec
+    TYPE(PetscMatType), INTENT(INOUT) :: j !<The PETSc J Mat
+    TYPE(PetscMatType), INTENT(INOUT) :: b !<The PETSc B Mat
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The passed through context
+    INTEGER(INTG), INTENT(INOUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    ENTERS("Petsc_SnesComputeJacobianDefault",err,error,*999)
+    
+    CALL SNESComputeJacobianDefault(snes%snes,x%vec,j%mat,b%mat,ctx,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESComputeJacobianDefault.",err,error,*999)
+    ENDIF
+
+    EXITS("Petsc_SnesComputeJacobianDefault")    
+    RETURN
+999 ERRORSEXITS("Petsc_SnesComputeJacobianDefault",err,error)
+    RETURN
+    
+  END SUBROUTINE Petsc_SnesComputeJacobianDefault
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESComputeJacobianDefaultColor routine.
+  SUBROUTINE Petsc_SnesComputeJacobianDefaultColor(snes,x,j,b,ctx,err,error,*)
+
+    !Argument variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The PETSc SNES
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The PETSc X Vec
+    TYPE(PetscMatType), INTENT(INOUT) :: j !<The PETSc J Mat
+    TYPE(PetscMatType), INTENT(INOUT) :: b !<The PETSc B Mat
+    TYPE(PetscMatFDColoringType), POINTER :: ctx !<The passed through context
+    INTEGER(INTG), INTENT(INOUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+
+    ENTERS("Petsc_SnesComputeJacobianDefaultColor",err,error,*999)
+    
+    CALL SNESComputeJacobianDefaultColor(snes%snes,x%vec,j%mat,b%mat,ctx,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESComputeJacobianDefaultColor.",err,error,*999)
+    ENDIF
+
+    EXITS("Petsc_SnesComputeJacobianDefaultColor")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesComputeJacobianDefaultColor",err,error)
+    RETURN
+    
+  END SUBROUTINE Petsc_SnesComputeJacobianDefaultColor
+
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc SNESCreate routine.
-  SUBROUTINE PETSC_SNESCREATE(COMMUNICATOR,SNES_,ERR,ERROR,*)
+  SUBROUTINE Petsc_SnesCreate(communicator,snes,err,error,*)
 
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator for the SNES creation
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<On exit, the SNES information
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator for the SNES creation
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<On exit, the SNES information
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_SNESCREATE",ERR,ERROR,*999)
+    ENTERS("Petsc_SnesCreate",err,error,*999)
 
-    CALL SNESCreate(COMMUNICATOR,SNES_%SNES_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL SNESCreate(communicator,snes%snes,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESCreate",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in SNESCreate.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_SNESCREATE")
+    EXITS("Petsc_SnesCreate")
     RETURN
-999 CALL ERRORS("PETSC_SNESCREATE",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESCREATE")
+999 ERRORSEXITS("Petsc_SnesCreate",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_SNESCREATE
+    
+  END SUBROUTINE Petsc_SnesCreate
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc SNESDestroy routine.
-  SUBROUTINE PETSC_SNESDESTROY(SNES_,ERR,ERROR,*)
+  SUBROUTINE Petsc_SnesDestroy(snes,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to destroy
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to destroy
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_SNESDESTROY",ERR,ERROR,*999)
+    ENTERS("Petsc_SnesDestroy",err,error,*999)
 
-    CALL SNESDestroy(SNES_%SNES_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL SNESDestroy(snes%snes,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESDestroy",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in SNESDestroy.",err,error,*999)
     ENDIF
-    SNES_%SNES_=PETSC_NULL
+    snes%snes=PETSC_NULL_OBJECT
      
-!    CALL EXITS("PETSC_SNESDESTROY")
+    EXITS("Petsc_SnesDestroy")
     RETURN
-999 CALL ERRORS("PETSC_SNESDESTROY",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESDESTROY")
+999 ERRORSEXITS("Petsc_SnesDestroy",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_SNESDESTROY
     
+  END SUBROUTINE Petsc_SnesDestroy
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESGetApplicationContext routine.
+  SUBROUTINE Petsc_SnesGetApplicationContext(snes,ctx,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to get the context for
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<On exit, the solver data context to get
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesGetApplicationContext",err,error,*999)
+
+    IF(ASSOCIATED(ctx)) THEN
+      CALL FlagError("Context is already associated.",err,error,*999)
+    ELSE
+      CALL SNESGetApplicationContext(snes%snes,ctx,err)
+      IF(err/=0) THEN
+        IF(petscHandleError) THEN
+          CHKERRQ(err)
+        ENDIF
+        CALL FlagError("PETSc error in SNESGetApplicationContext.",err,error,*999)
+      ENDIF
+    ENDIF
+    
+    EXITS("Petsc_SnesGetApplicationContext")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesGetApplicationContext",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesGetApplicationContext
+
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc SNESGetConvergedReason routine.
-  SUBROUTINE PETSC_SNESGETCONVERGEDREASON(SNES_,REASON,ERR,ERROR,*)
+  SUBROUTINE Petsc_SnesGetConvergedReason(snes,reason,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the converged reason for
-    INTEGER(INTG), INTENT(OUT) :: REASON !<On exit, the converged reason
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESGETCONVERGEDREASON",ERR,ERROR,*999)
-
-    CALL SNESGetConvergedReason(SNES_%SNES_,REASON,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESGetConvergedReason",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESGETCONVERGEDREASON")
-    RETURN
-999 CALL ERRORS("PETSC_SNESGETCONVERGEDREASON",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESGETCONVERGEDREASON")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESGETCONVERGEDREASON
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESGetFunctionNorm routine.
-  SUBROUTINE PETSC_SNESGETFUNCTIONNORM(SNES_,FUNCTION_NORM,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the function norm for
-    REAL(DP), INTENT(OUT) :: FUNCTION_NORM !<On exit, the function norm
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESGETFUNCTIONNORM",ERR,ERROR,*999)
-
-    CALL SNESGetFunctionNorm(SNES_%SNES_,FUNCTION_NORM,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESGetFunctionNorm",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESGETFUNCTIONNORM")
-    RETURN
-999 CALL ERRORS("PETSC_SNESGETFUNCTIONNORM",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESGETFUNCTIONNORM")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESGETFUNCTIONNORM
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSC SNESGetSolutionUpdate routine.
-  SUBROUTINE Petsc_SnesGetSolutionUpdate(snes_,solutionUpdate,err,error,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: snes_ !<The SNES to get the solution update for
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: solutionUpdate !<On exit, the solution update
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to get the converged reason for
+    INTEGER(INTG), INTENT(OUT) :: reason !<On exit, the converged reason
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("Petsc_SnesGetSolutionUpdate",err,error,*999)
+    ENTERS("Petsc_SnesGetConvergedReason",err,error,*999)
 
-    CALL SNESGetSolutionUpdate(snes_%SNES_,solutionUpdate%VEC,err)
+    CALL SNESGetConvergedReason(snes%snes,reason,err)
     IF(err/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
+      IF(petscHandleError) THEN
         CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESGetSolutionUpdate",err,error,*999)
+      CALL FlagError("PETSc error in SNESGetConvergedReason.",err,error,*999)
     ENDIF
-
-!    CALL EXITS("Petsc_SnesGetSolutionUpdate")
+    
+    EXITS("Petsc_SnesGetConvergedReason")
     RETURN
-999 CALL ERRORS("Petsc_SnesGetSolutionUpdate",err,error)
-!    CALL EXITS("Petsc_SnesGetSolutionUpdate")
+999 ERRORSEXITS("Petsc_SnesGetConvergedReason",err,error)
     RETURN 1
-  END SUBROUTINE Petsc_SnesGetSolutionUpdate
+    
+  END SUBROUTINE Petsc_SnesGetConvergedReason
     
   !
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc SNESSetFunctionNorm routine.
-  SUBROUTINE PETSC_SNESSETFUNCTIONNORM(SNES_,FUNCTION_NORM,ERR,ERROR,*)
+  !>Buffer routine to the PETSc SNESGetFunction routine.
+  SUBROUTINE Petsc_SnesGetFunction(snes,f,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the function norm for
-    REAL(DP), INTENT(OUT) :: FUNCTION_NORM !<On exit, the function norm
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to get the function from
+    TYPE(PetscVecType), INTENT(OUT) :: f !<The residual vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_SNESSETFUNCTIONNORM",ERR,ERROR,*999)
+    ENTERS("Petsc_SnesGetFunction",err,error,*999)
 
-    CALL SNESSetFunctionNorm(SNES_%SNES_,FUNCTION_NORM,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL SNESGetFunction(snes%snes,f%vec,PETSC_NULL_FUNCTION,PETSC_NULL_INTEGER,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetFunctionNorm",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in SNESGetFunction.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_SNESSETFUNCTIONNORM")
+    EXITS("Petsc_SnesGetFunction")
     RETURN
-999 CALL ERRORS("PETSC_SNESSETFUNCTIONNORM",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSETFUNCTIONNORM")
+999 ERRORSEXITS("Petsc_SnesGetFunction",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_SNESSETFUNCTIONNORM
     
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the petsc SnesLineSearchSetNorms routine.
-  SUBROUTINE PETSC_SnesLineSearchSetNorms(SNES_,XNORM,FNORM,YNORM,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the computed norms for X, Y, and F
-    REAL(DP), INTENT(INOUT) :: XNORM !<On exit, the norm of the current solution
-    REAL(DP), INTENT(INOUT) :: FNORM !<On exit, the norm of the current function
-    REAL(DP), INTENT(INOUT) :: YNORM !<On exit, the norm of the current update
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("petsc_SnesLineSearchSetNorms",ERR,ERROR,*999)
-
-    CALL SnesLineSearchSetNorms(SNES_%SNES_,XNORM,FNORM,YNORM,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("petsc error in SnesLineSearchSetNorms",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("petsc_SnesLineSearchSetNorms")
-    RETURN
-999 CALL ERRORS("petsc_SnesLineSearchSetNorms",ERR,ERROR)
-!    CALL EXITS("petsc_SnesLineSearchSetNorms")
-    RETURN 1
-  END SUBROUTINE petsc_SnesLineSearchSetNorms
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the petsc SnesLineSearchGetNorms routine.
-  SUBROUTINE petsc_SnesLineSearchGetNorms(lineSearch,XNORM,FNORM,YNORM,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to get the norms for X, Y, and F from.
-    REAL(DP), INTENT(INOUT) :: XNORM !<On exit, the norm of the current solution
-    REAL(DP), INTENT(INOUT) :: FNORM !<On exit, the norm of the current function
-    REAL(DP), INTENT(INOUT) :: YNORM !<On exit, the norm of the current update
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("petsc_SnesLineSearchGetNorms",ERR,ERROR,*999)
-
-    CALL SnesLineSearchGetNorms(lineSearch%snesLineSearch,XNORM,FNORM,YNORM,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("petsc error in SnesLineSearchGetNorms",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("petsc_SnesLineSearchGetNorms")
-    RETURN
-999 CALL ERRORS("petsc_SnesLineSearchGetNorms",ERR,ERROR)
-!    CALL EXITS("petsc_SnesLineSearchGetNorms")
-    RETURN 1
-  END SUBROUTINE petsc_SnesLineSearchGetNorms
+  END SUBROUTINE Petsc_SnesGetFunction
 
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc SNESGetIterationNumber routine.
-  SUBROUTINE PETSC_SNESGETITERATIONNUMBER(SNES_,ITERATION_NUMBER,ERR,ERROR,*)
+  SUBROUTINE Petsc_SnesGetIterationNumber(snes,iterationNumber,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the iteration number for
-    INTEGER(INTG), INTENT(OUT) :: ITERATION_NUMBER !<On exit, the number of iterations
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to get the iteration number for
+    INTEGER(INTG), INTENT(OUT) :: iterationNumber !<On exit, the number of iterations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_SNESGETITERATIONNUMBER",ERR,ERROR,*999)
+    ENTERS("Petsc_SnesGetIterationNumber",err,error,*999)
 
-    CALL SNESGetIterationNumber(SNES_%SNES_,ITERATION_NUMBER,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL SNESGetIterationNumber(snes%snes,iterationNumber,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESGetIterationNumber",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in SNESGetIterationNumber.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_SNESGETITERATIONNUMBER")
+    EXITS("Petsc_SnesGetIterationNumber")
     RETURN
-999 CALL ERRORS("PETSC_SNESGETITERATIONNUMBER",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESGETITERATIONNUMBER")
+999 ERRORSEXITS("Petsc_SnesGetIterationNumber",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_SNESGETITERATIONNUMBER
     
+  END SUBROUTINE Petsc_SnesGetIterationNumber
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetJacobian routine for solver contexts.
+  SUBROUTINE Petsc_SnesGetJacobianSolver(snes,a,b,jFunction,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the function for
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The Jacobian matrix
+    TYPE(PetscMatType), INTENT(INOUT) :: b !<The Jacobian preconditioning matrix
+    EXTERNAL jFunction !<The external function to call
+!     TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesGetJacobianSolver",err,error,*999)
+
+    CALL SNESGetJacobian(snes%snes,a%mat,b%mat,jFunction,PETSC_NULL_INTEGER,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESGetJacobian.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesGetJacobianSolver")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesGetJacobianSolver",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesGetJacobianSolver
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetJacobian routine for solver contexts.
+  SUBROUTINE Petsc_SnesGetJacobianSpecial(snes,a,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the function for
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The Jacobian matrix
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesGetJacobianSpecial",err,error,*999)
+
+    CALL SNESGetJacobian(snes%snes,a%mat,PETSC_NULL_OBJECT,PETSC_NULL_FUNCTION,PETSC_NULL_INTEGER,err)
+
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESGetJacobian.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesGetJacobianSpecial")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesGetJacobianSpecial",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesGetJacobianSpecial
+
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc SNESGetKSP routine.
-  SUBROUTINE PETSC_SNESGETKSP(SNES_,KSP_,ERR,ERROR,*)
+  SUBROUTINE Petsc_SnesGetKSP(snes,ksp,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to get the iteration number for
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<On exit, the KSP to associated with the SNES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to get the iteration number for
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<On exit, the KSP to associated with the SNES
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_SNESGETKSP",ERR,ERROR,*999)
+    ENTERS("Petsc_SnesGetKSP",err,error,*999)
 
-    CALL SNESGetKSP(SNES_%SNES_,KSP_%KSP_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL SNESGetKSP(snes%snes,ksp%ksp,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESGetKSP",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in SNESGetKSP.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_SNESGETKSP")
+    EXITS("Petsc_SnesGetKSP")
     RETURN
-999 CALL ERRORS("PETSC_SNESGETKSP",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESGETKSP")
+999 ERRORSEXITS("Petsc_SnesGetKSP",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_SNESGETKSP
+    
+  END SUBROUTINE Petsc_SnesGetKSP
 
   !
   !================================================================================================================================
   !
 
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  !>Buffer routine to the PETSc SNESGetSNESLineSearch routine.
-  SUBROUTINE Petsc_SnesGetSnesLineSearch(snes_,lineSearch,err,error,*)
+  !>Buffer routine to the PETSc SNESGetLineSearch routine.
+  SUBROUTINE Petsc_SnesGetLineSearch(snes,lineSearch,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: snes_ !<The SNES to get the SNES line search for
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to get the SNES line search for
     TYPE(PetscSnesLinesearchType), INTENT(OUT) :: lineSearch !<On return, the SNES line search object
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-!    CALL ENTERS("Petsc_SnesGetSnesLineSearch",err,error,*999)
+    ENTERS("Petsc_SnesGetLineSearch",err,error,*999)
 
-    CALL SNESGetSNESLineSearch(snes_%snes_,lineSearch%snesLineSearch,err)
+    CALL SNESGetLineSearch(snes%snes,lineSearch%snesLineSearch,err)
     IF(err/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
+      IF(petscHandleError) THEN
         CHKERRQ(err)
       ENDIF
-      CALL FlagError("PETSc error in SNESGetSNESLineSearch",err,error,*999)
+      CALL FlagError("PETSc error in SNESGetLineSearch.",err,error,*999)
     ENDIF
 
-!    CALL EXITS("Petsc_SnesGetSnesLineSearch")
+    EXITS("Petsc_SnesGetLineSearch")
     RETURN
-999 CALL Errors("Petsc_SnesGetSnesLineSearch",err,error)
-!    CALL EXITS("Petsc_SnesGetSnesLineSearch")
+999 ERRORSEXITS("Petsc_SnesGetLineSearch",err,error)
     RETURN 1
-  END SUBROUTINE Petsc_SnesGetSnesLineSearch
-#endif
+    
+  END SUBROUTINE Petsc_SnesGetLineSearch
 
   !
   !================================================================================================================================
   !
 
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
+  !>Buffer routine to the PETSC SNESGetSolutionUpdate routine.
+  SUBROUTINE Petsc_SnesGetSolutionUpdate(snes,solutionUpdate,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to get the solution update for
+    TYPE(PetscVecType), INTENT(INOUT) :: solutionUpdate !<On exit, the solution update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesGetSolutionUpdate",err,error,*999)
+
+    CALL SNESGetSolutionUpdate(snes%snes,solutionUpdate%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESGetSolutionUpdate.",err,error,*999)
+    ENDIF
+
+    EXITS("Petsc_SnesGetSolutionUpdate")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesGetSolutionUpdate",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesGetSolutionUpdate
+    
+!
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESMonitorSet routine.
+  SUBROUTINE Petsc_SnesMonitorSet(snes,mFunction,ctx,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set from the command line options
+    EXTERNAL :: mFunction !<The external monitor function to set
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The solver data to pass to the monitor function
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesMonitorSet",err,error,*999)
+
+    CALL SNESMonitorSet(snes%snes,mFunction,ctx,PETSC_NULL_FUNCTION,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESMonitorSet.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesMonitorSet")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesMonitorSet",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesMonitorSet
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESQNSetRestartType routine.
+  SUBROUTINE Petsc_SnesQNSetRestartType(snes,rType,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the type for
+    SNESQNRestartType, INTENT(IN) :: rType !<The SNES QN restart type
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesQNSetRestartType",err,error,*999)
+
+    CALL SNESQNSetRestartType(snes%snes,rType,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESQNSetRestartType.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesQNSetRestartType")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesQNSetRestartType",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesQNSetRestartType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESQNSetScaleType routine.
+  SUBROUTINE Petsc_SnesQNSetScaleType(snes,sType,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the type for
+    SNESQNScaleType, INTENT(IN) :: sType !<The SNES QN scaling type
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesQNSetScaleType",err,error,*999)
+
+    CALL SNESQNSetScaleType(snes%snes,sType,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESQNSetScaleType.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesQNSetScaleType")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesQNSetScaleType",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesQNSetScaleType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESQNSetType routine.
+  SUBROUTINE Petsc_SnesQNSetType(snes,qType,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the type for
+    SNESQNType, INTENT(IN) :: qType !<The SNES QN type
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesQNSetType",err,error,*999)
+
+    CALL SNESQNSetType(snes%snes,qType,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESQNSetType.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesQNSetType")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesQNSetType",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesQNSetType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetApplicationContext routine.
+  SUBROUTINE Petsc_SnesSetApplicationContext(snes,ctx,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the context for
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The solver data context to set as a context
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSetApplicationContext",err,error,*999)
+
+    CALL SNESSetApplicationContext(snes%snes,ctx,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetApplicationContext.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSetApplicationContext")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSetApplicationContext",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSetApplicationContext
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetFunction routine.
+  SUBROUTINE Petsc_SnesSetConvergenceTest(snes,cFunction,ctx,err,error,*)
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the function for
+    EXTERNAL cFunction !<The external function to call (OpenCMISS subroutine to calculate convergence)
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The solver data to pass to the convergence test function
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSetConvergenceTest",err,error,*999)
+
+    CALL SNESSetConvergenceTest(snes%snes,cFunction,ctx,PETSC_NULL_FUNCTION,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetConvergenceTest.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSetConvergenceTest")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSetConvergenceTest",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSetConvergenceTest
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetFromOptions routine.
+  SUBROUTINE Petsc_SnesSetFromOptions(snes,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set from the command line options
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSetFromOptions",err,error,*999)
+
+    CALL SNESSetFromOptions(snes%snes,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetFromOptions.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSetFromOptions")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSetFromOptions",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSetFromOptions
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetFunction routine.
+  SUBROUTINE Petsc_SnesSetFunction(snes,f,fFunction,ctx,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the function for
+    TYPE(PetscVecType), INTENT(INOUT) :: f !<The residual vector
+    EXTERNAL fFunction !<The external function to call
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The solver data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSetFunction",err,error,*999)
+
+    CALL SNESSetFunction(snes%snes,f%vec,fFunction,ctx,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetFunction.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSetFunction")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSetFunction",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSetFunction
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetJacobian routine for MatFDColoring contexts.
+  SUBROUTINE Petsc_SnesSetJacobianMatFDColoring(snes,a,b,jFunction,ctx,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The snes to set the function for
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The Jacobian matrix
+    TYPE(PetscMatType), INTENT(INOUT) :: b !<The Jacobian preconditioning matrix
+    EXTERNAL jFunction !<The external function to call
+    TYPE(PetscMatFDColoringType) :: ctx !<The MatFDColoring data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSetJacobianMatFDColoring",err,error,*999)
+
+    CALL SNESSetJacobianBuffer(snes,a,b,jFunction,ctx,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetJacobian.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSetJacobianMatFDColoring")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSetJacobianMatFDColoring",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSetJacobianMatFDColoring
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetJacobian routine for solver contexts.
+  SUBROUTINE Petsc_SnesSetJacobianSolver(snes,a,b,jFunction,ctx,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the function for
+    TYPE(PetscMatType), INTENT(INOUT) :: a !<The Jacobian matrix
+    TYPE(PetscMatType), INTENT(INOUT) :: b !<The Jacobian preconditioning matrix
+    EXTERNAL jFunction !<The external function to call
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The solver data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSetJacobianSolver",err,error,*999)
+
+    CALL SNESSetJacobian(snes%snes,a%mat,b%mat,jFunction,ctx,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetJacobian.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSetJacobianSolver")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSetJacobianSolver",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSetJacobianSolver
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESGetKSP routine.
+  SUBROUTINE Petsc_SnesSetKsp(snes,ksp,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the KSP for
+    TYPE(PetscKspType), INTENT(INOUT) :: ksp !<The KSP to be associated with the SNES
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSetKsp",err,error,*999)
+
+    CALL SNESSetKSP(snes%snes,ksp%ksp,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetKSP.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSetKsp")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSetKsp",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSetKsp
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetNormSchedule routine.
+  SUBROUTINE Petsc_SnesSetNormSchedule(snes,normSchedule,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the norm type for
+    SNESNormSchedule, INTENT(IN) :: normSchedule !<The norm schedule
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSetNormSchedule",err,error,*999)
+
+    CALL SNESSetNormSchedule(snes%snes,normSchedule,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetNormSchedule.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSetNormSchedule")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSetNormSchedule",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSetNormSchedule
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetTolerances routine.
+  SUBROUTINE Petsc_SnesSetTolerances(snes,absTol,rTol,sTol,maxIterations,maxFunctionEvals,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the tolerances for
+    REAL(DP), INTENT(IN) :: absTol !<The absolute convergence tolerance
+    REAL(DP), INTENT(IN) :: rTol !<The relative convergence tolerance
+    REAL(DP), INTENT(IN) :: sTol !<The convergence tolerance for the change in the solution between steps
+    INTEGER(INTG), INTENT(IN) :: maxIterations !<The maximum number of iterations
+    INTEGER(INTG), INTENT(IN) :: maxFunctionEvals !<The maximum number of function evaluations
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSetTolerances",err,error,*999)
+
+    CALL SNESSetTolerances(snes%snes,absTol,rTol,sTol,maxIterations,maxFunctionEvals,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetTolerances.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSetTolerances")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSetTolerances",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSetTolerances
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetTrustRegionTolerance routine.
+  SUBROUTINE Petsc_SnesSetTrustRegionTolerance(snes,trTol,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the tolerances for
+    REAL(DP), INTENT(IN) :: trTol !<The trust region tolerance
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSetTrustRegionTolerance",err,error,*999)
+
+    CALL SNESSetTrustRegionTolerance(snes%snes,trTol,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetTrustRegionTolerance.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSetTrustRegionTolerance")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSetTrustRegionTolerance",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSetTrustRegionTolerance
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSetType routine.
+  SUBROUTINE Petsc_SnesSetType(snes,method,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to set the type for
+    SNESType, INTENT(IN) :: method !<The SNES type
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSetType",err,error,*999)
+
+    CALL SNESSetType(snes%snes,method,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSetType.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSetType")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSetType",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSetType
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESSolve routine.
+  SUBROUTINE Petsc_SnesSolve(snes,b,x,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to solve
+    TYPE(PetscVecType), INTENT(INOUT) :: b !<The constant part of the equation
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The solution vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesSolve",err,error,*999)
+
+    CALL SNESSolve(snes%snes,b%vec,x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESSolve.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesSolve")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesSolve",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesSolve
+
+  !
+  !================================================================================================================================
+  !
+
   !Finalise the PETSc SNES line search structure
   SUBROUTINE Petsc_SnesLineSearchFinalise(lineSearch,err,error,*)
 
@@ -4682,18 +5453,17 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-!    CALL ENTERS("Petsc_SnesLineSearchFinalise",err,error,*999)
+    ENTERS("Petsc_SnesLineSearchFinalise",err,error,*999)
 
-    ! We don't actually call PETSc's SNESLineSearchDestroy as PETSc accesses
-    ! the LineSearch when calling SNESDestroy and also destroys it when
-    ! calling SNESDestroy, so we'll just let PETSc clean it up.
-    lineSearch%snesLineSearch=PETSC_NULL
+    !We don't actually call PETSc's SNESLineSearchDestroy as PETSc accesses and destroys the LineSearch when calling
+    !SNESDestroy, so we'll just let PETSc clean it up.
+    lineSearch%snesLineSearch=PETSC_NULL_OBJECT
 
-!    CALL EXITS("Petsc_SnesLineSearchFinalise")
+    EXITS("Petsc_SnesLineSearchFinalise")
     RETURN
-999 CALL Errors("Petsc_SnesLineSearchFinalise",err,error)
-!    CALL EXITS("Petsc_SnesLineSearchFinalise")
+999 ERRORSEXITS("Petsc_SnesLineSearchFinalise",err,error)
     RETURN 1
+    
   END SUBROUTINE Petsc_SnesLineSearchFinalise
 
   !
@@ -4709,265 +5479,15 @@ CONTAINS
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("Petsc_SnesLineSearchInitialise",err,error,*999)
+    ENTERS("Petsc_SnesLineSearchInitialise",err,error,*999)
 
-    lineSearch%snesLineSearch=PETSC_NULL
+    lineSearch%snesLineSearch=PETSC_NULL_OBJECT
 
-!    CALL EXITS("Petsc_SnesLineSearchInitialise")
+    EXITS("Petsc_SnesLineSearchInitialise")
     RETURN
-999 CALL Errors("Petsc_SnesLineSearchInitialise",err,error)
-!    CALL EXITS("Petsc_SnesLineSearchInitialise")
+999 ERRORSEXITS("Petsc_SnesLineSearchInitialise",err,error)
     RETURN 1
   END SUBROUTINE Petsc_SnesLineSearchInitialise
-#endif
-
-  !
-  !================================================================================================================================
-  !
-
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-  !>Buffer routine to the PETSc SNESLineSearchSet routine.
-  SUBROUTINE PETSC_SNESLINESEARCHSET(SNES_,LINESEARCH_TYPE,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the line search for
-    INTEGER(INTG), INTENT(IN) :: LINESEARCH_TYPE !<The line search type
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESLINESEARCHSET",ERR,ERROR,*999)
-
-    SELECT CASE(LINESEARCH_TYPE)
-    CASE(PETSC_SNES_LINESEARCH_NONORMS)
-      CALL SNESLineSearchSet(SNES_%SNES_,SNESLINESEARCHNONORMS,PETSC_NULL_OBJECT,ERR)
-    CASE(PETSC_SNES_LINESEARCH_NO)
-      CALL SNESLineSearchSet(SNES_%SNES_,SNESLINESEARCHNO,PETSC_NULL_OBJECT,ERR)
-    CASE(PETSC_SNES_LINESEARCH_QUADRATIC)
-      CALL SNESLineSearchSet(SNES_%SNES_,SNESLINESEARCHQUADRATIC,PETSC_NULL_OBJECT,ERR)
-    CASE(PETSC_SNES_LINESEARCH_CUBIC)
-      CALL SNESLineSearchSet(SNES_%SNES_,SNESLINESEARCHCUBIC,PETSC_NULL_OBJECT,ERR)      
-    CASE DEFAULT
-      CALL FLAG_ERROR("Invalid line search type.",ERR,ERROR,*999)
-    END SELECT
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESLineSearchSet.",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESLINESEARCHSET")
-    RETURN
-999 CALL ERRORS("PETSC_SNESLINESEARCHSET",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESLINESEARCHSET")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESLINESEARCHSET
-#endif
-
-  !
-  !================================================================================================================================
-  !
-
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 2 )
-  !>Buffer routine to the PETSc SNESLineSearchSetMonitor routine.
-  SUBROUTINE Petsc_SnesLineSearchSetMonitor(lineSearch,monitorLinesearch,err,error,*)
-
-    !Argument Variables
-    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set whether to output linesearch debug information
-    PetscBool, INTENT(IN) :: monitorLinesearch !<Whether to output linesearch debug information
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-    !Local Variables
-
-!    CALL ENTERS("Petsc_SnesLineSearchSetMonitor",err,error,*999)
-
-    CALL SnesLineSearchSetMonitor(lineSearch%snesLineSearch,monitorLinesearch,err)
-    IF(err/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(err)
-      ENDIF
-      CALL FlagError("PETSc error in SNESLineSearchSetMonitor",err,error,*999)
-    ENDIF
-
-!    CALL EXITS("Petsc_SnesLineSearchSetMonitor")
-    RETURN
-999 CALL Errors("Petsc_SnesLineSearchSetMonitor",err,error)
-!    CALL EXITS("Petsc_SnesLineSearchSetMonitor")
-    RETURN 1
-  END SUBROUTINE Petsc_SnesLineSearchSetMonitor
-#endif
-
-  !
-  !================================================================================================================================
-  !
-
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  !>Buffer routine to the PETSc SNESLineSearchSetComputeNorms routine.
-  SUBROUTINE Petsc_SnesLineSearchSetComputeNorms(lineSearch,computeNorms,err,error,*)
-
-    !Argument Variables
-    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set whether to compute norms
-    PetscBool, INTENT(IN) :: computeNorms !<Whether to compute norms
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-    !Local Variables
-
-!    CALL ENTERS("Petsc_SnesLineSearchSetComputeNorms",err,error,*999)
-
-    CALL SNESLineSearchSetComputeNorms(lineSearch%snesLineSearch,computeNorms,err)
-    IF(err/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(err)
-      ENDIF
-      CALL FlagError("PETSc error in SNESLineSearchSetComputeNorms",err,error,*999)
-    ENDIF
-
-!    CALL EXITS("Petsc_SnesLineSearchSetComputeNorms")
-    RETURN
-999 CALL Errors("Petsc_SnesLineSearchSetComputeNorms",err,error)
-!    CALL EXITS("Petsc_SnesLineSearchSetComputeNorms")
-    RETURN 1
-  END SUBROUTINE Petsc_SnesLineSearchSetComputeNorms
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESLineSearchComputeNorms routine.
-  SUBROUTINE Petsc_SnesLineSearchComputeNorms(lineSearch,err,error,*)
-
-    !Argument Variables
-    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to compute norms for
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-    !Local Variables
-
-!    CALL ENTERS("Petsc_SnesLineSearchComputeNorms",err,error,*999)
-
-    CALL SnesLineSearchComputeNorms(lineSearch%snesLineSearch,err)
-    IF(err/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(err)
-      ENDIF
-      CALL FlagError("PETSc error in SnesLineSearchComputeNorms",err,error,*999)
-    ENDIF
-
-!    CALL EXITS("Petsc_SnesLineSearchComputeNorms")
-    RETURN
-999 CALL Errors("Petsc_SnesLineSearchComputeNorms",err,error)
-!    CALL EXITS("Petsc_SnesLineSearchComputeNorms")
-    RETURN 1
-  END SUBROUTINE Petsc_SnesLineSearchComputeNorms
-#endif
-
-  !
-  !================================================================================================================================
-  !
-
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  !>Buffer routine to the PETSc SNESLineSearchSetOrder routine.
-  SUBROUTINE Petsc_SnesLineSearchSetOrder(lineSearch,lineSearchOrder,err,error,*)
-
-    !Argument Variables
-    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set the line search order for
-    SNESLineSearchOrder, INTENT(IN) :: lineSearchOrder !<The line search order to set.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-    !Local Variables
-
-!    CALL ENTERS("Petsc_SnesLineSearchSetOrder",err,error,*999)
-
-    SELECT CASE(LINESEARCHORDER)
-    CASE(PETSC_SNES_LINESEARCH_LINEAR)
-      CALL SNESLineSearchSetOrder(lineSearch%snesLineSearch,PETSC_SNES_LINESEARCH_LINEAR,err)
-    CASE(PETSC_SNES_LINESEARCH_QUADRATIC)
-      CALL SNESLineSearchSetOrder(lineSearch%snesLineSearch,PETSC_SNES_LINESEARCH_QUADRATIC,err)
-    CASE(PETSC_SNES_LINESEARCH_CUBIC)
-      CALL SNESLineSearchSetOrder(lineSearch%snesLineSearch,PETSC_SNES_LINESEARCH_CUBIC,err)
-    CASE DEFAULT
-      CALL FlagError("Invalid line search order.",err,error,*999)
-    END SELECT
-    IF(err/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(err)
-      ENDIF
-      CALL FlagError("PETSc error in SNESLineSearchSetOrder",err,error,*999)
-    ENDIF
-
-!    CALL EXITS("Petsc_SnesLineSearchSetOrder")
-    RETURN
-999 CALL Errors("Petsc_SnesLineSearchSetOrder",err,error)
-!    CALL EXITS("Petsc_SnesLineSearchSetOrder")
-    RETURN 1
-  END SUBROUTINE Petsc_SnesLineSearchSetOrder
-#endif
-
-  !
-  !================================================================================================================================
-  !
-
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 3 )
-  !>Buffer routine to the PETSc SNESLineSearchSetParams routine.
-  SUBROUTINE PETSC_SNESLINESEARCHSETPARAMS(SNES_,ALPHA,MAXSTEP,STEPTOL,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the line search parameters for
-    REAL(DP), INTENT(IN) :: ALPHA !<The scalar such that 0.5f_{n+1} . f_{n+1} <= .5*f_n . f_n - alpha |f_n . J . f_n| 
-    REAL(DP), INTENT(IN) :: MAXSTEP !<The maximum norm of the update vector
-    REAL(DP), INTENT(IN) :: STEPTOL !<the minimum norm fraction of the the original step after scaling
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESLINESEARCHSETPARAMS",ERR,ERROR,*999)
-
-    CALL SNESLineSearchSetParams(SNES_%SNES_,ALPHA,MAXSTEP,STEPTOL,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESLineSearchSetParams",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESLINESEARCHSETPARAMS")
-    RETURN
-999 CALL ERRORS("PETSC_SNESLINESEARCHSETPARAMS",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESLINESEARCHSETPARAMS")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESLINESEARCHSETPARAMS
-#endif  
-    
-  !
-  !================================================================================================================================
-  !
-  
-#if ( PETSC_VERSION_MAJOR >= 3 && PETSC_VERSION_MINOR >= 3 )
-  !>Buffer routine to the PETSc SNESLineSearchSetType routine.
-  SUBROUTINE Petsc_SnesLineSearchSetType(lineSearch,lineSearchType,err,error,*)
-
-    !Argument Variables
-    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set the line search type for
-    SNESLineSearchType, INTENT(IN) :: lineSearchType !<The line search type to set.
-    INTEGER(INTG), INTENT(OUT) :: err !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-
-!    CALL ENTERS("Petsc_SnesLineSearchSetType",err,error,*999)
-
-    CALL SNESLineSearchSetType(LINESEARCH%snesLineSearch,lineSearchType,err)
-    IF(err/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(err)
-      ENDIF
-      CALL FlagError("PETSc error in SNESLineSearchSetType",err,error,*999)
-    ENDIF
-
-!    CALL EXITS("Petsc_SnesLineSearchSetType")
-    RETURN
-999 CALL Errors("Petsc_SnesLineSearchSetType",err,error)
-!    CALL EXITS("Petsc_SnesLineSearchSetType")
-    RETURN 1
-  END SUBROUTINE Petsc_SnesLineSearchSetType
 
   !
   !================================================================================================================================
@@ -4982,22 +5502,265 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-!    CALL ENTERS("Petsc_SnesLineSearchBTSetAlpha",err,error,*999)
+    ENTERS("Petsc_SnesLineSearchBTSetAlpha",err,error,*999)
 
     CALL SNESLineSearchBTSetAlpha(lineSearch%snesLineSearch,alpha,err)
     IF(err/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
+      IF(petscHandleError) THEN
         CHKERRQ(err)
       END IF
-      CALL FlagError("PETSc error in SNESLineSearchBTSetAlpha",err,error,*999)
+      CALL FlagError("PETSc error in SNESLineSearchBTSetAlpha.",err,error,*999)
     END IF
 
-!    CALL EXITS("Petsc_SnesLineSearchBTSetAlpha")
+    EXITS("Petsc_SnesLineSearchBTSetAlpha")
     RETURN
-999 CALL Errors("Petsc_SnesLineSearchBTSetAlpha",err,error)
-!    CALL EXITS("Petsc_SnesLineSearchBTSetAlpha")
+999 ERRORSEXITS("Petsc_SnesLineSearchBTSetAlpha",err,error)
     RETURN 1
+    
   END SUBROUTINE Petsc_SnesLineSearchBTSetAlpha
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchComputeNorms routine.
+  SUBROUTINE Petsc_SnesLineSearchComputeNorms(lineSearch,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to compute norms for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesLineSearchComputeNorms",err,error,*999)
+
+    CALL SnesLineSearchComputeNorms(lineSearch%snesLineSearch,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SnesLineSearchComputeNorms.",err,error,*999)
+    ENDIF
+
+    EXITS("Petsc_SnesLineSearchComputeNorms")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesLineSearchComputeNorms",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesLineSearchComputeNorms
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the petsc SnesLineSearchGetNorms routine.
+  SUBROUTINE Petsc_SnesLineSearchGetNorms(lineSearch,xNorm,fNorm,yNorm,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to get the norms for X, Y, and F from.
+    REAL(DP), INTENT(INOUT) :: xNorm !<On exit, the norm of the current solution
+    REAL(DP), INTENT(INOUT) :: fNorm !<On exit, the norm of the current function
+    REAL(DP), INTENT(INOUT) :: yNorm !<On exit, the norm of the current update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesLineSearchGetNorms",err,error,*999)
+
+    CALL SnesLineSearchGetNorms(lineSearch%snesLineSearch,xNorm,fNorm,yNorm,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SnesLineSearchGetNorms.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesLineSearchGetNorms")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesLineSearchGetNorms",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesLineSearchGetNorms
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchGetVecs routine.
+  SUBROUTINE Petsc_SnesLineSearchGetVecs(lineSearch,x,f,y,w,g,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The PetcsSnesLineSearch to get the vectors from the SNESLineSearch
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The The old solution 
+    TYPE(PetscVecType), INTENT(INOUT) :: f !<The old function 
+    TYPE(PetscVecType), INTENT(INOUT) :: y !<The search direction 
+    TYPE(PetscVecType), INTENT(INOUT) :: w !<The new solution 
+    TYPE(PetscVecType), INTENT(INOUT) :: g !<The new function 
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesLineSearchGetVecs",err,error,*999)
+
+    CALL SNESLineSearchGetVecs(lineSearch%snesLineSearch,x%vec,f%vec,y%vec,w%vec,g%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESLineSearchGetVecs.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesLineSearchGetVecs")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesLineSearchGetVecs",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesLineSearchGetVecs
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchSetComputeNorms routine.
+  SUBROUTINE Petsc_SnesLineSearchSetComputeNorms(lineSearch,computeNorms,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set whether to compute norms
+    LOGICAL, INTENT(IN) :: computeNorms !<Whether to compute norms
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesLineSearchSetComputeNorms",err,error,*999)
+
+    IF(computeNorms) THEN
+      CALL SNESLineSearchSetComputeNorms(lineSearch%snesLineSearch,PETSC_TRUE,err)
+    ELSE
+      CALL SNESLineSearchSetComputeNorms(lineSearch%snesLineSearch,PETSC_FALSE,err)      
+    ENDIF
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESLineSearchSetComputeNorms.",err,error,*999)
+    ENDIF
+
+    EXITS("Petsc_SnesLineSearchSetComputeNorms")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesLineSearchSetComputeNorms",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesLineSearchSetComputeNorms
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchSetMonitor routine.
+  SUBROUTINE Petsc_SnesLineSearchSetMonitor(lineSearch,monitorLinesearch,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set whether to output linesearch debug information
+    LOGICAL, INTENT(IN) :: monitorLinesearch !<Whether to output linesearch debug information
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesLineSearchSetMonitor",err,error,*999)
+
+    IF(monitorLinesearch) THEN
+      CALL SnesLineSearchSetMonitor(lineSearch%snesLineSearch,PETSC_TRUE,err)
+    ELSE
+      CALL SnesLineSearchSetMonitor(lineSearch%snesLineSearch,PETSC_FALSE,err)
+    ENDIF
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESLineSearchSetMonitor.",err,error,*999)
+    ENDIF
+
+    EXITS("Petsc_SnesLineSearchSetMonitor")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesLineSearchSetMonitor",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesLineSearchSetMonitor
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the petsc SnesLineSearchSetNorms routine.
+  SUBROUTINE Petsc_SnesLineSearchSetNorms(snes,xNorm,fNorm,yNorm,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The SNES to get the computed norms for x, y, and f
+    REAL(DP), INTENT(INOUT) :: xNorm !<On exit, the norm of the current solution
+    REAL(DP), INTENT(INOUT) :: fNorm !<On exit, the norm of the current function
+    REAL(DP), INTENT(INOUT) :: yNorm !<On exit, the norm of the current update
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SnesLineSearchSetNorms",err,error,*999)
+
+    CALL SnesLineSearchSetNorms(snes%snes,xNorm,fNorm,yNorm,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("petsc error in SnesLineSearchSetNorms.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SnesLineSearchSetNorms")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesLineSearchSetNorms",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesLineSearchSetNorms
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc SNESLineSearchSetOrder routine.
+  SUBROUTINE Petsc_SnesLineSearchSetOrder(lineSearch,lineSearchOrder,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set the line search order for
+    SNESLineSearchOrder, INTENT(IN) :: lineSearchOrder !<The line search order to set.
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    TYPE(VARYING_STRING) :: localError
+
+    ENTERS("Petsc_SnesLineSearchSetOrder",err,error,*999)
+
+    SELECT CASE(lineSearchOrder)
+    CASE(PETSC_SNES_LINESEARCH_ORDER_LINEAR)
+      CALL SNESLineSearchSetOrder(lineSearch%snesLineSearch,SNES_LINESEARCH_ORDER_LINEAR,err)
+    CASE(PETSC_SNES_LINESEARCH_ORDER_QUADRATIC)
+      CALL SNESLineSearchSetOrder(lineSearch%snesLineSearch,SNES_LINESEARCH_ORDER_QUADRATIC,err)
+    CASE(PETSC_SNES_LINESEARCH_ORDER_CUBIC)
+      CALL SNESLineSearchSetOrder(lineSearch%snesLineSearch,SNES_LINESEARCH_ORDER_CUBIC,err)
+    CASE DEFAULT
+      localError="The specified line search order of "//TRIM(NumberToVString(lineSearchOrder,"*",err,error))//" is invalid."
+      CALL FlagError(localError,err,error,*999)
+    END SELECT
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in SNESLineSearchSetOrder.",err,error,*999)
+    ENDIF
+
+    EXITS("Petsc_SnesLineSearchSetOrder")
+    RETURN
+999 ERRORSEXITS("Petsc_SnesLineSearchSetOrder",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SnesLineSearchSetOrder
 
   !
   !================================================================================================================================
@@ -5017,1666 +5780,1062 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
 
-!    CALL ENTERS("Petsc_SnesLineSearchSetTolerances",err,error,*999)
+    ENTERS("Petsc_SnesLineSearchSetTolerances",err,error,*999)
 
-    CALL SNESLineSearchSetTolerances(lineSearch%snesLineSearch, &
-      & steptol,maxstep,rtol,atol,ltol,maxIt,err)
+    CALL SNESLineSearchSetTolerances(lineSearch%snesLineSearch,steptol,maxstep,rtol,atol,ltol,maxIt,err)
     IF(err/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
+      IF(petscHandleError) THEN
         CHKERRQ(err)
       END IF
-      CALL FlagError("PETSc error in SNESLineSearchSetTolerances",err,error,*999)
+      CALL FlagError("PETSc error in SNESLineSearchSetTolerances.",err,error,*999)
     END IF
 
-!    CALL EXITS("Petsc_SnesLineSearchSetTolerances")
+    EXITS("Petsc_SnesLineSearchSetTolerances")
     RETURN
-999 CALL Errors("Petsc_SnesLineSearchSetTolerances",err,error)
-!    CALL EXITS("Petsc_SnesLineSearchSetTolerances")
+999 ERRORSEXITS("Petsc_SnesLineSearchSetTolerances",err,error)
     RETURN 1
 
   END SUBROUTINE Petsc_SnesLineSearchSetTolerances
-#endif
 
   !
   !================================================================================================================================
   !
-
-  !>Buffer routine to the PETSc SNESMonitorSet routine.
-  SUBROUTINE PETSC_SNESMONITORSET(SNES_,MFUNCTION,CTX,ERR,ERROR,*)
+ 
+  !>Buffer routine to the PETSc SNESLineSearchSetType routine.
+  SUBROUTINE Petsc_SnesLineSearchSetType(lineSearch,lineSearchType,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set from the command line options
-    EXTERNAL :: MFUNCTION !<The external monitor function to set
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the monitor function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESMONITORSET",ERR,ERROR,*999)
-
-    CALL SNESMonitorSet(SNES_%SNES_,MFUNCTION,CTX,PETSC_NULL_FUNCTION,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESMonitorSet",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESMONITORSET")
-    RETURN
-999 CALL ERRORS("PETSC_SNESMONITORSET",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESMONITORSET")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESMONITORSET
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSetFromOptions routine.
-  SUBROUTINE PETSC_SNESSETFROMOPTIONS(SNES_,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set from the command line options
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSETFROMOPTIONS",ERR,ERROR,*999)
-
-    CALL SNESSetFromOptions(SNES_%SNES_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetFromOptions",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESSETFROMOPTIONS")
-    RETURN
-999 CALL ERRORS("PETSC_SNESSETFROMOPTIONS",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSETFROMOPTIONS")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESSETFROMOPTIONS
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSetFunction routine.
-  SUBROUTINE PETSC_SNESSETFUNCTION(SNES_,F,FFUNCTION,CTX,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: F !<The residual vector
-    EXTERNAL FFUNCTION !<The external function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSETFUNCTION",ERR,ERROR,*999)
-
-    CALL SNESSetFunction(SNES_%SNES_,F%VEC,FFUNCTION,CTX,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetFunction",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESSETFUNCTION")
-    RETURN
-999 CALL ERRORS("PETSC_SNESSETFUNCTION",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSETFUNCTION")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESSETFUNCTION
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSetFunction routine.
-  SUBROUTINE PETSC_SNESSETCONVERGENCETEST(SNES_,CFUNCTION,CTX,ERR,ERROR,*)
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
-    EXTERNAL CFUNCTION !<The external function to call (OpenCMISS subroutine to calculate convergence
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the convergence test function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSETCONVERGENCETEST",ERR,ERROR,*999)
-
-    CALL SNESSetConvergenceTest(SNES_%SNES_,CFUNCTION,CTX,PETSC_NULL_FUNCTION,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetConvergenceTest",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESSETCONVERGENCETEST")
-    RETURN
-999 CALL ERRORS("PETSC_SNESSETCONVERGENCETEST",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSETCONVERGENCETEST")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESSETCONVERGENCETEST
-
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSetJacobian routine for MatFDColoring contexts.
-  SUBROUTINE PETSC_SNESSETJACOBIAN_MATFDCOLORING(SNES_,A,B,JFUNCTION,CTX,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The Jacobian matrix
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The Jacobian preconditioning matrix
-    EXTERNAL JFUNCTION !<The external function to call
-    TYPE(PETSC_MATFDCOLORING_TYPE) :: CTX !<The MatFDColoring data to pass to the function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSETJACOBIAN_MATFDCOLORING",ERR,ERROR,*999)
-
-    CALL SNESSetJacobianBuffer(SNES_,A,B,JFUNCTION,CTX,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetJacobian",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESSETJACOBIAN_MATFDCOLORING")
-    RETURN
-999 CALL ERRORS("PETSC_SNESSETJACOBIAN_MATFDCOLORING",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSETJACOBIAN_MATFDCOLORING")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESSETJACOBIAN_MATFDCOLORING
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSetJacobian routine for solver contexts.
-  SUBROUTINE PETSC_SNESGETJACOBIAN_SOLVER(SNES_,A,B,JFUNCTION,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The Jacobian matrix
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The Jacobian preconditioning matrix
-    EXTERNAL JFUNCTION !<The external function to call
-!     TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESGETJACOBIAN_SOLVER",ERR,ERROR,*999)
-
-    CALL SNESGetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,PETSC_NULL_INTEGER,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESGetJacobian",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESGETJACOBIAN_SOLVER")
-    RETURN
-999 CALL ERRORS("PETSC_SNESGETJACOBIAN_SOLVER",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESGETJACOBIAN_SOLVER")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESGETJACOBIAN_SOLVER
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSetJacobian routine for solver contexts.
-  SUBROUTINE PETSC_SNESGETJACOBIAN_SPECIAL(SNES_,A,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The Jacobian matrix
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSETJACOBIAN_SPECIAL",ERR,ERROR,*999)
-
-    CALL SNESGetJacobian(SNES_%SNES_,A%MAT,PETSC_NULL_OBJECT,PETSC_NULL_FUNCTION,PETSC_NULL_INTEGER,ERR)
-
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESGetJacobian",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESGETJACOBIAN_SPECIAL")
-    RETURN
-999 CALL ERRORS("PETSC_SNESGETJACOBIAN_SPECIAL",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESGETJACOBIAN_SPECIAL")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESGETJACOBIAN_SPECIAL
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSetJacobian routine for solver contexts.
-  SUBROUTINE PETSC_SNESSETJACOBIAN_SOLVER(SNES_,A,B,JFUNCTION,CTX,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The Jacobian matrix
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The Jacobian preconditioning matrix
-    EXTERNAL JFUNCTION !<The external function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSETJACOBIAN_SOLVER",ERR,ERROR,*999)
-
-    CALL SNESSetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,CTX,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetJacobian",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESSETJACOBIAN_SOLVER")
-    RETURN
-999 CALL ERRORS("PETSC_SNESSETJACOBIAN_SOLVER",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSETJACOBIAN_SOLVER")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESSETJACOBIAN_SOLVER
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESComputeJacobianColor routine for solver contexts.
-  SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR(SNES_,X,J,B,FLAG,CTX,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The PETSc SNES
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The PETSc X Vec
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: J !<The PETSc J Mat
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The PETSc B Mat
-    INTEGER(INTG) :: FLAG !<The PETSC MatStructure flag
-    TYPE(PETSC_MATFDCOLORING_TYPE), POINTER :: CTX !<The passed through context
-    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-
-    CALL SNESDefaultComputeJacobianColor(SNES_%SNES_,X%VEC,J%MAT,B%MAT,FLAG,CTX,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetJacobian",ERR,ERROR,*999)
-    ENDIF
-
-!    CALL EXITS("PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR")
-    RETURN
-999 CALL ERRORS("PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR",ERR,ERROR)
-    RETURN
-  END SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIANCOLOR
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESComputeJacobian routine for solver contexts.
-  SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIAN(SNES_,X,J,B,FLAG,CTX,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The PETSc SNES
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The PETSc X Vec
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: J !<The PETSc J Mat
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The PETSc B Mat
-    INTEGER(INTG) :: FLAG !<The PETSC MatStructure flag
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The passed through context
-    INTEGER(INTG), INTENT(INOUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-
-    CALL SNESDefaultComputeJacobian(SNES_%SNES_,X%VEC,J%MAT,B%MAT,FLAG,CTX,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetJacobian",ERR,ERROR,*999)
-    ENDIF
-
-    RETURN
-999 CALL ERRORS("PETSC_SNESDEFAULTCOMPUTEJACOBIAN",ERR,ERROR)
-    RETURN
-  END SUBROUTINE PETSC_SNESDEFAULTCOMPUTEJACOBIAN
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESGetKSP routine.
-  SUBROUTINE PETSC_SNESSETKSP(SNES_,KSP_,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the KSP for
-    TYPE(PETSC_KSP_TYPE), INTENT(INOUT) :: KSP_ !<The KSP to be associated with the SNES
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSETKSP",ERR,ERROR,*999)
-
-    CALL SNESSetKSP(SNES_%SNES_,KSP_%KSP_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetKSP",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESSETKSP")
-    RETURN
-999 CALL ERRORS("PETSC_SNESSETKSP",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSETKSP")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESSETKSP
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSetTolerances routine.
-  SUBROUTINE PETSC_SNESSETTOLERANCES(SNES_,ABSTOL,RTOL,STOL,MAXIT,MAXF,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the tolerances for
-    REAL(DP), INTENT(IN) :: ABSTOL !<The absolute convergence tolerance
-    REAL(DP), INTENT(IN) :: RTOL !<The relative convergence tolerance
-    REAL(DP), INTENT(IN) :: STOL !<The convergence tolerance for the change in the solution between steps
-    INTEGER(INTG), INTENT(IN) :: MAXIT !<The maximum number of iterations
-    INTEGER(INTG), INTENT(IN) :: MAXF !<The maximum number of function evaluations
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSETTOLERANCES",ERR,ERROR,*999)
-
-    CALL SNESSetTolerances(SNES_%SNES_,ABSTOL,RTOL,STOL,MAXIT,MAXF,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetTolerances",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESSETTOLERANCES")
-    RETURN
-999 CALL ERRORS("PETSC_SNESSETTOLERANCES",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSETTOLERANCES")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESSETTOLERANCES
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSetTrustRegionTolerance routine.
-  SUBROUTINE PETSC_SNESSETTRUSTREGIONTOLERANCE(SNES_,TRTOL,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the tolerances for
-    REAL(DP), INTENT(IN) :: TRTOL !<The trust region tolerance
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSETTRUSTREGIONTOLERANCE",ERR,ERROR,*999)
-
-    CALL SNESSetTrustRegionTolerance(SNES_%SNES_,TRTOL,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetTrustRegionTolerance",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESSETTRUSTREGIONTOLERANCE")
-    RETURN
-999 CALL ERRORS("PETSC_SNESSETTRUSTREGIONTOLERANCE",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSETTRUSTREGIONTOLERANCE")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESSETTRUSTREGIONTOLERANCE
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSetType routine.
-  SUBROUTINE PETSC_SNESSETTYPE(SNES_,METHOD,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the type for
-    SNESType, INTENT(IN) :: METHOD !<The SNES type
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSETTYPE",ERR,ERROR,*999)
-
-    CALL SNESSetType(SNES_%SNES_,METHOD,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetType",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESSETTYPE")
-    RETURN
-999 CALL ERRORS("PETSC_SNESSETTYPE",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSETTYPE")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESSETTYPE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESLineSearchGetVecs routine.
-  SUBROUTINE Petsc_SnesLineSearchGetVecs(lineSearch,x,f,y,w,g,err,error,*)
-
-    !Argument Variables
-    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The PetcsSnesLineSearch to get the vectors from the SNESLineSearch
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: x !<The The old solution 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: f !<The old function 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: y !<The search direction 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: w !<The new solution 
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: g !<The new function 
+    TYPE(PetscSnesLineSearchType), INTENT(INOUT) :: lineSearch !<The SNES LineSearch to set the line search type for
+    SNESLineSearchType, INTENT(IN) :: lineSearchType !<The line search type to set.
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
-    !Local Variables
 
-!    CALL ENTERS("Petsc_SnesLineSearchGetVecs",err,error,*999)
+    ENTERS("Petsc_SnesLineSearchSetType",err,error,*999)
 
-    CALL SNESLineSearchGetVecs(lineSearch%snesLineSearch,x%VEC,f%VEC,y%VEC,w%VEC,g%VEC,err)
+    CALL SNESLineSearchSetType(lineSearch%snesLineSearch,lineSearchType,err)
     IF(err/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
+      IF(petscHandleError) THEN
         CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESLineSearchGetVecs",err,error,*999)
+      CALL FlagError("PETSc error in SNESLineSearchSetType.",err,error,*999)
     ENDIF
-    
-!    CALL EXITS("Petsc_SnesLineSearchGetVecs")
+
+    EXITS("Petsc_SnesLineSearchSetType")
     RETURN
-999 CALL ERRORS("Petsc_SnesLineSearchGetVecs",err,error)
-!    CALL EXITS("Petsc_SnesLineSearchGetVecs")
+999 ERRORSEXITS("Petsc_SnesLineSearchSetType",err,error)
     RETURN 1
-  END SUBROUTINE Petsc_SnesLineSearchGetVecs
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSetNormType routine.
-  SUBROUTINE PETSC_SNESSETNORMTYPE(SNES_,NORMTYPE,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the norm type for
-    INTEGER(INTG), INTENT(IN) :: NORMTYPE !<The norm type
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSETNORMTYPE",ERR,ERROR,*999)
-
-    CALL SNESSetNormType(SNES_%SNES_,NORMTYPE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSetNormType",ERR,ERROR,*999)
-    ENDIF
     
-!    CALL EXITS("PETSC_SNESSETNORMTYPE")
-    RETURN
-999 CALL ERRORS("PETSC_SNESSETNORMTYPE",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSETNORMTYPE")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESSETNORMTYPE
-
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc SNESSolve routine.
-  SUBROUTINE PETSC_SNESSOLVE(SNES_,B,X,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to solve
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: B !<The constant part of the equation
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The solution vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_SNESSOLVE",ERR,ERROR,*999)
-
-    CALL SNESSolve(SNES_%SNES_,B%VEC,X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESSolve",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_SNESSOLVE")
-    RETURN
-999 CALL ERRORS("PETSC_SNESSOLVE",ERR,ERROR)
-!    CALL EXITS("PETSC_SNESSOLVE")
-    RETURN 1
-  END SUBROUTINE PETSC_SNESSOLVE
+  END SUBROUTINE Petsc_SnesLineSearchSetType
 
   !
   !================================================================================================================================
   !
 
   !Finalise the PETSc TS structure and destroy the TS
-  SUBROUTINE PETSC_TSFINALISE(TS_,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSFinalise(ts,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSFINALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_TSFinalise",err,error,*999)
 
-    IF(TS_%TS_/=PETSC_NULL) THEN
-      CALL PETSC_TSDESTROY(TS_,ERR,ERROR,*999)
+    IF(ts%ts/=PETSC_NULL_OBJECT) THEN
+      CALL Petsc_TSDestroy(ts,err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSFINALISE")
+    EXITS("Petsc_TSFinalise")
     RETURN
-999 CALL ERRORS("PETSC_TSFINALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_TSFINALISE")
+999 ERRORSEXITS("Petsc_TSFinalise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSFINALISE
+    
+  END SUBROUTINE Petsc_TSFinalise
     
   !
   !================================================================================================================================
   !
 
   !Initialise the PETSc TS structure
-  SUBROUTINE PETSC_TSINITIALISE(TS_,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSInitialise(ts,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to initialise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSINITIALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_TSInitialise",err,error,*999)
 
-    TS_%TS_=PETSC_NULL
+    ts%ts=PETSC_NULL_OBJECT
      
-!    CALL EXITS("PETSC_TSINITIALISE")
+    EXITS("Petsc_TSInitialise")
     RETURN
-999 CALL ERRORS("PETSC_TSINITIALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_TSINITIALISE")
+999 ERRORSEXITS("Petsc_TSInitialise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSINITIALISE
+    
+  END SUBROUTINE Petsc_TSInitialise
     
   !
   !================================================================================================================================
   !
     
   !>Buffer routine to the PETSc TSCreate routine.
-  SUBROUTINE PETSC_TSCREATE(COMMUNICATOR,TS_,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSCreate(communicator,ts,err,error,*)
 
     !Argument Variables
-    MPI_Comm, INTENT(INOUT) :: COMMUNICATOR !<The MPI communicator for the TS creation
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<On exit, the TS information
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(INOUT) :: communicator !<The MPI communicator for the TS creation
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<On exit, the TS information
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSCREATE",ERR,ERROR,*999)
+    ENTERS("Petsc_TSCreate",err,error,*999)
 
-    CALL TSCreate(COMMUNICATOR,TS_%TS_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSCreate(communicator,ts%ts,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSCreate",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSCreate.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSCREATE")
+    EXITS("Petsc_TSCreate")
     RETURN
-999 CALL ERRORS("PETSC_TSCREATE",ERR,ERROR)
-!    CALL EXITS("PETSC_TSCREATE")
+999 ERRORSEXITS("Petsc_TSCreate",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSCREATE
+    
+  END SUBROUTINE Petsc_TSCreate
     
   !
   !================================================================================================================================
   !
     
   !>Buffer routine to the PETSc TSDestroy routine.
-  SUBROUTINE PETSC_TSDESTROY(TS_,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSDestroy(ts,err,error,*)
 
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to destroy
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to destroy
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSDESTROY",ERR,ERROR,*999)
+    ENTERS("Petsc_TSDestroy",err,error,*999)
 
-    CALL TSDestroy(TS_%TS_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSDestroy(ts%ts,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSDestroy",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSDestroy.",err,error,*999)
     ENDIF
-    TS_%TS_=PETSC_NULL
+    ts%ts=PETSC_NULL_OBJECT
     
-!    CALL EXITS("PETSC_TSDESTROY")
+    EXITS("Petsc_TSDestroy")
     RETURN
-999 CALL ERRORS("PETSC_TSDESTROY",ERR,ERROR)
-!    CALL EXITS("PETSC_TSDESTROY")
+999 ERRORSEXITS("Petsc_TSDestroy",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSDESTROY
+    
+  END SUBROUTINE Petsc_TSDestroy
     
   !
   !================================================================================================================================
   !
     
-!  !>Buffer routine to the PETSc TSGetApplicationContext routine.
-!  SUBROUTINE PETSC_TSGETAPPLICATIONCONTEXT(TS_,USERP,ERR,ERROR,*)
+  !>Buffer routine to the PETSc TSGetSolution routine.
+  SUBROUTINE Petsc_TSGetSolution(ts,currentSolution,err,error,*)
 
-!    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to get the application context from
-!    TYPE(SOLVER_TYPE), POINTER :: USERP !<On exit, a pointer to the user application context
-!    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-!    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-!    !Local Variables
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to set the time step for
+    TYPE(PetscVecType), INTENT(INOUT) :: currentSolution !<The current solution to be set for the TS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
 
-!!    CALL ENTERS("PETSC_TSSETAPPLICATIONCONTEXT",ERR,ERROR,*999)
+    ENTERS("Petsc_TSGetSolution",err,error,*999)
 
-!    IF(ASSOCIATED(USERP)) THEN
-!      CALL FLAG_ERROR("User application pointer is already associated.",ERR,ERROR,*999)
-!    ELSE
-!      NULLIFY(USERP)
-!      CALL TSGetApplicationContext(TS_%TS_,USERP,ERR)
-!      IF(ERR/=0) THEN
-!        IF(PETSC_HANDLE_ERROR) THEN
-!          CHKERRQ(ERR)
-!        ENDIF
-!        CALL FLAG_ERROR("PETSc error in TSGetApplicationContext",ERR,ERROR,*999)
-!      ENDIF
-!    ENDIF
+    CALL TSGetSolution(ts%ts,currentSolution%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in TSGetSolution.",err,error,*999)
+    ENDIF
     
-!!    CALL EXITS("PETSC_TSGETAPPLICATIONCONTEXT")
-!    RETURN
-!999 CALL ERRORS("PETSC_TSGETAPPLICATIONCONTEXT",ERR,ERROR)
-!!    CALL EXITS("PETSC_TSGETAPPLICATIONCONTEXT")
-!    RETURN 1
-!  END SUBROUTINE PETSC_TSGETAPPLICATIONCONTEXT
+    EXITS("Petsc_TSGetSolution")
+    RETURN
+999 ERRORSEXITS("Petsc_TSGetSolution",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_TSGetSolution
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc TSMonitorSet routine.
-  SUBROUTINE PETSC_TSMONITORSET(TS_,MFUNCTION,CTX,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSMonitorSet(ts,mFunction,ctx,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the monitor for
-    EXTERNAL :: MFUNCTION !<The external monitor function to set
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the monitor function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to set the monitor for
+    EXTERNAL :: mFunction !<The external monitor function to set
+    TYPE(SOLVER_TYPE), POINTER :: ctx !<The solver data to pass to the monitor function
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSMONITORSET",ERR,ERROR,*999)
+    ENTERS("Petsc_TSMonitorSet",err,error,*999)
 
-    CALL TSMonitorSet(TS_%TS_,MFUNCTION,CTX,PETSC_NULL_FUNCTION,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSMonitorSet(ts%ts,mFunction,ctx,PETSC_NULL_FUNCTION,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSMonitorSet",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSMonitorSet.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSMONITORSET")
+    EXITS("Petsc_TSMonitorSet")
     RETURN
-999 CALL ERRORS("PETSC_TSMONITORSET",ERR,ERROR)
-!    CALL EXITS("PETSC_TSMONITORSET")
+999 ERRORSEXITS("Petsc_TSMonitorSet",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSMONITORSET
     
-  !
-  !================================================================================================================================
-  !
-    
-!  !>Buffer routine to the PETSc TSSetApplicationContext routine.
-!  SUBROUTINE PETSC_TSSETAPPLICATIONCONTEXT(TS_,USERP,ERR,ERROR,*)
-
-!    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the application context for
-!    TYPE(SOLVER_TYPE), POINTER :: USERP !<A pointer to the user application context
-!    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-!    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-!    !Local Variables
-
-!!    CALL ENTERS("PETSC_TSSETAPPLICATIONCONTEXT",ERR,ERROR,*999)
-
-!    CALL TSSetApplicationContext(TS_%TS_,USERP,ERR)
-!    IF(ERR/=0) THEN
-!      IF(PETSC_HANDLE_ERROR) THEN
-!        CHKERRQ(ERR)
-!      ENDIF
-!      CALL FLAG_ERROR("PETSc error in TSSetApplicationContext",ERR,ERROR,*999)
-!    ENDIF
-    
-!!    CALL EXITS("PETSC_TSSETAPPLICATIONCONTEXT")
-!    RETURN
-!999 CALL ERRORS("PETSC_TSSETAPPLICATIONCONTEXT",ERR,ERROR)
-!!    CALL EXITS("PETSC_TSSETAPPLICATIONCONTEXT")
-!    RETURN 1
-!  END SUBROUTINE PETSC_TSSETAPPLICATIONCONTEXT
+  END SUBROUTINE Petsc_TSMonitorSet
     
   !
   !================================================================================================================================
   !
     
   !>Buffer routine to the PETSc TSSetDuration routine.
-  SUBROUTINE PETSC_TSSETDURATION(TS_,MAX_STEPS,MAX_TIME,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSSetDuration(ts,maxSteps,maxTime,err,error,*)
 
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set from the options
-    INTEGER(INTG), INTENT(IN) :: MAX_STEPS !<The maximum number of steps to use
-    REAL(DP), INTENT(IN) :: MAX_TIME !<The maximum time to iteration to
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to set from the options
+    INTEGER(INTG), INTENT(IN) :: maxSteps !<The maximum number of steps to use
+    REAL(DP), INTENT(IN) :: maxTime !<The maximum time to iteration to
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSSETDURATION",ERR,ERROR,*999)
+    ENTERS("Petsc_TSSetDuration",err,error,*999)
 
-    CALL TSSetDuration(TS_%TS_,MAX_STEPS,MAX_TIME,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSSetDuration(ts%ts,maxSteps,maxTime,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSSetDuration",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSSetDuration.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSSETDURATION")
+    EXITS("Petsc_TSSetDuration")
     RETURN
-999 CALL ERRORS("PETSC_TSSETDURATION",ERR,ERROR)
-!    CALL EXITS("PETSC_TSSETDURATION")
+999 ERRORSEXITS("Petsc_TSSetDuration",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSSETDURATION
     
+  END SUBROUTINE Petsc_TSSetDuration
+    
+  !
+  !================================================================================================================================
+  !
+    
+  !>Buffer routine to the PETSc TSSetExactFinalTime routine.
+  SUBROUTINE Petsc_TSSetExactFinalTime(ts,exactFinalTime,err,error,*)
+
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to set the initial time step for
+    LOGICAL, INTENT(IN) :: exactFinalTime !<The option for exact final time to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_TSSetExactFinalTime",err,error,*999)
+
+    IF(exactFinalTime) THEN
+      CALL TSSetExactFinalTime(ts%ts,PETSC_TRUE,err)
+    ELSE
+      CALL TSSetExactFinalTime(ts%ts,PETSC_FALSE,err)
+    ENDIF
+    
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in TSSetExactFinalTime.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_TSSetExactFinalTime")
+    RETURN
+999 ERRORSEXITS("Petsc_TSSetExactFinalTime",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_TSSetExactFinalTime
+
   !
   !================================================================================================================================
   !
     
   !>Buffer routine to the PETSc TSSetFromOptions routine.
-  SUBROUTINE PETSC_TSSETFROMOPTIONS(TS_,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSSetFromOptions(ts,err,error,*)
 
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set from the options
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to set from the options
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSSETFROMOPTIONS",ERR,ERROR,*999)
+    ENTERS("Petsc_TSSetFromOptions",err,error,*999)
 
-    CALL TSSetFromOptions(TS_%TS_,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSSetFromOptions(ts%ts,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSSetFromOptions",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSSetFromOptions.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSSETFROMOPTIONS")
+    EXITS("Petsc_TSSetFromOptions")
     RETURN
-999 CALL ERRORS("PETSC_TSSETFROMOPTIONS",ERR,ERROR)
-!    CALL EXITS("PETSC_TSSETFROMOPTIONS")
+999 ERRORSEXITS("Petsc_TSSetFromOptions",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSSETFROMOPTIONS
     
+  END SUBROUTINE Petsc_TSSetFromOptions
+
   !
   !================================================================================================================================
   !
     
   !>Buffer routine to the PETSc TSSetInitialTimeStep routine.
-  SUBROUTINE PETSC_TSSETINITIALTIMESTEP(TS_,INITIAL_TIME,TIME_STEP,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSSetInitialTimeStep(ts,initialTime,timeStep,err,error,*)
 
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the initial time step for
-    REAL(DP), INTENT(IN) :: INITIAL_TIME !<The initial time to set
-    REAL(DP), INTENT(IN) :: TIME_STEP !<The time step to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to set the initial time step for
+    REAL(DP), INTENT(IN) :: initialTime !<The initial time to set
+    REAL(DP), INTENT(IN) :: timeStep !<The time step to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSSETINITIALTIMESTEP",ERR,ERROR,*999)
+    ENTERS("Petsc_TSSetInitialTimeStep",err,error,*999)
 
-    CALL TSSetInitialTimeStep(TS_%TS_,INITIAL_TIME,TIME_STEP,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSSetInitialTimeStep(ts%ts,initialTime,timeStep,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSSetInitialTimeStep",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSSetInitialTimeStep.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSSETINITIALTIMESTEP")
+    EXITS("Petsc_TSSetInitialTimeStep")
     RETURN
-999 CALL ERRORS("PETSC_TSSETINITIALTIMESTEP",ERR,ERROR)
-!    CALL EXITS("PETSC_TSSETINITIALTIMESTEP")
+999 ERRORSEXITS("Petsc_TSSetInitialTimeStep",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSSETINITIALTIMESTEP
+    
+  END SUBROUTINE Petsc_TSSetInitialTimeStep
 
   !
   !================================================================================================================================
   !
-    
-#if ( PETSC_VERSION_MAJOR <= 3 && PETSC_VERSION_MINOR < 2 )
-  !>Buffer routine to the PETSc TSSetMatrices routine.
-  SUBROUTINE PETSC_TSSETMATRICES(TS_,ARHS,RHSFUNCTION,ALHS,LHSFUNCTION,FLAG,CTX,ERR,ERROR,*)
-
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the problem type for
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: ARHS !<The RHS matrix
-    EXTERNAL RHSFUNCTION !<The external RHS matrix evaluation function to call
-    TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: ALHS !<The LHS matrix
-    EXTERNAL LHSFUNCTION !<The external LHS matrix evaluation function to call
-    INTEGER(INTG), INTENT(IN) :: FLAG !<The matrices structure flag
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the matrix evaluations functions
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_TSSETMATRICES",ERR,ERROR,*999)
-
-    CALL TSSetMatrices(TS_%TS_,ARHS%MAT,RHSFUNCTION,ALHS%MAT,LHSFUNCTION,FLAG,CTX,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in TSSetMatrices",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_TSSETMATRICES")
-    RETURN
-999 CALL ERRORS("PETSC_TSSETMATRICES",ERR,ERROR)
-!    CALL EXITS("PETSC_TSSETMATRICES")
-    RETURN 1
-  END SUBROUTINE PETSC_TSSETMATRICES
-    
-  !
-  !================================================================================================================================
-  !
-#endif
-  
+      
   !>Buffer routine to the PETSc TSSetProblemType routine.
-  SUBROUTINE PETSC_TSSETPROBLEMTYPE(TS_,PROB_TYPE,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSSetProblemType(ts,probType,err,error,*)
 
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the problem type for
-    INTEGER(INTG), INTENT(IN) :: PROB_TYPE !<The problem type to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to set the problem type for
+    INTEGER(INTG), INTENT(IN) :: probType !<The problem type to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSSETPROBLEMTYPE",ERR,ERROR,*999)
+    ENTERS("Petsc_TSSetProblemType",err,error,*999)
 
-    CALL TSSetProblemType(TS_%TS_,PROB_TYPE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSSetProblemType(ts%ts,probType,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSSetProblemType",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSSetProblemType.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSSETPROBLEMTYPE")
+    EXITS("Petsc_TSSetProblemType")
     RETURN
-999 CALL ERRORS("PETSC_TSSETPROBLEMTYPE",ERR,ERROR)
-!    CALL EXITS("PETSC_TSSETPROBLEMTYPE")
+999 ERRORSEXITS("Petsc_TSSetProblemType",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSSETPROBLEMTYPE
+    
+  END SUBROUTINE Petsc_TSSetProblemType
     
   !
   !================================================================================================================================
   !
     
   !>Buffer routine to the PETSc TSSetRHSFunction routine.
-  SUBROUTINE PETSC_TSSETRHSFUNCTION(TS_,RHSFUNCTION,CTX,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSSetRHSFunction(ts,rates,rhsFunction,ctx,err,error,*)
 
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the problem type for
-    EXTERNAL RHSFUNCTION !<The external RHS function to call
-    TYPE(SOLVER_TYPE), POINTER :: CTX !<The solver data to pass to the function
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to set the problem type for
+    TYPE(PetscVecType), INTENT(INOUT) :: rates
+    EXTERNAL rhsFunction !<The external RHS function to call
+    TYPE(CellMLPETScContextType), POINTER :: ctx !<The solver data to pass to the function
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSSETRHSFUNCTION",ERR,ERROR,*999)
+    ENTERS("Petsc_TSSetRHSFunction",err,error,*999)
 
-    CALL TSSetRHSFunction(TS_%TS_,RHSFUNCTION,CTX,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSSetRHSFunction(ts%ts,rates%vec,rhsFunction,ctx,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSSetRHSFunction",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSSetRHSFunction.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSSETRHSFUNCTION")
+    EXITS("Petsc_TSSetRHSFunction")
     RETURN
-999 CALL ERRORS("PETSC_TSSETRHSFUNCTION",ERR,ERROR)
-!    CALL EXITS("PETSC_TSSETRHSFUNCTION")
+999 ERRORSEXITS("Petsc_TSSetRHSFunction",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSSETRHSFUNCTION
     
+  END SUBROUTINE Petsc_TSSetRHSFunction
+
+  !
+  !================================================================================================================================
+  !
+    
+  !>Buffer routine to the PETSc TSSetSolution routine.
+  SUBROUTINE Petsc_TSSetSolution(ts,initialSolution,err,error,*)
+
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to set the time step for
+    TYPE(PetscVecType), INTENT(IN) :: initialSolution !<The initial solution to be set for the TS
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_TSSetSolution",err,error,*999)
+
+    CALL TSSetSolution(ts%ts,initialSolution%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in TSSetSolution.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_TSSetSolution")
+    RETURN
+999 ERRORSEXITS("Petsc_TSSetSolution",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_TSSetSolution
+
   !
   !================================================================================================================================
   !
     
   !>Buffer routine to the PETSc TSSetTimeStep routine.
-  SUBROUTINE PETSC_TSSETTIMESTEP(TS_,TIME_STEP,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSSetTimeStep(ts,timeStep,err,error,*)
 
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the time step for
-    REAL(DP), INTENT(IN) :: TIME_STEP !<The time step to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to set the time step for
+    REAL(DP), INTENT(IN) :: timeStep !<The time step to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSSETTIMESTEP",ERR,ERROR,*999)
+    ENTERS("Petsc_TSSetTimeStep",err,error,*999)
 
-    CALL TSSetTimeStep(TS_%TS_,TIME_STEP,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSSetTimeStep(ts%ts,timeStep,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSSetTimeStep",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSSetTimeStep.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSSETTIMESTEP")
+    EXITS("Petsc_TSSetTimeStep")
     RETURN
-999 CALL ERRORS("PETSC_TSSETTIMESTEP",ERR,ERROR)
-!    CALL EXITS("PETSC_TSSETTIMESTEP")
+999 ERRORSEXITS("Petsc_TSSetTimeStep",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSSETTIMESTEP
+    
+  END SUBROUTINE Petsc_TSSetTimeStep
   
   !
   !================================================================================================================================
   !
     
   !>Buffer routine to the PETSc TSSetType routine.
-  SUBROUTINE PETSC_TSSETTYPE(TS_,METHOD,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSSetType(ts,method,err,error,*)
 
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to set the type for
-    TSType, INTENT(IN) :: METHOD !<The time stepping method to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to set the type for
+    TSType, INTENT(IN) :: method !<The time stepping method to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSSETTYPE",ERR,ERROR,*999)
+    ENTERS("Petsc_TSSetType",err,error,*999)
 
-    CALL TSSetType(TS_%TS_,METHOD,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSSetType(ts%ts,method,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSSetType",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSSetType.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSSETTYPE")
+    EXITS("Petsc_TSSetType")
     RETURN
-999 CALL ERRORS("PETSC_TSSETTYPE",ERR,ERROR)
-!    CALL EXITS("PETSC_TSSETTYPE")
+999 ERRORSEXITS("Petsc_TSSetType",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSSETTYPE
+    
+  END SUBROUTINE Petsc_TSSetType
   
   !
   !================================================================================================================================
   !
     
   !>Buffer routine to the PETSc TSSolve routine.
-  SUBROUTINE PETSC_TSSOLVE(TS_,X,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSSolve(ts,x,finalTime,err,error,*)
 
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to solve
-    TYPE(PETSC_VEC_TYPE), INTENT(IN) :: X !<The solution vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to solve
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The solution vector
+    REAL(DP), INTENT(OUT) :: finalTime !<The final time
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSSOLVE",ERR,ERROR,*999)
+    ENTERS("Petsc_TSSolve",err,error,*999)
 
-    CALL TSSolve(TS_%TS_,X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSSolve(ts%ts,x%vec,finalTime,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSSolve",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSSolve.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSSOLVE")
+    EXITS("Petsc_TSSolve")
     RETURN
-999 CALL ERRORS("PETSC_TSSOLVE",ERR,ERROR)
-!    CALL EXITS("PETSC_TSSOLVE")
+999 ERRORSEXITS("Petsc_TSSolve",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSSOLVE
+    
+  END SUBROUTINE Petsc_TSSolve
   
   !
   !================================================================================================================================
   !
     
   !>Buffer routine to the PETSc TSStep routine.
-  SUBROUTINE PETSC_TSSTEP(TS_,STEPS,PTIME,ERR,ERROR,*)
+  SUBROUTINE Petsc_TSStep(ts,steps,pTime,err,error,*)
 
-    TYPE(PETSC_TS_TYPE), INTENT(INOUT) :: TS_ !<The TS to step
-    INTEGER(INTG), INTENT(IN) :: STEPS !<The number of iterations until termination
-    REAL(DP), INTENT(IN) :: PTIME !<The time until termination
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to step
+    INTEGER(INTG), INTENT(IN) :: steps !<The number of iterations until termination
+    REAL(DP), INTENT(IN) :: pTime !<The time until termination
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_TSSTEP",ERR,ERROR,*999)
+    ENTERS("Petsc_TSStep",err,error,*999)
 
-    CALL TSStep(TS_%TS_,STEPS,PTIME,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL TSStep(ts%ts,steps,pTime,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in TSStep",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in TSStep.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_TSSTEP")
+    EXITS("Petsc_TSStep")
     RETURN
-999 CALL ERRORS("PETSC_TSSTEP",ERR,ERROR)
-!    CALL EXITS("PETSC_TSSTEP")
+999 ERRORSEXITS("Petsc_TSStep",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_TSSTEP
-  
+    
+  END SUBROUTINE Petsc_TSStep
+
+  !
+  !================================================================================================================================
+  !
+    
+  !>Buffer routine to the PETSc TSSundialsSetType routine.
+  SUBROUTINE Petsc_TSSundialsSetType(ts,sundialsType,err,error,*)
+
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to step
+    TSSundialsType, INTENT(IN) :: sundialsType !<The type of Sundials solver
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_TSSundialsSetType",err,error,*999)
+
+    CALL TSSundialsSetType(ts%ts,sundialsType,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in TSSundialsSetType.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_TSSundialsSetType")
+    RETURN
+999 ERRORSEXITS("Petsc_TSSundialsSetType",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_TSSundialsSetType
+  !
+  !================================================================================================================================
+  !
+    
+  !>Buffer routine to the PETSc TSSundialsSetTolerance routine.
+  SUBROUTINE Petsc_TSSundialsSetTolerance(ts,absTol,relTol,err,error,*)
+
+    TYPE(PetscTSType), INTENT(INOUT) :: ts !<The TS to step
+    REAL(DP), INTENT(IN) :: absTol !<The absolute tolerance
+    REAL(DP), INTENT(IN) :: relTol !<The relative tolerance
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_TSSundialsSetTolerance",err,error,*999)
+
+    CALL TSSundialsSetTolerance(ts%ts,absTol,relTol,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in TSSundialsSetTolerance.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_TSSundialsSetTolerance")
+    RETURN
+999 ERRORSEXITS("Petsc_TSSundialsSetTolerance",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_TSSundialsSetTolerance
   !
   !================================================================================================================================
   !
 
   !Finalise the PETSc Vec structure and destroy the KSP
-  SUBROUTINE PETSC_VECFINALISE(VEC_,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecFinalise(x,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: VEC_ !<The Vec to finalise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The Vec to finalise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECFINALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_VecFinalise",err,error,*999)
 
-    IF(VEC_%VEC/=PETSC_NULL) THEN
-      CALL PETSC_VECDESTROY(VEC_,ERR,ERROR,*999)
+    IF(x%vec/=PETSC_NULL_OBJECT) THEN
+      CALL Petsc_VecDestroy(x,err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECFINALISE")
+    EXITS("Petsc_VecFinalise")
     RETURN
-999 CALL ERRORS("PETSC_VECFINALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_VECFINALISE")
+999 ERRORSEXITS("Petsc_VecFinalise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECFINALISE
+    
+  END SUBROUTINE Petsc_VecFinalise
     
   !
   !================================================================================================================================
   !
 
   !Initialise the PETSc Vec structure
-  SUBROUTINE PETSC_VECINITIALISE(VEC_,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecInitialise(x,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: VEC_ !<The Vec to initialise
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The Vec to initialise
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECINITIALISE",ERR,ERROR,*999)
+    ENTERS("Petsc_VecInitialise",err,error,*999)
 
-    VEC_%VEC=PETSC_NULL
-    !VEC_%VEC_DATA(1)=0
-    !VEC_%VEC_OFFSET=0
+    x%vec=PETSC_NULL_OBJECT
     
-!    CALL EXITS("PETSC_VECINITIALISE")
+    EXITS("Petsc_VecInitialise")
     RETURN
-999 CALL ERRORS("PETSC_VECINITIALISE",ERR,ERROR)
-!    CALL EXITS("PETSC_VECINITIALISE")
+999 ERRORSEXITS("Petsc_VecInitialise",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECINITIALISE
+    
+  END SUBROUTINE Petsc_VecInitialise
   
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecAssemblyBegin routine.
-  SUBROUTINE PETSC_VECASSEMBLYBEGIN(X,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecAssemblyBegin(x,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to begin the assembly of
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to begin the assembly of
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECASSEMBLYBEGIN",ERR,ERROR,*999)
+    ENTERS("Petsc_VecAssemblyBegin",err,error,*999)
 
-    CALL VecAssemblyBegin(X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecAssemblyBegin(x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecAssemblyBegin",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecAssemblyBegin.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECASSEMBLYBEGIN")
+    EXITS("Petsc_VecAssemblyBegin")
     RETURN
-999 CALL ERRORS("PETSC_VECASSEMBLYBEGIN",ERR,ERROR)
-!    CALL EXITS("PETSC_VECASSEMBLYBEGIN")
+999 ERRORSEXITS("Petsc_VecAssemblyBegin",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECASSEMBLYBEGIN
+    
+  END SUBROUTINE Petsc_VecAssemblyBegin
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecAssemblyEnd routine.
-  SUBROUTINE PETSC_VECASSEMBLYEND(X,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecAssemblyEnd(x,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to end the assembly of
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to end the assembly of
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECASSEMBLYEND",ERR,ERROR,*999)
+    ENTERS("Petsc_VecAssemblyEnd",err,error,*999)
 
-    CALL VecAssemblyEnd(X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecAssemblyEnd(x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecAssemblyEnd",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecAssemblyEnd.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECASSEMBLYEND")
+    EXITS("Petsc_VecAssemblyEnd")
     RETURN
-999 CALL ERRORS("PETSC_VECASSEMBLYEND",ERR,ERROR)
-!    CALL EXITS("PETSC_VECASSEMBLYEND")
+999 ERRORSEXITS("Petsc_VecAssemblyEnd",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECASSEMBLYEND
+    
+  END SUBROUTINE Petsc_VecAssemblyEnd
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecCopy routine.
-  SUBROUTINE PETSC_VECCOPY(X,Y,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecCopy(x,y,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to copy from
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: Y !<The vector to copy to
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to copy from
+    TYPE(PetscVecType), INTENT(INOUT) :: y !<The vector to copy to
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECCOPY",ERR,ERROR,*999)
+    ENTERS("Petsc_VecCopy",err,error,*999)
 
-    CALL VecCopy(X%VEC,Y%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecCopy(x%vec,y%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecCopy",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecCopy.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECCOPY")
+    EXITS("Petsc_VecCopy")
     RETURN
-999 CALL ERRORS("PETSC_VECCOPY",ERR,ERROR)
-!    CALL EXITS("PETSC_VECCOPY")
+999 ERRORSEXITS("Petsc_VecCopy",err,error)
     RETURN 1
     
-  END SUBROUTINE PETSC_VECCOPY
+  END SUBROUTINE Petsc_VecCopy
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecCreate routine.
-  SUBROUTINE PETSC_VECCREATE(COMMUNICATOR,X,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecCreate(communicator,x,err,error,*)
 
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECCREATE",ERR,ERROR,*999)
+    ENTERS("Petsc_VecCreate",err,error,*999)
 
-    CALL VecCreate(COMMUNICATOR,X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecCreate(communicator,x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecCreate",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecCreate.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECCREATE")
+    EXITS("Petsc_VecCreate")
     RETURN
-999 CALL ERRORS("PETSC_VECCREATE",ERR,ERROR)
-!    CALL EXITS("PETSC_VECCREATE")
+999 ERRORSEXITS("Petsc_VecCreate",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECCREATE
+    
+  END SUBROUTINE Petsc_VecCreate
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecCreateGhost routine.
-  SUBROUTINE PETSC_VECCREATEGHOST(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,NUMBER_GHOST,GHOSTS,X,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecCreateGhost(communicator,localN,globalN,numGhosts,ghosts,x,err,error,*)
 
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE !<The number of local elements
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE !<The number of global elements
-    INTEGER(INTG), INTENT(IN) :: NUMBER_GHOST !<The number of ghost elements
-    INTEGER(INTG), INTENT(IN) :: GHOSTS(*) !<The global location of the each ghost element
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: localN !<The number of local elements
+    INTEGER(INTG), INTENT(IN) :: globalN !<The number of global elements
+    INTEGER(INTG), INTENT(IN) :: numGhosts !<The number of ghost elements
+    INTEGER(INTG), INTENT(IN) :: ghosts(:) !<The global location of the each ghost element
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECCREATEGHOST",ERR,ERROR,*999)
+    ENTERS("Petsc_VecCreateGhost",err,error,*999)
 
-    CALL VecCreateGhost(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,NUMBER_GHOST,GHOSTS,X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecCreateGhost(communicator,localN,globalN,numGhosts,ghosts,x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecCreateGhost",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecCreateGhost.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECCREATEGHOST")
+    EXITS("Petsc_VecCreateGhost")
     RETURN
-999 CALL ERRORS("PETSC_VECCREATEGHOST",ERR,ERROR)
-!    CALL EXITS("PETSC_VECCREATEGHOST")
+999 ERRORSEXITS("Petsc_VecCreateGhost",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECCREATEGHOST
+    
+  END SUBROUTINE Petsc_VecCreateGhost
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecCreateGhostWithArray routine.
-  SUBROUTINE PETSC_VECCREATEGHOSTWITHARRAY(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,NUMBER_GHOST,GHOSTS,ARRAY,X,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecCreateGhostWithArray(communicator,localN,globalN,numGhosts,ghosts,array,x,err,error,*)
 
    !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE !<The number of local elements
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE !<The number of global elements
-    INTEGER(INTG), INTENT(IN) :: NUMBER_GHOST !<The number of ghost elements
-    INTEGER(INTG), INTENT(IN) :: GHOSTS(*) !<The global location of the each ghost element
-    REAL(DP), INTENT(OUT) :: ARRAY(*) !<The preallocated array of matrix data
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: localN !<The number of local elements
+    INTEGER(INTG), INTENT(IN) :: globalN !<The number of global elements
+    INTEGER(INTG), INTENT(IN) :: numGhosts !<The number of ghost elements
+    INTEGER(INTG), INTENT(IN) :: ghosts(:) !<The global location of the each ghost element
+    REAL(DP), INTENT(OUT) :: array(:) !<The preallocated array of matrix data
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECCREATEGHOSTWITHARRAY",ERR,ERROR,*999)
+    ENTERS("Petsc_VecCreateGhostWithArray",err,error,*999)
 
-    CALL VecCreateGhostWithArray(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,NUMBER_GHOST,GHOSTS,ARRAY,X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecCreateGhostWithArray(communicator,localN,globalN,numGhosts,ghosts,array,x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecCreateGhostWithArray",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecCreateGhostWithArray.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECCREATEGHOSTWITHARRAY")
+    EXITS("Petsc_VecCreateGhostWithArray")
     RETURN
-999 CALL ERRORS("PETSC_VECCREATEGHOSTWITHARRAY",ERR,ERROR)
-!    CALL EXITS("PETSC_VECCREATEGHOSTWITHARRAY")
+999 ERRORSEXITS("Petsc_VecCreateGhostWithArray",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECCREATEGHOSTWITHARRAY
+    
+  END SUBROUTINE Petsc_VecCreateGhostWithArray
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecCreateMPI routine.
-  SUBROUTINE PETSC_VECCREATEMPI(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,X,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecCreateMPI(communicator,localN,globalN,x,err,error,*)
 
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE !<The number of local elements
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE !<The number of global elements
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: localN !<The number of local elements
+    INTEGER(INTG), INTENT(IN) :: globalN !<The number of global elements
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECCREATEMPI",ERR,ERROR,*999)
+    ENTERS("Petsc_VecCreateMPI",err,error,*999)
 
-    CALL VecCreateMPI(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecCreateMPI(communicator,localN,globalN,x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecCreateMPI",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecCreateMPI.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECCREATEMPI")
+    EXITS("Petsc_VecCreateMPI")
     RETURN
-999 CALL ERRORS("PETSC_VECCREATEMPI",ERR,ERROR)
-!    CALL EXITS("PETSC_VECCREATEMPI")
+999 ERRORSEXITS("Petsc_VecCreateMPI",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECCREATEMPI
+    
+  END SUBROUTINE Petsc_VecCreateMPI
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecCreateMPIWithArray routine.
-  SUBROUTINE PETSC_VECCREATEMPIWITHARRAY(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,ARRAY,X,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecCreateMPIWithArray(communicator,localN,globalN,array,x,err,error,*)
 
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE !<The number of local elements
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE !<The number of global elements
-    REAL(DP), INTENT(OUT) :: ARRAY(*) !<The preallocated array for the vector data
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: localN !<The number of local elements
+    INTEGER(INTG), INTENT(IN) :: globalN !<The number of global elements
+    REAL(DP), INTENT(OUT) :: array(:) !<The preallocated array for the vector data
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECCREATEMPIWITHARRAY",ERR,ERROR,*999)
+    ENTERS("Petsc_VecCreateMPIWithArray",err,error,*999)
 
-    CALL VecCreateMPIWithArray(COMMUNICATOR,LOCAL_SIZE,GLOBAL_SIZE,ARRAY,X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecCreateMPIWithArray(communicator,localN,globalN,array,x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecCreateMPIWithArray",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecCreateMPIWithArray.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECCREATEMPIWITHARRAY")
+    EXITS("Petsc_VecCreateMPIWithArray")
     RETURN
-999 CALL ERRORS("PETSC_VECCREATEMPIWITHARRAY",ERR,ERROR)
-!    CALL EXITS("PETSC_VECCREATEMPIWITHARRAY")
+999 ERRORSEXITS("Petsc_VecCreateMPIWithArray",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECCREATEMPIWITHARRAY
+    
+  END SUBROUTINE Petsc_VecCreateMPIWithArray
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecCreateSeq routine.
-  SUBROUTINE PETSC_VECCREATESEQ(COMMUNICATOR,SIZE,X,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecCreateSeq(communicator,n,x,err,error,*)
 
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: SIZE !<The size of the vector
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: n !<The size of the vector
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECCREATESEQ",ERR,ERROR,*999)
+    ENTERS("Petsc_VecCreateSeq",err,error,*999)
 
-    CALL VecCreateSeq(COMMUNICATOR,SIZE,X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecCreateSeq(communicator,n,x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecCreateSeq",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecCreateSeq.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECCREATESEQ")
+    EXITS("Petsc_VecCreateSeq")
     RETURN
-999 CALL ERRORS("PETSC_VECCREATESEQ",ERR,ERROR)
-!    CALL EXITS("PETSC_VECCREATESEQ")
+999 ERRORSEXITS("Petsc_VecCreateSeq",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECCREATESEQ
+    
+  END SUBROUTINE Petsc_VecCreateSeq
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecCreateSeqWithArray routine.
-  SUBROUTINE PETSC_VECCREATESEQWITHARRAY(COMMUNICATOR,SIZE,ARRAY,X,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecCreateSeqWithArray(communicator,n,array,x,err,error,*)
 
     !Argument Variables
-    MPI_Comm, INTENT(IN) :: COMMUNICATOR !<The MPI communicator
-    INTEGER(INTG), INTENT(IN) :: SIZE !<The size of the vector
-    REAL(DP), INTENT(OUT) :: ARRAY(*) !<The preallocated array for the vector data
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<On exit, the created vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    MPI_Comm, INTENT(IN) :: communicator !<The MPI communicator
+    INTEGER(INTG), INTENT(IN) :: n !<The size of the vector
+    REAL(DP), INTENT(OUT) :: array(:) !<The preallocated array for the vector data
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<On exit, the created vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECCREATESEQWITHARRAY",ERR,ERROR,*999)
+    ENTERS("Petsc_VecCreateSeqWithArray",err,error,*999)
 
-    CALL VecCreateSeqWithArray(COMMUNICATOR,SIZE,ARRAY,X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecCreateSeqWithArray(communicator,n,array,x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecCreateSeqWithArray",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecCreateSeqWithArray.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECCREATESEQWITHARRAY")
+    EXITS("Petsc_VecCreateSeqWithArray")
     RETURN
-999 CALL ERRORS("PETSC_VECCREATESEQWITHARRAY",ERR,ERROR)
-!    CALL EXITS("PETSC_VECCREATESEQWITHARRAY")
+999 ERRORSEXITS("Petsc_VecCreateSeqWithArray",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECCREATESEQWITHARRAY
+    
+  END SUBROUTINE Petsc_VecCreateSeqWithArray
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecDestroy routine.
-  SUBROUTINE PETSC_VECDESTROY(X,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecDestroy(x,err,error,*)
 
    !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to destroy
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to destroy
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECDESTROY",ERR,ERROR,*999)
+    ENTERS("Petsc_VecDestroy",err,error,*999)
 
-    CALL VecDestroy(X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecDestroy(x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecDestroy",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecDestroy.",err,error,*999)
     ENDIF
-    X%VEC=PETSC_NULL
+    x%vec=PETSC_NULL_OBJECT
     
-!    CALL EXITS("PETSC_VECDESTROY")
+    EXITS("Petsc_VecDestroy")
     RETURN
-999 CALL ERRORS("PETSC_VECDESTROY",ERR,ERROR)
-!    CALL EXITS("PETSC_VECDESTROY")
+999 ERRORSEXITS("Petsc_VecDestroy",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECDESTROY
+    
+  END SUBROUTINE Petsc_VecDestroy
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecDuplicate routine.
-  SUBROUTINE PETSC_VECDUPLICATE(OLD,NEW,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecDuplicate(x,y,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: OLD !<The vector to duplicate
-    TYPE(PETSC_VEC_TYPE), INTENT(OUT) :: NEW !<On exit, the new duplicated vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to duplicate
+    TYPE(PetscVecType), INTENT(OUT) :: y !<On exit, the new duplicated vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECDUPLICATE",ERR,ERROR,*999)
+    ENTERS("Petsc_VecDuplicate",err,error,*999)
 
-    CALL VecDuplicate(OLD%VEC,NEW%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecDuplicate(x%vec,y%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecDuplicate",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecDuplicate.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECDUPLICATE")
+    EXITS("Petsc_VecDuplicate")
     RETURN
-999 CALL ERRORS("PETSC_VECDUPLICATE",ERR,ERROR)
-!    CALL EXITS("PETSC_VECDUPLICATE")
+999 ERRORSEXITS("Petsc_VecDuplicate",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECDUPLICATE
     
-  !
-  !================================================================================================================================
-  !
-
-!  !>Buffer routine to the PETSc VecGetArray routine.
-!  SUBROUTINE PETSC_VECGETARRAY(X,ARRAY,ERR,ERROR,*)
-
-!    !Argument Variables
-!    TYPE(PETSC_VEC_TYPE), INTENT(INOUT), TARGET :: X !<The vector to get the array of
-!    REAL(DP), POINTER :: ARRAY(:) !<On exit, a pointer to the array of the vector
-!    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-!    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-!    !Local Variables
-
-!!    CALL ENTERS("PETSC_VECGETARRAY",ERR,ERROR,*999)
-
-!    IF(ASSOCIATED(ARRAY)) THEN
-!      CALL FLAG_ERROR("Array is already associated",ERR,ERROR,*999)
-!    ELSE
-!      CALL VecGetArray(X%VEC,X%VEC_DATA,X%VEC_OFFSET,ERR)
-!      IF(ERR/=0) THEN
-!        IF(PETSC_HANDLE_ERROR) THEN
-!          CHKERRQ(ERR)
-!        ENDIF
-!        CALL FLAG_ERROR("PETSc error in VecGetArray",ERR,ERROR,*999)
-!      ENDIF
-!      ARRAY=>X%VEC_DATA(X%VEC_OFFSET:)
-!    ENDIF
+  END SUBROUTINE Petsc_VecDuplicate
     
-!!    CALL EXITS("PETSC_VECGETARRAY")
-!    RETURN
-!999 CALL ERRORS("PETSC_VECGETARRAY",ERR,ERROR)
-!!    CALL EXITS("PETSC_VECGETARRAY")
-!    RETURN 1
-!  END SUBROUTINE PETSC_VECGETARRAY
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc VecGetArrayF90 routine.
-  SUBROUTINE PETSC_VECGETARRAYF90(X,ARRAY,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT), TARGET :: X !<The vector to get the array of
-    REAL(DP), POINTER :: ARRAY(:) !<On exit, a pointer to the array of the vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_VECGETARRAYF90",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(ARRAY)) THEN
-      CALL FLAG_ERROR("Array is already associated",ERR,ERROR,*999)
-    ELSE
-      CALL VecGetArrayF90(X%VEC,ARRAY,ERR)
-      IF(ERR/=0) THEN
-        IF(PETSC_HANDLE_ERROR) THEN
-          CHKERRQ(ERR)
-        ENDIF
-        CALL FLAG_ERROR("PETSc error in VecGetArrayF90",ERR,ERROR,*999)
-      ENDIF
-    ENDIF
-    
-!    CALL EXITS("PETSC_VECGETARRAYF90")
-    RETURN
-999 CALL ERRORS("PETSC_VECGETARRAYF90",ERR,ERROR)
-!    CALL EXITS("PETSC_VECGETARRAYF90")
-    RETURN 1
-  END SUBROUTINE PETSC_VECGETARRAYF90
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc VecGetLocalSize routine.
-  SUBROUTINE PETSC_VECGETLOCALSIZE(X,SIZE,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to get the local size of
-    INTEGER(INTG), INTENT(OUT) :: SIZE !<On exit, the local size of the vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_VECGETLOCALSIZE",ERR,ERROR,*999)
-
-    CALL VecGetLocalSize(X%VEC,SIZE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in VecGetLocalSize",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_VECGETLOCALSIZE")
-    RETURN
-999 CALL ERRORS("PETSC_VECGETLOCALSIZE",ERR,ERROR)
-!    CALL EXITS("PETSC_VECGETLOCALSIZE")
-    RETURN 1
-  END SUBROUTINE PETSC_VECGETLOCALSIZE
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc VecGetOwnershipRange routine.
-  SUBROUTINE PETSC_VECGETOWNERSHIPRANGE(X,LOW,HIGH,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to get the ownership range of 
-    INTEGER(INTG), INTENT(OUT) :: LOW !<On exit, the low end of the range
-    INTEGER(INTG), INTENT(OUT) :: HIGH !<On exit, the high end of the range
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_VECGETOWNERSHIPRANGE",ERR,ERROR,*999)
-
-    CALL VecGetOwnershipRange(X%VEC,LOW,HIGH,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-        ENDIF
-      CALL FLAG_ERROR("PETSc error in VecGetOwnershipRange",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_VECGETOWNERSHIPRANGE")
-    RETURN
-999 CALL ERRORS("PETSC_VECGETOWNERSHIPRANGE",ERR,ERROR)
-!    CALL EXITS("PETSC_VECGETOWNERSHIPRANGE")
-    RETURN 1
-  END SUBROUTINE PETSC_VECGETOWNERSHIPRANGE
-
   !
   !================================================================================================================================
   !
@@ -6685,562 +6844,727 @@ CONTAINS
   SUBROUTINE Petsc_VecDot(x,y,dotProduct,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(IN) :: x !<The vector x
-    TYPE(PETSC_VEC_TYPE), INTENT(IN) :: y !<The vector y
+    TYPE(PetscVecType), INTENT(IN) :: x !<The vector x
+    TYPE(PetscVecType), INTENT(IN) :: y !<The vector y
     REAL(DP), INTENT(OUT) :: dotProduct !<The dot product 
     INTEGER(INTG), INTENT(OUT) :: err !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     
-!    CALL ENTERS("Petsc_VecDot",err,error,*999)
+    ENTERS("Petsc_VecDot",err,error,*999)
     
-    CALL VecDot(x%VEC,y%VEC,dotProduct,err)
-
+    CALL VecDot(x%vec,y%vec,dotProduct,err)
     IF(err/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
+      IF(petscHandleError) THEN
         CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in SNESGetSolutionUpdate",err,error,*999)
+      CALL FlagError("PETSc error in VecDot.",err,error,*999)
     ENDIF
 
-!    CALL EXITS("Petsc_VecDot")
+    EXITS("Petsc_VecDot")
     RETURN
-999 CALL ERRORS("Petsc_VecDot",err,error)
-!    CALL EXITS("Petsc_VecDot")
+999 ERRORSEXITS("Petsc_VecDot",err,error)
     RETURN 1
+    
   END SUBROUTINE Petsc_VecDot
-
     
   !
   !================================================================================================================================
   !
 
-  !>Buffer routine to the PETSc VecGetSize routine.
-  SUBROUTINE PETSC_VECGETSIZE(X,SIZE,ERR,ERROR,*)
+  !>Buffer routine to the PETSc VecGetArrayF90 routine.
+  SUBROUTINE Petsc_VecGetArrayF90(x,array,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to get the size of
-    INTEGER(INTG), INTENT(OUT) :: SIZE !<On exit, the size of the vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT), TARGET :: x !<The vector to get the array of
+    REAL(DP), POINTER :: array(:) !<On exit, a pointer to the array of the vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECGETSIZE",ERR,ERROR,*999)
+    ENTERS("Petsc_VecGetArrayF90",err,error,*999)
 
-    CALL VecGetSize(X%VEC,SIZE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    IF(ASSOCIATED(array)) THEN
+      CALL FlagError("Array is already associated",err,error,*999)
+    ELSE
+      CALL VecGetArrayF90(x%vec,array,err)
+      IF(err/=0) THEN
+        IF(petscHandleError) THEN
+          CHKERRQ(err)
+        ENDIF
+        CALL FlagError("PETSc error in VecGetArrayF90.",err,error,*999)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecGetSize",ERR,ERROR,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECGETSIZE")
+    EXITS("Petsc_VecGetArrayF90")
     RETURN
-999 CALL ERRORS("PETSC_VECGETSIZE",ERR,ERROR)
-!    CALL EXITS("PETSC_VECGETSIZE")
+999 ERRORSEXITS("Petsc_VecGetArrayF90",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECGETSIZE
+    
+  END SUBROUTINE Petsc_VecGetArrayF90
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecGetArrayReadF90 routine.
+  SUBROUTINE Petsc_VecGetArrayReadF90(x,array,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscVecType), INTENT(INOUT), TARGET :: x !<The vector to get the array of
+    REAL(DP), POINTER :: array(:) !<On exit, a pointer to the array of the vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_VecGetArrayReadF90",err,error,*999)
+
+    IF(ASSOCIATED(array)) THEN
+      CALL FlagError("Array is already associated",err,error,*999)
+    ELSE
+      CALL VecGetArrayReadF90(x%vec,array,err)
+      IF(err/=0) THEN
+        IF(petscHandleError) THEN
+          CHKERRQ(err)
+        ENDIF
+        CALL FlagError("PETSc error in VecGetArrayReadF90.",err,error,*999)
+      ENDIF
+    ENDIF
+    
+    EXITS("Petsc_VecGetArrayReadF90")
+    RETURN
+999 ERRORSEXITS("Petsc_VecGetArrayReadF90",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_VecGetArrayReadF90
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecGetLocalSize routine.
+  SUBROUTINE Petsc_VecGetLocalSize(x,n,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to get the local size of
+    INTEGER(INTG), INTENT(OUT) :: n !<On exit, the local size of the vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_VecGetLocalSize",err,error,*999)
+
+    CALL VecGetLocalSize(x%vec,n,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in VecGetLocalSize.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_VecGetLocalSize")
+    RETURN
+999 ERRORSEXITS("Petsc_VecGetLocalSize",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_VecGetLocalSize
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecGetOwnershipRange routine.
+  SUBROUTINE Petsc_VecGetOwnershipRange(x,low,high,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to get the ownership range of 
+    INTEGER(INTG), INTENT(OUT) :: low !<On exit, the low end of the range
+    INTEGER(INTG), INTENT(OUT) :: high !<On exit, the high end of the range
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_VecGetOwnershipRange",err,error,*999)
+
+    CALL VecGetOwnershipRange(x%vec,low,high,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+        ENDIF
+      CALL FlagError("PETSc error in VecGetOwnershipRange.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_VecGetOwnershipRange")
+    RETURN
+999 ERRORSEXITS("Petsc_VecGetOwnershipRange",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_VecGetOwnershipRange
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecGetSize routine.
+  SUBROUTINE Petsc_VecGetSize(x,n,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to get the size of
+    INTEGER(INTG), INTENT(OUT) :: n !<On exit, the size of the vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_VecGetSize",err,error,*999)
+
+    CALL VecGetSize(x%vec,n,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in VecGetSize.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_VecGetSize")
+    RETURN
+999 ERRORSEXITS("Petsc_VecGetSize",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_VecGetSize
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecGetValues routine.
-  SUBROUTINE PETSC_VECGETVALUES(X,N,INDICES,VALUES,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecGetValues(x,n,indices,values,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the values for
-    INTEGER(INTG), INTENT(IN) :: N !<The number of indicies to get
-    INTEGER(INTG), INTENT(IN) :: INDICES(*) !<The indices to get
-    REAL(DP), INTENT(OUT) :: VALUES(*) !<On return, the values at the specified indicies
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to set the values for
+    INTEGER(INTG), INTENT(IN) :: n !<The number of indicies to get
+    INTEGER(INTG), INTENT(IN) :: indices(:) !<The indices to get
+    REAL(DP), INTENT(OUT) :: values(:) !<On return, the values at the specified indicies
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECGETVALUES",ERR,ERROR,*999)
+    ENTERS("Petsc_VecGetValues",err,error,*999)
 
-    CALL VecGetValues(X%VEC,N,INDICES,VALUES,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecGetValues(x%vec,n,indices,values,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecGetValues",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecGetValues.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECGETVALUES")
+    EXITS("Petsc_VecGetValues")
     RETURN
-999 CALL ERRORS("PETSC_VECGETVALUES",ERR,ERROR)
-!    CALL EXITS("PETSC_VECGETVALUES")
+999 ERRORSEXITS("Petsc_VecGetValues",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECGETVALUES
     
-  !
+  END SUBROUTINE Petsc_VecGetValues
+    
+!
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecGhostGetLocalForm routine.
-  SUBROUTINE PETSC_VECGHOSTGETLOCALFORM(G,L,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecGhostGetLocalForm(g,l,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: G !<The global form of the vector
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: L !<On exit, the local form of the vector with ghosts
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: g !<The global form of the vector
+    TYPE(PetscVecType), INTENT(INOUT) :: l !<On exit, the local form of the vector with ghosts
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECGHOSTGETLOCALFORM",ERR,ERROR,*999)
+    ENTERS("Petsc_VecGhostGetLocalForm",err,error,*999)
 
-    CALL VecGhostGetLocalForm(G%VEC,L%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecGhostGetLocalForm(g%vec,l%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecGhostGetLocalForm",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecGhostGetLocalForm.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECGHOSTGETLOCALFORM")
+    EXITS("Petsc_VecGhostGetLocalForm")
     RETURN
-999 CALL ERRORS("PETSC_VECGHOSTGETLOCALFORM",ERR,ERROR)
-!    CALL EXITS("PETSC_VECGHOSTGETLOCALFORM")
+999 ERRORSEXITS("Petsc_VecGhostGetLocalForm",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECGHOSTGETLOCALFORM
+    
+  END SUBROUTINE Petsc_VecGhostGetLocalForm
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecGhostRestoreLocalForm routine.
-  SUBROUTINE PETSC_VECGHOSTRESTORELOCALFORM(G,L,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecGhostRestoreLocalForm(g,l,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: G !<The global form of the vector
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: L !<The local form of the vector
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: g !<The global form of the vector
+    TYPE(PetscVecType), INTENT(INOUT) :: l !<The local form of the vector
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECGHOSTRESTORELOCALFORM",ERR,ERROR,*999)
+    ENTERS("Petsc_VecGhostRestoreLocalForm",err,error,*999)
 
-    CALL VecGhostRestoreLocalForm(G%VEC,L%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecGhostRestoreLocalForm(g%vec,l%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecGhostRestoreLocalForm",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecGhostRestoreLocalForm.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECGHOSTRESTORELOCALFORM")
+    EXITS("Petsc_VecGhostRestoreLocalForm")
     RETURN
-999 CALL ERRORS("PETSC_VECGHOSTRESTORELOCALFORM",ERR,ERROR)
-!    CALL EXITS("PETSC_VECGHOSTRESTORELOCALFORM")
+999 ERRORSEXITS("Petsc_VecGhostRestoreLocalForm",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECGHOSTRESTORELOCALFORM
+    
+  END SUBROUTINE Petsc_VecGhostRestoreLocalForm
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecGhostUpdateBegin routine.
-  SUBROUTINE PETSC_VECGHOSTUPDATEBEGIN(X,INSERT_MODE,SCATTER_MODE,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecGhostUpdateBegin(x,insertMode,scatterMode,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to begin the ghost update for
-    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
-    ScatterMode, INTENT(IN) :: SCATTER_MODE !<The scatter mode
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to begin the ghost update for
+    InsertMode, INTENT(IN) :: insertMode !<The insert mode
+    ScatterMode, INTENT(IN) :: scatterMode !<The scatter mode
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECGHOSTUPDATEBEGIN",ERR,ERROR,*999)
+    ENTERS("Petsc_VecGhostUpdateBegin",err,error,*999)
 
-    CALL VecGhostUpdateBegin(X%VEC,INSERT_MODE,SCATTER_MODE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecGhostUpdateBegin(x%vec,insertMode,scatterMode,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecGhostUpdateBegin",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecGhostUpdateBegin.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECGHOSTUPDATEBEGIN")
+    EXITS("Petsc_VecGhostUpdateBegin")
     RETURN
-999 CALL ERRORS("PETSC_VECGHOSTUPDATEBEGIN",ERR,ERROR)
-!    CALL EXITS("PETSC_VECGHOSTUPDATEBEGIN")
+999 ERRORSEXITS("Petsc_VecGhostUpdateBegin",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECGHOSTUPDATEBEGIN
+    
+  END SUBROUTINE Petsc_VecGhostUpdateBegin
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecGhostUpdateEnd routine.
-  SUBROUTINE PETSC_VECGHOSTUPDATEEND(X,INSERT_MODE,SCATTER_MODE,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecGhostUpdateEnd(x,insertMode,scatterMode,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to end the ghost update for
-    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
-    ScatterMode, INTENT(IN) :: SCATTER_MODE !<The scatter mode
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to end the ghost update for
+    InsertMode, INTENT(IN) :: insertMode !<The insert mode
+    ScatterMode, INTENT(IN) :: scatterMode !<The scatter mode
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECGHOSTUPDATEEND",ERR,ERROR,*999)
+    ENTERS("Petsc_VecGhostUpdateEnd",err,error,*999)
 
-    CALL VecGhostUpdateEnd(X%VEC,INSERT_MODE,SCATTER_MODE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecGhostUpdateEnd(x%vec,insertMode,scatterMode,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecGhostUpdateEnd",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecGhostUpdateEnd.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECGHOSTUPDATEEND")
+    EXITS("Petsc_VecGhostUpdateEnd")
     RETURN
-999 CALL ERRORS("PETSC_VECGHOSTUPDATEEND",ERR,ERROR)
-!    CALL EXITS("PETSC_VECGHOSTUPDATEEND")
+999 ERRORSEXITS("Petsc_VecGhostUpdateEnd",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECGHOSTUPDATEEND
+    
+  END SUBROUTINE Petsc_VecGhostUpdateEnd
     
   !
   !================================================================================================================================
   !
 
-!  !>Buffer routine to the PETSc VecRestoreArray routine.
-!  SUBROUTINE PETSC_VECRESTOREARRAY(X,ERR,ERROR,*)
+  !>Buffer routine to the PETSc VecNorm routine.
+  SUBROUTINE Petsc_VecNorm(x,normType,norm,err,error,*)
 
-!    !Argument Variables
-!    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to restore the array of
-!    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-!    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-!    !Local Variables
-
-!!    CALL ENTERS("PETSC_VECRESTOREARRAY",ERR,ERROR,*999)
-
-!    CALL VecRestoreArray(X%VEC,X%VEC_DATA,X%VEC_OFFSET,ERR)
-!    IF(ERR/=0) THEN
-!      IF(PETSC_HANDLE_ERROR) THEN
-!        CHKERRQ(ERR)
-!      ENDIF
-!      CALL FLAG_ERROR("PETSc error in VecRestoreArray",ERR,ERROR,*999)
-!    ENDIF
+    !Argument Variables
+    TYPE(PetscVecType), INTENT(IN) :: x !<The vector x to find the norm of
+    NormType, INTENT(IN) :: normType !<The norm type
+    REAL(DP), INTENT(OUT) :: norm !<On exit, the vector norm
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
     
-!!    CALL EXITS("PETSC_VECRESTOREARRAY")
-!    RETURN
-!999 CALL ERRORS("PETSC_VECRESTOREARRAY",ERR,ERROR)
-!!    CALL EXITS("PETSC_VECRESTOREARRAY")
-!    RETURN 1
-!  END SUBROUTINE PETSC_VECRESTOREARRAY
+    ENTERS("Petsc_VecNorm",err,error,*999)
     
+    CALL VecNorm(x%vec,normType,norm,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in VecNorm.",err,error,*999)
+    ENDIF
+
+    EXITS("Petsc_VecNorm")
+    RETURN
+999 ERRORSEXITS("Petsc_VecNorm",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_VecNorm
+
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecRestoreArrayF90 routine.
-  SUBROUTINE PETSC_VECRESTOREARRAYF90(X,ARRAY,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecRestoreArrayF90(x,array,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to restore the array of
-    REAL(DP), POINTER :: ARRAY(:) !<A pointer to the data to restore
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to restore the array of
+    REAL(DP), POINTER :: array(:) !<A pointer to the data to restore
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECRESTOREARRAYF90",ERR,ERROR,*999)
+    ENTERS("Petsc_VecRestoreArrayF90",err,error,*999)
 
-    CALL VecRestoreArrayF90(X%VEC,ARRAY,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecRestoreArrayF90(x%vec,array,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecRestoreArrayF90",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecRestoreArrayF90.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECRESTOREARRAYF90")
+    EXITS("Petsc_VecRestoreArrayF90")
     RETURN
-999 CALL ERRORS("PETSC_VECRESTOREARRAYF90",ERR,ERROR)
-!    CALL EXITS("PETSC_VECRESTOREARRAYF90")
+999 ERRORSEXITS("Petsc_VecRestoreArrayF90",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECRESTOREARRAYF90
+    
+  END SUBROUTINE Petsc_VecRestoreArrayF90
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecRestoreArrayReadF90 routine.
+  SUBROUTINE Petsc_VecRestoreArrayReadF90(x,array,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscVecType), INTENT(INOUT), TARGET :: x !<The vector to restore the array for
+    REAL(DP), POINTER :: array(:) !<A pointer to the array of the vector to restore
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_VecRestoreArrayReadF90",err,error,*999)
+
+    CALL VecRestoreArrayReadF90(x%vec,array,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in VecRestoreArrayReadF90.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_VecRestoreArrayReadF90")
+    RETURN
+999 ERRORSEXITS("Petsc_VecRestoreArrayReadF90",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_VecRestoreArrayReadF90
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecScale routine.
-  SUBROUTINE PETSC_VECSCALE(X,ALPHA,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecScale(x,alpha,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to scale
-    REAL(DP), INTENT(IN) :: ALPHA !<The scaling factor
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to scale
+    REAL(DP), INTENT(IN) :: alpha !<The scaling factor
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECSCALE",ERR,ERROR,*999)
+    ENTERS("Petsc_VecScale",err,error,*999)
 
-    CALL VecScale(X%VEC,ALPHA,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecScale(x%vec,alpha,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecScale",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecScale.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECSCALE")
+    EXITS("Petsc_VecScale")
     RETURN
-999 CALL ERRORS("PETSC_VECSCALE",ERR,ERROR)
-!    CALL EXITS("PETSC_VECSCALE")
+999 ERRORSEXITS("Petsc_VecScale",err,error)
     RETURN 1
     
-  END SUBROUTINE PETSC_VECSCALE
+  END SUBROUTINE Petsc_VecScale
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecSet routine.
-  SUBROUTINE PETSC_VECSET(X,VALUE,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecSet(x,VALUE,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the value of
-    REAL(DP), INTENT(IN) :: VALUE !<The value to set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to set the value of
+    REAL(DP), INTENT(IN) :: value !<The value to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECSET",ERR,ERROR,*999)
+    ENTERS("Petsc_VecSet",err,error,*999)
 
-    CALL VecSet(X%VEC,VALUE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecSet(x%vec,value,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecSet",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecSet.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECSET")
+    EXITS("Petsc_VecSet")
     RETURN
-999 CALL ERRORS("PETSC_VECSET",ERR,ERROR)
-!    CALL EXITS("PETSC_VECSET")
+999 ERRORSEXITS("Petsc_VecSet",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECSET
+    
+  END SUBROUTINE Petsc_VecSet
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecSetFromOptions routine.
-  SUBROUTINE PETSC_VECSETFROMOPTIONS(X,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecSetFromOptions(x,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the options for
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to set the options for
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECSETFROMOPTIONS",ERR,ERROR,*999)
+    ENTERS("Petsc_VecSetFromOptions",err,error,*999)
 
-    CALL VecSetFromOptions(X%VEC,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecSetFromOptions(x%vec,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecSetFromOptions",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecSetFromOptions.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECSETFROMOPTIONS")
+    EXITS("Petsc_VecSetFromOptions")
     RETURN
-999 CALL ERRORS("PETSC_VECSETFROMOPTIONS",ERR,ERROR)
-!    CALL EXITS("PETSC_VECSETFROMOPTIONS")
+999 ERRORSEXITS("Petsc_VecSetFromOptions",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECSETFROMOPTIONS
+    
+  END SUBROUTINE Petsc_VecSetFromOptions
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecSetLocalToGlobalMapping routine.
-  SUBROUTINE PETSC_VECSETLOCALTOGLOBALMAPPING(X,CTX,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecSetLocalToGlobalMapping(x,isLocalToGlobalMapping,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the local to global mapping for
-    TYPE(PETSC_ISLOCALTOGLOBALMAPPING_TYPE), INTENT(IN) :: CTX !<The local to global mapping context
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to set the local to global mapping for
+    TYPE(PetscISLocalToGloabalMappingType), INTENT(IN) :: isLocalToGlobalMapping !<The local to global mapping context
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECSETLOCALTOGLOBALMAPPING",ERR,ERROR,*999)
+    ENTERS("Petsc_VecSetLocalToGlobalMapping",err,error,*999)
 
-    CALL VecSetLocalToGlobalMapping(X%VEC,CTX%ISLOCALTOGLOBALMAPPING,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecSetLocalToGlobalMapping(x%vec,isLocalToGlobalMapping%isLocalToGlobalMapping,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecSetLocalToGlobalMapping",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecSetLocalToGlobalMapping.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECSETLOCALTOGLOBALMAPPING")
+    EXITS("Petsc_VecSetLocalToGlobalMapping")
     RETURN
-999 CALL ERRORS("PETSC_VECSETLOCALTOGLOBALMAPPING",ERR,ERROR)
-!    CALL EXITS("PETSC_VECSETLOCALTOGLOBALMAPPING")
+999 ERRORSEXITS("Petsc_VecSetLocalToGlobalMapping",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECSETLOCALTOGLOBALMAPPING
     
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc VecSetValues routine.
-  SUBROUTINE PETSC_VECSETVALUES(X,N,INDICES,VALUES,INSERT_MODE,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the values for
-    INTEGER(INTG), INTENT(IN) :: N !<The number of indicies
-    INTEGER(INTG), INTENT(IN) :: INDICES(*) !<The indices
-    REAL(DP), INTENT(IN) :: VALUES(*) !<The values to set
-    InsertMode, INTENT(IN) :: INSERT_MODE !<The insert mode
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_VECSETVALUES",ERR,ERROR,*999)
-
-    CALL VecSetValues(X%VEC,N,INDICES,VALUES,INSERT_MODE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in VecSetValues",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_VECSETVALUES")
-    RETURN
-999 CALL ERRORS("PETSC_VECSETVALUES",ERR,ERROR)
-!    CALL EXITS("PETSC_VECSETVALUES")
-    RETURN 1
-  END SUBROUTINE PETSC_VECSETVALUES
-    
-  !
-  !================================================================================================================================
-  !
-
-  !>Buffer routine to the PETSc VecSetValuesLocal routine.
-  SUBROUTINE PETSC_VECSETVALUESLOCAL(X,N,INDICES,VALUES,INSERT_MODE,ERR,ERROR,*)
-
-    !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the values of
-    INTEGER(INTG), INTENT(IN) :: N !<The number of indices
-    INTEGER(INTG), INTENT(IN) :: INDICES(*) !<The local indices
-    REAL(DP), INTENT(IN) :: VALUES(*) !<The values to set
-    InsertMode :: INSERT_MODE !<The insert mode
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-
-!    CALL ENTERS("PETSC_VECSETVALUESLOCAL",ERR,ERROR,*999)
-
-    CALL VecSetValuesLocal(X%VEC,N,INDICES,VALUES,INSERT_MODE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
-      ENDIF
-      CALL FLAG_ERROR("PETSc error in VecSetValuesLocal",ERR,ERROR,*999)
-    ENDIF
-    
-!    CALL EXITS("PETSC_VECSETVALUESLOCAL")
-    RETURN
-999 CALL ERRORS("PETSC_VECSETVALUESLOCAL",ERR,ERROR)
-!    CALL EXITS("PETSC_VECSETVALUESLOCAL")
-    RETURN 1
-  END SUBROUTINE PETSC_VECSETVALUESLOCAL
+  END SUBROUTINE Petsc_VecSetLocalToGlobalMapping
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecSetSizes routine.
-  SUBROUTINE PETSC_VECSETSIZES(X,LOCAL_SIZE,GLOBAL_SIZE,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecSetSizes(x,localN,globalN,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to set the sizes of
-    INTEGER(INTG), INTENT(IN) :: LOCAL_SIZE !<The number of local elements
-    INTEGER(INTG), INTENT(IN) :: GLOBAL_SIZE !<The number of global elements
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to set the sizes of
+    INTEGER(INTG), INTENT(IN) :: localN !<The number of local elements
+    INTEGER(INTG), INTENT(IN) :: globalN !<The number of global elements
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECSETSIZES",ERR,ERROR,*999)
+    ENTERS("Petsc_VecSetSizes",err,error,*999)
 
-    CALL VecSetSizes(X%VEC,LOCAL_SIZE,GLOBAL_SIZE,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecSetSizes(x%vec,localN,globalN,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecSetSizes",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecSetSizes.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECSETSIZES")
+    EXITS("Petsc_VecSetSizes")
     RETURN
-999 CALL ERRORS("PETSC_VECSETSIZES",ERR,ERROR)
-!    CALL EXITS("PETSC_VECSETSIZES")
+999 ERRORSEXITS("Petsc_VecSetSizes",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECSETSIZES
+    
+  END SUBROUTINE Petsc_VecSetSizes
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecSetValues routine.
+  SUBROUTINE Petsc_VecSetValues(x,n,indices,values,insertMode,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to set the values for
+    INTEGER(INTG), INTENT(IN) :: n !<The number of indicies
+    INTEGER(INTG), INTENT(IN) :: indices(*) !<The indices
+    REAL(DP), INTENT(IN) :: values(*) !<The values to set
+    InsertMode, INTENT(IN) :: insertMode !<The insert mode
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_VecSetValues",err,error,*999)
+
+    CALL VecSetValues(x%vec,n,indices,values,insertMode,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in VecSetValues.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_VecSetValues")
+    RETURN
+999 ERRORSEXITS("Petsc_VecSetValues",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_VecSetValues
+    
+  !
+  !================================================================================================================================
+  !
+
+  !>Buffer routine to the PETSc VecSetValuesLocal routine.
+  SUBROUTINE Petsc_SetValuesLocal(x,n,indices,values,insertMode,err,error,*)
+
+    !Argument Variables
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to set the values of
+    INTEGER(INTG), INTENT(IN) :: n !<The number of indices
+    INTEGER(INTG), INTENT(IN) :: indices(*) !<The local indices
+    REAL(DP), INTENT(IN) :: values(*) !<The values to set
+    InsertMode :: insertMode !<The insert mode
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Petsc_SetValuesLocal",err,error,*999)
+
+    CALL VecSetValuesLocal(x%vec,n,indices,values,insertMode,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
+      ENDIF
+      CALL FlagError("PETSc error in VecSetValuesLocal.",err,error,*999)
+    ENDIF
+    
+    EXITS("Petsc_SetValuesLocal")
+    RETURN
+999 ERRORSEXITS("Petsc_SetValuesLocal",err,error)
+    RETURN 1
+    
+  END SUBROUTINE Petsc_SetValuesLocal
     
   !
   !================================================================================================================================
   !
 
   !>Buffer routine to the PETSc VecView routine.
-  SUBROUTINE PETSC_VECVIEW(X,V,ERR,ERROR,*)
+  SUBROUTINE Petsc_VecView(x,viewer,err,error,*)
 
     !Argument Variables
-    TYPE(PETSC_VEC_TYPE), INTENT(INOUT) :: X !<The vector to view
-    PetscViewer, INTENT(IN) :: V !<The viewer
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(PetscVecType), INTENT(INOUT) :: x !<The vector to view
+    PetscViewer, INTENT(IN) :: viewer !<The viewer
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
 
-!    CALL ENTERS("PETSC_VECVIEW",ERR,ERROR,*999)
+    ENTERS("Petsc_VecView",err,error,*999)
 
-    CALL VecView(X%VEC,V,ERR)
-    IF(ERR/=0) THEN
-      IF(PETSC_HANDLE_ERROR) THEN
-        CHKERRQ(ERR)
+    CALL VecView(x%vec,viewer,err)
+    IF(err/=0) THEN
+      IF(petscHandleError) THEN
+        CHKERRQ(err)
       ENDIF
-      CALL FLAG_ERROR("PETSc error in VecView",ERR,ERROR,*999)
+      CALL FlagError("PETSc error in VecView.",err,error,*999)
     ENDIF
     
-!    CALL EXITS("PETSC_VECVIEW")
+    EXITS("Petsc_VecView")
     RETURN
-999 CALL ERRORS("PETSC_VECVIEW",ERR,ERROR)
-!    CALL EXITS("PETSC_VECVIEW")
+999 ERRORSEXITS("Petsc_VecView",err,error)
     RETURN 1
-  END SUBROUTINE PETSC_VECVIEW
     
+  END SUBROUTINE Petsc_VecView
+
+
   !
   !================================================================================================================================
   !
 
-END MODULE CMISS_PETSC
+END MODULE CmissPetsc
     
 !>Buffer routine to the PETSc SNESSetJacobian routine for MatFDColoring contexts. The buffer is required because we want to
 !>provide an interface so that we can pass a pointer to the solver for analytic Jacobian's. However, if we provided an interface
 !>the Fortran's strong typing rules would not let us pass the matfdcoloring.
-SUBROUTINE SNESSetJacobianBuffer(SNES_,A,B,JFUNCTION,CTX,ERR)
+SUBROUTINE SNESSetJacobianBuffer(snes,A,B,jFunction,matFDColoring,err)
 
-  USE CMISS_PETSC_TYPES
-  USE KINDS
+  USE CmissPetscTypes
+  USE Kinds
 
   IMPLICIT NONE
   
   !Argument Variables
-  TYPE(PETSC_SNES_TYPE), INTENT(INOUT) :: SNES_ !<The SNES to set the function for
-  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: A !<The Jacobian matrix
-  TYPE(PETSC_MAT_TYPE), INTENT(INOUT) :: B !<The Jacobian preconditioning matrix
-  EXTERNAL JFUNCTION !<The external function to call
-  TYPE(PETSC_MATFDCOLORING_TYPE) :: CTX !<The MatFDColoring data to pass to the function
-  INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
+  TYPE(PetscSnesType), INTENT(INOUT) :: snes !<The snes to set the function for
+  TYPE(PetscMatType), INTENT(INOUT) :: a !<The Jacobian matrix
+  TYPE(PetscMatType), INTENT(INOUT) :: b !<The Jacobian preconditioning matrix
+  EXTERNAL jFunction !<The external function to call
+  TYPE(PetscMatFDColoringType) :: matFDColoring !<The MatFDColoring data to pass to the function
+  INTEGER(INTG), INTENT(OUT) :: err !<The error code
 
-  CALL SNESSetJacobian(SNES_%SNES_,A%MAT,B%MAT,JFUNCTION,CTX%MATFDCOLORING,ERR)
+  CALL SNESSetJacobian(snes%snes,a%mat,b%mat,jFunction,matFDColoring%matFDColoring,err)
 
 END SUBROUTINE SNESSetJacobianBuffer
+

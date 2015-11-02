@@ -75,16 +75,24 @@ MODULE CHARACTERISTIC_EQUATION_ROUTINES
   USE TIMER
   USE TYPES
 
+#include "macros.h"
+
   IMPLICIT NONE
 
   PRIVATE
 
-  PUBLIC Characteristic_EquationsSet_SolutionMethodSet
-  PUBLIC Characteristic_EquationsSet_SubtypeSet
-  PUBLIC Characteristic_EquationsSet_Setup
+  PUBLIC Characteristic_EquationsSetSolutionMethodSet
+  
+  PUBLIC Characteristic_EquationsSetSpecificationSet
+  
+  PUBLIC Characteristic_EquationsSetSetup
+  
   PUBLIC Characteristic_NodalResidualEvaluate
+  
   PUBLIC Characteristic_NodalJacobianEvaluate
+  
   PUBLIC Characteristic_Extrapolate
+  
   PUBLIC Characteristic_PrimitiveToCharacteristic
 
 CONTAINS 
@@ -94,7 +102,7 @@ CONTAINS
 !
 
   !>Sets/changes the solution method for a Characteristic equation type of an fluid mechanics equations set class.
-  SUBROUTINE Characteristic_EquationsSet_SolutionMethodSet(equationsSet,solutionMethod,err,error,*)
+  SUBROUTINE Characteristic_EquationsSetSolutionMethodSet(equationsSet,solutionMethod,err,error,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
@@ -104,92 +112,113 @@ CONTAINS
     !Local Variables
     TYPE(VARYING_STRING) :: localError
     
-    CALL ENTERS("Characteristic_EquationsSet_SolutionMethodSet",err,error,*999)
+    ENTERS("Characteristic_EquationsSetSolutionMethodSet",err,error,*999)
     
     IF(ASSOCIATED(equationsSet)) THEN
-      SELECT CASE(equationsSet%SUBTYPE)
-      CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)                                
+      IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(equationsSet%specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a characteristic type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(equationsSet%specification(3))
+      CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)                                
         SELECT CASE(solutionMethod)
         CASE(EQUATIONS_SET_FEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
           equationsSet%SOLUTION_METHOD=EQUATIONS_SET_NODAL_SOLUTION_METHOD
         CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-          CALL FLAG_ERROR("Not implemented.",err,error,*999)
+          CALL FlagError("Not implemented.",err,error,*999)
         CASE DEFAULT
-          localError="The specified solution method of "//TRIM(NUMBER_TO_VSTRING(solutionMethod,"*",err,error))// &
+          localError="The specified solution method of "//TRIM(NumberToVString(solutionMethod,"*",err,error))// &
             & " is invalid."
-          CALL FLAG_ERROR(localError,err,error,*999)
+          CALL FlagError(localError,err,error,*999)
         END SELECT
       CASE DEFAULT
-        localError="Equations set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-          & " is not valid for a Characteristic equation type of a fluid mechanics equations set class."
-        CALL FLAG_ERROR(localError,err,error,*999)
+        localError="The third equations set specification of "// &
+          & TRIM(NumberToVString(equationsSet%specification(3),"*",err,error))// &
+          & " is not valid for a characteristic type of a fluid mechanics equations set."
+        CALL FlagError(localError,err,error,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+      CALL FlagError("Equations set is not associated.",err,error,*999)
     ENDIF
        
-    CALL EXITS("Characteristic_EquationsSet_SolutionMethodSet")
+    EXITS("Characteristic_EquationsSetSolutionMethodSet")
     RETURN
-999 CALL ERRORS("Characteristic_EquationsSet_SolutionMethodSet",err,error)
-    CALL EXITS("Characteristic_EquationsSet_SolutionMethodSet")
+999 ERRORS("Characteristic_EquationsSetSolutionMethodSet",err,error)
+    EXITS("Characteristic_EquationsSetSolutionMethodSet")
     RETURN 1
-  END SUBROUTINE Characteristic_EquationsSet_SolutionMethodSet
+    
+  END SUBROUTINE Characteristic_EquationsSetSolutionMethodSet
 
 !
 !================================================================================================================================
 !
 
-  !>Sets/changes the equation subtype for a Characteristic type of a fluid mechanics equations set class.
-  SUBROUTINE Characteristic_EquationsSet_SubtypeSet(equationsSet,equationsSetSubtype,err,error,*)
+  !>Sets the equation specification for a Characteristic type of a fluid mechanics equations set class.
+  SUBROUTINE Characteristic_EquationsSetSpecificationSet(equationsSet,specification,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
-    INTEGER(INTG), INTENT(IN) :: equationsSetSubtype
-    INTEGER(INTG), INTENT(OUT) :: err
-    TYPE(VARYING_STRING), INTENT(OUT) :: error
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to set the specification for
+    INTEGER(INTG), INTENT(IN) :: specification(:) !<The equations set specification to set
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
     TYPE(VARYING_STRING) :: localError
+    INTEGER(INTG) :: subtype
 
-    CALL ENTERS("Characteristic_EquationsSet_SubtypeSet",err,error,*999)
+    ENTERS("Characteristic_EquationsSetSpecificationSet",err,error,*999)
 
     IF(ASSOCIATED(equationsSet)) THEN
-      SELECT CASE(equationsSetSubtype)
-      CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
-        equationsSet%CLASS=EQUATIONS_SET_FLUID_MECHANICS_CLASS
-        equationsSet%TYPE=EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE
-        equationsSet%SUBTYPE=EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE
+      IF(SIZE(specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a characteristic type equations set.", &
+          & err,error,*999)
+      END IF
+      subtype=specification(3)
+      SELECT CASE(subtype)
+      CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
+        !ok
       CASE DEFAULT
-        localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSetSubtype,"*",err,error))// &
-          & " is not valid for a Characteristic fluid type of a fluid mechanics equations set class."
-        CALL FLAG_ERROR(localError,err,error,*999)
+        localError="The third equations set specification of "//TRIM(NumberToVstring(subtype,"*",err,error))// &
+          & " is not valid for a characteristic type of a fluid mechanics equations set."
+        CALL FlagError(localError,err,error,*999)
       END SELECT
+      !Set full specification
+      IF(ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is already allocated.",err,error,*999)
+      ELSE
+        ALLOCATE(equationsSet%specification(3),stat=err)
+        IF(err/=0) CALL FlagError("Could not allocate equations set specification.",err,error,*999)
+      END IF
+      equationsSet%specification(1:3)=[EQUATIONS_SET_FLUID_MECHANICS_CLASS,EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE,subtype]
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
-    ENDIF
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
 
-    CALL EXITS("Characteristic_EquationsSet_SubtypeSet")
+    EXITS("Characteristic_EquationsSetSpecificationSet")
     RETURN
-999 CALL ERRORS("Characteristic_EquationsSet_SubtypeSet",err,error)
-    CALL EXITS("Characteristic_EquationsSet_SubtypeSet")
+999 ERRORS("Characteristic_EquationsSetSpecificationSet",err,error)
+    EXITS("Characteristic_EquationsSetSpecificationSet")
     RETURN 1
-  END SUBROUTINE Characteristic_EquationsSet_SubtypeSet
+    
+  END SUBROUTINE Characteristic_EquationsSetSpecificationSet
 
 !
 !================================================================================================================================
 !
 
   !>Sets up the Characteristic equations fluid setup.
-  SUBROUTINE Characteristic_EquationsSet_Setup(equationsSet,equationsSetSetup,err,error,*)
+  SUBROUTINE Characteristic_EquationsSetSetup(equationsSet,equationsSetSetup,err,error,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
@@ -210,7 +239,7 @@ CONTAINS
     INTEGER(INTG) :: materialsFieldNumberOfVariables,materialsFieldNumberOfComponents1,materialsFieldNumberOfComponents2
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Characteristic_EquationsSet_Setup",err,error,*999)
+    ENTERS("Characteristic_EquationsSetSetup",err,error,*999)
 
     NULLIFY(equations)
     NULLIFY(equationsMapping)
@@ -219,106 +248,113 @@ CONTAINS
     NULLIFY(geometricDecomposition)
 
     IF(ASSOCIATED(equationsSet)) THEN
-      SELECT CASE(equationsSet%SUBTYPE)
-      CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+      IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+        CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+      ELSE IF(SIZE(equationsSet%specification,1)/=3) THEN
+        CALL FlagError("Equations set specification must have three entries for a characteristic type equations set.", &
+          & err,error,*999)
+      END IF
+      SELECT CASE(equationsSet%specification(3))
+      CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
         SELECT CASE(equationsSetSetup%SETUP_TYPE)
         !-----------------------------------------------------------------
         ! I n i t i a l   s e t u p
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INITIAL_TYPE)
-          SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          SELECT CASE(equationsSet%specification(3))
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
-              CALL Characteristic_EquationsSet_SolutionMethodSet(equationsSet, &
+              CALL Characteristic_EquationsSetSolutionMethodSet(equationsSet, &
                 & EQUATIONS_SET_NODAL_SOLUTION_METHOD,err,error,*999)
               equationsSet%SOLUTION_METHOD=EQUATIONS_SET_NODAL_SOLUTION_METHOD
               equationsEquationsSetField=>equationsSet%EQUATIONS_SET_FIELD
               IF(equationsEquationsSetField%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
                 !Create the auto created equations set field field for SUPG element metrics
                 CALL FIELD_CREATE_START(equationsSetSetup%FIELD_USER_NUMBER,equationsSet%REGION, &
-                  & equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD,err,error,*999)
+                  & equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD,ERR,ERROR,*999)
                 equationsSetField=>equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD
-                CALL FIELD_LABEL_SET(equationsSetField,"Equations Set Field",err,error,*999)
+                CALL FIELD_LABEL_SET(equationsSetField,"Equations Set Field",ERR,ERROR,*999)
                 CALL FIELD_TYPE_SET_AND_LOCK(equationsSetField,FIELD_GENERAL_TYPE,&
-                  & err,error,*999)
+                  & ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_VARIABLES_SET(equationsSetField, &
-                  & 1,err,error,*999)
+                  & 1,ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_TYPES_SET_AND_LOCK(equationsSetField,&
-                  & [FIELD_U_VARIABLE_TYPE],err,error,*999)
+                  & [FIELD_U_VARIABLE_TYPE],ERR,ERROR,*999)
                 CALL FIELD_VARIABLE_LABEL_SET(equationsSetField,FIELD_U_VARIABLE_TYPE, &
-                  & "W2Initialise",err,error,*999)
+                  & "W2Initialise",ERR,ERROR,*999)
                 CALL FIELD_DATA_TYPE_SET_AND_LOCK(equationsSetField,FIELD_U_VARIABLE_TYPE, &
-                  & FIELD_DP_TYPE,err,error,*999)
+                  & FIELD_DP_TYPE,ERR,ERROR,*999)
                 CALL FIELD_NUMBER_OF_COMPONENTS_SET_AND_LOCK(equationsSetField,&
-                  & FIELD_U_VARIABLE_TYPE,1,err,error,*999)
+                  & FIELD_U_VARIABLE_TYPE,1,ERR,ERROR,*999)
               ENDIF
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               IF(equationsSet%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
-                CALL FIELD_CREATE_FINISH(equationsSet%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,err,error,*999)
+                CALL FIELD_CREATE_FINISH(equationsSet%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_VALUES_INITIALISE(equationsSet%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD, &
-                 & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1.0_DP,err,error,*999)
+                 & FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,1,1.0_DP,ERR,ERROR,*999)
               ENDIF
             CASE DEFAULT
-              localError="The action type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup%ACTION_TYPE, &
-                & "*",err,error))// " for a setup type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup% &
+              localError="The action type of "//TRIM(NumberToVString(equationsSetSetup%ACTION_TYPE, &
+                & "*",err,error))// " for a setup type of "//TRIM(NumberToVString(equationsSetSetup% &
                 & SETUP_TYPE,"*",err,error))// " is not implemented for a characteristic equations set."
-              CALL FLAG_ERROR(localError,err,error,*999)
+              CALL FlagError(localError,err,error,*999)
             END SELECT
           CASE DEFAULT
-            localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+            localError="The third equations set specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
               & " is invalid for a characteristic equations set."
-            CALL FLAG_ERROR(localError,err,error,*999)
+            CALL FlagError(localError,err,error,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! G e o m e t r i c   f i e l d
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_GEOMETRY_TYPE)
-          SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          SELECT CASE(equationsSet%specification(3))
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               equationsEquationsSetField=>equationsSet%EQUATIONS_SET_FIELD
               equationsSetField=>equationsEquationsSetField%EQUATIONS_SET_FIELD_FIELD
               IF(equationsEquationsSetField%EQUATIONS_SET_FIELD_AUTO_CREATED) THEN
-                CALL FIELD_MESH_DECOMPOSITION_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricDecomposition,err,error,*999)
+                CALL FIELD_MESH_DECOMPOSITION_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricDecomposition,ERR,ERROR,*999)
                 CALL FIELD_MESH_DECOMPOSITION_SET_AND_LOCK(equationsSetField,&
-                  & geometricDecomposition,err,error,*999)
+                  & geometricDecomposition,ERR,ERROR,*999)
                 CALL FIELD_GEOMETRIC_FIELD_SET_AND_LOCK(equationsSetField,& 
-                  & equationsSet%GEOMETRY%GEOMETRIC_FIELD,err,error,*999)
+                  & equationsSet%GEOMETRY%GEOMETRIC_FIELD,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_MESH_COMPONENT_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,FIELD_U_VARIABLE_TYPE, &
-                  & 1,geometricComponentNumber,err,error,*999)                
+                  & 1,geometricComponentNumber,ERR,ERROR,*999)                
                 CALL FIELD_COMPONENT_MESH_COMPONENT_SET_AND_LOCK(equationsSetField, &
-                  & FIELD_U_VARIABLE_TYPE,1,geometricComponentNumber,err,error,*999)
+                  & FIELD_U_VARIABLE_TYPE,1,geometricComponentNumber,ERR,ERROR,*999)
                 CALL FIELD_COMPONENT_INTERPOLATION_SET_AND_LOCK(equationsSetField, &
-                  & FIELD_U_VARIABLE_TYPE,1,FIELD_CONSTANT_INTERPOLATION,err,error,*999)
+                  & FIELD_U_VARIABLE_TYPE,1,FIELD_CONSTANT_INTERPOLATION,ERR,ERROR,*999)
                 !Default the field scaling to that of the geometric field
-                CALL FIELD_SCALING_TYPE_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricScalingType,err,error,*999)
+                CALL FIELD_SCALING_TYPE_GET(equationsSet%GEOMETRY%GEOMETRIC_FIELD,geometricScalingType,ERR,ERROR,*999)
                 CALL FIELD_SCALING_TYPE_SET(equationsSet%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_FIELD,geometricScalingType, &
-                  & err,error,*999)
+                  & ERR,ERROR,*999)
               ELSE
                 !Do nothing
               ENDIF
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               ! do nothing
             CASE DEFAULT
-              localError="The action type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup%ACTION_TYPE,"*",err,error))// &
-                & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup%SETUP_TYPE,"*",err,error))// &
+              localError="The action type of "//TRIM(NumberToVString(equationsSetSetup%ACTION_TYPE,"*",ERR,ERROR))// &
+                & " for a setup type of "//TRIM(NumberToVString(equationsSetSetup%SETUP_TYPE,"*",ERR,ERROR))// &
                 & " is invalid for a characteristic equation."
-              CALL FLAG_ERROR(localError,err,error,*999)
+              CALL FlagError(localError,ERR,ERROR,*999)
             END SELECT
           CASE DEFAULT
-            localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+            localError="The third equations set specification of "// &
+              & TRIM(NumberToVString(equationsSet%specification(3),"*",err,error))// &
               & " is invalid for a characteristic equations set."
-            CALL FLAG_ERROR(localError,err,error,*999)
+            CALL FlagError(localError,err,error,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! D e p e n d e n t   f i e l d
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_DEPENDENT_TYPE)
-          SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          SELECT CASE(equationsSet%specification(3))
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Set start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -398,7 +434,7 @@ CONTAINS
                     & FIELD_U1_VARIABLE_TYPE,componentIdx,geometricMeshComponent,err,error,*999)
                   CALL FIELD_COMPONENT_MESH_COMPONENT_SET(equationsSet%DEPENDENT%DEPENDENT_FIELD, & 
                     & FIELD_U2_VARIABLE_TYPE,componentIdx,geometricMeshComponent,err,error,*999)
-                ENDDO
+                END DO
                 SELECT CASE(equationsSet%SOLUTION_METHOD)
                 !Specify nodal solution method
                 CASE(EQUATIONS_SET_NODAL_SOLUTION_METHOD)
@@ -421,8 +457,8 @@ CONTAINS
                     & err,error,*999)
                 CASE DEFAULT
                   localError="The solution method of " &
-                    & //TRIM(NUMBER_TO_VSTRING(equationsSet%SOLUTION_METHOD,"*",err,error))// " is invalid."
-                  CALL FLAG_ERROR(localError,err,error,*999)
+                    & //TRIM(NumberToVString(equationsSet%SOLUTION_METHOD,"*",err,error))// " is invalid."
+                  CALL FlagError(localError,err,error,*999)
                 END SELECT
               ELSE 
                 !Check the user specified field
@@ -473,9 +509,9 @@ CONTAINS
                   CALL FIELD_COMPONENT_INTERPOLATION_CHECK(equationsSetSetup%FIELD,FIELD_U2_VARIABLE_TYPE,1, &
                     & FIELD_NODE_BASED_INTERPOLATION,err,error,*999)
                 CASE DEFAULT
-                  localError="The solution method of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SOLUTION_METHOD, &
+                  localError="The solution method of "//TRIM(NumberToVString(equationsSet%SOLUTION_METHOD, &
                     & "*",err,error))//" is invalid."
-                  CALL FLAG_ERROR(localError,err,error,*999)
+                  CALL FlagError(localError,err,error,*999)
                 END SELECT
               ENDIF
             !Specify finish action
@@ -484,23 +520,23 @@ CONTAINS
                 CALL FIELD_CREATE_FINISH(equationsSet%DEPENDENT%DEPENDENT_FIELD,err,error,*999)
               ENDIF
             CASE DEFAULT
-              localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-                & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+              localError="The third equations set specification of "// &
+                & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
                 & " is invalid for a characteristic equations set."
-              CALL FLAG_ERROR(localError,err,error,*999)
+              CALL FlagError(localError,err,error,*999)
             END SELECT
           CASE DEFAULT
-            localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+            localError="The third equations set specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
               & " is invalid for a characteristic equations set."
-            CALL FLAG_ERROR(localError,err,error,*999)
+            CALL FlagError(localError,err,error,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! I n d e p e n d e n t   f i e l d
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_INDEPENDENT_TYPE)
-          SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          SELECT CASE(equationsSet%specification(3))
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             !Set start action
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
@@ -557,8 +593,8 @@ CONTAINS
                     & err,error,*999)
                 CASE DEFAULT
                   localError="The solution method of " &
-                    & //TRIM(NUMBER_TO_VSTRING(equationsSet%SOLUTION_METHOD,"*",err,error))// " is invalid."
-                  CALL FLAG_ERROR(localError,err,error,*999)
+                    & //TRIM(NumberToVString(equationsSet%SOLUTION_METHOD,"*",err,error))// " is invalid."
+                  CALL FlagError(localError,err,error,*999)
                 END SELECT 
               ELSE
                 !Check the user specified field
@@ -578,23 +614,23 @@ CONTAINS
                 CALL FIELD_CREATE_FINISH(equationsSet%INDEPENDENT%INDEPENDENT_FIELD,err,error,*999)
               ENDIF
             CASE DEFAULT
-              localError="The action type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup%ACTION_TYPE,"*",err,error))// &
-                & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup%SETUP_TYPE,"*",err,error))// &
+              localError="The action type of "//TRIM(NumberToVString(equationsSetSetup%ACTION_TYPE,"*",err,error))// &
+                & " for a setup type of "//TRIM(NumberToVString(equationsSetSetup%SETUP_TYPE,"*",err,error))// &
                 & " is invalid for a standard characteristic equations set"
-              CALL FLAG_ERROR(localError,err,error,*999)
+              CALL FlagError(localError,err,error,*999)
             END SELECT
           CASE DEFAULT
-            localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+            localError="The third equations set specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
               & " is invalid for a standard characteristic equations set."
-            CALL FLAG_ERROR(localError,err,error,*999)
+            CALL FlagError(localError,err,error,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! M a t e r i a l s   f i e l d 
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_MATERIALS_TYPE)
-          SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          SELECT CASE(equationsSet%specification(3))
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             materialsFieldNumberOfVariables=2 !U type-7 constant / V type-9 variable
             materialsFieldNumberOfComponents1=9
             materialsFieldNumberOfComponents2=8
@@ -674,8 +710,8 @@ CONTAINS
                     & materialsFieldNumberOfComponents2,err,error,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set materials is not associated.",err,error,*999)
-              ENDIF
+                CALL FlagError("Equations set materials is not associated.",err,error,*999)
+              END IF
               !Specify start action
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               equationsMaterials=>equationsSet%MATERIALS
@@ -686,26 +722,26 @@ CONTAINS
                   ! Should be initialized from example file
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations set materials is not associated.",err,error,*999)
+                CALL FlagError("Equations set materials is not associated.",err,error,*999)
               ENDIF
             CASE DEFAULT
-              localError="The action type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup%ACTION_TYPE,"*", & 
-                & err,error))//" for a setup type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup%SETUP_TYPE,"*", & 
+              localError="The action type of "//TRIM(NumberToVString(equationsSetSetup%ACTION_TYPE,"*", & 
+                & err,error))//" for a setup type of "//TRIM(NumberToVString(equationsSetSetup%SETUP_TYPE,"*", & 
                 & err,error))//" is invalid for characteristic equation."
-              CALL FLAG_ERROR(localError,err,error,*999)
+              CALL FlagError(localError,err,error,*999)
             END SELECT
           CASE DEFAULT
-            localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+            localError="The third equations set specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
               & " is invalid for a characteristic equation."
-            CALL FLAG_ERROR(localError,err,error,*999)
+            CALL FlagError(localError,err,error,*999)
           END SELECT
         !-----------------------------------------------------------------
         ! E q u a t i o n s    t y p e
         !-----------------------------------------------------------------
         CASE(EQUATIONS_SET_SETUP_EQUATIONS_TYPE)
-          SELECT CASE(equationsSet%SUBTYPE)
-          CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+          SELECT CASE(equationsSet%specification(3))
+          CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
             SELECT CASE(equationsSetSetup%ACTION_TYPE)
             CASE(EQUATIONS_SET_SETUP_START_ACTION)
               equationsMaterials=>equationsSet%MATERIALS
@@ -715,10 +751,10 @@ CONTAINS
                   CALL EQUATIONS_LINEARITY_TYPE_SET(equations,EQUATIONS_NONLINEAR,err,error,*999)
                   CALL EQUATIONS_TIME_DEPENDENCE_TYPE_SET(equations,EQUATIONS_STATIC,err,error,*999)
                 ELSE
-                  CALL FLAG_ERROR("Equations set materials has not been finished.",err,error,*999)
+                  CALL FlagError("Equations set materials has not been finished.",err,error,*999)
                 ENDIF
               ELSE
-                CALL FLAG_ERROR("Equations materials is not associated.",err,error,*999)
+                CALL FlagError("Equations materials is not associated.",err,error,*999)
               ENDIF
             CASE(EQUATIONS_SET_SETUP_FINISH_ACTION)
               SELECT CASE(equationsSet%SOLUTION_METHOD)
@@ -728,8 +764,8 @@ CONTAINS
                 CALL EQUATIONS_CREATE_FINISH(equations,err,error,*999)
                 !Create the equations mapping.
                 CALL EQUATIONS_MAPPING_CREATE_START(equations,equationsMapping,err,error,*999)
-                CALL EQUATIONS_MAPPING_LINEAR_MATRICES_NUMBER_SET(equationsMapping,1,err,error,*999)
-                CALL EQUATIONS_MAPPING_LINEAR_MATRICES_VARIABLE_TYPES_SET(equationsMapping,[FIELD_U_VARIABLE_TYPE],err,error,*999)
+                CALL EquationsMapping_LinearMatricesNumberSet(equationsMapping,1,err,error,*999)
+                CALL EquationsMapping_LinearMatricesVariableTypesSet(equationsMapping,[FIELD_U_VARIABLE_TYPE],err,error,*999)
                 CALL EQUATIONS_MAPPING_RHS_VARIABLE_TYPE_SET(equationsMapping,FIELD_DELUDELN_VARIABLE_TYPE, & 
                   & err,error,*999)
                 CALL EQUATIONS_MAPPING_CREATE_FINISH(equationsMapping,err,error,*999)
@@ -742,70 +778,71 @@ CONTAINS
                 CASE(EQUATIONS_MATRICES_FULL_MATRICES)
                   CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(equationsMatrices,[MATRIX_BLOCK_STORAGE_TYPE], &
                     & err,error,*999)
-                  CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(equationsMatrices,MATRIX_BLOCK_STORAGE_TYPE, &
+                  CALL EquationsMatrices_NonlinearStorageTypeSet(equationsMatrices,MATRIX_BLOCK_STORAGE_TYPE, &
                     & err,error,*999)
                 CASE(EQUATIONS_MATRICES_SPARSE_MATRICES)
                   CALL EQUATIONS_MATRICES_LINEAR_STORAGE_TYPE_SET(equationsMatrices, & 
                     & [MATRIX_COMPRESSED_ROW_STORAGE_TYPE],err,error,*999)
-                  CALL EQUATIONS_MATRICES_LINEAR_STRUCTURE_TYPE_SET(equationsMatrices, & 
-                    & [EquationsMatrix_NodalStructure],err,error,*999)
-                  CALL EQUATIONS_MATRICES_NONLINEAR_STORAGE_TYPE_SET(equationsMatrices, & 
+                  CALL EquationsMatrices_LinearStructureTypeSet(equationsMatrices, & 
+                    & [EQUATIONS_MATRIX_NODAL_STRUCTURE],err,error,*999)
+                  CALL EquationsMatrices_NonlinearStorageTypeSet(equationsMatrices, & 
                     & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,err,error,*999)
-                  CALL EQUATIONS_MATRICES_NONLINEAR_STRUCTURE_TYPE_SET(equationsMatrices, & 
-                    & EquationsMatrix_NodalStructure,err,error,*999)
+                  CALL EquationsMatrices_NonlinearStructureTypeSet(equationsMatrices, & 
+                    & EQUATIONS_MATRIX_NODAL_STRUCTURE,err,error,*999)
                 CASE DEFAULT
                   localError="The equations matrices sparsity type of "// &
-                    & TRIM(NUMBER_TO_VSTRING(equations%SPARSITY_TYPE,"*",err,error))//" is invalid."
-                  CALL FLAG_ERROR(localError,err,error,*999)
+                    & TRIM(NumberToVString(equations%SPARSITY_TYPE,"*",err,error))//" is invalid."
+                  CALL FlagError(localError,err,error,*999)
                 END SELECT
                 CALL EQUATIONS_MATRICES_CREATE_FINISH(equationsMatrices,err,error,*999)
               CASE(EQUATIONS_SET_BEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CALL FlagError("Not implemented.",err,error,*999)
               CASE(EQUATIONS_SET_FD_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CALL FlagError("Not implemented.",err,error,*999)
               CASE(EQUATIONS_SET_FV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CALL FlagError("Not implemented.",err,error,*999)
               CASE(EQUATIONS_SET_GFEM_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CALL FlagError("Not implemented.",err,error,*999)
               CASE(EQUATIONS_SET_GFV_SOLUTION_METHOD)
-                CALL FLAG_ERROR("Not implemented.",err,error,*999)
+                CALL FlagError("Not implemented.",err,error,*999)
               CASE DEFAULT
-                localError="The solution method of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SOLUTION_METHOD, &
+                localError="The solution method of "//TRIM(NumberToVString(equationsSet%SOLUTION_METHOD, &
                   & "*",err,error))//" is invalid."
-                CALL FLAG_ERROR(localError,err,error,*999)
+                CALL FlagError(localError,err,error,*999)
               END SELECT
             CASE DEFAULT
-              localError="The action type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup%ACTION_TYPE,"*",err,error))// &
-                & " for a setup type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup%SETUP_TYPE,"*",err,error))// &
+              localError="The action type of "//TRIM(NumberToVString(equationsSetSetup%ACTION_TYPE,"*",err,error))// &
+                & " for a setup type of "//TRIM(NumberToVString(equationsSetSetup%SETUP_TYPE,"*",err,error))// &
                 & " is invalid for a characteristics equation."
-              CALL FLAG_ERROR(localError,err,error,*999)
+              CALL FlagError(localError,err,error,*999)
             END SELECT
           CASE DEFAULT
-            localError="The equation set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-              & " for a setup sub type of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+            localError="The third equations set specification of "// &
+              & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
               & " is invalid for a characteristics equation."
-            CALL FLAG_ERROR(localError,err,error,*999)
+            CALL FlagError(localError,err,error,*999)
           END SELECT
         CASE DEFAULT
-          localError="The setup type of "//TRIM(NUMBER_TO_VSTRING(equationsSetSetup%SETUP_TYPE,"*",err,error))// &
+          localError="The setup type of "//TRIM(NumberToVString(equationsSetSetup%SETUP_TYPE,"*",err,error))// &
             & " is invalid for a characteristics equation set."
-          CALL FLAG_ERROR(localError,err,error,*999)
+          CALL FlagError(localError,err,error,*999)
         END SELECT
       CASE DEFAULT
-        localError="The equations set subtype of "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+        localError="The third equations set specification of "// &
+          & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
           & " does not equal a characteristics equation set."
-        CALL FLAG_ERROR(localError,err,error,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+      CALL FlagError("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    CALL EXITS("Characteristic_EquationsSet_Setup")
+    EXITS("Characteristic_EquationsSetSetup")
     RETURN
-999 CALL ERRORS("Characteristic_EquationsSet_Setup",err,error)
-    CALL EXITS("Characteristic_EquationsSet_Setup")
+999 ERRORSEXITS("Characteristic_EquationsSetSetup",err,error)
     RETURN 1
-  END SUBROUTINE Characteristic_EquationsSet_Setup
+    
+  END SUBROUTINE Characteristic_EquationsSetSetup
 
   !
   !================================================================================================================================
@@ -838,7 +875,7 @@ CONTAINS
     LOGICAL :: updateStiffnessMatrix,updateNonlinearResidual,boundaryNode
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Characteristic_NodalResidualEvaluate",err,error,*999)
+    ENTERS("Characteristic_NodalResidualEvaluate",err,error,*999)
 
     NULLIFY(domain)
     NULLIFY(domainNodes)
@@ -870,20 +907,26 @@ CONTAINS
           IF (ASSOCIATED(domain)) THEN
             domainNodes=>domain%TOPOLOGY%NODES
           ELSE
-            CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
+            CALL FlagError("Domain is not associated.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Dependent Field is not associated.",err,error,*999)
+          CALL FlagError("Dependent Field is not associated.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
+        CALL FlagError("Equations set equations is not associated.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+      CALL FlagError("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    SELECT CASE(equationsSet%SUBTYPE)
-    CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+   IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+      CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+    ELSE IF(SIZE(equationsSet%specification,1)/=3) THEN
+      CALL FlagError("Equations set specification must have three entries for a characteristic type equations set.", &
+        & err,error,*999)
+    END IF
+    SELECT CASE(equationsSet%specification(3))
+    CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
       !Set General and Specific Pointers
       independentField=>equations%INTERPOLATION%INDEPENDENT_FIELD
       materialsField=>equations%INTERPOLATION%MATERIALS_FIELD
@@ -1019,16 +1062,17 @@ CONTAINS
       ENDIF !Find branch nodes
 
     CASE DEFAULT
-      localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
-        & " is not valid for a characteristic equation type of a fluid mechanics equations set class."
-      CALL FLAG_ERROR(localError,err,error,*999)
+      localError="The third equations set specification of "// &
+        & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
+        & " is not valid for a characteristic type of a fluid mechanics equations set."
+      CALL FlagError(localError,err,error,*999)
     END SELECT
-
-    CALL EXITS("Characteristic_NodalResidualEvaluate")
+    
+    EXITS("Characteristic_NodalResidualEvaluate")
     RETURN
-999 CALL ERRORS("Characteristic_NodalResidualEvaluate",err,error)
-    CALL EXITS("Characteristic_NodalResidualEvaluate")
+999 ERRORSEXITS("Characteristic_NodalResidualEvaluate",err,error)
     RETURN 1
+    
   END SUBROUTINE Characteristic_NodalResidualEvaluate
 
   !
@@ -1064,7 +1108,7 @@ CONTAINS
     LOGICAL :: updateJacobianMatrix,boundaryNode
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Characteristic_NodalJacobianEvaluate",err,error,*999)
+    ENTERS("Characteristic_NodalJacobianEvaluate",err,error,*999)
 
     NULLIFY(domain)
     NULLIFY(domainNodes)
@@ -1095,20 +1139,26 @@ CONTAINS
           IF (ASSOCIATED(domain)) THEN
             domainNodes=>domain%TOPOLOGY%NODES
           ELSE
-            CALL FLAG_ERROR("Domain is not associated.",err,error,*999)
+            CALL FlagError("Domain is not associated.",err,error,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Dependent Field is not associated.",err,error,*999)
+          CALL FlagError("Dependent Field is not associated.",err,error,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Equations set equations is not associated.",err,error,*999)
+        CALL FlagError("Equations set equations is not associated.",err,error,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
+      CALL FlagError("Equations set is not associated.",err,error,*999)
     ENDIF
 
-    SELECT CASE(equationsSet%SUBTYPE)
-    CASE(EQUATIONS_SET_Coupled1D0D_CHARACTERISTIC_SUBTYPE)
+    IF(.NOT.ALLOCATED(equationsSet%specification)) THEN
+      CALL FlagError("Equations set specification is not allocated.",err,error,*999)
+    ELSE IF(SIZE(equationsSet%specification,1)/=3) THEN
+      CALL FlagError("Equations set specification must have three entries for a characteristic type equations set.", &
+        & err,error,*999)
+    END IF
+    SELECT CASE(equationsSet%specification(3))
+    CASE(EQUATIONS_SET_CHARACTERISTIC_SUBTYPE)
       !Set General and Specific Pointers
       equationsMatrices=>equations%EQUATIONS_MATRICES
       equationsMapping=>equations%EQUATIONS_MAPPING
@@ -1219,6 +1269,18 @@ CONTAINS
               ENDDO
             ENDDO
 
+            !Conservation of Mass
+            rowIdx=numberOfVersions+1
+            columnIdx = 0
+            DO componentIdx=1,2
+              DO versionIdx=1,numberOfVersions
+                IF(ABS(normalWave(componentIdx,versionIdx))>ZERO_TOLERANCE) THEN
+                  columnIdx=columnIdx+1
+                  jacobianMatrix%NodalJacobian%matrix(rowIdx,columnIdx)=normalWave(componentIdx,versionIdx)
+                ENDIF                
+              ENDDO
+            ENDDO
+
             !Continuity of Total Pressure (dP/dU)
             startRow=numberOfVersions+2
             endRow=numberOfVersions*2
@@ -1260,16 +1322,17 @@ CONTAINS
       ENDIF !Find branch nodes
 
     CASE DEFAULT
-      localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+      localError="The third equations set specification of "// &
+        & TRIM(NUMBER_TO_VSTRING(equationsSet%specification(3),"*",err,error))// &
         & " is not valid for a Navier-Stokes equation type of a fluid mechanics equations set class."
-      CALL FLAG_ERROR(localError,err,error,*999)
+      CALL FlagError(localError,err,error,*999)
     END SELECT
        
-    CALL EXITS("Characteristic_NodalJacobianEvaluate")
+    EXITS("Characteristic_NodalJacobianEvaluate")
     RETURN
-999 CALL ERRORS("Characteristic_NodalJacobianEvaluate",err,error)
-    CALL EXITS("Characteristic_NodalJacobianEvaluate")
+999 ERRORSEXITS("Characteristic_NodalJacobianEvaluate",err,error)
     RETURN 1
+    
   END SUBROUTINE Characteristic_NodalJacobianEvaluate
 
   !
@@ -1299,7 +1362,7 @@ CONTAINS
     REAL(DP) :: RHO,f(4),l,friction,elementLength,extrapolationDistance,elementLengths(4)
     LOGICAL :: overExtrapolated
 
-    CALL ENTERS("Characteristic_Extrapolate",err,error,*999)
+    ENTERS("Characteristic_Extrapolate",ERR,ERROR,*999)
 
     NULLIFY(dependentBasis)
     NULLIFY(materialsBasis)
@@ -1424,7 +1487,7 @@ CONTAINS
 
                         !Check that lambda(1)>0,lambda(2)<0
                         IF (lambda(i)*normalWave(componentIdx,i)<ZERO_TOLERANCE) THEN
-                          CALL FLAG_ERROR("Subcritical 1D system violated.",err,error,*999)
+                          CALL FlagError("Subcritical 1D system violated.",ERR,ERROR,*999)
                         ENDIF
 
                         !Calculate extrapolation distance and xi location
@@ -1501,30 +1564,30 @@ CONTAINS
                       ENDIF
                     ENDDO
                   ENDDO
-                ENDIF !Branch or boundary node
+                ENDIF ! branch or boundary node
               ENDDO !Loop over nodes
 
             ELSE
-              CALL FLAG_ERROR("Equations are not associated.",err,error,*999)
+              CALL FlagError("Equations are not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
-            CALL FLAG_ERROR("Solver equations are not associated.",err,error,*999)
+            CALL FlagError("Solver equations are not associated.",ERR,ERROR,*999)
           ENDIF
         ELSE
-          CALL FLAG_ERROR("Solver mapping is not associated.",err,error,*999)
+          CALL FlagError("Solver mapping is not associated.",ERR,ERROR,*999)
         ENDIF
       ELSE
-        CALL FLAG_ERROR("Solvers is not associated.",err,error,*999)
+        CALL FlagError("Solvers is not associated.",ERR,ERROR,*999)
       ENDIF
     ELSE
-      CALL FLAG_ERROR("Solver is not associated.",err,error,*999)
+      CALL FlagError("Solver is not associated.",ERR,ERROR,*999)
     ENDIF
 
-    CALL EXITS("Characteristic_Extrapolate")
+    EXITS("Characteristic_Extrapolate")
     RETURN
-999 CALL ERRORS("Characteristic_Extrapolate",err,error)
-    CALL EXITS("Characteristic_Extrapolate")
+999 ERRORSEXITS("Characteristic_Extrapolate",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE Characteristic_Extrapolate
 
   !
@@ -1532,7 +1595,7 @@ CONTAINS
   !
 
   !>Calculate Characteristic (W) values based on dependent field values
-  SUBROUTINE Characteristic_PrimitiveToCharacteristic(equationsSet,err,error,*)
+  SUBROUTINE Characteristic_PrimitiveToCharacteristic(equationsSet,ERR,ERROR,*)
 
     !Argument variables
     TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet
@@ -1547,32 +1610,33 @@ CONTAINS
     LOGICAL :: boundaryNode
     TYPE(VARYING_STRING) :: localError
 
-    CALL ENTERS("Characteristic_PrimitiveToCharacteristic",err,error,*999)
+    ENTERS("Characteristic_PrimitiveToCharacteristic",ERR,ERROR,*999)
 
     NULLIFY(dependentField)
     NULLIFY(independentField)
     NULLIFY(materialsField)
     NULLIFY(fieldVariable)
 
-    IF (ASSOCIATED(equationsSet)) THEN
-      SELECT CASE(equationsSet%SUBTYPE)
+    IF(ASSOCIATED(equationsSet)) THEN
+      SELECT CASE(equationsSet%SPECIFICATION(3))
       CASE(EQUATIONS_SET_Coupled1D0D_NAVIER_STOKES_SUBTYPE, &
-         & EQUATIONS_SET_1DTRANSIENT_NAVIER_STOKES_SUBTYPE)
+         & EQUATIONS_SET_TRANSIENT1D_NAVIER_STOKES_SUBTYPE)
         dependentField=>equationsSet%DEPENDENT%DEPENDENT_FIELD
         independentField=>equationsSet%INDEPENDENT%INDEPENDENT_FIELD
         materialsField=>equationsSet%MATERIALS%MATERIALS_FIELD
       CASE DEFAULT
-        localError="Equations set subtype "//TRIM(NUMBER_TO_VSTRING(equationsSet%SUBTYPE,"*",err,error))// &
+        localError="The third equations set specification of "// &
+          & TRIM(NumberToVString(equationsSet%SPECIFICATION(3),"*",err,error))// &
           & " is not valid for a call to Characteristic_PrimitiveToCharacteristic"
-        CALL FLAG_ERROR(localError,err,error,*999)
+        CALL FlagError(localError,err,error,*999)
       END SELECT
     ELSE
-      CALL FLAG_ERROR("Equations set is not associated.",err,error,*999)
-    ENDIF
+      CALL FlagError("Equations set is not associated.",err,error,*999)
+    END IF
+
     derivativeIdx=1
     domainNodes=>dependentField%DECOMPOSITION%DOMAIN(dependentField%DECOMPOSITION%MESH_COMPONENT_NUMBER)% &
       & PTR%TOPOLOGY%NODES
-
 
     !!!--  L o o p   O v e r   L o c a l  N o d e s  --!!!
     DO nodeIdx=1,domainNodes%NUMBER_OF_NODES
@@ -1624,20 +1688,20 @@ CONTAINS
               !Update W values
               fieldVariable=>dependentField%VARIABLE_TYPE_MAP(FIELD_V_VARIABLE_TYPE)%PTR
               dofNumber=fieldVariable%COMPONENTS(componentIdx)%PARAM_TO_DOF_MAP%NODE_PARAM2DOF_MAP% &
-                & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(i)
+                & NODES(nodeNumber)%DERIVATIVES(derivativeIdx)%VERSIONS(versionIdx)
               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_DOF(dependentField,FIELD_V_VARIABLE_TYPE, &
-                & FIELD_VALUES_SET_TYPE,dofNumber,W(componentIdx,i),err,error,*999)
+               & FIELD_VALUES_SET_TYPE,dofNumber,W(componentIdx,versionIdx),ERR,ERROR,*999)
             ENDIF
           ENDDO
         ENDDO 
-      ENDIF !Branch check
-    ENDDO !Loop over nodes
+      ENDIF ! branch check
+    ENDDO ! Loop over nodes
 
-    CALL EXITS("Characteristic_PrimitiveToCharacteristic")
+    EXITS("Characteristic_PrimitiveToCharacteristic")
     RETURN
-999 CALL ERRORS("Characteristic_PrimitiveToCharacteristic",err,error)
-    CALL EXITS("Characteristic_PrimitiveToCharacteristic")
+999 ERRORSEXITS("Characteristic_PrimitiveToCharacteristic",ERR,ERROR)
     RETURN 1
+    
   END SUBROUTINE Characteristic_PrimitiveToCharacteristic
 
   !
