@@ -5130,8 +5130,12 @@ CONTAINS
                         !!!-- S T I F F N E S S  M A T R I X --!!!
                         IF (UPDATE_STIFFNESS_MATRIX) THEN
                           !Momentum Equation, gravitational force
-                          IF (mh==1 .AND. nh==2) THEN 
-                            SUM=PHINS*PHIMS*G0*slope
+                          IF (mh==1 .AND. nh==2) THEN
+                            SUM=-PHINS*PHIMS*beta/RHO* &
+                               & (k1*A0_DERIV/A0+      &    !dA0/dx (linear part)
+                               &  k2*E_DERIV/E+        &    !dE/dx  (linear part)
+                               &  k3*H_DERIV/H)*DXI_DX(1,1) !dH/dx  (linear part)
+                            !SUM=PHINS*PHIMS*G0*slope
                             STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)= &
                               & STIFFNESS_MATRIX%ELEMENT_MATRIX%MATRIX(mhs,nhs)+SUM*JGW
                           ENDIF
@@ -5150,13 +5154,13 @@ CONTAINS
                   IF (UPDATE_NONLINEAR_RESIDUAL) THEN
                     !Momentum Equation
                     IF (mh==1) THEN
-                      SUM=((2.0_DP*alpha*(Q_VALUE/A_VALUE)*Q_DERIV-                        & !Convective
-                        & alpha*((Q_VALUE/A_VALUE)**2)*A_DERIV+                            & !Convective
-                        & beta/RHO*(A_DERIV*b1*(A_VALUE/A0)**b1+                           & !dA/dx
-                        & k1*A0_DERIV*A_VALUE/A0*((1.0_DP-b1/k1)*(A_VALUE/A0)**b1-1.0_DP)+ & !dA0/dx
-                        & k2*E_DERIV*A_VALUE/E*((A_VALUE/A0)**b1-1.0_DP)+                  & !dE/dx
-                        & k3*H_DERIV*A_VALUE/H*((A_VALUE/A0)**b1-1.0_DP)))*                & !dH/dx
-                        & DXI_DX(1,1)+Fr*Q_VALUE/A_VALUE)*PHIMS                              !Viscosity
+                      SUM=((2.0_DP*alpha*(Q_VALUE/A_VALUE)*Q_DERIV-               & !Convective
+                        & alpha*((Q_VALUE/A_VALUE)**2)*A_DERIV+                   & !Convective
+                        & beta/RHO*(A_DERIV*b1*(A_VALUE/A0)**b1+                  & !dA/dx
+                        & k1*A0_DERIV*A_VALUE/A0*(1.0_DP-b1/k1)*(A_VALUE/A0)**b1+ & !dA0/dx (nonlinear part)
+                        & k2*E_DERIV*A_VALUE/E*(A_VALUE/A0)**b1+                  & !dE/dx  (nonlinear part)
+                        & k3*H_DERIV*A_VALUE/H*(A_VALUE/A0)**b1))*                & !dH/dx  (nonlinear part)
+                        & DXI_DX(1,1)+Fr*Q_VALUE/A_VALUE)*PHIMS                     !Viscosity
                       NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)= &
                         & NONLINEAR_MATRICES%ELEMENT_RESIDUAL%VECTOR(mhs)+SUM*JGW
                     ENDIF
@@ -5767,15 +5771,15 @@ CONTAINS
 
                           !Momentum Equation (dF/dA)
                           IF (mh==1 .AND. nh==2) THEN
-                            SUM=((2.0_DP*alpha*PHINS*(Q_VALUE**2)/(A_VALUE**3)*A_DERIV-                    & !Convective
-                              & 2.0_DP*alpha*PHINS*Q_VALUE/(A_VALUE**2)*Q_DERIV-                           & !Convective
-                              & alpha*(Q_VALUE/A_VALUE)**2*DPHINS_DXI(1)+                                  & !Convective
-                              & beta/RHO*(b1*(A_VALUE/A0)**b1*DPHINS_DXI(1)+                               & !dA/dx  
-                              & b1*PHINS/A0*(A_VALUE/A0)**(b1-1.0_DP)*A_DERIV+                             & !dA/dx  
-                              & k1*PHINS/A0*((b1+1.0_DP)*(1.0_DP-b1/k1)*(A_VALUE/A0)**b1-1.0_DP)*A0_DERIV+ & !dA0/dx
-                              & k2*PHINS/E*((b1+1.0_DP)*(A_VALUE/A0)**b1-1.0_DP)*E_DERIV+                  & !dE/dx  
-                              & k3*PHINS/H*((b1+1.0_DP)*(A_VALUE/A0)**b1-1.0_DP)*H_DERIV))*                & !dH/dx  
-                              & DXI_DX(1,1)-Fr*PHINS*Q_VALUE/A_VALUE**2)*PHIMS                               !Viscosity
+                            SUM=((2.0_DP*alpha*PHINS*(Q_VALUE**2)/(A_VALUE**3)*A_DERIV-             & !Convective
+                              & 2.0_DP*alpha*PHINS*Q_VALUE/(A_VALUE**2)*Q_DERIV-                    & !Convective
+                              & alpha*(Q_VALUE/A_VALUE)**2*DPHINS_DXI(1)+                           & !Convective
+                              & beta/RHO*(b1*(A_VALUE/A0)**b1*DPHINS_DXI(1)+                        & !dA/dx
+                              & b1*PHINS/A0*b1*(A_VALUE/A0)**(b1-1.0_DP)*A_DERIV+                   & !dA/dx
+                              & k1*PHINS/A0*((b1+1.0_DP)*(1.0_DP-b1/k1)*(A_VALUE/A0)**b1)*A0_DERIV+ & !dA0/dx
+                              & k2*PHINS/E*((b1+1.0_DP)*(A_VALUE/A0)**b1)*E_DERIV+                  & !dE/dx
+                              & k3*PHINS/H*((b1+1.0_DP)*(A_VALUE/A0)**b1)*H_DERIV))*                & !dH/dx
+                              & DXI_DX(1,1)-Fr*PHINS*Q_VALUE/A_VALUE**2)*PHIMS                        !Viscosity
                             JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)= &
                               & JACOBIAN_MATRIX%ELEMENT_JACOBIAN%MATRIX(mhs,nhs)+SUM*JGW
                           ENDIF
@@ -12780,129 +12784,6 @@ CONTAINS
               CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
                 & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,nodeIdx,2,ABoundary,err,error,*999)
 
-              V_DOWN  =.FALSE.
-              V_UP    =.FALSE.
-              V_LEG   =.TRUE.
-              V_ARM   =.TRUE.
-              V_HEAD  =.TRUE.
-              V_FEMOR =.TRUE.
-              V_KIDNEY=.TRUE.
-
-              IF (V_DOWN) THEN
-                IF (V_KIDNEY) THEN
-                  !Right Renal
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,117,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,259,1,QCellML,err,error,*999)
-                  !Left Renal
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,115,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,261,1,QCellML,err,error,*999)
-                ENDIF
-                IF (V_FEMOR) THEN
-                  !Right Internal Iliac
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,125,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,267,1,QCellML,err,error,*999)
-                  !Left Internal Iliac
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,161,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,287,1,QCellML,err,error,*999)
-                  !Right Deep Femoral
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,131,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,273,1,QCellML,err,error,*999)
-                  !Left Deep Femoral
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,167,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,293,1,QCellML,err,error,*999)
-                ENDIF
-                IF (V_LEG) THEN
-                  !Right Posterior Tibial
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,153,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,283,1,QCellML,err,error,*999)
-                  !Left Posterior Tibial
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,189,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,303,1,QCellML,err,error,*999)
-                  !Right Anterior Tibial
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,145,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,279,1,QCellML,err,error,*999)
-                  !Left Anterior Tibial
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,181,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,299,1,QCellML,err,error,*999)
-                ENDIF
-              ENDIF
-              IF (V_UP) THEN
-                IF (V_HEAD) THEN
-                  !Right External Carotid
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,45,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,226,1,QCellML,err,error,*999)
-                  !Left External Carotid
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,57,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,250,1,QCellML,err,error,*999)
-                  !Right Internal Carotid
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,49,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,228,1,QCellML,err,error,*999)
-                  !Left Internal Carotid
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,61,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,252,1,QCellML,err,error,*999)
-                ENDIF
-                IF (V_ARM) THEN
-                  !Right Ulnar
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,37,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,220,1,QCellML,err,error,*999)
-                  !Left Ulnar
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,85,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,244,1,QCellML/2.0_DP,err,error,*999)
-                  !Right Radial
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,33,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,216,1,QCellML/2.0_DP,err,error,*999)
-                  !Right Radial
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,33,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,222,1,QCellML/2.0_DP,err,error,*999)
-                  !Left Radial
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,85,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,242,1,QCellML/2.0_DP,err,error,*999)
-                  !Left Radial
-                  CALL Field_ParameterSetGetLocalNode(dependentField,FIELD_U_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                    & versionIdx,derivativeIdx,89,1,QCellML,err,error,*999)
-                  CALL FIELD_PARAMETER_SET_UPDATE_LOCAL_NODE(dependentField,FIELD_U_VARIABLE_TYPE, &
-                    & FIELD_VALUES_SET_TYPE,versionIdx,derivativeIdx,236,1,QCellML,err,error,*999)
-                ENDIF
-              ENDIF
-
             ! ------------------------------------------------------------
             ! S t r u c t u r e d   T r e e   B o u n d a r y
             ! ------------------------------------------------------------
@@ -12948,8 +12829,8 @@ CONTAINS
             ! ------------------------------------------------------------
             CASE(BOUNDARY_CONDITION_FIXED_OUTLET)
 
-              V_DOWN  =.TRUE.
-              V_UP    =.TRUE.
+              V_DOWN  =.FALSE.
+              V_UP    =.FALSE.
               V_LEG   =.TRUE.
               V_ARM   =.TRUE.
               V_HEAD  =.TRUE.
@@ -13112,7 +12993,6 @@ CONTAINS
     RETURN 1
     
   END SUBROUTINE NavierStokes_UpdateMultiscaleBoundary
-=======
 
   !
   !================================================================================================================================
