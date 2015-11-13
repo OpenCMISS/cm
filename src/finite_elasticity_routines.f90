@@ -2632,6 +2632,7 @@ CONTAINS
       !C(8)=c5_m2...power coefficient (Markert model) material 2
       !C(9)=alpha...activation parameter [0,1]
       !C(10)=trans...transition parameter [0,1] for the portion between the two materials
+      !C(11)=P_max...maximum isometric stress
 
       !Weighting the Mooney Rivlin parameters and obtaining resulting c1 and c2
       VAL1=C(1)*C(10)+C(5)*(1.0_DP-C(10))
@@ -2658,7 +2659,7 @@ CONTAINS
       !active part
       IF((SQRT(AZL(1,1))>0.84_DP).AND.(SQRT(AZL(1,1))<1.96_DP)) THEN
         VALUE=(-25.0_DP/4.0_DP*AZL(1,1)/1.4/1.4 + 25.0_DP/2.0_DP*SQRT(AZL(1,1))/1.4_DP - 5.25_DP)
-        VALUE=VALUE*(1/SQRT(AZL(1,1)))*300000000*C(9)*C(10)  ! P_max here as a constant
+        VALUE=VALUE*(1/SQRT(AZL(1,1)))*C(9)*C(10)*C(11)
       ENDIF
 
     CASE(EQUATIONS_SET_ISOTROPIC_EXPONENTIAL_SUBTYPE)
@@ -5063,7 +5064,7 @@ CONTAINS
               CASE(EQUATIONS_SET_TRANSVERSE_ISOTROPIC_ACTIVE_SUBTYPE)
                 NUMBER_OF_COMPONENTS = 5;
               CASE(EQUATIONS_SET_TRANS_ISOTROPIC_ACTIVE_TRANSITION_SUBTYPE)
-                NUMBER_OF_COMPONENTS = 10;
+                NUMBER_OF_COMPONENTS = 11;
               CASE(EQUATIONS_SET_ORTHOTROPIC_MATERIAL_COSTA_SUBTYPE,EQUATIONS_SET_ACTIVECONTRACTION_SUBTYPE)
                 NUMBER_OF_COMPONENTS = 7;
               CASE(EQUATIONS_SET_COMPRESSIBLE_FINITE_ELASTICITY_SUBTYPE,EQUATIONS_SET_COMPRESSIBLE_ACTIVECONTRACTION_SUBTYPE,&
