@@ -100,7 +100,7 @@ MODULE EQUATIONS_SET_ROUTINES
   
   PUBLIC EQUATIONS_SET_ASSEMBLE
   
-  PUBLIC EQUATIONS_SET_BACKSUBSTITUTE,EQUATIONS_SET_NONLINEAR_RHS_UPDATE
+  PUBLIC EquationsSet_Backsubstitute
   
   PUBLIC EQUATIONS_SET_BOUNDARY_CONDITIONS_ANALYTIC
 
@@ -1818,414 +1818,282 @@ CONTAINS
   !
 
   !>Backsubstitutes with an equations set to calculate unknown right hand side vectors
-  SUBROUTINE EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
+  SUBROUTINE EquationsSet_Backsubstitute(equationsSet,boundaryConditions,err,error,*)
 
     !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set to backsubstitute
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<The boundary conditions to use for the backsubstitution
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
+    TYPE(EQUATIONS_SET_TYPE), POINTER :: equationsSet !<A pointer to the equations set to backsubstitute
+    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: boundaryConditions !<The boundary conditions to use for the backsubstitution
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
     !Local Variables
-    INTEGER(INTG) :: equations_column_idx,equations_column_number,equations_matrix_idx,equations_row_number, &
-      & EQUATIONS_STORAGE_TYPE,rhs_boundary_condition,rhs_global_dof,rhs_variable_dof,RHS_VARIABLE_TYPE,variable_dof,VARIABLE_TYPE
-    INTEGER(INTG), POINTER :: COLUMN_INDICES(:),ROW_INDICES(:)
-    REAL(DP) :: DEPENDENT_VALUE,MATRIX_VALUE,RHS_VALUE,SOURCE_VALUE
-    REAL(DP), POINTER :: DEPENDENT_PARAMETERS(:),EQUATIONS_MATRIX_DATA(:),SOURCE_VECTOR_DATA(:)
-    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: RHS_BOUNDARY_CONDITIONS
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: COLUMN_DOMAIN_MAPPING,RHS_DOMAIN_MAPPING
-    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: EQUATIONS_DISTRIBUTED_MATRIX
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: SOURCE_DISTRIBUTED_VECTOR
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: LINEAR_MAPPING
-    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
-    TYPE(EQUATIONS_MAPPING_SOURCE_TYPE), POINTER :: SOURCE_MAPPING
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: DYNAMIC_MATRICES
-    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: LINEAR_MATRICES
-    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: SOURCE_VECTOR
-    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: EQUATIONS_MATRIX
-    TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: DEPENDENT_VARIABLE,RHS_VARIABLE
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
+    INTEGER(INTG) :: dynamicVariableType,equationsRowNumber,linearMatrixIdx,linearVariableType,rhsBoundaryCondition, &
+      & rhsGlobalDOF,rhsVariableDOF,rhsVariableType
+    REAL(DP) :: dynamicValue,lhsValue,linearValue,rhsValue
+    REAL(DP), POINTER :: residualData(:),sourceData(:)
+    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: rhsBoundaryConditions
+    TYPE(DISTRIBUTED_MATRIX_TYPE), POINTER :: distributedDampingMatrix,distributedLinearMatrix,distributedMassMatrix, &
+      & distributedStiffnessMatrix
+    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: distributedaccelerationVector,distributedDisplacementVector, &
+      & distributedLinearVector,distributedResidualVector,distributedSourceVector,distributedVelocityVector
+    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: domainMapping
+    TYPE(EQUATIONS_TYPE), POINTER :: equations
+    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: equationsMapping
+    TYPE(EQUATIONS_MAPPING_DYNAMIC_TYPE), POINTER :: dynamicMapping
+    TYPE(EQUATIONS_MAPPING_LINEAR_TYPE), POINTER :: linearMapping
+    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: nonlinearMapping
+    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: rhsMapping
+    TYPE(EQUATIONS_MAPPING_SOURCE_TYPE), POINTER :: sourceMapping
+    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: equationsMatrices
+    TYPE(EQUATIONS_MATRICES_DYNAMIC_TYPE), POINTER :: dynamicMatrices
+    TYPE(EQUATIONS_MATRICES_LINEAR_TYPE), POINTER :: linearMatrices
+    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: nonlinearMatrices
+    TYPE(EQUATIONS_MATRICES_SOURCE_TYPE), POINTER :: sourceVector
+    TYPE(EQUATIONS_MATRIX_TYPE), POINTER :: dampingMatrix,linearMatrix,massMatrix,stiffnessMatrix
+    TYPE(FIELD_TYPE), POINTER :: dependentField
+    TYPE(FIELD_VARIABLE_TYPE), POINTER :: dynamicVariable,rhsVariable
+    TYPE(VARYING_STRING) :: localError
 
-    NULLIFY(DEPENDENT_PARAMETERS)
-    NULLIFY(EQUATIONS_MATRIX_DATA)
-    NULLIFY(SOURCE_VECTOR_DATA)
+    NULLIFY(sourceData)
+    NULLIFY(residualData)
+    
+    ENTERS("EquationsSet_Backsubstitute",err,error,*999)
 
-    ENTERS("EQUATIONS_SET_BACKSUBSTITUTE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      IF(EQUATIONS_SET%EQUATIONS_SET_FINISHED) THEN
-        DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
-        IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-          EQUATIONS=>EQUATIONS_SET%EQUATIONS
-          IF(ASSOCIATED(EQUATIONS)) THEN
-            EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-            IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-              DYNAMIC_MATRICES=>EQUATIONS_MATRICES%DYNAMIC_MATRICES
-              IF(ASSOCIATED(DYNAMIC_MATRICES)) THEN
-                !CALL FlagError("Not implemented.",ERR,ERROR,*999)
-              ELSE
-                LINEAR_MATRICES=>EQUATIONS_MATRICES%LINEAR_MATRICES
-                IF(ASSOCIATED(LINEAR_MATRICES)) THEN
-                  EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-                  IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-                    LINEAR_MAPPING=>EQUATIONS_MAPPING%LINEAR_MAPPING
-                    IF(ASSOCIATED(LINEAR_MAPPING)) THEN
-                      RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-                      SOURCE_MAPPING=>EQUATIONS_MAPPING%SOURCE_MAPPING
-                      IF(ASSOCIATED(RHS_MAPPING)) THEN
-                        IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-                          IF(ASSOCIATED(SOURCE_MAPPING)) THEN
-                            SOURCE_VECTOR=>EQUATIONS_MATRICES%SOURCE_VECTOR
-                            IF(ASSOCIATED(SOURCE_VECTOR)) THEN
-                              SOURCE_DISTRIBUTED_VECTOR=>SOURCE_VECTOR%VECTOR
-                              IF(ASSOCIATED(SOURCE_DISTRIBUTED_VECTOR)) THEN
-                                CALL DISTRIBUTED_VECTOR_DATA_GET(SOURCE_DISTRIBUTED_VECTOR,SOURCE_VECTOR_DATA,ERR,ERROR,*999)
-                              ELSE
-                                CALL FlagError("Source distributed vector is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FlagError("Source vector is not associated.",ERR,ERROR,*999)
-                            ENDIF
-                          ENDIF
-                          RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
-                          IF(ASSOCIATED(RHS_VARIABLE)) THEN
-                            RHS_VARIABLE_TYPE=RHS_VARIABLE%VARIABLE_TYPE
-                            RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
-                            IF(ASSOCIATED(RHS_DOMAIN_MAPPING)) THEN
-                              CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,RHS_VARIABLE,RHS_BOUNDARY_CONDITIONS, &
-                                & ERR,ERROR,*999)
-                              IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
-                                !Loop over the equations matrices
-                                DO equations_matrix_idx=1,LINEAR_MATRICES%NUMBER_OF_LINEAR_MATRICES
-                                  DEPENDENT_VARIABLE=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)%VARIABLE
-                                  IF(ASSOCIATED(DEPENDENT_VARIABLE)) THEN
-                                    VARIABLE_TYPE=DEPENDENT_VARIABLE%VARIABLE_TYPE
-                                    !Get the dependent field variable parameters
-                                    CALL Field_ParameterSetDataGet(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                      & DEPENDENT_PARAMETERS,ERR,ERROR,*999)
-                                    EQUATIONS_MATRIX=>LINEAR_MATRICES%MATRICES(equations_matrix_idx)%PTR
-                                    IF(ASSOCIATED(EQUATIONS_MATRIX)) THEN
-                                      COLUMN_DOMAIN_MAPPING=>LINEAR_MAPPING%EQUATIONS_MATRIX_TO_VAR_MAPS(equations_matrix_idx)% &
-                                        & COLUMN_DOFS_MAPPING
-                                      IF(ASSOCIATED(COLUMN_DOMAIN_MAPPING)) THEN
-                                        EQUATIONS_DISTRIBUTED_MATRIX=>EQUATIONS_MATRIX%MATRIX
-                                        IF(ASSOCIATED(EQUATIONS_DISTRIBUTED_MATRIX)) THEN
-                                          CALL DISTRIBUTED_MATRIX_STORAGE_TYPE_GET(EQUATIONS_DISTRIBUTED_MATRIX, &
-                                            & EQUATIONS_STORAGE_TYPE,ERR,ERROR,*999)
-                                          CALL DISTRIBUTED_MATRIX_DATA_GET(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_MATRIX_DATA, &
-                                            & ERR,ERROR,*999)
-                                          SELECT CASE(EQUATIONS_STORAGE_TYPE)
-                                          CASE(DISTRIBUTED_MATRIX_BLOCK_STORAGE_TYPE)
-                                            !Loop over the non ghosted rows in the equations set
-                                            DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
-                                              RHS_VALUE=0.0_DP
-                                              rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
-                                              rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
-                                              rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%DOF_TYPES(rhs_global_dof)
-                                              !For free RHS DOFs, set the right hand side field values by multiplying the
-                                              !row by the dependent variable value
-                                              SELECT CASE(rhs_boundary_condition)
-                                              CASE(BOUNDARY_CONDITION_DOF_FREE)
-                                                !Back substitute
-                                                !Loop over the local columns of the equations matrix
-                                                DO equations_column_idx=1,COLUMN_DOMAIN_MAPPING%TOTAL_NUMBER_OF_LOCAL
-                                                  equations_column_number=COLUMN_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP( &
-                                                    & equations_column_idx)
-                                                  variable_dof=equations_column_idx
-                                                  MATRIX_VALUE=EQUATIONS_MATRIX_DATA(equations_row_number+ &
-                                                    & (equations_column_number-1)*EQUATIONS_MATRICES%TOTAL_NUMBER_OF_ROWS)
-                                                  DEPENDENT_VALUE=DEPENDENT_PARAMETERS(variable_dof)
-                                                  RHS_VALUE=RHS_VALUE+MATRIX_VALUE*DEPENDENT_VALUE
-                                                ENDDO !equations_column_idx
-                                              CASE(BOUNDARY_CONDITION_DOF_FIXED)
-                                                !Do nothing
-                                              CASE(BOUNDARY_CONDITION_DOF_MIXED)
-                                                !Robin or is it Cauchy??? boundary conditions
-                                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
-                                              CASE DEFAULT
-                                                LOCAL_ERROR="The RHS variable boundary condition of "// &
-                                                  & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
-                                                  & " for RHS variable dof number "// &
-                                                  & TRIM(NUMBER_TO_VSTRING(rhs_variable_dof,"*",ERR,ERROR))//" is invalid."
-                                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-                                              END SELECT
-                                              IF(ASSOCIATED(SOURCE_MAPPING)) THEN
-                                                SOURCE_VALUE=SOURCE_VECTOR_DATA(equations_row_number)
-                                                RHS_VALUE=RHS_VALUE-SOURCE_VALUE
-                                              ENDIF
-                                              CALL Field_ParameterSetUpdateLocalDOF(DEPENDENT_FIELD,RHS_VARIABLE_TYPE, &
-                                                & FIELD_VALUES_SET_TYPE,rhs_variable_dof,RHS_VALUE,ERR,ERROR,*999)
-                                            ENDDO !equations_row_number
-                                          CASE(DISTRIBUTED_MATRIX_DIAGONAL_STORAGE_TYPE)
-                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
-                                          CASE(DISTRIBUTED_MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
-                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
-                                          CASE(DISTRIBUTED_MATRIX_ROW_MAJOR_STORAGE_TYPE)
-                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
-                                          CASE(DISTRIBUTED_MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
-                                            CALL DISTRIBUTED_MATRIX_STORAGE_LOCATIONS_GET(EQUATIONS_DISTRIBUTED_MATRIX, &
-                                              & ROW_INDICES,COLUMN_INDICES,ERR,ERROR,*999)
-                                            !Loop over the non-ghosted rows in the equations set
-                                            DO equations_row_number=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
-                                              RHS_VALUE=0.0_DP
-                                              rhs_variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(equations_row_number)
-                                              rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(rhs_variable_dof)
-                                              rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%DOF_TYPES(rhs_global_dof)
-                                              SELECT CASE(rhs_boundary_condition)
-                                              CASE(BOUNDARY_CONDITION_DOF_FREE)
-                                                !Back substitute
-                                                !Loop over the local columns of the equations matrix
-                                                DO equations_column_idx=ROW_INDICES(equations_row_number), &
-                                                  ROW_INDICES(equations_row_number+1)-1
-                                                  equations_column_number=COLUMN_INDICES(equations_column_idx)
-                                                  variable_dof=equations_column_idx-ROW_INDICES(equations_row_number)+1
-                                                  MATRIX_VALUE=EQUATIONS_MATRIX_DATA(equations_column_idx)
-                                                  DEPENDENT_VALUE=DEPENDENT_PARAMETERS(variable_dof)
-                                                  RHS_VALUE=RHS_VALUE+MATRIX_VALUE*DEPENDENT_VALUE
-                                                ENDDO !equations_column_idx
-                                              CASE(BOUNDARY_CONDITION_DOF_FIXED)
-                                                !Do nothing
-                                              CASE(BOUNDARY_CONDITION_DOF_MIXED)
-                                                !Robin or is it Cauchy??? boundary conditions
-                                                CALL FlagError("Not implemented.",ERR,ERROR,*999)
-                                              CASE DEFAULT
-                                                LOCAL_ERROR="The global boundary condition of "// &
-                                                  & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
-                                                  & " for RHS variable dof number "// &
-                                                  & TRIM(NUMBER_TO_VSTRING(rhs_variable_dof,"*",ERR,ERROR))//" is invalid."
-                                                CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-                                              END SELECT
-                                              IF(ASSOCIATED(SOURCE_MAPPING)) THEN
-                                                SOURCE_VALUE=SOURCE_VECTOR_DATA(equations_row_number)
-                                                RHS_VALUE=RHS_VALUE-SOURCE_VALUE
-                                              ENDIF
-                                              CALL Field_ParameterSetUpdateLocalDOF(DEPENDENT_FIELD,RHS_VARIABLE_TYPE, &
-                                                & FIELD_VALUES_SET_TYPE,rhs_variable_dof,RHS_VALUE,ERR,ERROR,*999)
-                                            ENDDO !equations_row_number
-                                          CASE(DISTRIBUTED_MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
-                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
-                                          CASE(DISTRIBUTED_MATRIX_ROW_COLUMN_STORAGE_TYPE)
-                                            CALL FlagError("Not implemented.",ERR,ERROR,*999)
-                                          CASE DEFAULT
-                                            LOCAL_ERROR="The matrix storage type of "// &
-                                              & TRIM(NUMBER_TO_VSTRING(EQUATIONS_STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
-                                            CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-                                          END SELECT
-                                          CALL DISTRIBUTED_MATRIX_DATA_RESTORE(EQUATIONS_DISTRIBUTED_MATRIX,EQUATIONS_MATRIX_DATA, &
-                                            & ERR,ERROR,*999)
-                                        ELSE
-                                          CALL FlagError("Equations matrix distributed matrix is not associated.",ERR,ERROR,*999)
-                                        ENDIF
-                                      ELSE
-                                        CALL FlagError("Equations column domain mapping is not associated.",ERR,ERROR,*999)
-                                      ENDIF
-                                    ELSE
-                                      CALL FlagError("Equations equations matrix is not associated.",ERR,ERROR,*999)
-                                    ENDIF
-                                    !Restore the dependent field variable parameters
-                                    CALL Field_ParameterSetDataRestore(DEPENDENT_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                      & DEPENDENT_PARAMETERS,ERR,ERROR,*999)
-                                  ELSE
-                                    CALL FlagError("Dependent variable is not associated.",ERR,ERROR,*999)
-                                  ENDIF
-                                ENDDO !equations_matrix_idx
-                                !Start the update of the field parameters
-                                CALL Field_ParameterSetUpdateStart(DEPENDENT_FIELD,RHS_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                  & ERR,ERROR,*999)
-                                !Finish the update of the field parameters
-                                CALL Field_ParameterSetUpdateFinish(DEPENDENT_FIELD,RHS_VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                  & ERR,ERROR,*999)
-                              ELSE
-                                CALL FlagError("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
-                              ENDIF
-                            ELSE
-                              CALL FlagError("RHS variable domain mapping is not associated.",ERR,ERROR,*999)
-                            ENDIF
-                          ELSE
-                            CALL FlagError("RHS variable is not associated.",ERR,ERROR,*999)
-                          ENDIF
-                          IF(ASSOCIATED(SOURCE_MAPPING)) THEN
-                            CALL DISTRIBUTED_VECTOR_DATA_RESTORE(SOURCE_DISTRIBUTED_VECTOR,SOURCE_VECTOR_DATA,ERR,ERROR,*999)
-                          ENDIF
+    IF(ASSOCIATED(equationsSet)) THEN
+      IF(equationsSet%EQUATIONS_SET_FINISHED) THEN
+        dependentField=>equationsSet%dependent%DEPENDENT_FIELD
+        IF(ASSOCIATED(dependentField)) THEN
+          equations=>equationsSet%equations
+          IF(ASSOCIATED(equations)) THEN
+            equationsMatrices=>equations%EQUATIONS_MATRICES
+            IF(ASSOCIATED(equationsMatrices)) THEN
+              equationsMapping=>equations%EQUATIONS_MAPPING
+              IF(ASSOCIATED(equationsMapping)) THEN
+                dynamicMapping=>equationsMapping%DYNAMIC_MAPPING
+                IF(ASSOCIATED(dynamicMapping)) THEN
+                  !Setup any dynamic contributions
+                  dynamicVariableType=dynamicMapping%DYNAMIC_VARIABLE_TYPE
+                  dynamicVariable=>dynamicMapping%DYNAMIC_VARIABLE
+                  IF(ASSOCIATED(dynamicVariable)) THEN
+                    dynamicMatrices=>equationsMatrices%DYNAMIC_MATRICES
+                    IF(ASSOCIATED(dynamicMatrices)) THEN
+                      IF(dynamicMapping%STIFFNESS_MATRIX_NUMBER/=0) THEN
+                        !Get stiffness matrix displacement data
+                        stiffnessMatrix=>dynamicMatrices%matrices(dynamicMapping%STIFFNESS_MATRIX_NUMBER)%ptr
+                        IF(ASSOCIATED(stiffnessMatrix)) THEN
+                          distributedStiffnessMatrix=>stiffnessMatrix%matrix
+                          NULLIFY(distributedDisplacementVector)
+                          CALL Field_ParameterSetVectorGet(dependentField,dynamicVariableType, &
+                            & FIELD_VALUES_SET_TYPE,distributedDisplacementVector,err,error,*999)
                         ELSE
-                          CALL FlagError("Boundary conditions are not associated.",ERR,ERROR,*999)
+                          CALL FlagError("Dynamic stiffness matrix is not associated.",err,error,*999)
                         ENDIF
-                      ELSE
-                        CALL FlagError("Equations mapping RHS mappings is not associated.",ERR,ERROR,*999)
+                      ENDIF
+                      IF(dynamicMapping%DAMPING_MATRIX_NUMBER/=0.AND. &
+                        & equations%TIME_DEPENDENCE>=EQUATIONS_FIRST_ORDER_DYNAMIC) THEN
+                        !Get damping matrix velocity data
+                        dampingMatrix=>dynamicMatrices%matrices(dynamicMapping%DAMPING_MATRIX_NUMBER)%ptr
+                        IF(ASSOCIATED(dampingMatrix)) THEN
+                          distributedDampingMatrix=>dampingMatrix%matrix
+                          NULLIFY(distributedVelocityVector)
+                          CALL Field_ParameterSetVectorGet(dependentField,dynamicVariableType, &
+                            & FIELD_VELOCITY_VALUES_SET_TYPE,distributedVelocityVector,err,error,*999)
+                        ELSE
+                          CALL FlagError("Dynamic damping matrix is not associated.",err,error,*999)
+                        ENDIF
+                      ENDIF
+                      IF(dynamicMapping%MASS_MATRIX_NUMBER/=0.AND. &
+                        & equations%TIME_DEPENDENCE>=EQUATIONS_SECOND_ORDER_DYNAMIC) THEN
+                        !Get mass matrix acceleration data
+                        massMatrix=>dynamicMatrices%matrices(dynamicMapping%MASS_MATRIX_NUMBER)%ptr
+                        IF(ASSOCIATED(massMatrix)) THEN
+                          distributedMassMatrix=>massMatrix%matrix
+                          NULLIFY(distributedAccelerationVector)
+                          CALL Field_ParameterSetVectorGet(dependentField,dynamicVariableType, &
+                            & FIELD_ACCELERATION_VALUES_SET_TYPE,distributedAccelerationVector,err,error,*999)
+                        ELSE
+                          CALL FlagError("Dynamic mass matrix is not associated.",err,error,*999)
+                        ENDIF
                       ENDIF
                     ELSE
-                      CALL FlagError("Equations mapping linear mapping is not associated.",ERR,ERROR,*999)
+                      CALL FlagError("Equations matrices dynamic matrices is not associated.",err,error,*999)
                     ENDIF
                   ELSE
-                    CALL FlagError("Equations mapping is not associated.",ERR,ERROR,*999)
+                    CALL FlagError("Dynamic mapping dynamic variable is not associated.",err,error,*999)
                   ENDIF
-                ELSE
-                  CALL FlagError("Equations matrices linear matrices is not associated.",ERR,ERROR,*999)
+                ENDIF
+                linearMapping=>equationsMapping%LINEAR_MAPPING
+                IF(ASSOCIATED(linearMapping)) THEN
+                  !Setup any linear contributions
+                  linearMatrices=>equationsMatrices%LINEAR_MATRICES
+                  IF(ASSOCIATED(linearMatrices)) THEN
+                    DO linearMatrixIdx=1,linearMatrices%NUMBER_OF_LINEAR_MATRICES
+                      linearMatrix=>linearMatrices%matrices(linearMatrixIdx)%ptr
+                      IF(.NOT.ASSOCIATED(linearMatrix)) THEN
+                        localError="Linear matrix number "//TRIM(NumberToVstring(linearMatrixIdx,"*",err,error))// &
+                          & " is not associated."
+                        CALL FlagError(localError,err,error,*999)
+                      ENDIF
+                    ENDDO !linearMatrixIdx
+                  ELSE
+                    CALL FlagError("Equations matrices linear matrices is not associated.",err,error,*999)
+                  ENDIF
+                ENDIF
+                nonlinearMapping=>equationsMapping%NONLINEAR_MAPPING
+                IF(ASSOCIATED(nonlinearMapping)) THEN
+                  !Setup any nonlinear contributions
+                  nonlinearMatrices=>equationsMatrices%NONLINEAR_MATRICES
+                  IF(ASSOCIATED(nonlinearMatrices)) THEN
+                    distributedResidualVector=>nonlinearMatrices%residual
+                    IF(ASSOCIATED(distributedResidualVector)) THEN
+                      CALL DistributedVector_DataGet(distributedResidualVector,residualData,err,error,*999)
+                    ELSE
+                      CALL FlagError("Nonlinear matrices residual is not associated.",err,error,*999)
+                    ENDIF
+                  ELSE
+                    CALL FlagError("Equations matrices nonlinear matrices is not associated.",err,error,*999)
+                  ENDIF
+                ENDIF
+                sourceMapping=>equationsMapping%SOURCE_MAPPING
+                IF(ASSOCIATED(sourceMapping)) THEN
+                  !Setup any source contributions
+                  sourceVector=>equationsMatrices%SOURCE_VECTOR
+                  IF(ASSOCIATED(sourceVector)) THEN
+                    distributedSourceVector=>sourceVector%vector
+                    IF(ASSOCIATED(distributedSourceVector)) THEN
+                      CALL DistributedVector_DataGet(distributedSourceVector,sourceData,err,error,*999)
+                    ELSE
+                      CALL FlagError("Source vector distributed vector is not associated.",err,error,*999)
+                    ENDIF
+                  ELSE
+                    CALL FlagError("Equations matrices source vector is not associated.",err,error,*999)
+                  ENDIF                  
+                ENDIF
+                rhsMapping=>equationsMapping%RHS_MAPPING
+                IF(ASSOCIATED(rhsMapping)) THEN
+                  !Calculate unknown RHS values
+                  rhsVariableType=rhsMapping%RHS_VARIABLE_TYPE
+                  rhsVariable=>rhsMapping%RHS_VARIABLE
+                  IF(ASSOCIATED(rhsVariable)) THEN
+                    domainMapping=>rhsVariable%DOMAIN_MAPPING
+                    IF(ASSOCIATED(domainMapping)) THEN
+                      NULLIFY(rhsBoundaryConditions)
+                      CALL BoundaryConditions_VariableGet(boundaryConditions,rhsVariable,rhsBoundaryConditions,err,error,*999)
+                      IF(ASSOCIATED(rhsBoundaryConditions)) THEN
+                        !Loop over the non ghosted rows in the equations set
+                        DO equationsRowNumber=1,equationsMapping%NUMBER_OF_ROWS
+                          rhsVariableDOF=rhsMapping%EQUATIONS_ROW_TO_RHS_DOF_MAP(equationsRowNumber)
+                          rhsGlobalDOF=domainMapping%LOCAL_TO_GLOBAL_MAP(rhsVariableDOF)
+                          rhsBoundaryCondition=rhsBoundaryConditions%DOF_TYPES(rhsGlobalDOF)
+                          !For free RHS DOFs, set the right hand side field values by multiplying the
+                          !row by the dependent variable value
+!!TODO: WHAT ABOUT POINT NEUMMAN CONDITIONS???
+                          SELECT CASE(rhsBoundaryCondition)
+                          CASE(BOUNDARY_CONDITION_DOF_FREE)
+                            !Back substitute
+                            lhsValue=0.0
+                            IF(ASSOCIATED(dynamicMapping)) THEN
+                              !Add in any dynamic contributions
+                              IF(ASSOCIATED(stiffnessMatrix)) THEN
+                                CALL DistributedMatrix_MatrixRowByVector(equationsRowNumber,distributedStiffnessMatrix, &
+                                  & distributedDisplacementVector,dynamicValue,err,error,*999)
+                                lhsValue=lhsValue+dynamicValue
+                              ENDIF
+                              IF(ASSOCIATED(dampingMatrix)) THEN
+                                CALL DistributedMatrix_MatrixRowByVector(equationsRowNumber,distributedDampingMatrix, &
+                                  & distributedVelocityVector,dynamicValue,err,error,*999)
+                                lhsValue=lhsValue+dynamicValue
+                              ENDIF
+                              IF(ASSOCIATED(massMatrix)) THEN
+                                CALL DistributedMatrix_MatrixRowByVector(equationsRowNumber,distributedMassMatrix, &
+                                  & distributedAccelerationVector,dynamicValue,err,error,*999)
+                                lhsValue=lhsValue+dynamicValue
+                              ENDIF
+                            ENDIF
+                            IF(ASSOCIATED(linearMapping)) THEN
+                              !Add in any linear contributions
+                              DO linearMatrixIdx=1,linearMatrices%NUMBER_OF_LINEAR_MATRICES
+                                linearMatrix=>linearMatrices%matrices(linearMatrixIdx)%ptr
+                                distributedLinearMatrix=>linearMatrix%matrix
+                                linearVariableType=linearMapping%EQUATIONS_MATRIX_TO_VAR_MAPS(linearMatrixIdx)%VARIABLE_TYPE
+                                NULLIFY(distributedLinearVector)
+                                CALL Field_ParameterSetVectorGet(dependentField,linearVariableType,FIELD_VALUES_SET_TYPE, &
+                                  & distributedLinearVector,err,error,*999)
+                                CALL DistributedMatrix_MatrixRowByVector(equationsRowNumber,distributedLinearMatrix, &
+                                  & distributedLinearVector,linearValue,err,error,*999)
+                                lhsValue=lhsValue+linearValue
+                              ENDDO !linearMatrixIdx
+                            ENDIF
+                            IF(ASSOCIATED(nonlinearMapping)) THEN
+                              !Add in any nonlinear contributions
+                              lhsValue=lhsValue+residualData(equationsRowNumber)
+                            ENDIF
+                            IF(ASSOCIATED(sourceMapping)) THEN
+                              !Add in any source contributions
+                              lhsValue=lhsValue+sourceData(equationsRowNumber)
+                            ENDIF
+                            !Make the equations row equal zero and set RHS value
+                            rhsValue=-lhsValue
+                            CALL Field_ParameterSetUpdateLocalDOF(dependentField,rhsVariableType,FIELD_VALUES_SET_TYPE, &
+                              & rhsVariableDOF,rhsValue,err,error,*999)
+                          CASE(BOUNDARY_CONDITION_DOF_FIXED)
+                            !Do nothing
+                          CASE(BOUNDARY_CONDITION_DOF_MIXED)
+                            !Robin or is it Cauchy??? boundary conditions
+                            CALL FlagError("Not implemented.",err,error,*999)
+                          CASE DEFAULT
+                            localError="The RHS variable boundary condition of "// &
+                              & TRIM(NumberToVstring(rhsBoundaryCondition,"*",err,error))//" for RHS variable dof number "// &
+                              & TRIM(NumberToVstring(rhsVariableDOF,"*",err,error))//" is invalid."
+                            CALL FlagError(localError,err,error,*999)
+                          END SELECT
+                        ENDDO !equationsRowNumber                      
+                      ELSE
+                        CALL FlagError("RHS boundary conditions is not associated.",err,error,*999)
+                      ENDIF
+                    ELSE
+                      CALL FlagError("RHS variable domain mapping is not associated.",err,error,*999)
+                    ENDIF
+                  ENDIF
+                  !Start the update of the field parameters
+                  CALL Field_ParameterSetUpdateStart(dependentField,rhsVariableType,FIELD_VALUES_SET_TYPE,err,error,*999)
+                  !Restore data
+                  IF(ASSOCIATED(sourceMapping)) THEN
+                    CALL DistributedVector_DataRestore(distributedSourceVector,sourceData,err,error,*999)
+                  ENDIF
+                  IF(ASSOCIATED(nonlinearMapping)) THEN
+                    CALL DistributedVector_DataRestore(distributedResidualVector,residualData,err,error,*999)
+                  ENDIF
+                  !Finish the update of the field parameters
+                  CALL Field_ParameterSetUpdateFinish(dependentField,rhsVariableType,FIELD_VALUES_SET_TYPE,err,error,*999)
                 ENDIF
               ENDIF
             ELSE
-              CALL FlagError("Equations matrices is not associated.",ERR,ERROR,*999)
+              CALL FlagError("Equations matrices is not associated.",err,error,*999)
             ENDIF
           ELSE
-            CALL FlagError("Equations is not associated.",ERR,ERROR,*999)
+            CALL FlagError("Equations is not associated.",err,error,*999)
           ENDIF
         ELSE
-          CALL FlagError("Dependent field is not associated.",ERR,ERROR,*999)
+          CALL FlagError("Dependent field is not associated.",err,error,*999)
         ENDIF
       ELSE            
-        CALL FlagError("Equations set has not been finished.",ERR,ERROR,*999)
+        CALL FlagError("Equations set has not been finished.",err,error,*999)
       ENDIF
     ELSE
-      CALL FlagError("Equations set is not associated",ERR,ERROR,*999)
+      CALL FlagError("Equations set is not associated",err,error,*999)
     ENDIF
           
-    EXITS("EQUATIONS_SET_BACKSUBSTITUTE")
+    EXITS("EquationsSet_Backsubstitute")
     RETURN
-999 ERRORSEXITS("EQUATIONS_SET_BACKSUBSTITUTE",ERR,ERROR)
+999 IF(ASSOCIATED(distributedSourceVector)) CALL DistributedVector_DataRestore(distributedSourceVector,sourceData, &
+      & err,error,*998)
+998 IF(ASSOCIATED(distributedResidualVector)) CALL DistributedVector_DataRestore(distributedResidualVector,residualData, &
+      & err,error,*997)
+997 ERRORSEXITS("EquationsSet_Backsubstitute",err,error)
     RETURN 1
    
-  END SUBROUTINE EQUATIONS_SET_BACKSUBSTITUTE
+  END SUBROUTINE EquationsSet_Backsubstitute
   
-  !
-  !================================================================================================================================
-  !
-
-  !>Updates the right hand side variable from the equations residual vector
-  SUBROUTINE EQUATIONS_SET_NONLINEAR_RHS_UPDATE(EQUATIONS_SET,BOUNDARY_CONDITIONS,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    TYPE(BOUNDARY_CONDITIONS_TYPE), POINTER :: BOUNDARY_CONDITIONS !<Boundary conditions to use for the RHS update
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    INTEGER(INTG) :: variable_dof,row_idx,VARIABLE_TYPE,rhs_global_dof,rhs_boundary_condition,equations_matrix_idx
-    REAL(DP) :: VALUE
-    TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
-    TYPE(EQUATIONS_MAPPING_TYPE), POINTER :: EQUATIONS_MAPPING
-    TYPE(EQUATIONS_MAPPING_NONLINEAR_TYPE), POINTER :: NONLINEAR_MAPPING
-    TYPE(EQUATIONS_MAPPING_RHS_TYPE), POINTER :: RHS_MAPPING
-    TYPE(EQUATIONS_MATRICES_TYPE), POINTER :: EQUATIONS_MATRICES
-    TYPE(EQUATIONS_MATRICES_NONLINEAR_TYPE), POINTER :: NONLINEAR_MATRICES
-    TYPE(DISTRIBUTED_VECTOR_TYPE), POINTER :: RESIDUAL_VECTOR
-    TYPE(FIELD_TYPE), POINTER :: RHS_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: RHS_VARIABLE,RESIDUAL_VARIABLE
-    TYPE(BOUNDARY_CONDITIONS_VARIABLE_TYPE), POINTER :: RHS_BOUNDARY_CONDITIONS
-    TYPE(DOMAIN_MAPPING_TYPE), POINTER :: RHS_DOMAIN_MAPPING
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    ENTERS("EQUATIONS_SET_NONLINEAR_RHS_UPDATE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      EQUATIONS=>EQUATIONS_SET%EQUATIONS
-      IF(ASSOCIATED(EQUATIONS)) THEN
-        EQUATIONS_MAPPING=>EQUATIONS%EQUATIONS_MAPPING
-        IF(ASSOCIATED(EQUATIONS_MAPPING)) THEN
-          RHS_MAPPING=>EQUATIONS_MAPPING%RHS_MAPPING
-          IF(ASSOCIATED(RHS_MAPPING)) THEN
-            RHS_VARIABLE=>RHS_MAPPING%RHS_VARIABLE
-            IF(ASSOCIATED(RHS_VARIABLE)) THEN
-              !Get the right hand side variable
-              RHS_FIELD=>RHS_VARIABLE%FIELD
-              VARIABLE_TYPE=RHS_VARIABLE%VARIABLE_TYPE
-            ELSE
-              CALL FlagError("RHS mapping RHS variable is not associated.",ERR,ERROR,*999)
-            ENDIF
-          ELSE
-            CALL FlagError("Equations mapping RHS mapping is not associated.",ERR,ERROR,*999)
-          ENDIF
-          IF(ASSOCIATED(RHS_FIELD)) THEN
-            IF(ASSOCIATED(BOUNDARY_CONDITIONS)) THEN
-              RHS_DOMAIN_MAPPING=>RHS_VARIABLE%DOMAIN_MAPPING
-              IF(ASSOCIATED(RHS_DOMAIN_MAPPING)) THEN
-                CALL BOUNDARY_CONDITIONS_VARIABLE_GET(BOUNDARY_CONDITIONS,RHS_VARIABLE,RHS_BOUNDARY_CONDITIONS, &
-                  & ERR,ERROR,*999)
-                IF(ASSOCIATED(RHS_BOUNDARY_CONDITIONS)) THEN
-                  !Get the equations residual vector
-                  EQUATIONS_MATRICES=>EQUATIONS%EQUATIONS_MATRICES
-                  IF(ASSOCIATED(EQUATIONS_MATRICES)) THEN
-                    NONLINEAR_MATRICES=>EQUATIONS_MATRICES%NONLINEAR_MATRICES
-                    IF(ASSOCIATED(NONLINEAR_MATRICES)) THEN
-                      RESIDUAL_VECTOR=>NONLINEAR_MATRICES%RESIDUAL
-                      IF(ASSOCIATED(RESIDUAL_VECTOR)) THEN
-                        !Get mapping from equations rows to field dofs
-                        NONLINEAR_MAPPING=>EQUATIONS_MAPPING%NONLINEAR_MAPPING
-                        IF(ASSOCIATED(NONLINEAR_MAPPING)) THEN
-                          DO equations_matrix_idx=1,NONLINEAR_MAPPING%NUMBER_OF_RESIDUAL_VARIABLES
-                            RESIDUAL_VARIABLE=>NONLINEAR_MAPPING%JACOBIAN_TO_VAR_MAP(equations_matrix_idx)%VARIABLE
-                            IF(ASSOCIATED(RESIDUAL_VARIABLE)) THEN
-                              DO row_idx=1,EQUATIONS_MAPPING%NUMBER_OF_ROWS
-                                variable_dof=RHS_MAPPING%EQUATIONS_ROW_TO_RHS_DOF_MAP(row_idx)
-                                rhs_global_dof=RHS_DOMAIN_MAPPING%LOCAL_TO_GLOBAL_MAP(variable_dof)
-                                rhs_boundary_condition=RHS_BOUNDARY_CONDITIONS%DOF_TYPES(rhs_global_dof)
-                                SELECT CASE(rhs_boundary_condition)
-                                CASE(BOUNDARY_CONDITION_DOF_FREE)
-                                  !Add residual to field value
-                                  CALL DISTRIBUTED_VECTOR_VALUES_GET(RESIDUAL_VECTOR,row_idx,VALUE,ERR,ERROR,*999)
-                                  CALL Field_ParameterSetUpdateLocalDOF(RHS_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE, &
-                                    & variable_dof,VALUE,ERR,ERROR,*999)
-                                CASE(BOUNDARY_CONDITION_DOF_FIXED)
-                                  !Do nothing
-                                CASE(BOUNDARY_CONDITION_DOF_MIXED)
-                                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
-                                CASE DEFAULT
-                                  LOCAL_ERROR="The RHS variable boundary condition of "// &
-                                    & TRIM(NUMBER_TO_VSTRING(rhs_boundary_condition,"*",ERR,ERROR))// &
-                                    & " for RHS variable dof number "// &
-                                    & TRIM(NUMBER_TO_VSTRING(variable_dof,"*",ERR,ERROR))//" is invalid."
-                                  CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
-                                END SELECT
-                              ENDDO
-                            ELSE
-                              CALL FlagError("Residual variable is not associated.",ERR,ERROR,*999)
-                            ENDIF
-                          ENDDO !equations_matrix_idx
-                        ELSE
-                          CALL FlagError("Nonlinear mapping is not associated.",ERR,ERROR,*999)
-                        ENDIF
-                      ELSE
-                        CALL FlagError("Residual vector is not associated.",ERR,ERROR,*999)
-                      ENDIF
-                    ELSE
-                      CALL FlagError("Nonlinear matrices is not associated.",ERR,ERROR,*999)
-                    ENDIF
-                  ELSE
-                    CALL FlagError("Equations matrices is not associated.",ERR,ERROR,*999)
-                  ENDIF
-                ELSE
-                  CALL FlagError("RHS boundary conditions variable is not associated.",ERR,ERROR,*999)
-                ENDIF
-              ELSE
-                CALL FlagError("RHS variable domain mapping is not associated.",ERR,ERROR,*999)
-              ENDIF
-            ELSE
-              CALL FlagError("Boundary conditions are not associated.",ERR,ERROR,*999)
-            ENDIF
-            CALL Field_ParameterSetUpdateStart(RHS_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-            CALL Field_ParameterSetUpdateFinish(RHS_FIELD,VARIABLE_TYPE,FIELD_VALUES_SET_TYPE,ERR,ERROR,*999)
-          ELSE
-            CALL FlagError("RHS variable field is not associated.",ERR,ERROR,*999)
-          ENDIF
-        ELSE
-          CALL FlagError("Equations mapping is not associated.",ERR,ERROR,*999)
-        ENDIF
-      ELSE
-        CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
-      ENDIF
-    ELSE
-      CALL FlagError("Equations set is not associated.",ERR,ERROR,*999)
-    ENDIF
-
-    EXITS("EQUATIONS_SET_NONLINEAR_RHS_UPDATE")
-    RETURN
-999 ERRORSEXITS("EQUATIONS_SET_NONLINEAR_RHS_UPDATE",ERR,ERROR)
-    RETURN 1
-
-  END SUBROUTINE EQUATIONS_SET_NONLINEAR_RHS_UPDATE
-
   !
   !================================================================================================================================
   !

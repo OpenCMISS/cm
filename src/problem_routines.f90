@@ -2455,7 +2455,7 @@ CONTAINS
               !Back-substitute to find flux values for linear problems
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+                CALL EquationsSet_Backsubstitute(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
               ENDDO !equations_set_idx
             ELSE
               CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
@@ -2566,6 +2566,11 @@ CONTAINS
                 CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
                 !Solve for the next time i.e., current time + time increment
                 CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
+                !Backsubstitute to find unknown RHS values
+                DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                  EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                  CALL EquationsSet_Backsubstitute(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+                ENDDO !equations_set_idx
               ELSE
                 CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
               ENDIF
@@ -2638,7 +2643,7 @@ CONTAINS
               !Back-substitute to find flux values for linear problems
               DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
                 EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+                CALL EquationsSet_Backsubstitute(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
               ENDDO !equations_set_idx
             ELSE
               CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
@@ -2708,7 +2713,12 @@ CONTAINS
               !CALL SOLVER_DYNAMIC_TIMES_SET(SOLVER,CURRENT_TIME,TIME_INCREMENT,ERR,ERROR,*999)
               !Solve for the next time i.e., current time + time increment
               CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-             ELSE
+              !Backsubstitute to find unknown RHS values
+              DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
+                EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
+                CALL EquationsSet_Backsubstitute(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+              ENDDO !equations_set_idx
+            ELSE
               CALL FlagError("Solver equations solver mapping is not associated.",ERR,ERROR,*999)
             ENDIF
           ELSE
@@ -2801,7 +2811,7 @@ CONTAINS
           !Back-substitute to find flux values for linear problems
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-            CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
+            CALL EquationsSet_Backsubstitute(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
           ENDDO !equations_set_idx
 #ifdef TAUPROF
           CALL TAU_STATIC_PHASE_STOP('EQUATIONS_SET_BACKSUBSTITUTE()')
@@ -2875,23 +2885,10 @@ CONTAINS
           ENDDO !interface_condition_idx
           !Solve
           CALL SOLVER_SOLVE(SOLVER,ERR,ERROR,*999)
-          !Update the rhs field variable with residuals or backsubstitute for any linear
-          !equations sets
+          !Backsubstitute to find unknown RHS values
           DO equations_set_idx=1,SOLVER_MAPPING%NUMBER_OF_EQUATIONS_SETS
             EQUATIONS_SET=>SOLVER_MAPPING%EQUATIONS_SETS(equations_set_idx)%PTR
-            EQUATIONS=>EQUATIONS_SET%EQUATIONS
-            IF(ASSOCIATED(EQUATIONS)) THEN
-              SELECT CASE(EQUATIONS%LINEARITY)
-              CASE(EQUATIONS_LINEAR,EQUATIONS_NONLINEAR_BCS)
-                CALL EQUATIONS_SET_BACKSUBSTITUTE(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-              CASE(EQUATIONS_NONLINEAR)
-                CALL EQUATIONS_SET_NONLINEAR_RHS_UPDATE(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
-              CASE DEFAULT
-                CALL FlagError("Invalid linearity for equations set equations",ERR,ERROR,*999)
-              END SELECT
-            ELSE
-              CALL FlagError("Equations set equations is not associated.",ERR,ERROR,*999)
-            ENDIF
+            CALL EquationsSet_Backsubstitute(EQUATIONS_SET,SOLVER_EQUATIONS%BOUNDARY_CONDITIONS,ERR,ERROR,*999)
           ENDDO !equations_set_idx
         ELSE
           CALL FlagError("Solver equations solver mapping not associated.",ERR,ERROR,*999)

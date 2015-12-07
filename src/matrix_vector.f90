@@ -169,7 +169,7 @@ MODULE MATRIX_VECTOR
   INTEGER(INTG), PARAMETER :: MATRIX_ROW_COLUMN_STORAGE_TYPE=6 !<Matrix row-column storage type \see MATRIX_VECTOR_StorageTypes,MATRIX_VECTOR
   !>@}
 
-  INTEGER(INTG), PARAMETER :: bisectionToLinearSearchThreshold=10 !<Threshold for transition from bisection to linear search.
+  INTEGER(INTG), PARAMETER :: MATRIX_BISECTION_TO_LINEAR_SEARCH_THRESHOLD=10 !<Threshold for transition from bisection to linear search.
 
   !Module types
 
@@ -186,15 +186,85 @@ MODULE MATRIX_VECTOR
     MODULE PROCEDURE MATRIX_ALL_VALUES_SET_SP
     MODULE PROCEDURE MATRIX_ALL_VALUES_SET_DP
     MODULE PROCEDURE MATRIX_ALL_VALUES_SET_L
-  END INTERFACE !MATRIX_ALL_VALUES_SET
+  END INTERFACE MATRIX_ALL_VALUES_SET
+
+  INTERFACE Matrix_AllValuesSet
+    MODULE PROCEDURE MATRIX_ALL_VALUES_SET_INTG
+    MODULE PROCEDURE MATRIX_ALL_VALUES_SET_SP
+    MODULE PROCEDURE MATRIX_ALL_VALUES_SET_DP
+    MODULE PROCEDURE MATRIX_ALL_VALUES_SET_L
+  END INTERFACE Matrix_AllValuesSet
+
+  INTERFACE Matrix_CreateFinish
+    MODULE PROCEDURE MATRIX_CREATE_FINISH
+  END INTERFACE Matrix_CreateFinish
+
+  INTERFACE Matrix_CreateStart
+    MODULE PROCEDURE MATRIX_CREATE_START
+  END INTERFACE Matrix_CreateStart
 
   INTERFACE MATRIX_DATA_GET
     MODULE PROCEDURE MATRIX_DATA_GET_INTG
     MODULE PROCEDURE MATRIX_DATA_GET_SP
     MODULE PROCEDURE MATRIX_DATA_GET_DP
     MODULE PROCEDURE MATRIX_DATA_GET_L
-  END INTERFACE !MATRIX_DATA_GET
+  END INTERFACE MATRIX_DATA_GET
 
+  INTERFACE Matrix_DataGet
+    MODULE PROCEDURE MATRIX_DATA_GET_INTG
+    MODULE PROCEDURE MATRIX_DATA_GET_SP
+    MODULE PROCEDURE MATRIX_DATA_GET_DP
+    MODULE PROCEDURE MATRIX_DATA_GET_L
+  END INTERFACE Matrix_DataGet
+
+  INTERFACE Matrix_DataTypeSet
+    MODULE PROCEDURE MATRIX_DATA_TYPE_SET
+  END INTERFACE Matrix_DataTypeSet
+
+  INTERFACE Matrix_LinklistGet
+    MODULE PROCEDURE MATRIX_LINKLIST_GET
+  END INTERFACE Matrix_LinklistGet
+
+  INTERFACE Matrix_LinklistSet
+    MODULE PROCEDURE MATRIX_LINKLIST_SET
+  END INTERFACE Matrix_LinklistSet
+
+  INTERFACE Matrix_MaxColumnsPerRowGet
+    MODULE PROCEDURE MATRIX_MAX_COLUMNS_PER_ROW_GET
+  END INTERFACE Matrix_MaxColumnsPerRowGet
+
+  INTERFACE Matrix_NumberNonZerosGet
+    MODULE PROCEDURE MATRIX_NUMBER_NON_ZEROS_GET
+  END INTERFACE Matrix_NumberNonZerosGet
+
+  INTERFACE Matrix_NumberNonZerosSet
+    MODULE PROCEDURE MATRIX_NUMBER_NON_ZEROS_SET
+  END INTERFACE Matrix_NumberNonZerosSet
+  
+  INTERFACE Matrix_MaxSizeSet
+    MODULE PROCEDURE MATRIX_MAX_SIZE_SET
+  END INTERFACE Matrix_MaxSizeSet
+  
+  INTERFACE Matrix_SizeSet
+    MODULE PROCEDURE MATRIX_SIZE_SET
+  END INTERFACE Matrix_SizeSet
+  
+  INTERFACE Matrix_StorageLocationFind
+    MODULE PROCEDURE MATRIX_STORAGE_LOCATION_FIND
+  END INTERFACE Matrix_StorageLocationFind
+  
+  INTERFACE Matrix_StorageLocationsSet
+    MODULE PROCEDURE MATRIX_STORAGE_LOCATIONS_SET
+  END INTERFACE Matrix_StorageLocationsSet
+  
+  INTERFACE Matrix_StorageTypeGet
+    MODULE PROCEDURE MATRIX_STORAGE_TYPE_GET
+  END INTERFACE Matrix_StorageTypeGet
+  
+  INTERFACE Matrix_StorageTypeSet
+    MODULE PROCEDURE MATRIX_STORAGE_TYPE_SET
+  END INTERFACE Matrix_StorageTypeSet
+  
   INTERFACE MATRIX_VALUES_ADD
     MODULE PROCEDURE MATRIX_VALUES_ADD_INTG
     MODULE PROCEDURE MATRIX_VALUES_ADD_INTG1
@@ -208,8 +278,23 @@ MODULE MATRIX_VECTOR
     MODULE PROCEDURE MATRIX_VALUES_ADD_L
     MODULE PROCEDURE MATRIX_VALUES_ADD_L1
     MODULE PROCEDURE MATRIX_VALUES_ADD_L2
-  END INTERFACE !MATRIX_VALUES_ADD
+  END INTERFACE MATRIX_VALUES_ADD
 
+  INTERFACE Matrix_ValuesAdd
+    MODULE PROCEDURE MATRIX_VALUES_ADD_INTG
+    MODULE PROCEDURE MATRIX_VALUES_ADD_INTG1
+    MODULE PROCEDURE MATRIX_VALUES_ADD_INTG2
+    MODULE PROCEDURE MATRIX_VALUES_ADD_SP
+    MODULE PROCEDURE MATRIX_VALUES_ADD_SP1
+    MODULE PROCEDURE MATRIX_VALUES_ADD_SP2
+    MODULE PROCEDURE MATRIX_VALUES_ADD_DP
+    MODULE PROCEDURE MATRIX_VALUES_ADD_DP1
+    MODULE PROCEDURE MATRIX_VALUES_ADD_DP2
+    MODULE PROCEDURE MATRIX_VALUES_ADD_L
+    MODULE PROCEDURE MATRIX_VALUES_ADD_L1
+    MODULE PROCEDURE MATRIX_VALUES_ADD_L2
+  END INTERFACE Matrix_ValuesAdd
+  
   INTERFACE MATRIX_VALUES_GET
     MODULE PROCEDURE MATRIX_VALUES_GET_INTG
     MODULE PROCEDURE MATRIX_VALUES_GET_INTG1
@@ -223,7 +308,22 @@ MODULE MATRIX_VECTOR
     MODULE PROCEDURE MATRIX_VALUES_GET_L
     MODULE PROCEDURE MATRIX_VALUES_GET_L1
     MODULE PROCEDURE MATRIX_VALUES_GET_L2
-  END INTERFACE !MATRIX_VALUES_GET
+  END INTERFACE MATRIX_VALUES_GET
+
+  INTERFACE Matrix_ValuesGet
+    MODULE PROCEDURE MATRIX_VALUES_GET_INTG
+    MODULE PROCEDURE MATRIX_VALUES_GET_INTG1
+    MODULE PROCEDURE MATRIX_VALUES_GET_INTG2
+    MODULE PROCEDURE MATRIX_VALUES_GET_SP
+    MODULE PROCEDURE MATRIX_VALUES_GET_SP1
+    MODULE PROCEDURE MATRIX_VALUES_GET_SP2
+    MODULE PROCEDURE MATRIX_VALUES_GET_DP
+    MODULE PROCEDURE MATRIX_VALUES_GET_DP1
+    MODULE PROCEDURE MATRIX_VALUES_GET_DP2
+    MODULE PROCEDURE MATRIX_VALUES_GET_L
+    MODULE PROCEDURE MATRIX_VALUES_GET_L1
+    MODULE PROCEDURE MATRIX_VALUES_GET_L2
+  END INTERFACE Matrix_ValuesGet
   
   INTERFACE MATRIX_VALUES_SET
     MODULE PROCEDURE MATRIX_VALUES_SET_INTG
@@ -238,23 +338,68 @@ MODULE MATRIX_VECTOR
     MODULE PROCEDURE MATRIX_VALUES_SET_L
     MODULE PROCEDURE MATRIX_VALUES_SET_L1
     MODULE PROCEDURE MATRIX_VALUES_SET_L2
-  END INTERFACE !MATRIX_VALUES_SET
+  END INTERFACE MATRIX_VALUES_SET
+
+  INTERFACE Matrix_ValuesSet
+    MODULE PROCEDURE MATRIX_VALUES_SET_INTG
+    MODULE PROCEDURE MATRIX_VALUES_SET_INTG1
+    MODULE PROCEDURE MATRIX_VALUES_SET_INTG2
+    MODULE PROCEDURE MATRIX_VALUES_SET_SP
+    MODULE PROCEDURE MATRIX_VALUES_SET_SP1
+    MODULE PROCEDURE MATRIX_VALUES_SET_SP2
+    MODULE PROCEDURE MATRIX_VALUES_SET_DP
+    MODULE PROCEDURE MATRIX_VALUES_SET_DP1
+    MODULE PROCEDURE MATRIX_VALUES_SET_DP2
+    MODULE PROCEDURE MATRIX_VALUES_SET_L
+    MODULE PROCEDURE MATRIX_VALUES_SET_L1
+    MODULE PROCEDURE MATRIX_VALUES_SET_L2
+  END INTERFACE Matrix_ValuesSet
 
   INTERFACE VECTOR_ALL_VALUES_SET
     MODULE PROCEDURE VECTOR_ALL_VALUES_SET_INTG
     MODULE PROCEDURE VECTOR_ALL_VALUES_SET_SP
     MODULE PROCEDURE VECTOR_ALL_VALUES_SET_DP
     MODULE PROCEDURE VECTOR_ALL_VALUES_SET_L
-  END INTERFACE !VECTOR_ALL_VALUES_SET
+  END INTERFACE VECTOR_ALL_VALUES_SET
+
+  INTERFACE Vector_AllValuesSet
+    MODULE PROCEDURE VECTOR_ALL_VALUES_SET_INTG
+    MODULE PROCEDURE VECTOR_ALL_VALUES_SET_SP
+    MODULE PROCEDURE VECTOR_ALL_VALUES_SET_DP
+    MODULE PROCEDURE VECTOR_ALL_VALUES_SET_L
+  END INTERFACE Vector_AllValuesSet
+
+  INTERFACE Vector_CreateFinish
+    MODULE PROCEDURE VECTOR_CREATE_FINISH
+  END INTERFACE Vector_CreateFinish
+
+  INTERFACE Vector_CreateStart
+    MODULE PROCEDURE VECTOR_CREATE_START
+  END INTERFACE Vector_CreateStart
 
   INTERFACE VECTOR_DATA_GET
     MODULE PROCEDURE VECTOR_DATA_GET_INTG
     MODULE PROCEDURE VECTOR_DATA_GET_SP
     MODULE PROCEDURE VECTOR_DATA_GET_DP
     MODULE PROCEDURE VECTOR_DATA_GET_L
-  END INTERFACE !VECTOR_DATA_GET
+  END INTERFACE VECTOR_DATA_GET
 
-   INTERFACE VECTOR_VALUES_GET
+  INTERFACE Vector_DataGet
+    MODULE PROCEDURE VECTOR_DATA_GET_INTG
+    MODULE PROCEDURE VECTOR_DATA_GET_SP
+    MODULE PROCEDURE VECTOR_DATA_GET_DP
+    MODULE PROCEDURE VECTOR_DATA_GET_L
+  END INTERFACE Vector_DataGet
+
+  INTERFACE Vector_DataTypeSet
+    MODULE PROCEDURE VECTOR_DATA_TYPE_SET
+  END INTERFACE Vector_DataTypeSet
+
+  INTERFACE Vector_SizeSet
+    MODULE PROCEDURE VECTOR_SIZE_SET
+  END INTERFACE Vector_SizeSet
+
+  INTERFACE VECTOR_VALUES_GET
     MODULE PROCEDURE VECTOR_VALUES_GET_INTG
     MODULE PROCEDURE VECTOR_VALUES_GET_INTG1
     MODULE PROCEDURE VECTOR_VALUES_GET_SP
@@ -263,7 +408,18 @@ MODULE MATRIX_VECTOR
     MODULE PROCEDURE VECTOR_VALUES_GET_DP1
     MODULE PROCEDURE VECTOR_VALUES_GET_L
     MODULE PROCEDURE VECTOR_VALUES_GET_L1
-  END INTERFACE !VECTOR_VALUES_GET
+  END INTERFACE VECTOR_VALUES_GET 
+
+  INTERFACE Vector_ValuesGet
+    MODULE PROCEDURE VECTOR_VALUES_GET_INTG
+    MODULE PROCEDURE VECTOR_VALUES_GET_INTG1
+    MODULE PROCEDURE VECTOR_VALUES_GET_SP
+    MODULE PROCEDURE VECTOR_VALUES_GET_SP1
+    MODULE PROCEDURE VECTOR_VALUES_GET_DP
+    MODULE PROCEDURE VECTOR_VALUES_GET_DP1
+    MODULE PROCEDURE VECTOR_VALUES_GET_L
+    MODULE PROCEDURE VECTOR_VALUES_GET_L1
+  END INTERFACE Vector_ValuesGet
   
   INTERFACE VECTOR_VALUES_SET
     MODULE PROCEDURE VECTOR_VALUES_SET_INTG
@@ -274,22 +430,117 @@ MODULE MATRIX_VECTOR
     MODULE PROCEDURE VECTOR_VALUES_SET_DP1
     MODULE PROCEDURE VECTOR_VALUES_SET_L
     MODULE PROCEDURE VECTOR_VALUES_SET_L1
-  END INTERFACE !VECTOR_VALUES_SET
+  END INTERFACE VECTOR_VALUES_SET
+
+  INTERFACE Vector_ValuesSet
+    MODULE PROCEDURE VECTOR_VALUES_SET_INTG
+    MODULE PROCEDURE VECTOR_VALUES_SET_INTG1
+    MODULE PROCEDURE VECTOR_VALUES_SET_SP
+    MODULE PROCEDURE VECTOR_VALUES_SET_SP1
+    MODULE PROCEDURE VECTOR_VALUES_SET_DP
+    MODULE PROCEDURE VECTOR_VALUES_SET_DP1
+    MODULE PROCEDURE VECTOR_VALUES_SET_L
+    MODULE PROCEDURE VECTOR_VALUES_SET_L1
+  END INTERFACE Vector_ValuesSet
+  
 
   PUBLIC MATRIX_VECTOR_INTG_TYPE,MATRIX_VECTOR_SP_TYPE,MATRIX_VECTOR_DP_TYPE,MATRIX_VECTOR_L_TYPE
 
   PUBLIC MATRIX_BLOCK_STORAGE_TYPE,MATRIX_DIAGONAL_STORAGE_TYPE,MATRIX_COLUMN_MAJOR_STORAGE_TYPE,MATRIX_ROW_MAJOR_STORAGE_TYPE, &
     & MATRIX_COMPRESSED_ROW_STORAGE_TYPE,MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE,MATRIX_ROW_COLUMN_STORAGE_TYPE
 
-  PUBLIC MATRIX_CREATE_FINISH,MATRIX_CREATE_START,MATRIX_DATA_GET,Matrix_DataTypeGet,MATRIX_DATA_TYPE_SET,MATRIX_DESTROY, &
-    & MATRIX_DUPLICATE,MATRIX_MAX_COLUMNS_PER_ROW_GET,MATRIX_NUMBER_NON_ZEROS_SET,MATRIX_NUMBER_NON_ZEROS_GET,MATRIX_MAX_SIZE_SET, &
-    & MATRIX_OUTPUT,MATRIX_SIZE_SET,MATRIX_STORAGE_LOCATION_FIND,MATRIX_STORAGE_LOCATIONS_SET,MATRIX_STORAGE_TYPE_GET, &
-    & MATRIX_STORAGE_TYPE_SET,MATRIX_VALUES_ADD,MATRIX_VALUES_GET,MATRIX_VALUES_SET
+  PUBLIC MATRIX_ALL_VALUES_SET
 
-  PUBLIC VECTOR_ALL_VALUES_SET,VECTOR_CREATE_FINISH,VECTOR_CREATE_START,VECTOR_DATA_GET,Vector_DataTypeGet,VECTOR_DATA_TYPE_SET, &
-    & VECTOR_DESTROY,VECTOR_DUPLICATE,VECTOR_SIZE_SET,VECTOR_VALUES_GET,VECTOR_VALUES_SET
+  PUBLIC Matrix_AllValuesSet
+  
+  PUBLIC MATRIX_CREATE_FINISH,MATRIX_CREATE_START
 
-  PUBLIC MATRIX_LINKLIST_SET,MATRIX_LINKLIST_GET
+  PUBLIC Matrix_CreateFinish,Matrix_CreateStart
+
+  PUBLIC MATRIX_DATA_GET
+
+  PUBLIC Matrix_DataGet
+
+  PUBLIC MATRIX_DATA_TYPE_SET
+
+  PUBLIC Matrix_DataTypeGet,Matrix_DataTypeSet
+
+  PUBLIC Matrix_Destroy
+
+  PUBLIC Matrix_Duplicate
+
+  PUBLIC MATRIX_LINKLIST_GET,MATRIX_LINKLIST_SET
+
+  PUBLIC Matrix_LinklistGet,Matrix_LinklistSet
+
+  PUBLIC Matrix_MatrixByVectorAdd,Matrix_MatrixByVectorAddRows
+  
+  PUBLIC MATRIX_MAX_COLUMNS_PER_ROW_GET
+
+  PUBLIC Matrix_MaxColumnsPerRowGet
+
+  PUBLIC MATRIX_NUMBER_NON_ZEROS_GET,MATRIX_NUMBER_NON_ZEROS_SET
+
+  PUBLIC Matrix_NumberNonZerosGet,Matrix_NumberNonZerosSet
+
+  PUBLIC MATRIX_MAX_SIZE_SET
+
+  PUBLIC Matrix_MaxSizeSet
+  
+  PUBLIC Matrix_Output
+
+  PUBLIC MATRIX_SIZE_SET
+
+  PUBLIC Matrix_SizeSet
+
+  PUBLIC MATRIX_STORAGE_LOCATION_FIND
+
+  PUBLIC Matrix_StorageLocationFind
+
+  PUBLIC MATRIX_STORAGE_LOCATIONS_SET
+
+  PUBLIC Matrix_StorageLocationsSet
+
+  PUBLIC MATRIX_STORAGE_TYPE_GET,MATRIX_STORAGE_TYPE_SET
+
+  PUBLIC Matrix_StorageTypeGet,Matrix_StorageTypeSet
+
+  PUBLIC MATRIX_VALUES_ADD
+
+  PUBLIC Matrix_ValuesAdd
+
+  PUBLIC MATRIX_VALUES_GET,MATRIX_VALUES_SET
+
+  PUBLIC Matrix_ValuesGet,Matrix_ValuesSet
+
+  PUBLIC VECTOR_ALL_VALUES_SET
+
+  PUBLIC Vector_AllValuesSet
+
+  PUBLIC VECTOR_CREATE_FINISH,VECTOR_CREATE_START
+
+  PUBLIC Vector_CreateFinish,Vector_CreateStart
+
+  PUBLIC VECTOR_DATA_GET
+
+  PUBLIC Vector_DataGet
+
+  PUBLIC VECTOR_DATA_TYPE_SET
+  
+  PUBLIC Vector_DataTypeGet,Vector_DataTypeSet
+  
+  PUBLIC Vector_Destroy
+  
+  PUBLIC Vector_Duplicate
+
+  PUBLIC VECTOR_SIZE_SET
+
+  PUBLIC Vector_SizeSet
+
+  PUBLIC VECTOR_VALUES_GET,VECTOR_VALUES_SET
+
+  PUBLIC Vector_ValuesGet,Vector_ValuesSet
+
 CONTAINS
   
   !
@@ -314,7 +565,7 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
           MATRIX%DATA_INTG=VALUE
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the integer data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -353,7 +604,7 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
           MATRIX%DATA_SP=VALUE
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the single precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -392,7 +643,7 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
           MATRIX%DATA_DP=VALUE
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the double precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -431,7 +682,7 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
           MATRIX%DATA_L=VALUE
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the logical data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -545,7 +796,7 @@ CONTAINS
             IF(COUNT>MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW) MATRIX%MAXIMUM_COLUMN_INDICES_PER_ROW=COUNT
           ENDDO !row_idx          
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         IF(MATRIX%SIZE>0) THEN
@@ -563,7 +814,7 @@ CONTAINS
             ALLOCATE(MATRIX%DATA_L(MATRIX%SIZE),STAT=ERR)
             IF(ERR/=0) CALL FlagError("Could not allocate matrix logical data.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+            LOCAL_ERROR="The matrix data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ENDIF
@@ -641,7 +892,7 @@ CONTAINS
           IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
             DATA=>MATRIX%DATA_INTG
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the integer data type of the requested values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -685,7 +936,7 @@ CONTAINS
           IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
             DATA=>MATRIX%DATA_SP
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the single precision data type of the requested values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -729,7 +980,7 @@ CONTAINS
           IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
             DATA=>MATRIX%DATA_DP
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the double precision data type of the requested values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -773,7 +1024,7 @@ CONTAINS
           IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
             DATA=>MATRIX%DATA_L
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the logical data type of the requested values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -853,7 +1104,7 @@ CONTAINS
         CASE(MATRIX_VECTOR_L_TYPE)
           MATRIX%DATA_TYPE=MATRIX_VECTOR_L_TYPE
         CASE DEFAULT
-          LOCAL_ERROR="The matrix vector data type of "//TRIM(NUMBER_TO_VSTRING(DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The matrix vector data type of "//TRIM(NumberToVString(DATA_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
@@ -927,7 +1178,7 @@ CONTAINS
           CALL MATRIX_NUMBER_NON_ZEROS_SET(NEW_MATRIX,MATRIX%NUMBER_NON_ZEROS,ERR,ERROR,*999)
           CALL MATRIX_STORAGE_LOCATIONS_SET(NEW_MATRIX,MATRIX%ROW_INDICES,MATRIX%COLUMN_INDICES,ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
         CALL MATRIX_CREATE_FINISH(NEW_MATRIX,ERR,ERROR,*999)
@@ -1016,6 +1267,215 @@ CONTAINS
   !================================================================================================================================
   !
 
+  !>Add alpha times a matrix vector product to a vector
+  SUBROUTINE Matrix_MatrixByVectorAdd(A,x,alpha,y,err,error,*)
+
+    !Argument variables
+    TYPE(MATRIX_TYPE), POINTER :: A !<A pointer to the matrix
+    TYPE(VECTOR_TYPE), POINTER :: x !<A pointer to the vector
+    REAL(DP), POINTER :: alpha !<The multiplicative constant
+    TYPE(VECTOR_TYPE), POINTER :: y !<On exit, y + alpha.A.x
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+
+    ENTERS("Matrix_MatrixByVectorAdd",err,error,*999)
+
+    IF(ASSOCIATED(A)) THEN
+      CALL Matrix_MatrixByVectorAddRows(1,A%M,A,x,alpha,y,err,error,*999)
+    ELSE
+      CALL FlagError("The A matrix is not associated.",err,error,*999)
+    ENDIF
+    
+    EXITS("Matrix_MatrixByVectorAdd")
+    RETURN
+999 ERRORSEXITS("Matrix_MatrixByVectorAdd",err,error)
+    RETURN 1
+  END SUBROUTINE Matrix_MatrixByVectorAdd
+
+
+  !
+  !================================================================================================================================
+  !
+
+  !>Add alpha times a matrix vector product to a vector
+  SUBROUTINE Matrix_MatrixByVectorAddRows(startRow,endRow,A,x,alpha,y,err,error,*)
+
+    !Argument variables
+    INTEGER(INTG) :: startRow !<The start row number
+    INTEGER(INTG) :: endRow !<The end row number
+    TYPE(MATRIX_TYPE), POINTER :: A !<A pointer to the matrix
+    TYPE(VECTOR_TYPE), POINTER :: x !<A pointer to the vector
+    REAL(DP), POINTER :: alpha !<The multiplicative constant
+    TYPE(VECTOR_TYPE), POINTER :: y !<On exit, y + alpha.A.x
+    INTEGER(INTG), INTENT(OUT) :: err !<The error code
+    TYPE(VARYING_STRING), INTENT(OUT) :: error !<The error string
+    !Local Variables
+    INTEGER(INTG) :: column,columnIdx,location,row,rowIdx
+    REAL(DP):: sumDP
+    TYPE(VARYING_STRING) :: localError
+
+    ENTERS("Matrix_MatrixByVectorAddRows",err,error,*999)
+
+    IF(ASSOCIATED(A)) THEN
+      IF(A%MATRIX_FINISHED) THEN
+        IF(startRow>=1.AND.startRow<=A%M) THEN
+          IF(endRow>=1.AND.endRow<=A%M) THEN
+            IF(endRow>=startRow) THEN
+              IF(ABS(alpha)>ZERO_TOLERANCE) THEN
+                IF(ASSOCIATED(x)) THEN
+                  IF(x%VECTOR_FINISHED) THEN
+                    IF(A%N==x%N) THEN
+                      IF(ASSOCIATED(y)) THEN
+                        IF(Y%VECTOR_FINISHED) THEN
+                          IF(A%M==y%N) THEN
+                            IF(A%DATA_TYPE==x%DATA_TYPE) THEN
+                              IF(A%DATA_TYPE==y%DATA_TYPE) THEN
+                                SELECT CASE(A%DATA_TYPE)
+                                CASE(MATRIX_VECTOR_INTG_TYPE)
+                                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
+                                CASE(MATRIX_VECTOR_SP_TYPE)
+                                  CALL FlagError("Not implemented.",ERR,ERROR,*999)
+                                CASE(MATRIX_VECTOR_DP_TYPE)
+                                  SELECT CASE(A%STORAGE_TYPE)
+                                  CASE(MATRIX_BLOCK_STORAGE_TYPE)
+                                    DO row=startRow,endRow
+                                      sumDP=0.0_DP
+                                      DO column=1,A%N
+                                        sumDP=sumDP+A%DATA_DP(row+(column-1)*A%M)*x%DATA_DP(column)
+                                      ENDDO !local_column
+                                      y%DATA_DP(row)=y%DATA_DP(row)+(alpha*sumDP)
+                                    ENDDO !row
+                                  CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
+                                    DO row=startRow,endRow
+                                      sumDP=A%DATA_DP(row)*x%DATA_DP(row)
+                                      y%DATA_DP(row)=y%DATA_DP(row)+(alpha*sumDP)
+                                    ENDDO !row
+                                  CASE(MATRIX_COLUMN_MAJOR_STORAGE_TYPE)
+                                    DO row=startRow,endRow
+                                      sumDP=0.0_DP
+                                      DO column=1,A%N
+                                        sumDP=sumDP+A%DATA_DP(row+(column-1)*A%MAX_M)*x%DATA_DP(column)
+                                      ENDDO !column
+                                      y%DATA_DP(row)=y%DATA_DP(row)+(alpha*sumDP)
+                                    ENDDO !row
+                                  CASE(MATRIX_ROW_MAJOR_STORAGE_TYPE)
+                                    DO row=startRow,endRow
+                                      sumDP=0.0_DP
+                                      DO column=1,A%N
+                                        sumDP=sumDP+A%DATA_DP((row-1)*A%MAX_N+column)*x%DATA_DP(column)
+                                      ENDDO !column
+                                      y%DATA_DP(row)=y%DATA_DP(row)+(alpha*sumDP)
+                                    ENDDO !row
+                                  CASE(MATRIX_COMPRESSED_ROW_STORAGE_TYPE)
+                                    DO row=startRow,endRow
+                                      sumDP=0.0_DP
+                                      DO columnIdx=A%ROW_INDICES(row),A%ROW_INDICES(row+1)-1
+                                        column=A%COLUMN_INDICES(columnIdx)
+                                        sumDP=sumDP+A%DATA_DP(columnIdx)*x%DATA_DP(column)
+                                      ENDDO !columnIdx
+                                      y%DATA_DP(row)=y%DATA_DP(row)+(alpha*sumDP)
+                                    ENDDO !row
+                                  CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
+                                    IF(startRow==1.AND.endRow==A%M) THEN
+                                      !Whole matrix
+                                      DO column=1,A%N                                        
+                                        DO rowIdx=A%COLUMN_INDICES(column),A%COLUMN_INDICES(column+1)-1
+                                          row=A%ROW_INDICES(rowIdx)
+                                          y%DATA_DP(row)=y%DATA_DP(row)+alpha*A%DATA_DP(rowIdx)*x%DATA_DP(column)
+                                        ENDDO !rowIdx
+                                      ENDDO !column
+                                     ELSE
+                                      !Just part rows
+                                      location=0
+                                      DO column=1,A%N
+                                        DO row=startRow,endRow
+                                          CALL Matrix_StorageLocationFind(A,row,column,location,err,error,*999)
+                                          IF(location/=0) y%DATA_DP(row)=y%DATA_DP(row)+alpha*A%DATA_DP(location)*x%DATA_DP(column)
+                                        ENDDO !row
+                                      ENDDO !column
+                                    ENDIF
+                                  CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
+                                    CALL FlagError("Not implemented.",err,error,*999)
+                                  CASE DEFAULT
+                                    localError="The A matrix storage type of "// &
+                                      & TRIM(NumberToVString(A%STORAGE_TYPE,"*",err,error))//" is invalid."
+                                    CALL FlagError(localError,err,error,*999)
+                                  END SELECT
+                                CASE(MATRIX_VECTOR_L_TYPE)
+                                  CALL FlagError("Not implemented.",err,error,*999)
+                                CASE DEFAULT
+                                  localError="The A matrix data type of "//TRIM(NumberToVString(A%DATA_TYPE,"*",err,error))// &
+                                    & " is invalid."
+                                  CALL FlagError(localError,err,error,*999)
+                                END SELECT
+                              ELSE
+                                localError="The A matrix data type of "//TRIM(NumberToVString(A%DATA_TYPE,"*",err,error))// &
+                                  & " does not match the y vector data type of "// &
+                                  & TRIM(NumberToVString(y%DATA_TYPE,"*",err,error))//"."
+                                CALL FlagError(localError,err,error,*999)
+                              ENDIF
+                            ELSE
+                              localError="The A matrix data type of "//TRIM(NumberToVString(A%DATA_TYPE,"*",err,error))// &
+                                & " does not match the x vector data type of "// &
+                                & TRIM(NumberToVString(x%DATA_TYPE,"*",err,error))//"."
+                              CALL FlagError(localError,err,error,*999)
+                            ENDIF                            
+                          ELSE
+                            localError="The number of A matrix rows of "//TRIM(NumberToVString(A%M,"*",err,error))// &
+                              & " does not match the number of y vector rows of "//TRIM(NumberToVString(y%N,"*",err,error))//"."
+                            CALL FlagError(localError,err,error,*999)
+                          ENDIF
+                        ELSE
+                          CALL FlagError("The y vector has not been finished.",err,error,*999)
+                        ENDIF
+                      ELSE
+                        CALL FlagError("The y vector is not associated.",err,error,*999)
+                      ENDIF
+                    ELSE
+                      localError="The number of A matrix columns of "//TRIM(NumberToVString(A%N,"*",err,error))// &
+                        & " does not match the number of x vector rows of "//TRIM(NumberToVString(x%N,"*",err,error))//"."
+                      CALL FlagError(localError,err,error,*999)
+                    ENDIF
+                  ELSE
+                    CALL FlagError("The x vector has not been finished.",err,error,*999)
+                  ENDIF
+                ELSE
+                  CALL FlagError("The x vector is not associated.",err,error,*999)
+                ENDIF
+              ENDIF
+            ELSE
+              localError="The end row number of "//TRIM(NumberToVString(endRow,"*",err,error))// &
+                & " is less than the start row number of "//TRIM(NumberToVString(startRow,"*",err,error))//"."
+              CALL FlagError(localError,err,error,*999)            
+            ENDIF
+          ELSE
+            localError="The end row number of "//TRIM(NumberToVString(endRow,"*",err,error))// &
+              & " is invalid. It must be >= 1 and <= "//TRIM(NumberToVString(A%M,"*",err,error))//"."
+            CALL FlagError(localError,err,error,*999)            
+          ENDIF
+        ELSE
+          localError="The start row number of "//TRIM(NumberToVString(startRow,"*",err,error))// &
+            & " is invalid. It must be >= 1 and <= "//TRIM(NumberToVString(A%M,"*",err,error))//"."
+          CALL FlagError(localError,err,error,*999)            
+        ENDIF
+      ELSE
+        CALL FlagError("The A matrix has not been finished.",err,error,*999)
+      ENDIF
+    ELSE
+      CALL FlagError("Matrix is not associated.",err,error,*999)
+    ENDIF
+    
+    EXITS("Matrix_MatrixByVectorAddRows")
+    RETURN
+999 ERRORSEXITS("Matrix_MatrixByVectorAddRows",err,error)
+    RETURN 1
+  END SUBROUTINE Matrix_MatrixByVectorAddRows
+
+  !
+  !================================================================================================================================
+  !
+
   !>Gets the maximum number of columns in each row of a distributed matrix.
   SUBROUTINE MATRIX_MAX_COLUMNS_PER_ROW_GET(MATRIX,MAX_COLUMNS_PER_ROW,ERR,ERROR,*)
 
@@ -1078,12 +1538,12 @@ CONTAINS
           IF(NUMBER_NON_ZEROS>=0) THEN
             MATRIX%NUMBER_NON_ZEROS=NUMBER_NON_ZEROS
           ELSE
-            LOCAL_ERROR="The number of non-zeros ("//TRIM(NUMBER_TO_VSTRING(NUMBER_NON_ZEROS,"*",ERR,ERROR))// &
-              & ") is invalid. The number must be greater than or equal to zero."
+            LOCAL_ERROR="The number of non-zeros ("//TRIM(NumberToVString(NUMBER_NON_ZEROS,"*",ERR,ERROR))// &
+              & ") is invalid. The number must be >= 0."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
@@ -1122,7 +1582,7 @@ CONTAINS
           & MATRIX_ROW_COLUMN_STORAGE_TYPE)
           NUMBER_NON_ZEROS=MATRIX%NUMBER_NON_ZEROS
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
@@ -1228,22 +1688,22 @@ CONTAINS
                 MATRIX%MAX_M=MAX_M
                 MATRIX%MAX_N=MAX_N
               ELSE
-                LOCAL_ERROR="The maximum number of matrix rows ("//TRIM(NUMBER_TO_VSTRING(MAX_N,"*",ERR,ERROR))// &
-                  & ") must be >= the number of matrix rows ("//TRIM(NUMBER_TO_VSTRING(MATRIX%N,"*",ERR,ERROR))//")."
+                LOCAL_ERROR="The maximum number of matrix rows ("//TRIM(NumberToVString(MAX_N,"*",ERR,ERROR))// &
+                  & ") must be >= the number of matrix rows ("//TRIM(NumberToVString(MATRIX%N,"*",ERR,ERROR))//")."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
-              LOCAL_ERROR="The maximum number of matrix columns ("//TRIM(NUMBER_TO_VSTRING(MAX_M,"*",ERR,ERROR))// &
-                & ") must be >= the number of matrix columns ("//TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))//")."
+              LOCAL_ERROR="The maximum number of matrix columns ("//TRIM(NumberToVString(MAX_M,"*",ERR,ERROR))// &
+                & ") must be >= the number of matrix columns ("//TRIM(NumberToVString(MATRIX%M,"*",ERR,ERROR))//")."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The maximum number of matrix columns of "//TRIM(NUMBER_TO_VSTRING(MAX_N,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The maximum number of matrix columns of "//TRIM(NumberToVString(MAX_N,"*",ERR,ERROR))// &
               & " is invalid. The number must be > 0."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The maximum number of matrix rows of "//TRIM(NUMBER_TO_VSTRING(MAX_M,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The maximum number of matrix rows of "//TRIM(NumberToVString(MAX_M,"*",ERR,ERROR))// &
             & " is invalid. The number must be > 0."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -1284,23 +1744,23 @@ CONTAINS
         CASE(MATRIX_BLOCK_STORAGE_TYPE)
           SELECT CASE(MATRIX%DATA_TYPE)
           CASE(MATRIX_VECTOR_INTG_TYPE)
-            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_INTG,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
+            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_INTG,[MATRIX%MAX_M,MATRIX%MAX_N]), &
               & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("Matrix','(",I9,",:)',':",8(X,I13))','(20X,8(X,I13))', &
               & ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_SP_TYPE)
-            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_SP,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
+            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_SP,[MATRIX%MAX_M,MATRIX%MAX_N]), &
               & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("Matrix','(",I9,",:)',':",8(X,E13.6))','(20X,8(X,E13.6))', &
               & ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_DP_TYPE)
-            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_DP,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
+            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_DP,[MATRIX%MAX_M,MATRIX%MAX_N]), &
               & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("Matrix','(",I9,",:)',':",8(X,E13.6))','(20X,8(X,E13.6))', &
               & ERR,ERROR,*999)
           CASE(MATRIX_VECTOR_L_TYPE)            
-            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_L,(/MATRIX%MAX_M,MATRIX%MAX_N/)), &
+            CALL WRITE_STRING_MATRIX(ID,1,1,MATRIX%M,1,1,MATRIX%N,8,8,RESHAPE(MATRIX%DATA_L,[MATRIX%MAX_M,MATRIX%MAX_N]), &
               & WRITE_STRING_MATRIX_NAME_AND_INDICES,'("Matrix','(",I9,",:)',':",8(X,L13))','(20X,8(X,L13))', &
               & ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+            LOCAL_ERROR="The matrix data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         CASE(MATRIX_DIAGONAL_STORAGE_TYPE)
@@ -1330,7 +1790,7 @@ CONTAINS
               CALL WRITE_STRING_VECTOR(ID,MATRIX%ROW_INDICES(i),1,MATRIX%ROW_INDICES(i+1)-1,8,8,MATRIX%DATA_L,INITIAL_STRING, &
                 & '(20X,8(X,L13))',ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              LOCAL_ERROR="The matrix data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ENDDO !i
@@ -1355,14 +1815,14 @@ CONTAINS
               CALL WRITE_STRING_VECTOR(ID,MATRIX%COLUMN_INDICES(j),1,MATRIX%COLUMN_INDICES(j+1)-1,8,8,MATRIX%DATA_L, &
                 & INITIAL_STRING,'(20X,8(X,L13))',ERR,ERROR,*999)
             CASE DEFAULT
-              LOCAL_ERROR="The matrix data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+              LOCAL_ERROR="The matrix data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             END SELECT
           ENDDO !j
         CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
           CALL FlagError("Not implemented.",ERR,ERROR,*999)
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
@@ -1405,12 +1865,12 @@ CONTAINS
             MATRIX%M=M
             MATRIX%N=N
           ELSE
-            LOCAL_ERROR="The number of matrix columns of "//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The number of matrix columns of "//TRIM(NumberToVString(N,"*",ERR,ERROR))// &
               & " is invalid. The number must be >0."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The number of matrix rows of "//TRIM(NUMBER_TO_VSTRING(M,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The number of matrix rows of "//TRIM(NumberToVString(M,"*",ERR,ERROR))// &
             & " is invalid. The number must be >0."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -1450,13 +1910,13 @@ CONTAINS
     IF(ASSOCIATED(MATRIX)) THEN
       IF(MATRIX%MATRIX_FINISHED) THEN
         IF(I<1.OR.I>MATRIX%M) THEN
-          LOCAL_ERROR="Row number "//TRIM(NUMBER_TO_VSTRING(I,"*",ERR,ERROR))//" is outside the matrix range of 1 to "// &
-            & TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))//"."
+          LOCAL_ERROR="Row number "//TRIM(NumberToVString(I,"*",ERR,ERROR))//" is outside the matrix range of 1 to "// &
+            & TRIM(NumberToVString(MATRIX%M,"*",ERR,ERROR))//"."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
         IF(J<1.OR.J>MATRIX%N) THEN
-          LOCAL_ERROR="Column number "//TRIM(NUMBER_TO_VSTRING(J,"*",ERR,ERROR))//" is outside the matrix range of 1 to "// &
-            & TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))//"."
+          LOCAL_ERROR="Column number "//TRIM(NumberToVString(J,"*",ERR,ERROR))//" is outside the matrix range of 1 to "// &
+            & TRIM(NumberToVString(MATRIX%M,"*",ERR,ERROR))//"."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       
@@ -1476,7 +1936,7 @@ CONTAINS
             UPLIMIT=MATRIX%ROW_INDICES(I+1)
             IF(UPLIMIT>LOWLIMIT) THEN
               IF(J<=MATRIX%COLUMN_INDICES(UPLIMIT-1)) THEN
-                DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                DO WHILE((UPLIMIT-LOWLIMIT)>MATRIX_BISECTION_TO_LINEAR_SEARCH_THRESHOLD)
                   MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                   IF(MATRIX%COLUMN_INDICES(MIDPOINT)>J) THEN
                     UPLIMIT=MIDPOINT
@@ -1509,7 +1969,7 @@ CONTAINS
                   ENDIF
                 ENDDO
                 IF(MATRIX%ROW_INDICES(LOWLIMIT)==I) LOCATION=LOWLIMIT
-                DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                DO WHILE((UPLIMIT-LOWLIMIT)>MATRIX_BISECTION_TO_LINEAR_SEARCH_THRESHOLD)
                   MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                   IF(MATRIX%ROW_INDICES(MIDPOINT)>I) THEN
                     UPLIMIT=MIDPOINT
@@ -1546,7 +2006,7 @@ CONTAINS
           ENDDO
           IF(.NOT.(FOUNDROW.AND.FOUNDCOLUMN)) LOCATION=0
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
@@ -1601,7 +2061,7 @@ CONTAINS
           ROW_INDICES=>MATRIX%ROW_INDICES
           COLUMN_INDICES=>MATRIX%COLUMN_INDICES
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ELSE
@@ -1656,10 +2116,10 @@ CONTAINS
                 IF(ROW_INDICES(MATRIX%M+1)==MATRIX%NUMBER_NON_ZEROS+1) THEN
                   DO i=2,MATRIX%M+1
                     IF(ROW_INDICES(i)<ROW_INDICES(i-1)) THEN
-                      LOCAL_ERROR="Invalid row indices. Row "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" index number ("// &
-                        & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//") is less than row "// &
-                        & TRIM(NUMBER_TO_VSTRING(i-1,"*",ERR,ERROR))//" index number ("// &
-                        & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i-1),"*",ERR,ERROR))//")."
+                      LOCAL_ERROR="Invalid row indices. Row "//TRIM(NumberToVString(i,"*",ERR,ERROR))//" index number ("// &
+                        & TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//") is less than row "// &
+                        & TRIM(NumberToVString(i-1,"*",ERR,ERROR))//" index number ("// &
+                        & TRIM(NumberToVString(ROW_INDICES(i-1),"*",ERR,ERROR))//")."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ENDIF                    
                   ENDDO !i
@@ -1668,14 +2128,14 @@ CONTAINS
                       k=COLUMN_INDICES(j)
                       IF(k>0) THEN
                         IF(k>MATRIX%N) THEN
-                          LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))//" ("// &
-                            & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is greater than the number of columns ("// &
-                            & TRIM(NUMBER_TO_VSTRING(MATRIX%N,"*",ERR,ERROR))//")."
+                          LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NumberToVString(j,"*",ERR,ERROR))//" ("// &
+                            & TRIM(NumberToVString(k,"*",ERR,ERROR))//") is greater than the number of columns ("// &
+                            & TRIM(NumberToVString(MATRIX%N,"*",ERR,ERROR))//")."
                           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))//" ("// &
-                          & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is less than zero."
+                        LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NumberToVString(j,"*",ERR,ERROR))//" ("// &
+                          & TRIM(NumberToVString(k,"*",ERR,ERROR))//") is less than zero."
                         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ENDDO !j
@@ -1694,27 +2154,27 @@ CONTAINS
                   !ENDDO !i
                 ELSE
                   LOCAL_ERROR="Invalid row indices. The last row index ("// &
-                    & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(MATRIX%M+1),"*",ERR,ERROR))// &
+                    & TRIM(NumberToVString(ROW_INDICES(MATRIX%M+1),"*",ERR,ERROR))// &
                     & ") does not equal the number of non-zeros + 1 ("// &
-                    & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")."
+                    & TRIM(NumberToVString(MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 LOCAL_ERROR="Invalid row indices. The first row index ("// &
-                  & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(1),"*",ERR,ERROR))//") does not equal 1."
+                  & TRIM(NumberToVString(ROW_INDICES(1),"*",ERR,ERROR))//") does not equal 1."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="The supplied number of column indices ("// &
-                & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+                & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
                 & ") does not match the number of non-zeros in the matrix ("// &
-                & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
+                & TRIM(NumberToVString(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
-            LOCAL_ERROR="The supplied number of row indices ("//TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            LOCAL_ERROR="The supplied number of row indices ("//TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
               & ") does not match the number of rows in the matrix + 1 ("// &
-              & TRIM(NUMBER_TO_VSTRING(MATRIX%M+1,"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(MATRIX%M+1,"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE(MATRIX_COMPRESSED_COLUMN_STORAGE_TYPE)
@@ -1724,23 +2184,23 @@ CONTAINS
                 IF(COLUMN_INDICES(MATRIX%N+1)==MATRIX%NUMBER_NON_ZEROS+1) THEN
                   IF(COLUMN_INDICES(1)/=1) THEN
                     LOCAL_ERROR="Invalid column indices. Column index 1 ("// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(1),"*",ERR,ERROR))//") "// &
+                      & TRIM(NumberToVString(COLUMN_INDICES(1),"*",ERR,ERROR))//") "// &
                       & " should be equal to one."
                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   END IF
                   DO j=2,MATRIX%N+1
                     IF(COLUMN_INDICES(j)<COLUMN_INDICES(j-1)) THEN
-                      LOCAL_ERROR="Invalid column indices. Column "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))// &
-                        & " index number ("//TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//") is less than column "// &
-                        & TRIM(NUMBER_TO_VSTRING(j-1,"*",ERR,ERROR))//" index number ("// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j-1),"*",ERR,ERROR))//")."
+                      LOCAL_ERROR="Invalid column indices. Column "//TRIM(NumberToVString(j,"*",ERR,ERROR))// &
+                        & " index number ("//TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//") is less than column "// &
+                        & TRIM(NumberToVString(j-1,"*",ERR,ERROR))//" index number ("// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j-1),"*",ERR,ERROR))//")."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END IF
                     IF(COLUMN_INDICES(j)<0.OR.COLUMN_INDICES(j)>MATRIX%NUMBER_NON_ZEROS+1) THEN
-                      LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NUMBER_TO_VSTRING(j,"*",ERR,ERROR))//" ("// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//") "// &
+                      LOCAL_ERROR="Invalid column indices. Column index "//TRIM(NumberToVString(j,"*",ERR,ERROR))//" ("// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//") "// &
                         & " should be in the range of one to the number of non-zeros + 1 ("// &
-                        & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")."
+                        & TRIM(NumberToVString(MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     END IF
                   ENDDO !i
@@ -1749,14 +2209,14 @@ CONTAINS
                       k=ROW_INDICES(i)
                       IF(k>0) THEN
                         IF(k>MATRIX%M) THEN
-                          LOCAL_ERROR="Invalid row indices. Row index "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" ("// &
-                            & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is greater than the number of rows ("// &
-                            & TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))//")."
+                          LOCAL_ERROR="Invalid row indices. Row index "//TRIM(NumberToVString(i,"*",ERR,ERROR))//" ("// &
+                            & TRIM(NumberToVString(k,"*",ERR,ERROR))//") is greater than the number of rows ("// &
+                            & TRIM(NumberToVString(MATRIX%M,"*",ERR,ERROR))//")."
                           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ELSE
-                        LOCAL_ERROR="Invalid row indices. Row index "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" ("// &
-                          & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//") is less than zero."
+                        LOCAL_ERROR="Invalid row indices. Row index "//TRIM(NumberToVString(i,"*",ERR,ERROR))//" ("// &
+                          & TRIM(NumberToVString(k,"*",ERR,ERROR))//") is less than zero."
                         CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                       ENDIF
                     ENDDO !i
@@ -1775,28 +2235,28 @@ CONTAINS
                   !ENDDO !j
                 ELSE
                   LOCAL_ERROR="Invalid column indices. The last column index ("// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(MATRIX%N+1),"*",ERR,ERROR))// &
+                    & TRIM(NumberToVString(COLUMN_INDICES(MATRIX%N+1),"*",ERR,ERROR))// &
                     & ") does not equal the number of non-zeros + 1 ("// &
-                    & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")."
+                    & TRIM(NumberToVString(MATRIX%NUMBER_NON_ZEROS+1,"*",ERR,ERROR))//")."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ELSE
                 LOCAL_ERROR="Invalid column indices. The first column index ("// &
-                  & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(1),"*",ERR,ERROR))//") does not equal 1."
+                  & TRIM(NumberToVString(COLUMN_INDICES(1),"*",ERR,ERROR))//") does not equal 1."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ENDIF
             ELSE
               LOCAL_ERROR="The supplied number of row indices ("// &
-                & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+                & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
                 & ") does not match the number of non-zeros in the matrix ("// &
-                & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
+                & TRIM(NumberToVString(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The supplied number of column indices ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not match the number of columns in the matrix + 1 ("// &
-              & TRIM(NUMBER_TO_VSTRING(MATRIX%N+1,"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(MATRIX%N+1,"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
@@ -1804,16 +2264,16 @@ CONTAINS
             IF(SIZE(COLUMN_INDICES,1)==MATRIX%NUMBER_NON_ZEROS) THEN
               DO k=1,MATRIX%NUMBER_NON_ZEROS
                 IF(ROW_INDICES(k)<1.OR.ROW_INDICES(k)>MATRIX%M) THEN
-                  LOCAL_ERROR="Invalid row indices. Row index number "//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" ("// &
-                    & TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))// &
+                  LOCAL_ERROR="Invalid row indices. Row index number "//TRIM(NumberToVString(k,"*",ERR,ERROR))//" ("// &
+                    & TRIM(NumberToVString(ROW_INDICES(k),"*",ERR,ERROR))// &
                     & ") is out of range. The row index must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(MATRIX%M,"*",ERR,ERROR))//"."
+                    & TRIM(NumberToVString(MATRIX%M,"*",ERR,ERROR))//"."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE IF(COLUMN_INDICES(k)<1.OR.COLUMN_INDICES(k)>MATRIX%N) THEN
-                  LOCAL_ERROR="Invalid column indices. Column index number "//TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" ("// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))// &
+                  LOCAL_ERROR="Invalid column indices. Column index number "//TRIM(NumberToVString(k,"*",ERR,ERROR))//" ("// &
+                    & TRIM(NumberToVString(COLUMN_INDICES(k),"*",ERR,ERROR))// &
                     & ") is out of range. The column index must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(MATRIX%N,"*",ERR,ERROR))//"."
+                    & TRIM(NumberToVString(MATRIX%N,"*",ERR,ERROR))//"."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ENDIF
               ENDDO !k
@@ -1822,20 +2282,20 @@ CONTAINS
               !!TODO: sort the row and colum indices!!!!!
             ELSE
               LOCAL_ERROR="The supplied number of column indices ("// &
-                & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+                & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
                 & ") does not match the number of non-zeros in the matrix ("// &
-                & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
+                & TRIM(NumberToVString(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The supplied number of row indices ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
               & ") does not match the number of non-zeros in the matrix ("// &
-              & TRIM(NUMBER_TO_VSTRING(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(MATRIX%NUMBER_NON_ZEROS,"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
@@ -1918,7 +2378,7 @@ CONTAINS
         CASE(MATRIX_ROW_COLUMN_STORAGE_TYPE)
           MATRIX%STORAGE_TYPE=MATRIX_ROW_COLUMN_STORAGE_TYPE
         CASE DEFAULT
-          LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(STORAGE_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
@@ -1960,28 +2420,28 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
+                  LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
+                    & TRIM(NumberToVString(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(k)
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the integer data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -2022,14 +2482,14 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
+            LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
+              & TRIM(NumberToVString(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the integer data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -2080,8 +2540,8 @@ CONTAINS
                     ROW_INDEX=ROW_INDICES(i)
                     LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%M
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
@@ -2096,8 +2556,8 @@ CONTAINS
                     COLUMN_INDEX=COLUMN_INDICES(j)
                     IF(ROW_INDEX==COLUMN_INDEX) LOCATION=ROW_INDEX
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
@@ -2111,8 +2571,8 @@ CONTAINS
                     ROW_INDEX=ROW_INDICES(i)
                     LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%MAX_M
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
@@ -2126,8 +2586,8 @@ CONTAINS
                     COLUMN_INDEX=COLUMN_INDICES(j)
                     LOCATION=(ROW_INDEX-1)*MATRIX%MAX_N+COLUMN_INDEX
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
@@ -2150,7 +2610,7 @@ CONTAINS
                       UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
                     ENDIF
                     PREVIOUS_COLUMN_INDEX=COLUMN_INDEX
-                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                    DO WHILE((UPLIMIT-LOWLIMIT)>MATRIX_BISECTION_TO_LINEAR_SEARCH_THRESHOLD)
                       MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                       IF(MATRIX%COLUMN_INDICES(MIDPOINT)>COLUMN_INDEX) THEN
                         UPLIMIT=MIDPOINT
@@ -2166,8 +2626,8 @@ CONTAINS
                       ENDIF
                     ENDDO !k
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
@@ -2190,7 +2650,7 @@ CONTAINS
                       UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
                     ENDIF
                     PREVIOUS_ROW_INDEX=ROW_INDEX
-                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                    DO WHILE((UPLIMIT-LOWLIMIT)>MATRIX_BISECTION_TO_LINEAR_SEARCH_THRESHOLD)
                       MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                       IF(MATRIX%ROW_INDICES(MIDPOINT)>ROW_INDEX) THEN
                         UPLIMIT=MIDPOINT
@@ -2206,8 +2666,8 @@ CONTAINS
                       ENDIF
                     ENDDO !k
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
@@ -2238,8 +2698,8 @@ CONTAINS
                     ENDDO
                     IF(.NOT.(FOUNDROW.AND.FOUNDCOLUMN)) LOCATION=0
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_INTG(LOCATION)=MATRIX%DATA_INTG(LOCATION)+VALUES(i,j)
@@ -2247,27 +2707,27 @@ CONTAINS
                   ENDDO !j
                 ENDDO !i
               CASE DEFAULT
-                LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
                   & " is invalid."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the integer data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -2311,28 +2771,28 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
+                  LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
+                    & TRIM(NumberToVString(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(k)
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the single precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -2373,14 +2833,14 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
+            LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
+              & TRIM(NumberToVString(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the single precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -2431,8 +2891,8 @@ CONTAINS
                     ROW_INDEX=ROW_INDICES(i)
                     LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%M
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
@@ -2447,8 +2907,8 @@ CONTAINS
                     COLUMN_INDEX=COLUMN_INDICES(j)
                     IF(ROW_INDEX==COLUMN_INDEX) LOCATION=ROW_INDEX
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
@@ -2462,8 +2922,8 @@ CONTAINS
                     ROW_INDEX=ROW_INDICES(i)
                     LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%MAX_M
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
@@ -2477,8 +2937,8 @@ CONTAINS
                     COLUMN_INDEX=COLUMN_INDICES(j)
                     LOCATION=(ROW_INDEX-1)*MATRIX%MAX_N+COLUMN_INDEX
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
@@ -2501,7 +2961,7 @@ CONTAINS
                       UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
                     ENDIF
                     PREVIOUS_COLUMN_INDEX=COLUMN_INDEX
-                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                    DO WHILE((UPLIMIT-LOWLIMIT)>MATRIX_BISECTION_TO_LINEAR_SEARCH_THRESHOLD)
                       MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                       IF(MATRIX%COLUMN_INDICES(MIDPOINT)>COLUMN_INDEX) THEN
                         UPLIMIT=MIDPOINT
@@ -2517,8 +2977,8 @@ CONTAINS
                       ENDIF
                     ENDDO !k
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
@@ -2541,7 +3001,7 @@ CONTAINS
                       UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
                     ENDIF
                     PREVIOUS_ROW_INDEX=ROW_INDEX
-                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                    DO WHILE((UPLIMIT-LOWLIMIT)>MATRIX_BISECTION_TO_LINEAR_SEARCH_THRESHOLD)
                       MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                       IF(MATRIX%ROW_INDICES(MIDPOINT)>ROW_INDEX) THEN
                         UPLIMIT=MIDPOINT
@@ -2557,8 +3017,8 @@ CONTAINS
                       ENDIF
                     ENDDO !k
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
@@ -2589,8 +3049,8 @@ CONTAINS
                     ENDDO
                     IF(.NOT.(FOUNDROW.AND.FOUNDCOLUMN)) LOCATION=0
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_SP(LOCATION)=MATRIX%DATA_SP(LOCATION)+VALUES(i,j)
@@ -2598,27 +3058,27 @@ CONTAINS
                   ENDDO !j
                 ENDDO !i
               CASE DEFAULT
-                LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
                   & " is invalid."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the single precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -2662,28 +3122,28 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
+                  LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
+                    & TRIM(NumberToVString(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(k)
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the double precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -2724,14 +3184,14 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
+            LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
+              & TRIM(NumberToVString(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the double precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -2782,8 +3242,8 @@ CONTAINS
                     ROW_INDEX=ROW_INDICES(i)
                     LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%M
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(i,j)
@@ -2798,8 +3258,8 @@ CONTAINS
                     COLUMN_INDEX=COLUMN_INDICES(j)
                     IF(ROW_INDEX==COLUMN_INDEX) LOCATION=ROW_INDEX
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(i,j)
@@ -2813,8 +3273,8 @@ CONTAINS
                     ROW_INDEX=ROW_INDICES(i)
                     LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%MAX_M
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(i,j)
@@ -2828,8 +3288,8 @@ CONTAINS
                     COLUMN_INDEX=COLUMN_INDICES(j)
                     LOCATION=(ROW_INDEX-1)*MATRIX%MAX_N+COLUMN_INDEX
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(i,j)
@@ -2852,7 +3312,7 @@ CONTAINS
                       UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
                     ENDIF
                     PREVIOUS_COLUMN_INDEX=COLUMN_INDEX
-                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                    DO WHILE((UPLIMIT-LOWLIMIT)>MATRIX_BISECTION_TO_LINEAR_SEARCH_THRESHOLD)
                       MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                       IF(MATRIX%COLUMN_INDICES(MIDPOINT)>COLUMN_INDEX) THEN
                         UPLIMIT=MIDPOINT
@@ -2868,8 +3328,8 @@ CONTAINS
                       ENDIF
                     ENDDO !k
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(i,j)
@@ -2892,7 +3352,7 @@ CONTAINS
                       UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
                     ENDIF
                     PREVIOUS_ROW_INDEX=ROW_INDEX
-                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                    DO WHILE((UPLIMIT-LOWLIMIT)>MATRIX_BISECTION_TO_LINEAR_SEARCH_THRESHOLD)
                       MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                       IF(MATRIX%ROW_INDICES(MIDPOINT)>ROW_INDEX) THEN
                         UPLIMIT=MIDPOINT
@@ -2908,8 +3368,8 @@ CONTAINS
                       ENDIF
                     ENDDO !k
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(i,j)
@@ -2940,8 +3400,8 @@ CONTAINS
                     ENDDO
                     IF(.NOT.(FOUNDROW.AND.FOUNDCOLUMN)) LOCATION=0
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_DP(LOCATION)=MATRIX%DATA_DP(LOCATION)+VALUES(i,j)
@@ -2949,27 +3409,27 @@ CONTAINS
                   ENDDO !j
                 ENDDO !i
               CASE DEFAULT
-                LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
                   & " is invalid."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the double precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -3013,28 +3473,28 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
+                  LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
+                    & TRIM(NumberToVString(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(k)
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the logical data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -3075,14 +3535,14 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
+            LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
+              & TRIM(NumberToVString(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the logical data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -3133,8 +3593,8 @@ CONTAINS
                     ROW_INDEX=ROW_INDICES(i)
                     LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%M
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
@@ -3149,8 +3609,8 @@ CONTAINS
                     COLUMN_INDEX=COLUMN_INDICES(j)
                     IF(ROW_INDEX==COLUMN_INDEX) LOCATION=ROW_INDEX
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
@@ -3164,8 +3624,8 @@ CONTAINS
                     ROW_INDEX=ROW_INDICES(i)
                     LOCATION=ROW_INDEX+(COLUMN_INDEX-1)*MATRIX%MAX_M
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
@@ -3179,8 +3639,8 @@ CONTAINS
                     COLUMN_INDEX=COLUMN_INDICES(j)
                     LOCATION=(ROW_INDEX-1)*MATRIX%MAX_N+COLUMN_INDEX
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
@@ -3203,7 +3663,7 @@ CONTAINS
                       UPLIMIT=MATRIX%ROW_INDICES(ROW_INDEX+1)
                     ENDIF
                     PREVIOUS_COLUMN_INDEX=COLUMN_INDEX
-                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                    DO WHILE((UPLIMIT-LOWLIMIT)>MATRIX_BISECTION_TO_LINEAR_SEARCH_THRESHOLD)
                       MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                       IF(MATRIX%COLUMN_INDICES(MIDPOINT)>COLUMN_INDEX) THEN
                         UPLIMIT=MIDPOINT
@@ -3219,8 +3679,8 @@ CONTAINS
                       ENDIF
                     ENDDO !k
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
@@ -3243,7 +3703,7 @@ CONTAINS
                       UPLIMIT=MATRIX%COLUMN_INDICES(COLUMN_INDEX+1)
                     ENDIF
                     PREVIOUS_ROW_INDEX=ROW_INDEX
-                    DO WHILE((UPLIMIT-LOWLIMIT)>bisectionToLinearSearchThreshold)
+                    DO WHILE((UPLIMIT-LOWLIMIT)>MATRIX_BISECTION_TO_LINEAR_SEARCH_THRESHOLD)
                       MIDPOINT=(UPLIMIT+LOWLIMIT)/2
                       IF(MATRIX%ROW_INDICES(MIDPOINT)>ROW_INDEX) THEN
                         UPLIMIT=MIDPOINT
@@ -3259,8 +3719,8 @@ CONTAINS
                       ENDIF
                     ENDDO !k
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
@@ -3291,8 +3751,8 @@ CONTAINS
                     ENDDO
                     IF(.NOT.(FOUNDROW.AND.FOUNDCOLUMN)) LOCATION=0
                     IF(LOCATION==0) THEN
-                      LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                        & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                      LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                        & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                       CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                     ELSE
                       MATRIX%DATA_L(LOCATION)=MATRIX%DATA_L(LOCATION).OR.VALUES(i,j)
@@ -3300,27 +3760,27 @@ CONTAINS
                   ENDDO !j
                 ENDDO !i
               CASE DEFAULT
-                LOCAL_ERROR="The matrix storage type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
+                LOCAL_ERROR="The matrix storage type of "//TRIM(NumberToVString(MATRIX%STORAGE_TYPE,"*",ERR,ERROR))// &
                   & " is invalid."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               END SELECT
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the logical data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -3370,20 +3830,20 @@ CONTAINS
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the integer data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -3429,7 +3889,7 @@ CONTAINS
             VALUE=MATRIX%DATA_INTG(LOCATION)
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the integer data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -3482,22 +3942,22 @@ CONTAINS
                 ENDDO !j
               ENDDO !i
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the integer data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -3547,20 +4007,20 @@ CONTAINS
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the single precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -3606,7 +4066,7 @@ CONTAINS
             VALUE=MATRIX%DATA_SP(LOCATION)
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the single precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -3659,22 +4119,22 @@ CONTAINS
                 ENDDO !j
               ENDDO !i
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the single precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -3724,20 +4184,20 @@ CONTAINS
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the double precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -3783,7 +4243,7 @@ CONTAINS
             VALUE=MATRIX%DATA_DP(LOCATION)
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the double precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -3836,22 +4296,22 @@ CONTAINS
                 ENDDO !j
               ENDDO !i
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the double precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -3901,20 +4361,20 @@ CONTAINS
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the logical data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -3960,7 +4420,7 @@ CONTAINS
             VALUE=MATRIX%DATA_L(LOCATION)
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the logical data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -4013,22 +4473,22 @@ CONTAINS
                 ENDDO !j
               ENDDO !i
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the logical data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -4072,28 +4532,28 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
+                  LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
+                    & TRIM(NumberToVString(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_INTG(LOCATION)=VALUES(k)
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the integer data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -4134,14 +4594,14 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
+            LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
+              & TRIM(NumberToVString(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_INTG(LOCATION)=VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the integer data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -4187,8 +4647,8 @@ CONTAINS
                 DO j=1,SIZE(COLUMN_INDICES,1)
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
-                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                    LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_INTG(LOCATION)=VALUES(i,j)
@@ -4196,22 +4656,22 @@ CONTAINS
                 ENDDO !j
               ENDDO !i
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the integer data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -4255,28 +4715,28 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
+                  LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
+                    & TRIM(NumberToVString(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_SP(LOCATION)=VALUES(k)
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the single precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -4317,14 +4777,14 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
+            LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
+              & TRIM(NumberToVString(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_SP(LOCATION)=VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the single precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -4370,8 +4830,8 @@ CONTAINS
                 DO j=1,SIZE(COLUMN_INDICES,1)
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
-                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                    LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_SP(LOCATION)=VALUES(i,j)
@@ -4379,22 +4839,22 @@ CONTAINS
                 ENDDO !j
               ENDDO !i
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the single precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -4438,28 +4898,28 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
+                  LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
+                    & TRIM(NumberToVString(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_DP(LOCATION)=VALUES(k)
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the double precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -4500,14 +4960,14 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
+            LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
+              & TRIM(NumberToVString(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_DP(LOCATION)=VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the double precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -4553,8 +5013,8 @@ CONTAINS
                 DO j=1,SIZE(COLUMN_INDICES,1)
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
-                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                    LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_DP(LOCATION)=VALUES(i,j)
@@ -4562,22 +5022,22 @@ CONTAINS
                 ENDDO !j
               ENDDO !i
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the double precision data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -4621,28 +5081,28 @@ CONTAINS
               DO k=1,SIZE(ROW_INDICES,1)
                 CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(k),COLUMN_INDICES(k),LOCATION,ERR,ERROR,*999)
                 IF(LOCATION==0) THEN
-                  LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
-                    & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
+                  LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(k),"*",ERR,ERROR))//" and column "// &
+                    & TRIM(NumberToVString(COLUMN_INDICES(k),"*",ERR,ERROR))//" does not exist in the matrix."
                   CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                 ELSE
                   MATRIX%DATA_L(LOCATION)=VALUES(k)
                 ENDIF
               ENDDO !k
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the logical data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
-              & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -4683,14 +5143,14 @@ CONTAINS
         IF(MATRIX%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
           CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDEX,COLUMN_INDEX,LOCATION,ERR,ERROR,*999)
           IF(LOCATION==0) THEN
-            LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
-              & TRIM(NUMBER_TO_VSTRING(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
+            LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDEX,"*",ERR,ERROR))//" and column "// &
+              & TRIM(NumberToVString(COLUMN_INDEX,"*",ERR,ERROR))//" does not exist in the matrix."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             MATRIX%DATA_L(LOCATION)=VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the logical data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -4736,8 +5196,8 @@ CONTAINS
                 DO j=1,SIZE(ROW_INDICES,1)
                   CALL MATRIX_STORAGE_LOCATION_FIND(MATRIX,ROW_INDICES(i),COLUMN_INDICES(j),LOCATION,ERR,ERROR,*999)
                   IF(LOCATION==0) THEN
-                    LOCAL_ERROR="Row "//TRIM(NUMBER_TO_VSTRING(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
-                      & TRIM(NUMBER_TO_VSTRING(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
+                    LOCAL_ERROR="Row "//TRIM(NumberToVString(ROW_INDICES(i),"*",ERR,ERROR))//" and column "// &
+                      & TRIM(NumberToVString(COLUMN_INDICES(j),"*",ERR,ERROR))//" does not exist in the matrix."
                     CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                   ELSE
                     MATRIX%DATA_L(LOCATION)=VALUES(i,j)
@@ -4745,22 +5205,22 @@ CONTAINS
                 ENDDO !j
               ENDDO !i
             ELSE
-              LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
+              LOCAL_ERROR="The data type of "//TRIM(NumberToVString(MATRIX%DATA_TYPE,"*",ERR,ERROR))// &
                 & " does not correspond to the logical data type of the given values."
               CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
             ENDIF
           ELSE
             LOCAL_ERROR="The size of the column indices array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
+              & TRIM(NumberToVString(SIZE(COLUMN_INDICES,1),"*",ERR,ERROR))// &
               & ") does not conform to the number of columns in the values array ("// &
-              & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,2),"*",ERR,ERROR))//")."
+              & TRIM(NumberToVString(SIZE(VALUES,2),"*",ERR,ERROR))//")."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
           LOCAL_ERROR="The size of the row indices array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
+            & TRIM(NumberToVString(SIZE(ROW_INDICES,1),"*",ERR,ERROR))// &
             & ") does not conform to the number of rows in the values array ("// &
-            & TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+            & TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -4798,7 +5258,7 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
           VECTOR%DATA_INTG=VALUE
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the integer data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -4837,7 +5297,7 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
           VECTOR%DATA_SP=VALUE
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the single precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -4876,7 +5336,7 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
           VECTOR%DATA_DP=VALUE
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the double precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -4915,7 +5375,7 @@ CONTAINS
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
           VECTOR%DATA_L=VALUE
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the logical data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -4967,7 +5427,7 @@ CONTAINS
             ALLOCATE(VECTOR%DATA_L(VECTOR%SIZE),STAT=ERR)
             IF(ERR/=0) CALL FlagError("Could not allocate vector logical data.",ERR,ERROR,*999)
           CASE DEFAULT
-            LOCAL_ERROR="The vector data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+            LOCAL_ERROR="The vector data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))//" is invalid."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           END SELECT
         ENDIF
@@ -5043,7 +5503,7 @@ CONTAINS
           IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
             DATA=>VECTOR%DATA_INTG
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the integer data type of the requested values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -5087,7 +5547,7 @@ CONTAINS
           IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
             DATA=>VECTOR%DATA_SP
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the single precision data type of the requested values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -5131,7 +5591,7 @@ CONTAINS
           IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
             DATA=>VECTOR%DATA_DP
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the double precision data type of the requested values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -5175,7 +5635,7 @@ CONTAINS
           IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
             DATA=>VECTOR%DATA_L
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the logical data type of the requested values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
@@ -5255,7 +5715,7 @@ CONTAINS
         CASE(MATRIX_VECTOR_L_TYPE)
           VECTOR%DATA_TYPE=MATRIX_VECTOR_L_TYPE
         CASE DEFAULT
-          LOCAL_ERROR="The vector data type of "//TRIM(NUMBER_TO_VSTRING(DATA_TYPE,"*",ERR,ERROR))//" is invalid."
+          LOCAL_ERROR="The vector data type of "//TRIM(NumberToVString(DATA_TYPE,"*",ERR,ERROR))//" is invalid."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         END SELECT
       ENDIF
@@ -5417,7 +5877,7 @@ CONTAINS
         IF(N>0) THEN
           VECTOR%N=N
         ELSE
-          LOCAL_ERROR="The size of the vector ("//TRIM(NUMBER_TO_VSTRING(N,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The size of the vector ("//TRIM(NumberToVString(N,"*",ERR,ERROR))// &
             & ") is invalid. The number must be >0."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -5458,22 +5918,22 @@ CONTAINS
             DO i=1,SIZE(INDICES,1)
               k=INDICES(i)
               IF(k<1.OR.k>VECTOR%N) THEN
-                LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
-                    & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+                LOCAL_ERROR="Index number "//TRIM(NumberToVString(i,"*",ERR,ERROR))//" is invalid. The index is "// &
+                    & TRIM(NumberToVString(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
+                    & TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VALUES(i)=VECTOR%DATA_INTG(k)
               ENDIF
             ENDDO !i
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the integer data type of the given values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+          LOCAL_ERROR="The size of the indices array ("//TRIM(NumberToVString(SIZE(INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -5511,14 +5971,14 @@ CONTAINS
       IF(VECTOR%VECTOR_FINISHED) THEN
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
-            LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+            LOCAL_ERROR="The index value of "//TRIM(NumberToVString(INDEX,"*",ERR,ERROR))// &
+              & " is invalid. The index must be between 1 and  "//TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VALUE=VECTOR%DATA_INTG(INDEX)
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the integer data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -5561,22 +6021,22 @@ CONTAINS
             DO i=1,SIZE(INDICES,1)
               k=INDICES(i)
               IF(k<1.OR.k>VECTOR%N) THEN
-                LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
-                    & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+                LOCAL_ERROR="Index number "//TRIM(NumberToVString(i,"*",ERR,ERROR))//" is invalid. The index is "// &
+                    & TRIM(NumberToVString(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
+                    & TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VALUES(i)=VECTOR%DATA_SP(k)
               ENDIF
             ENDDO !i
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the single precision data type of the given values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+          LOCAL_ERROR="The size of the indices array ("//TRIM(NumberToVString(SIZE(INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -5614,14 +6074,14 @@ CONTAINS
       IF(VECTOR%VECTOR_FINISHED) THEN
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
-            LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+            LOCAL_ERROR="The index value of "//TRIM(NumberToVString(INDEX,"*",ERR,ERROR))// &
+              & " is invalid. The index must be between 1 and  "//TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VALUE=VECTOR%DATA_SP(INDEX)
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the single precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -5664,22 +6124,22 @@ CONTAINS
             DO i=1,SIZE(INDICES,1)
               k=INDICES(i)
               IF(k<1.OR.k>VECTOR%N) THEN
-                LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
-                    & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+                LOCAL_ERROR="Index number "//TRIM(NumberToVString(i,"*",ERR,ERROR))//" is invalid. The index is "// &
+                    & TRIM(NumberToVString(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
+                    & TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VALUES(i)=VECTOR%DATA_DP(k)
               ENDIF
             ENDDO !i
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the double precision data type of the given values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+          LOCAL_ERROR="The size of the indices array ("//TRIM(NumberToVString(SIZE(INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -5717,14 +6177,14 @@ CONTAINS
       IF(VECTOR%VECTOR_FINISHED) THEN
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
-            LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+            LOCAL_ERROR="The index value of "//TRIM(NumberToVString(INDEX,"*",ERR,ERROR))// &
+              & " is invalid. The index must be between 1 and  "//TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VALUE=VECTOR%DATA_DP(INDEX)
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the double precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -5767,22 +6227,22 @@ CONTAINS
             DO i=1,SIZE(INDICES,1)
               k=INDICES(i)
               IF(k<1.OR.k>VECTOR%N) THEN
-                LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
-                    & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+                LOCAL_ERROR="Index number "//TRIM(NumberToVString(i,"*",ERR,ERROR))//" is invalid. The index is "// &
+                    & TRIM(NumberToVString(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
+                    & TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VALUES(i)=VECTOR%DATA_L(k)
               ENDIF
             ENDDO !i
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the logical data type of the given values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")"
+          LOCAL_ERROR="The size of the indices array ("//TRIM(NumberToVString(SIZE(INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")"
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -5820,14 +6280,14 @@ CONTAINS
       IF(VECTOR%VECTOR_FINISHED) THEN
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
-            LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+            LOCAL_ERROR="The index value of "//TRIM(NumberToVString(INDEX,"*",ERR,ERROR))// &
+              & " is invalid. The index must be between 1 and  "//TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VALUE=VECTOR%DATA_L(INDEX)
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the logical data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -5870,22 +6330,22 @@ CONTAINS
             DO i=1,SIZE(INDICES,1)
               k=INDICES(i)
               IF(k<1.OR.k>VECTOR%N) THEN
-                LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
-                    & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+                LOCAL_ERROR="Index number "//TRIM(NumberToVString(i,"*",ERR,ERROR))//" is invalid. The index is "// &
+                    & TRIM(NumberToVString(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
+                    & TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VECTOR%DATA_INTG(k)=VALUES(i)
               ENDIF
             ENDDO !i
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the integer data type of the given values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+          LOCAL_ERROR="The size of the indices array ("//TRIM(NumberToVString(SIZE(INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -5923,14 +6383,14 @@ CONTAINS
       IF(VECTOR%VECTOR_FINISHED) THEN
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_INTG_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
-            LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+            LOCAL_ERROR="The index value of "//TRIM(NumberToVString(INDEX,"*",ERR,ERROR))// &
+              & " is invalid. The index must be between 1 and  "//TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VECTOR%DATA_INTG(INDEX)=VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the integer data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -5973,22 +6433,22 @@ CONTAINS
             DO i=1,SIZE(INDICES,1)
               k=INDICES(i)
               IF(k<1.OR.k>VECTOR%N) THEN
-                LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
-                    & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+                LOCAL_ERROR="Index number "//TRIM(NumberToVString(i,"*",ERR,ERROR))//" is invalid. The index is "// &
+                    & TRIM(NumberToVString(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
+                    & TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                VECTOR%DATA_SP(k)=VALUES(i)
               ENDIF
             ENDDO !i
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the single precision data type of the given values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+          LOCAL_ERROR="The size of the indices array ("//TRIM(NumberToVString(SIZE(INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -6026,14 +6486,14 @@ CONTAINS
       IF(VECTOR%VECTOR_FINISHED) THEN
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_SP_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
-            LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+            LOCAL_ERROR="The index value of "//TRIM(NumberToVString(INDEX,"*",ERR,ERROR))// &
+              & " is invalid. The index must be between 1 and  "//TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VECTOR%DATA_SP(INDEX)=VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the single precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -6076,22 +6536,22 @@ CONTAINS
             DO i=1,SIZE(INDICES,1)
               k=INDICES(i)
               IF(k<1.OR.k>VECTOR%N) THEN
-                LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
-                    & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+                LOCAL_ERROR="Index number "//TRIM(NumberToVString(i,"*",ERR,ERROR))//" is invalid. The index is "// &
+                    & TRIM(NumberToVString(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
+                    & TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VECTOR%DATA_DP(k)=VALUES(i)
               ENDIF
             ENDDO !i
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the double precision data type of the given values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+          LOCAL_ERROR="The size of the indices array ("//TRIM(NumberToVString(SIZE(INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -6129,14 +6589,14 @@ CONTAINS
       IF(VECTOR%VECTOR_FINISHED) THEN
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_DP_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
-            LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+            LOCAL_ERROR="The index value of "//TRIM(NumberToVString(INDEX,"*",ERR,ERROR))// &
+              & " is invalid. The index must be between 1 and  "//TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VECTOR%DATA_DP(INDEX)=VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the double precision data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
@@ -6179,22 +6639,22 @@ CONTAINS
             DO i=1,SIZE(INDICES,1)
               k=INDICES(i)
               IF(k<1.OR.k>VECTOR%N) THEN
-                LOCAL_ERROR="Index number "//TRIM(NUMBER_TO_VSTRING(i,"*",ERR,ERROR))//" is invalid. The index is "// &
-                    & TRIM(NUMBER_TO_VSTRING(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
-                    & TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+                LOCAL_ERROR="Index number "//TRIM(NumberToVString(i,"*",ERR,ERROR))//" is invalid. The index is "// &
+                    & TRIM(NumberToVString(k,"*",ERR,ERROR))//" and it must be between 1 and "// &
+                    & TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
                 CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
               ELSE
                 VECTOR%DATA_L(k)=VALUES(i)
               ENDIF
             ENDDO !i
           ELSE
-            LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+            LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
               & " does not correspond to the logical data type of the given values."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ENDIF
         ELSE
-          LOCAL_ERROR="The size of the indices array ("//TRIM(NUMBER_TO_VSTRING(SIZE(INDICES,1),"*",ERR,ERROR))// &
-            & ") does not conform to the size of the values array ("//TRIM(NUMBER_TO_VSTRING(SIZE(VALUES,1),"*",ERR,ERROR))//")."
+          LOCAL_ERROR="The size of the indices array ("//TRIM(NumberToVString(SIZE(INDICES,1),"*",ERR,ERROR))// &
+            & ") does not conform to the size of the values array ("//TRIM(NumberToVString(SIZE(VALUES,1),"*",ERR,ERROR))//")."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
       ELSE
@@ -6232,14 +6692,14 @@ CONTAINS
       IF(VECTOR%VECTOR_FINISHED) THEN
         IF(VECTOR%DATA_TYPE==MATRIX_VECTOR_L_TYPE) THEN
           IF(INDEX<1.OR.INDEX>VECTOR%N) THEN
-            LOCAL_ERROR="The index value of "//TRIM(NUMBER_TO_VSTRING(INDEX,"*",ERR,ERROR))// &
-              & " is invalid. The index must be between 1 and  "//TRIM(NUMBER_TO_VSTRING(VECTOR%N,"*",ERR,ERROR))//"."
+            LOCAL_ERROR="The index value of "//TRIM(NumberToVString(INDEX,"*",ERR,ERROR))// &
+              & " is invalid. The index must be between 1 and  "//TRIM(NumberToVString(VECTOR%N,"*",ERR,ERROR))//"."
             CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
           ELSE
             VECTOR%DATA_L(INDEX)=VALUE
           ENDIF
         ELSE
-          LOCAL_ERROR="The data type of "//TRIM(NUMBER_TO_VSTRING(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
+          LOCAL_ERROR="The data type of "//TRIM(NumberToVString(VECTOR%DATA_TYPE,"*",ERR,ERROR))// &
             & " does not correspond to the logical data type of the given value."
           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
         ENDIF
