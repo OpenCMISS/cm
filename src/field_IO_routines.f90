@@ -2539,7 +2539,7 @@ CONTAINS
     TYPE(DOMAIN_TYPE), POINTER :: componentDomain !The domain mapping to calculate nodal mappings
     TYPE(DOMAIN_ELEMENTS_TYPE), POINTER :: DOMAIN_ELEMENTS ! domain nodes
     TYPE(DOMAIN_ELEMENT_TYPE), POINTER :: MAX_NODE_ELEMENT
-    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES ! domain nodes
+    TYPE(DOMAIN_NODES_TYPE), POINTER :: DOMAIN_NODES,MAX_ELEMENT_DOMAIN_NODES ! domain nodes
     TYPE(BASIS_TYPE), POINTER :: BASIS
     TYPE(BASIS_PTR_TYPE), ALLOCATABLE :: listScaleBases(:)
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
@@ -2551,6 +2551,7 @@ CONTAINS
     INTEGER(INTG) :: nn, nx, ny, nz, NodesX, NodesY, NodesZ, mm, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
     INTEGER(INTG) :: local_number, interpType, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
+    INTEGER(INTG) :: NODE_LOCAL_NUMBER,NODE_USER_NUMBER,MAX_ELEMENT_LOCAL_NUMBER,MAX_ELEMENT_USER_NUMBER
     LOGICAL :: SAME_SCALING_SET
 
     ENTERS("FieldIO_ExportElementalGroupHeaderFortran",ERR,ERROR,*999)
@@ -2596,6 +2597,7 @@ CONTAINS
         MAX_NODE_COMP_INDEX=comp_idx
         MAX_NODE_ELEMENT => DOMAIN_ELEMENTS%ELEMENTS(local_number)
         MAX_NUM_NODES=BASIS%NUMBER_OF_NODES
+        MAX_ELEMENT_DOMAIN_NODES=>componentDomain%TOPOLOGY%NODES
       ENDIF
       !IF(.NOT.BASIS%DEGENERATE)  THEN
       IF(comp_idx == 1) THEN
@@ -3359,8 +3361,11 @@ CONTAINS
           !TODO This assumes nested subsets of nodes, and will therefore break on, e.g., mixed quad and cubic interpolation
           DO nn = 1, BASIS%NUMBER_OF_NODES
             DO mm = 1, MAX_NODE_ELEMENT%BASIS%NUMBER_OF_NODES
-              IF( DOMAIN_ELEMENTS%ELEMENTS( local_number )%ELEMENT_NODES( nn ) == &
-                  & MAX_NODE_ELEMENT%ELEMENT_NODES( mm ) ) THEN
+              NODE_LOCAL_NUMBER = DOMAIN_ELEMENTS%ELEMENTS( local_number )%ELEMENT_NODES( nn )
+              NODE_USER_NUMBER=DOMAIN_ELEMENTS%DOMAIN%TOPOLOGY%NODES%NODES(NODE_LOCAL_NUMBER)%USER_NUMBER
+              MAX_ELEMENT_LOCAL_NUMBER = MAX_NODE_ELEMENT%ELEMENT_NODES( mm )
+              MAX_ELEMENT_USER_NUMBER = MAX_ELEMENT_DOMAIN_NODES%NODES(MAX_ELEMENT_LOCAL_NUMBER)%USER_NUMBER
+              IF( NODE_USER_NUMBER == MAX_ELEMENT_USER_NUMBER ) THEN
                 NODE_INDEXES( nn ) = mm
                 EXIT
               ENDIF
