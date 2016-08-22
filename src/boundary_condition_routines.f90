@@ -1882,12 +1882,6 @@ CONTAINS
                 & equationsSet%specification(2)==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
               validEquationsSetFound=.TRUE.
             END IF
-          CASE(BOUNDARY_CONDITION_FixedNonreflecting,BOUNDARY_CONDITION_FixedCellml,BOUNDARY_CONDITION_FixedStree)
-            IF(equationsSet%CLASS==EQUATIONS_SET_FLUID_MECHANICS_CLASS.AND. &
-                & (equationsSet%TYPE==EQUATIONS_SET_CHARACTERISTIC_EQUATION_TYPE.OR. &
-                & equationsSet%TYPE==EQUATIONS_SET_NAVIER_STOKES_EQUATION_TYPE)) THEN
-              validEquationsSetFound=.TRUE.
-            END IF
           CASE DEFAULT
             CALL FlagError("The specified boundary condition type of "// &
               & TRIM(NUMBER_TO_VSTRING(boundaryConditionType,"*",err,error))// &

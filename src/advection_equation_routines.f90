@@ -1137,7 +1137,6 @@ CONTAINS
     TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET
     TYPE(EQUATIONS_TYPE), POINTER :: EQUATIONS
     TYPE(FIELD_TYPE), POINTER :: DEPENDENT_FIELD
-    TYPE(FIELD_VARIABLE_TYPE), POINTER :: dependentFieldVariable
     TYPE(SOLVER_EQUATIONS_TYPE), POINTER :: SOLVER_EQUATIONS
     TYPE(SOLVER_MAPPING_TYPE), POINTER :: SOLVER_MAPPING
     TYPE(SOLVERS_TYPE), POINTER :: SOLVERS
@@ -1172,8 +1171,8 @@ CONTAINS
                   DEPENDENT_FIELD=>EQUATIONS_SET%DEPENDENT%DEPENDENT_FIELD
                   BOUNDARY_CONDITIONS=>SOLVER_EQUATIONS%BOUNDARY_CONDITIONS
                   IF(ASSOCIATED(DEPENDENT_FIELD)) THEN
-                    
-                    IF(CURRENT_TIME<100)THEN
+
+                    IF(CURRENT_TIME<600)THEN
 
                       t(1)=0.003228  ; c(1)=0.001513
                       t(2)=0.077482  ; c(2)=0.001513
@@ -1200,7 +1199,7 @@ CONTAINS
                       t(23)=0.999193 ; c(23)=0.0
 
                       !Initialize variables
-                      period=100
+                      period=600
                       m=1
                       n=23
                       !Compute derivation

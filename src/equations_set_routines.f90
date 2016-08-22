@@ -121,6 +121,10 @@ MODULE EQUATIONS_SET_ROUTINES
   PUBLIC EQUATIONS_SET_DEPENDENT_CREATE_START,EQUATIONS_SET_DEPENDENT_CREATE_FINISH
 
   PUBLIC EQUATIONS_SET_DEPENDENT_DESTROY
+
+  PUBLIC EquationsSet_DerivedCreateStart,EquationsSet_DerivedCreateFinish
+
+  PUBLIC EquationsSet_DerivedDestroy
   
   PUBLIC EQUATIONS_SET_INDEPENDENT_CREATE_START,EQUATIONS_SET_INDEPENDENT_CREATE_FINISH
 
@@ -2440,13 +2444,6 @@ CONTAINS
                           CALL FlagError(LOCAL_ERROR,ERR,ERROR,*999)
                         ENDIF
                       ENDIF
-                      !Initialise the equations set materials
-!                       CALL EQUATIONS_SET_INITIALISE(EQUATIONS_SET,ERR,ERROR,*999)
-!                        WRITE(*,'(A)') "equations set initialise called"
-!                       IF(.NOT.ASSOCIATED(EQUATIONS_SET_FIELD_FIELD)) THEN
-!                         EQUATIONS_SET%EQUATIONS_SET_FIELD%EQUATIONS_SET_FIELD_AUTO_CREATED=.TRUE.
-!                       ENDIF
-!--- tob 1            
                       !Initalise equations set
                       CALL EQUATIONS_SET_INITIALISE(NEW_EQUATIONS_SET,ERR,ERROR,*999)
                       !Set default equations set values
@@ -3631,6 +3628,7 @@ CONTAINS
       NULLIFY(EQUATIONS_SET%MATERIALS)
       NULLIFY(EQUATIONS_SET%SOURCE)
       NULLIFY(EQUATIONS_SET%ANALYTIC)
+      NULLIFY(EQUATIONS_SET%derived)
       NULLIFY(EQUATIONS_SET%EQUATIONS)
       NULLIFY(EQUATIONS_SET%BOUNDARY_CONDITIONS)
     ENDIF
@@ -4143,7 +4141,7 @@ CONTAINS
   !
   !================================================================================================================================
   !
-  
+
   !>Finalises the dependent variables for an equation set and deallocates all memory.
   SUBROUTINE EQUATIONS_SET_DEPENDENT_FINALISE(EQUATIONS_SET_DEPENDENT,ERR,ERROR,*)
 
@@ -6239,7 +6237,6 @@ CONTAINS
 999 ERRORSEXITS("EquationsSet_DerivedVariableSet",err,error)
     RETURN 1
   END SUBROUTINE EquationsSet_DerivedVariableSet
-
   !
   !================================================================================================================================
   !
@@ -6296,15 +6293,7 @@ CONTAINS
             & TRIM(NumberToVstring(specification(1),"*",err,error))//" is not valid."
           CALL FlagError(localError,err,error,*999)
         END SELECT
-        !Initialise the setup
-!         CALL EQUATIONS_SET_SETUP_INITIALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-!         EQUATIONS_SET_SETUP_INFO%SETUP_TYPE=EQUATIONS_SET_SETUP_INITIAL_TYPE
-!         EQUATIONS_SET_SETUP_INFO%ACTION_TYPE=EQUATIONS_SET_SETUP_START_ACTION
-!         !Peform the initial equations set setup
-!         CALL EQUATIONS_SET_SETUP(EQUATIONS_SET,EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-!         !Finalise the setup
-!         CALL EQUATIONS_SET_SETUP_FINALISE(EQUATIONS_SET_SETUP_INFO,ERR,ERROR,*999)
-      ENDIF
+      END IF
     ELSE
       CALL FlagError("Equations set is not associated.",err,error,*999)
     END IF

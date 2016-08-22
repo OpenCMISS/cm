@@ -120,6 +120,8 @@ MODULE EQUATIONS_ROUTINES
 
   PUBLIC EQUATIONS_SET_EQUATIONS_GET
 
+  PUBLIC Equations_DerivedVariableGet
+
   PUBLIC Equations_NumberOfLinearMatricesGet
 
   PUBLIC Equations_NumberOfJacobianMatricesGet
