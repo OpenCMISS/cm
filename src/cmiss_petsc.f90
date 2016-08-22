@@ -7567,4 +7567,3 @@ SUBROUTINE SNESSetJacobianBuffer(snes,A,B,jFunction,matFDColoring,err)
   CALL SNESSetJacobian(snes%snes,a%mat,b%mat,jFunction,matFDColoring%matFDColoring,err)
 
 END SUBROUTINE SNESSetJacobianBuffer
-

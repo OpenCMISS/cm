@@ -280,44 +280,6 @@ CONTAINS
   !================================================================================================================================
   !
 
-  !>Evaluates the strain field for an elasticity class finite element equation set.
-  SUBROUTINE ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE(EQUATIONS_SET,ERR,ERROR,*)
-
-    !Argument variables
-    TYPE(EQUATIONS_SET_TYPE), POINTER :: EQUATIONS_SET !<A pointer to the equations set
-    INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
-    TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
-    !Local Variables
-    TYPE(VARYING_STRING) :: LOCAL_ERROR
-
-    CALL ENTERS("ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE",ERR,ERROR,*999)
-
-    IF(ASSOCIATED(EQUATIONS_SET)) THEN
-      SELECT CASE(EQUATIONS_SET%TYPE)
-      CASE(EQUATIONS_SET_LINEAR_ELASTICITY_TYPE)
-        CALL FLAG_ERROR("Not implemented.",ERR,ERROR,*999)
-      CASE(EQUATIONS_SET_FINITE_ELASTICITY_TYPE)
-        CALL FINITE_ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE(EQUATIONS_SET,ERR,ERROR,*999)
-      CASE DEFAULT
-        LOCAL_ERROR="Equations set type "//TRIM(NUMBER_TO_VSTRING(EQUATIONS_SET%TYPE,"*",ERR,ERROR))// &
-          & " is not valid for an elasticity equation set class."
-        CALL FLAG_ERROR(LOCAL_ERROR,ERR,ERROR,*999)
-      END SELECT
-    ELSE
-      CALL FLAG_ERROR("Equations set is not associated",ERR,ERROR,*999)
-    ENDIF
-       
-    CALL EXITS("ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE")
-    RETURN
-999 CALL ERRORS("ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE",ERR,ERROR)
-    CALL EXITS("ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE")
-    RETURN 1
-  END SUBROUTINE ELASTICITY_FINITE_ELEMENT_STRAIN_CALCULATE
-
-  !
-  !================================================================================================================================
-  !
-
   !>Pre-evaluates the residual for an elasticity class finite element equation set.
   SUBROUTINE Elasticity_FiniteElementPreResidualEvaluate(EQUATIONS_SET,ERR,ERROR,*)
 

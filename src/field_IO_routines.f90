@@ -257,17 +257,19 @@ MODULE FIELD_IO_ROUTINES
       INTEGER(C_INT) :: FieldExport_ElementGridSize
     END FUNCTION FieldExport_ElementGridSize
 
-    FUNCTION FieldExport_NodeScaleIndexes( handle, nodeCount, derivativeCount, elementDerivatives, nodeIndexes, &
-      & scaleIndexes ) &
+    FUNCTION FieldExport_NodeScaleIndexes( handle, nodeCount, derivativeCount, derivatives, elementDerivatives, &
+      &  nodeIndexes, scaleIndexes, elementVersions ) &
       & BIND(C,NAME="FieldExport_NodeScaleIndexes")
       USE TYPES
       USE ISO_C_BINDING
       INTEGER(C_INT), VALUE :: handle
       INTEGER(C_INT), VALUE :: nodeCount
       TYPE(C_PTR), VALUE :: derivativeCount
+      TYPE(C_PTR), VALUE :: derivatives
       TYPE(C_PTR), VALUE :: elementDerivatives
       TYPE(C_PTR), VALUE :: nodeIndexes
       TYPE(C_PTR), VALUE :: scaleIndexes
+      TYPE(C_PTR), VALUE :: elementVersions
       INTEGER(C_INT) :: FieldExport_NodeScaleIndexes
     END FUNCTION FieldExport_NodeScaleIndexes
 
@@ -2516,7 +2518,8 @@ CONTAINS
   !
 
   !>Write the header of a group elements using FORTRAN
-  SUBROUTINE FieldIO_ExportElementalGroupHeaderFortran( global_number, MAX_NODE_COMP_INDEX,NUM_OF_SCALING_FACTOR_SETS, &
+  SUBROUTINE FieldIO_ExportElementalGroupHeaderFortran( global_number, MAX_NODE_COMP_INDEX, &
+    & NUM_OF_SCALING_FACTOR_SETS, &
     & LIST_COMP_SCALE, my_computational_node_number, elementalInfoSet, sessionHandle, ERR,ERROR, *)
     !Argument variables
     INTEGER(INTG), INTENT(IN) :: global_number !<element number in my elemental IO list
@@ -2529,8 +2532,7 @@ CONTAINS
     INTEGER(INTG), INTENT(OUT) :: ERR !<The error code
     TYPE(VARYING_STRING), INTENT(OUT) :: ERROR !<The error string
     !Local Variables
-    INTEGER(INTG) :: i,LENGTH
-    INTEGER(INTG) :: NUMBER_OF_UNIQUE_NODES
+    INTEGER(INTG) :: i,LENGTH,NUMBER_OF_UNIQUE_NODES,MAX_NUM_OF_NODAL_DERIVATIVES
     CHARACTER(LEN=MAXSTRLEN) :: fvar_name
     CHARACTER(LEN=1, KIND=C_CHAR) :: cvar_name(MAXSTRLEN+1)
     TYPE(COORDINATE_SYSTEM_TYPE), POINTER :: COORDINATE_SYSTEM
@@ -2545,10 +2547,9 @@ CONTAINS
     TYPE(FIELD_VARIABLE_COMPONENT_TYPE), POINTER :: component
     INTEGER(INTG), ALLOCATABLE :: GROUP_LOCAL_NUMBER(:), GROUP_SCALE_FACTORS(:)
     INTEGER(INTG), ALLOCATABLE :: GROUP_NODE(:), GROUP_VARIABLES(:)
-    !INTEGER(C_INT), TARGET :: INTERPOLATION_XI(3),ELEMENT_DERIVATIVES(64*64),NUMBER_OF_DERIVATIVES(64), NODE_INDEXES(128)
     INTEGER(C_INT), ALLOCATABLE, TARGET :: INTERPOLATION_XI(:),ELEMENT_DERIVATIVES(:),NUMBER_OF_DERIVATIVES(:), NODE_INDEXES(:)
-    INTEGER(C_INT), ALLOCATABLE, TARGET :: SCALE_INDEXES(:) !Array for holding scale indexes, useful for collapsed nodes.
-    INTEGER(INTG) :: nn, nx, ny, nz, NodesX, NodesY, NodesZ, mm, NUM_OF_VARIABLES, MAX_NUM_NODES !NUM_OF_NODES
+    INTEGER(C_INT), ALLOCATABLE, TARGET :: SCALE_INDEXES(:),GROUP_DERIVATIVES(:),ELEMENT_VERSIONS(:) !Array for holding scale indexes, useful for collapsed nodes.
+    INTEGER(INTG) :: nn, nx, ny, nz, NodesX, NodesY, NodesZ, mm, NUM_OF_VARIABLES, MAX_NUM_NODES, derivative_idx !NUM_OF_NODES
     INTEGER(INTG) :: local_number, interpType, NODE_NUMBER, NODE_NUMBER_COUNTER, NODE_NUMBER_COLLAPSED, NUMBER_OF_ELEMENT_NODES
     INTEGER(INTG) :: num_scl, num_node, comp_idx, scaleIndex, scaleIndex1, var_idx, derivativeIndex !value_idx field_idx global_var_idx comp_idx1 ny2
     INTEGER(INTG) :: NODE_LOCAL_NUMBER,NODE_USER_NUMBER,MAX_ELEMENT_LOCAL_NUMBER,MAX_ELEMENT_USER_NUMBER
@@ -2566,6 +2567,7 @@ CONTAINS
     NUM_OF_VARIABLES=0
     MAX_NUM_NODES=0
     MAX_NODE_COMP_INDEX=0
+    MAX_NUM_OF_NODAL_DERIVATIVES=0
     NULLIFY(variable_ptr)
 
     CALL REALLOCATE( GROUP_LOCAL_NUMBER, elementalInfoSet%NUMBER_OF_COMPONENTS, &
@@ -2629,7 +2631,10 @@ CONTAINS
           LIST_COMP_SCALE(comp_idx)=NUM_OF_SCALING_FACTOR_SETS
         ENDIF
       ENDIF
-      !ENDIF !BASIS%DEGENERATE=.FALSE.
+
+      MAX_NUM_OF_NODAL_DERIVATIVES=MAX(DOMAIN_NODES%NODES(DOMAIN_NODES%NUMBER_OF_NODES)%NUMBER_OF_DERIVATIVES, &
+        & MAX_NUM_OF_NODAL_DERIVATIVES)
+
     ENDDO !comp_idx
     !!Allocate the memory for group of field components
     CALL REALLOCATE( GROUP_VARIABLES, NUM_OF_VARIABLES, &
@@ -2642,6 +2647,9 @@ CONTAINS
     CALL REALLOCATE( GROUP_NODE, NUM_OF_SCALING_FACTOR_SETS, &
         & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999 )
 
+    CALL REALLOCATE( GROUP_DERIVATIVES, MAX_NUM_OF_NODAL_DERIVATIVES, &
+        & "Could not allocate temporary derivatives buffer in IO", ERR, ERROR, *999 )
+
     !fill information into the group of fields and variables
     NULLIFY(variable_ptr)
     NUM_OF_VARIABLES=0
@@ -2652,6 +2660,13 @@ CONTAINS
         variable_ptr=>elementalInfoSet%COMPONENTS(comp_idx)%PTR%FIELD_VARIABLE
       ENDIF
       GROUP_VARIABLES(NUM_OF_VARIABLES)=GROUP_VARIABLES(NUM_OF_VARIABLES)+1
+
+      !get the nodal partial derivatives
+      DO derivative_idx=1,MAX_NUM_OF_NODAL_DERIVATIVES
+        GROUP_DERIVATIVES(derivative_idx)=DOMAIN_NODES%NODES(DOMAIN_NODES%NUMBER_OF_NODES)% &
+          & DERIVATIVES(derivative_idx)%PARTIAL_DERIVATIVE_INDEX
+      ENDDO
+
     ENDDO  !comp_idx
 
     DO scaleIndex = 1, NUM_OF_SCALING_FACTOR_SETS
@@ -2684,7 +2699,8 @@ CONTAINS
         & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999)
     CALL REALLOCATE(ELEMENT_DERIVATIVES, SUM(GROUP_SCALE_FACTORS(:)), &
         & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999)
-
+    CALL REALLOCATE(ELEMENT_VERSIONS, SUM(GROUP_SCALE_FACTORS(:)), &
+        & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999)
 
     DO scaleIndex = 1, NUM_OF_SCALING_FACTOR_SETS
       basis => listScaleBases( scaleIndex )%PTR
@@ -2771,6 +2787,13 @@ CONTAINS
       CALL REALLOCATE(NODE_INDEXES, num_node, &
           & "Could not allocate temporary variable buffer in IO", ERR, ERROR, *999)
       
+      DO nn = 1, BASIS%NUMBER_OF_NODES
+        NUMBER_OF_DERIVATIVES(nn) = BASIS%NUMBER_OF_DERIVATIVES(nn)
+        DO mm=1,NUMBER_OF_DERIVATIVES(nn)
+          ELEMENT_VERSIONS(nn)=DOMAIN_ELEMENTS%ELEMENTS(GROUP_LOCAL_NUMBER(comp_idx))%elementVersions(mm, nn)
+        ENDDO !derivativeIndex
+      ENDDO !nodeIndex
+
       SELECT CASE(component%INTERPOLATION_TYPE)
       CASE(FIELD_CONSTANT_INTERPOLATION)
         interpType = 1
@@ -3378,8 +3401,10 @@ CONTAINS
         IF( variable_ptr%FIELD%SCALINGS%SCALING_TYPE == FIELD_NO_SCALING ) THEN
           SCALE_INDEXES(:) = -1
         ENDIF
+
         ERR = FieldExport_NodeScaleIndexes( sessionHandle, NUMBER_OF_ELEMENT_NODES, C_LOC( NUMBER_OF_DERIVATIVES ), &
-            & C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), C_LOC( SCALE_INDEXES ) )
+            & C_LOC(GROUP_DERIVATIVES), C_LOC( ELEMENT_DERIVATIVES ), C_LOC( NODE_INDEXES ), C_LOC( SCALE_INDEXES ), &
+            & C_LOC( ELEMENT_VERSIONS ) )
         ! ELSE
         !  CALL FlagError("exporting degenerated nodes has not been implemented",ERR,ERROR,*999)
         ! ENDIF
@@ -3634,13 +3659,15 @@ CONTAINS
       !check whether need to write out the nodal information header
       IF(.NOT.components%SAME_HEADER) THEN
         !write out the nodal header
-        CALL FieldIO_ExportElementalGroupHeaderFortran( global_number, MAX_NODE_COMP_INDEX, NUM_OF_SCALING_FACTOR_SETS, &
+
+        CALL FieldIO_ExportElementalGroupHeaderFortran( global_number, MAX_NODE_COMP_INDEX, &
+          & NUM_OF_SCALING_FACTOR_SETS, &
           & LIST_COMP_SCALE, my_computational_node_number, components, sessionHandle, ERR, ERROR, *999)
       ENDIF
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !write out elemental information
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !element info
       component => components%COMPONENTS(MAX_NODE_COMP_INDEX)%PTR
       element => component%DOMAIN%MESH%TOPOLOGY(component%MESH_COMPONENT_NUMBER)%PTR%ELEMENTS%ELEMENTS(global_number)
@@ -5307,7 +5334,7 @@ CONTAINS
             GROUP_DERIVATIVES(derivative_idx)=DOMAIN_NODES%NODES(local_number)%DERIVATIVES(derivative_idx)% &
                 & PARTIAL_DERIVATIVE_INDEX
           ENDDO
-          !sort  the partial derivatives
+          !sort the partial derivatives
           CALL LIST_SORT(GROUP_DERIVATIVES(1:NUM_OF_NODAL_DEV),ERR,ERROR,*999)
 
           IF( component%FIELD_VARIABLE%FIELD%TYPE == FIELD_GEOMETRIC_TYPE .AND. &
@@ -5376,7 +5403,6 @@ CONTAINS
     REAL(DP) :: padding(1),VALUE
 
     padding(1) = 1.23456789
-
 
     ENTERS("FIELD_IO_EXPORT_NODES_INTO_LOCAL_FILE",ERR,ERROR,*999)
 
@@ -5573,7 +5599,6 @@ CONTAINS
       !       IF(ERR/=0) THEN
       !         CALL FlagError( "Cannot write group name to nodes file", ERR, ERROR,*999 )
       !       ENDIF
-
 
     ENDDO !nn
 
@@ -6249,4 +6274,3 @@ CONTAINS
   !
 
 END MODULE FIELD_IO_ROUTINES
-
